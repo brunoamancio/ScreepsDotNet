@@ -20,12 +20,14 @@ public sealed class TestWebApplicationFactory : WebApplicationFactory<Program>
             services.RemoveAll<IVersionInfoProvider>();
             services.RemoveAll<IUserRepository>();
             services.RemoveAll<IRoomRepository>();
+            services.RemoveAll<IUserWorldRepository>();
             services.RemoveAll<ITokenService>();
 
             services.AddSingleton<IStorageAdapter, FakeStorageAdapter>();
             services.AddSingleton<IVersionInfoProvider, FakeVersionInfoProvider>();
             services.AddSingleton<IUserRepository, FakeUserRepository>();
             services.AddSingleton<IRoomRepository, FakeRoomRepository>();
+            services.AddSingleton<IUserWorldRepository, FakeUserWorldRepository>();
             services.AddSingleton<ITokenService, FakeTokenService>();
             services.Configure<AuthOptions>(options =>
             {
@@ -108,6 +110,19 @@ sealed file class FakeRoomRepository : IRoomRepository
 {
     public Task<IReadOnlyCollection<RoomSummary>> GetOwnedRoomsAsync(CancellationToken cancellationToken = default)
         => Task.FromResult<IReadOnlyCollection<RoomSummary>>(Array.Empty<RoomSummary>());
+}
+
+internal sealed class FakeUserWorldRepository : IUserWorldRepository
+{
+    public string? ControllerRoom { get; set; } = "W10N10";
+
+    public UserWorldStatus WorldStatus { get; set; } = UserWorldStatus.Normal;
+
+    public Task<string?> GetRandomControllerRoomAsync(string userId, CancellationToken cancellationToken = default)
+        => Task.FromResult(ControllerRoom);
+
+    public Task<UserWorldStatus> GetWorldStatusAsync(string userId, CancellationToken cancellationToken = default)
+        => Task.FromResult(WorldStatus);
 }
 
 sealed file class FakeTokenService : ITokenService

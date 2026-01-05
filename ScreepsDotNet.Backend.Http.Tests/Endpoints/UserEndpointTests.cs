@@ -1,6 +1,9 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using Microsoft.Extensions.DependencyInjection;
+using ScreepsDotNet.Backend.Core.Models;
+using ScreepsDotNet.Backend.Core.Repositories;
 using ScreepsDotNet.Backend.Http.Routing;
 using ScreepsDotNet.Backend.Http.Tests.Web;
 
@@ -9,9 +12,15 @@ namespace ScreepsDotNet.Backend.Http.Tests.Endpoints;
 public class UserEndpointTests : IClassFixture<TestWebApplicationFactory>
 {
     private readonly HttpClient _client;
+    private readonly FakeUserWorldRepository _userWorldRepository;
+    private const string CustomControllerRoom = "W12N3";
 
     public UserEndpointTests(TestWebApplicationFactory factory)
-        => _client = factory.CreateClient();
+    {
+        _client = factory.CreateClient();
+        var services = factory.Services;
+        _userWorldRepository = (FakeUserWorldRepository)services.GetRequiredService<IUserWorldRepository>();
+    }
 
     [Fact]
     public async Task WorldStartRoom_WithoutToken_ReturnsUnauthorized()
@@ -24,22 +33,49 @@ public class UserEndpointTests : IClassFixture<TestWebApplicationFactory>
     }
 
     [Fact]
-    public async Task WorldStartRoom_WithToken_ReturnsNotImplemented()
+    public async Task WorldStartRoom_WithToken_ReturnsRoom()
     {
-        var loginResponse = await _client.PostAsJsonAsync(ApiRoutes.AuthSteamTicket, new
-        {
-            ticket = AuthTestValues.Ticket,
-            useNativeAuth = false
-        });
-        loginResponse.EnsureSuccessStatusCode();
-        using var loginPayload = JsonDocument.Parse(await loginResponse.Content.ReadAsStringAsync());
-        var token = loginPayload.RootElement.GetProperty(AuthResponseFields.Token).GetString()!;
+        _userWorldRepository.ControllerRoom = CustomControllerRoom;
+        var token = await AuthenticateAsync();
 
         var request = new HttpRequestMessage(HttpMethod.Get, ApiRoutes.User.WorldStartRoom);
         request.Headers.TryAddWithoutValidation(AuthHeaderNames.Token, token);
 
         var response = await _client.SendAsync(request);
 
-        Assert.Equal(HttpStatusCode.NotImplemented, response.StatusCode);
+        response.EnsureSuccessStatusCode();
+        using var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        var rooms = payload.RootElement.GetProperty(UserResponseFields.Room).EnumerateArray().Select(element => element.GetString()).ToList();
+        Assert.Contains(CustomControllerRoom, rooms);
+    }
+
+    [Fact]
+    public async Task WorldStatus_WithToken_ReturnsStatus()
+    {
+        _userWorldRepository.WorldStatus = UserWorldStatus.Lost;
+        var token = await AuthenticateAsync();
+
+        var request = new HttpRequestMessage(HttpMethod.Get, ApiRoutes.User.WorldStatus);
+        request.Headers.TryAddWithoutValidation(AuthHeaderNames.Token, token);
+
+        var response = await _client.SendAsync(request);
+
+        response.EnsureSuccessStatusCode();
+        using var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        var expectedStatus = nameof(UserWorldStatus.Lost).ToLowerInvariant();
+        Assert.Equal(expectedStatus, payload.RootElement.GetProperty(UserResponseFields.Status).GetString());
+}
+
+    private async Task<string> AuthenticateAsync()
+    {
+        var response = await _client.PostAsJsonAsync(ApiRoutes.AuthSteamTicket, new
+        {
+            ticket = AuthTestValues.Ticket,
+            useNativeAuth = false
+        });
+
+        response.EnsureSuccessStatusCode();
+        using var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        return payload.RootElement.GetProperty(AuthResponseFields.Token).GetString()!;
     }
 }

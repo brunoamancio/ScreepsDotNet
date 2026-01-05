@@ -24,6 +24,7 @@ builder.Services.AddSingleton<IMongoDatabaseProvider, MongoDatabaseProvider>();
 builder.Services.AddSingleton<IRedisConnectionProvider, RedisConnectionProvider>();
 builder.Services.AddSingleton<IUserRepository, MongoUserRepository>();
 builder.Services.AddSingleton<IRoomRepository, MongoRoomRepository>();
+builder.Services.AddSingleton<IUserWorldRepository, MongoUserWorldRepository>();
 builder.Services.AddSingleton<IVersionInfoProvider, VersionInfoProvider>();
 builder.Services.AddSingleton<ITokenService, RedisTokenService>();
 builder.Services.AddScoped<ICurrentUserAccessor, CurrentUserAccessor>();
