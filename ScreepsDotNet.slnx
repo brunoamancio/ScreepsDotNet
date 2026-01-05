@@ -1,1 +1,5 @@
-<Solution />
+<Solution>
+  <Folder Name="/Backend/">
+    <Project Path="ScreepsDotNet.Backend.Http/ScreepsDotNet.Backend.Http.csproj" />
+  </Folder>
+</Solution>

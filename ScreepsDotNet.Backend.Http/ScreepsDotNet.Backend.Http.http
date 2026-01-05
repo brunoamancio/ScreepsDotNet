@@ -1,0 +1,11 @@
+@ScreepsDotNet_Backend_Http_HostAddress = http://localhost:5210
+
+### Health
+GET {{ScreepsDotNet_Backend_Http_HostAddress}}/health
+Accept: application/json
+
+### Server info
+GET {{ScreepsDotNet_Backend_Http_HostAddress}}/api/server/info
+Accept: application/json
+
+###
