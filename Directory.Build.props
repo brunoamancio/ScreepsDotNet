@@ -1,0 +1,19 @@
+<Project>
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <LangVersion>14.0</LangVersion>
+    </PropertyGroup>
+
+    <PropertyGroup>
+        <Nullable>enable</Nullable>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+
+        <!-- TODO: These must be solved in code so we can remove the usage of NoWarn -->
+        <!-- CA2254 - The logging message template should not vary between calls to 'LoggerExtensions.LogError(ILogger, Exception?, string?, params object?[])'-->
+        <!-- CA1873 - Try removing this the when dotnet sdk is updated to 10.0.2+ (PR https://github.com/dotnet/sdk/pull/51818)-->
+        <NoWarn>CA2254, CA1873</NoWarn>
+    </PropertyGroup>
+
+</Project>

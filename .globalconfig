@@ -1,0 +1,48 @@
+﻿###########################################################
+# This file is used to set best practices as requirement. #
+###########################################################
+
+# Configuration files for code analysis rules
+# Documentation on https://docs.microsoft.com/en-us/dotnet/fundamentals/code-analysis/overview
+# See also: https://docs.microsoft.com/en-us/dotnet/fundamentals/code-analysis/configuration-files#global-analyzerconfig
+
+
+
+# Top level entry required to mark this as a global AnalyzerConfig file
+is_global = true
+
+# Default severity for analyzer diagnostics with category 'Microsoft.Design' (escalated to build errors)
+dotnet_analyzer_diagnostic.category-Microsoft.Design.severity = error
+
+# Default severity for analyzer diagnostics with category 'Performance' (escalated to build errors)
+dotnet_analyzer_diagnostic.category-Performance.severity = error
+
+# Default severity for analyzer diagnostics with category 'Maintainability' (escalated to build errors)
+dotnet_analyzer_diagnostic.category-Maintainability.severity = error
+
+# Default severity for analyzer diagnostics with category 'Naming' (escalated to build errors)
+dotnet_analyzer_diagnostic.category-Naming.severity = error
+
+# IL3000: Avoid accessing Assembly file path when publishing as a single file
+dotnet_diagnostic.IL3000.severity = error
+
+# IL3001: Avoid accessing Assembly file path when publishing as a single file
+dotnet_diagnostic.IL3001.severity = error
+
+# CS8604: Possible null reference argument for parameter
+dotnet_diagnostic.CS8604.severity = error
+
+# Default severity for analyzer diagnostics with category 'Reliability' (escalated to build errors)
+dotnet_analyzer_diagnostic.category-Reliability.severity = error
+
+# Default severity for analyzer diagnostics with category 'Security' (escalated to build errors)
+dotnet_analyzer_diagnostic.category-Security.severity = error
+
+# Default severity for analyzer diagnostics with category 'Usage' (escalated to build errors)
+dotnet_analyzer_diagnostic.category-Usage.severity = error
+
+# Default severity for analyzer diagnostics with category 'Microsoft.Documentation' (escalated to build errors)
+dotnet_analyzer_diagnostic.category-Microsoft.Documentation.severity = error
+
+# Default severity for analyzer diagnostics with category 'Globalization' (escalated to build errors)
+dotnet_analyzer_diagnostic.category-Microsoft.Globalization.severity = error
