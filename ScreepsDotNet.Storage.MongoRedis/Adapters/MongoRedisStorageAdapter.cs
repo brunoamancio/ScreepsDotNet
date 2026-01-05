@@ -46,12 +46,6 @@ public sealed class MongoRedisStorageAdapter : IStorageAdapter, IDisposable
         return new StorageStatus(mongoHealthy && redisHealthy, now, joinedDetails);
     }
 
-    public Task<ServerInfo?> GetServerInfoAsync(CancellationToken cancellationToken = default)
-    {
-        // This adapter exposes low-level capabilities; repositories perform actual queries.
-        return Task.FromResult<ServerInfo?>(null);
-    }
-
     private async Task<bool> PingMongoAsync(CancellationToken cancellationToken)
     {
         try {

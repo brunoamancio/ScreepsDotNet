@@ -12,19 +12,18 @@ using ScreepsDotNet.Storage.MongoRedis.Repositories;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddOpenApi();
-builder.Services.Configure<ServerInfoOptions>(builder.Configuration.GetSection(ServerInfoOptions.SectionName));
+builder.Services.Configure<ServerDataOptions>(builder.Configuration.GetSection(ServerDataOptions.SectionName));
+builder.Services.Configure<VersionInfoOptions>(builder.Configuration.GetSection(VersionInfoOptions.SectionName));
 builder.Services.Configure<MongoRedisStorageOptions>(builder.Configuration.GetSection(MongoRedisStorageOptions.SectionName));
 builder.Services.AddSingleton<IStorageAdapter, MongoRedisStorageAdapter>();
 builder.Services.AddSingleton<IMongoDatabaseProvider, MongoDatabaseProvider>();
-builder.Services.AddSingleton<IServerInfoRepository, MongoServerInfoRepository>();
 builder.Services.AddSingleton<IUserRepository, MongoUserRepository>();
 builder.Services.AddSingleton<IRoomRepository, MongoRoomRepository>();
-builder.Services.AddSingleton<IServerInfoProvider, InMemoryServerInfoProvider>();
+builder.Services.AddSingleton<IVersionInfoProvider, VersionInfoProvider>();
 builder.Services.AddHealthChecks().AddCheck<StorageHealthCheck>(StorageHealthCheck.HealthCheckName);
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 

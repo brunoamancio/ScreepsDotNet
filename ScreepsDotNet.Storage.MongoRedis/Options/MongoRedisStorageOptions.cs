@@ -8,10 +8,6 @@ public sealed class MongoRedisStorageOptions
 
     public string MongoDatabase { get; init; } = "screeps";
 
-    public string ServerInfoCollection { get; init; } = "serverData";
-
-    public string ServerInfoDocumentId { get; init; } = "serverInfo";
-
     public string UsersCollection { get; init; } = "users";
 
     public string RoomsCollection { get; init; } = "rooms";

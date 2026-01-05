@@ -8,6 +8,4 @@ namespace ScreepsDotNet.Backend.Core.Storage;
 public interface IStorageAdapter
 {
     Task<StorageStatus> GetStatusAsync(CancellationToken cancellationToken = default);
-
-    Task<ServerInfo?> GetServerInfoAsync(CancellationToken cancellationToken = default);
 }
