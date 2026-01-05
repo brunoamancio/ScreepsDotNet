@@ -45,7 +45,7 @@
 ## Configuration
 
 - `appsettings.json` & `appsettings.Development.json`:
-  - `ServerInfo` defaults (used by configuration repository / tests).
+  - `VersionInfo` and `ServerData` configure `/api/version` responses.
   - `Storage:MongoRedis` connection strings + collection names.
 - `docker-compose.yml` uses volumes `mongo-data` / `redis-data`. Run `docker compose down -v` to reseed.
 
