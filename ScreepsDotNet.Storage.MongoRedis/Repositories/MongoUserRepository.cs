@@ -32,6 +32,7 @@ public sealed class MongoUserRepository : IUserRepository
     private const string SteamProfileHiddenField = "steamProfileLinkHidden";
     private const string PowerExperimentationsField = "powerExperimentations";
     private const string PowerExperimentationTimeField = "powerExperimentationTime";
+    private const string UsernameLowerField = "usernameLower";
 
     private readonly IMongoCollection<BsonDocument> _collection;
 
@@ -113,10 +114,52 @@ public sealed class MongoUserRepository : IUserRepository
         if (value is not BsonDocument steamDoc)
             return null;
 
-        return new UserSteamProfile(
-            GetString(steamDoc, SteamIdField),
-            GetString(steamDoc, SteamDisplayNameField),
-            ConvertToDotNet(steamDoc.GetValue(SteamOwnershipField, BsonNull.Value)),
-            steamDoc.TryGetValue(SteamProfileHiddenField, out var hidden) && hidden.IsBoolean ? hidden.AsBoolean : null);
+        return new UserSteamProfile(GetString(steamDoc, SteamIdField), GetString(steamDoc, SteamDisplayNameField),
+                                    ConvertToDotNet(steamDoc.GetValue(SteamOwnershipField, BsonNull.Value)),
+                                    steamDoc.TryGetValue(SteamProfileHiddenField, out var hidden) && hidden.IsBoolean ? hidden.AsBoolean : null);
+    }
+    public async Task<UserPublicProfile?> FindPublicProfileAsync(string? username, string? userId, CancellationToken cancellationToken = default)
+    {
+        var filter = BuildPublicProfileFilter(username, userId);
+        if (filter is null)
+            return null;
+
+        var document = await _collection.Find(filter).FirstOrDefaultAsync(cancellationToken).ConfigureAwait(false);
+        if (document is null)
+            return null;
+
+        var steamId = ExtractPublicSteamId(document);
+
+        return new UserPublicProfile(GetString(document, IdField) ?? string.Empty, GetString(document, UsernameField),
+                                     ConvertToDotNet(document.GetValue(BadgeField, BsonNull.Value)),
+                                     ConvertToDotNet(document.GetValue(GclField, BsonNull.Value)),
+                                     GetDouble(document, PowerField),
+                                     steamId);
+    }
+
+    private static FilterDefinition<BsonDocument>? BuildPublicProfileFilter(string? username, string? userId)
+    {
+        if (!string.IsNullOrWhiteSpace(userId))
+            return Builders<BsonDocument>.Filter.Eq(IdField, userId);
+
+        if (!string.IsNullOrWhiteSpace(username))
+            return Builders<BsonDocument>.Filter.Eq(UsernameLowerField, username.ToLowerInvariant());
+
+        return null;
+    }
+
+    private static string? ExtractPublicSteamId(BsonDocument document)
+    {
+        if (!document.TryGetValue(SteamField, out var steamValue) || !steamValue.IsBsonDocument)
+            return null;
+
+        var steamDoc = steamValue.AsBsonDocument;
+        var hiddenValue = steamDoc.GetValue(SteamProfileHiddenField, BsonNull.Value);
+        var hidden = (hiddenValue.IsBoolean && hiddenValue.AsBoolean) || (hiddenValue.IsNumeric && hiddenValue.ToInt32() != 0);
+
+        if (hidden)
+            return null;
+
+        return steamDoc.TryGetValue(SteamIdField, out var idValue) && idValue.IsString ? idValue.AsString : null;
     }
 }

@@ -15,3 +15,11 @@ Accept: application/json
 GET {{ScreepsDotNet_Backend_Http_HostAddress}}/api/user/find?username=TestUser
 Accept: application/json
 
+### User - Rooms (public)
+GET {{ScreepsDotNet_Backend_Http_HostAddress}}/api/user/rooms?id=test-user
+Accept: application/json
+
+### User - Stats (public)
+GET {{ScreepsDotNet_Backend_Http_HostAddress}}/api/user/stats?interval=8
+Accept: application/json
+

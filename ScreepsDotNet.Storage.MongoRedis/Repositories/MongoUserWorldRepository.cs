@@ -13,6 +13,7 @@ public sealed class MongoUserWorldRepository : IUserWorldRepository
     private const string RoomField = "room";
     private const string ControllerType = "controller";
     private const string SpawnType = "spawn";
+    private const string LevelField = "level";
 
     private readonly IMongoCollection<BsonDocument> _collection;
 
@@ -63,4 +64,18 @@ public sealed class MongoUserWorldRepository : IUserWorldRepository
     }
 
     private sealed record RoomObject(string Type, string Room);
+
+    public async Task<IReadOnlyCollection<string>> GetControllerRoomsAsync(string userId, CancellationToken cancellationToken = default)
+    {
+        var filter = Builders<BsonDocument>.Filter.And(Builders<BsonDocument>.Filter.Eq(UserField, userId),
+                                                       Builders<BsonDocument>.Filter.Eq(TypeField, ControllerType));
+
+        var sort = Builders<BsonDocument>.Sort.Descending(LevelField);
+        var rooms = await _collection.Find(filter).Sort(sort)
+                                     .Project(document => document.GetValue(RoomField, BsonNull.Value).AsString)
+                                     .ToListAsync(cancellationToken)
+                                     .ConfigureAwait(false);
+
+        return rooms;
+    }
 }

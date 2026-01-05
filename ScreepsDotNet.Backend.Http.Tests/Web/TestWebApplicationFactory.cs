@@ -79,31 +79,21 @@ sealed file class FakeVersionInfoProvider : IVersionInfoProvider
 
 sealed file class FakeUserRepository : IUserRepository
 {
-    private static readonly UserProfile Profile = new(
-        AuthTestValues.UserId,
-        AuthTestValues.Username,
-        AuthTestValues.Email,
-        false,
-        true,
-        100,
-        null,
-        DateTime.UtcNow.AddDays(-1),
-        null,
-        null,
-        DateTime.UtcNow.AddHours(-2),
-        false,
-        null,
-        0,
-        500,
-        new UserSteamProfile(AuthTestValues.SteamId, "Test Player", null, false),
-        0,
-        0);
+    private static readonly UserProfile Profile = new(AuthTestValues.UserId, AuthTestValues.Username, AuthTestValues.Email, false,
+                                                      true, 100, null, DateTime.UtcNow.AddDays(-1), null, null, DateTime.UtcNow.AddHours(-2),
+                                                      false, null, 0, 500, new UserSteamProfile(AuthTestValues.SteamId, "Test Player", null, false),
+                                                      0, 0);
+
+    private static readonly UserPublicProfile PublicProfile = new(AuthTestValues.UserId, AuthTestValues.Username, null, null, 0, AuthTestValues.SteamId);
 
     public Task<UserProfile?> GetProfileAsync(string userId, CancellationToken cancellationToken = default)
         => Task.FromResult<UserProfile?>(Profile);
 
     public Task<int> GetActiveUsersCountAsync(CancellationToken cancellationToken = default)
         => Task.FromResult(1);
+
+    public Task<UserPublicProfile?> FindPublicProfileAsync(string? username, string? userId, CancellationToken cancellationToken = default)
+        => Task.FromResult<UserPublicProfile?>(PublicProfile);
 }
 
 sealed file class FakeRoomRepository : IRoomRepository
@@ -115,6 +105,7 @@ sealed file class FakeRoomRepository : IRoomRepository
 internal sealed class FakeUserWorldRepository : IUserWorldRepository
 {
     public string? ControllerRoom { get; set; } = "W10N10";
+    public IReadOnlyCollection<string> ControllerRooms { get; set; } = new[] { "W10N10" };
 
     public UserWorldStatus WorldStatus { get; set; } = UserWorldStatus.Normal;
 
@@ -123,11 +114,14 @@ internal sealed class FakeUserWorldRepository : IUserWorldRepository
 
     public Task<UserWorldStatus> GetWorldStatusAsync(string userId, CancellationToken cancellationToken = default)
         => Task.FromResult(WorldStatus);
+
+    public Task<IReadOnlyCollection<string>> GetControllerRoomsAsync(string userId, CancellationToken cancellationToken = default)
+        => Task.FromResult(ControllerRooms);
 }
 
 sealed file class FakeTokenService : ITokenService
 {
-    public const string ValidToken = "test-token";
+    private const string ValidToken = "test-token";
 
     public Task<string> IssueTokenAsync(string userId, CancellationToken cancellationToken = default)
         => Task.FromResult(ValidToken);
