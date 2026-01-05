@@ -1,4 +1,5 @@
 using ScreepsDotNet.Backend.Core.Configuration;
+using ScreepsDotNet.Backend.Core.Repositories;
 using ScreepsDotNet.Backend.Core.Services;
 using ScreepsDotNet.Backend.Http.Endpoints;
 
@@ -6,6 +7,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddOpenApi();
 builder.Services.Configure<ServerInfoOptions>(builder.Configuration.GetSection(ServerInfoOptions.SectionName));
+builder.Services.AddSingleton<IServerInfoRepository, ConfigurationServerInfoRepository>();
 builder.Services.AddSingleton<IServerInfoProvider, InMemoryServerInfoProvider>();
 
 var app = builder.Build();
