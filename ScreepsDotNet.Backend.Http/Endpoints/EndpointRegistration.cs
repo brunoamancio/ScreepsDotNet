@@ -6,5 +6,6 @@ internal static class EndpointRegistration
     {
         VersionEndpoints.Map(app);
         AuthEndpoints.Map(app);
+        UserEndpoints.Map(app);
     }
 }

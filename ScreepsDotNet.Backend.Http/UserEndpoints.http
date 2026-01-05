@@ -1,0 +1,12 @@
+@ScreepsDotNet_Backend_Http_HostAddress = http://localhost:5210
+@ScreepsDotNet_User_Token = dev-token
+
+### User - World Start Room (protected)
+GET {{ScreepsDotNet_Backend_Http_HostAddress}}/api/user/world-start-room
+X-Token: {{ScreepsDotNet_User_Token}}
+Accept: application/json
+
+### User - Find (public)
+GET {{ScreepsDotNet_Backend_Http_HostAddress}}/api/user/find?username=TestUser
+Accept: application/json
+
