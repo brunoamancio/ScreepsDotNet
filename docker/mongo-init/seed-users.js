@@ -32,3 +32,42 @@ db.users.updateOne(
     },
     { upsert: true }
 );
+
+db['rooms.objects'].updateOne(
+    { user: 'test-user', type: 'controller', room: 'W1N1' },
+    {
+        $set: {
+            level: 3,
+            user: 'test-user',
+            type: 'controller',
+            room: 'W1N1'
+        }
+    },
+    { upsert: true }
+);
+
+db['rooms.objects'].updateOne(
+    { user: 'test-user', type: 'controller', room: 'W2N2' },
+    {
+        $set: {
+            level: 5,
+            user: 'test-user',
+            type: 'controller',
+            room: 'W2N2'
+        }
+    },
+    { upsert: true }
+);
+
+db['rooms.objects'].updateOne(
+    { user: 'test-user', type: 'spawn', room: 'W1N1' },
+    {
+        $set: {
+            name: 'Spawn1',
+            user: 'test-user',
+            type: 'spawn',
+            room: 'W1N1'
+        }
+    },
+    { upsert: true }
+);
