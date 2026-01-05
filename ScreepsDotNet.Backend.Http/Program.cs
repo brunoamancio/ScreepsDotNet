@@ -1,8 +1,9 @@
 using ScreepsDotNet.Backend.Core.Configuration;
 using ScreepsDotNet.Backend.Core.Repositories;
 using ScreepsDotNet.Backend.Core.Services;
-using ScreepsDotNet.Backend.Http.Endpoints;
 using ScreepsDotNet.Backend.Core.Storage;
+using ScreepsDotNet.Backend.Http.Endpoints;
+using ScreepsDotNet.Backend.Http.Health;
 using ScreepsDotNet.Storage.MongoRedis.Adapters;
 using ScreepsDotNet.Storage.MongoRedis.Options;
 using ScreepsDotNet.Storage.MongoRedis.Repositories;
@@ -15,6 +16,7 @@ builder.Services.Configure<MongoRedisStorageOptions>(builder.Configuration.GetSe
 builder.Services.AddSingleton<IStorageAdapter, MongoRedisStorageAdapter>();
 builder.Services.AddSingleton<IServerInfoRepository, MongoServerInfoRepository>();
 builder.Services.AddSingleton<IServerInfoProvider, InMemoryServerInfoProvider>();
+builder.Services.AddHealthChecks().AddCheck<StorageHealthCheck>(StorageHealthCheck.HealthCheckName);
 
 var app = builder.Build();
 
@@ -23,5 +25,6 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 
 app.UseHttpsRedirection();
+app.MapHealthChecks(HealthCheckOptionsFactory.HealthEndpoint, HealthCheckOptionsFactory.Create());
 app.MapBackendEndpoints();
 app.Run();
