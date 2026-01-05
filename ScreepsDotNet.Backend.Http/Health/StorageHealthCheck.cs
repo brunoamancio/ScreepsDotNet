@@ -3,7 +3,7 @@ using ScreepsDotNet.Backend.Core.Storage;
 
 namespace ScreepsDotNet.Backend.Http.Health;
 
-internal sealed class StorageHealthCheck : IHealthCheck
+public sealed class StorageHealthCheck : IHealthCheck
 {
     public const string HealthCheckName = "storage";
 

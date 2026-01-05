@@ -32,10 +32,15 @@
    ```powershell
    dotnet run --project ScreepsDotNet.Backend.Http/ScreepsDotNet.Backend.Http.csproj
    ```
-4. **Smoke tests:**  
+4. **Run automated tests:**  
+   ```powershell
+   dotnet test
+   ```
+   - Integration tests live in `ScreepsDotNet.Backend.Http.Tests` and rely on `WebApplicationFactory<Program>` with faked storage dependencies, so no external services are required to run them.
+5. **Manual smoke tests:**  
    - `GET http://localhost:5210/health`
    - `GET http://localhost:5210/api/server/info`
-5. **Build:** ensure no running `dotnet run` locks DLLs before invoking `dotnet build`.
+6. **Build:** ensure no running `dotnet run` locks DLLs before invoking `dotnet build`.
 
 ## Configuration
 
