@@ -2,5 +2,6 @@
   <Folder Name="/Backend/">
     <Project Path="ScreepsDotNet.Backend.Http/ScreepsDotNet.Backend.Http.csproj" />
     <Project Path="ScreepsDotNet.Backend.Core/ScreepsDotNet.Backend.Core.csproj" />
+    <Project Path="ScreepsDotNet.Storage.MongoRedis/ScreepsDotNet.Storage.MongoRedis.csproj" />
   </Folder>
 </Solution>
