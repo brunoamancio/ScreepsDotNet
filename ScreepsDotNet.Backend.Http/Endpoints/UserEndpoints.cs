@@ -6,6 +6,8 @@ using Microsoft.AspNetCore.Mvc;
 using ScreepsDotNet.Backend.Core.Context;
 using ScreepsDotNet.Backend.Core.Models;
 using ScreepsDotNet.Backend.Core.Repositories;
+using ScreepsDotNet.Backend.Core.Services;
+using ScreepsDotNet.Backend.Http.Constants;
 using ScreepsDotNet.Backend.Http.Authentication;
 using ScreepsDotNet.Backend.Http.Endpoints.Models;
 using ScreepsDotNet.Backend.Http.Routing;
@@ -13,9 +15,13 @@ using ScreepsDotNet.Backend.Http.Routing;
 internal static class UserEndpoints
 {
     private const string UsernameQueryName = "username";
+    private const string BorderQueryName = "border";
+    private const string BorderEnabledValue = "1";
+    private const string BorderEnabledAlternateValue = "true";
     private const string UserIdQueryName = "id";
     private const string NotImplementedError = "NotImplemented";
     private const string MissingUserContextMessage = "User context is not available.";
+    private const string MissingUsernameMessage = "username is required.";
     private const string MissingUserIdentifierMessage = "username or id must be provided.";
     private const string MissingUserIdMessage = "user id is required.";
     private const string UserNotFoundMessage = "user not found";
@@ -79,9 +85,9 @@ internal static class UserEndpoints
         MapProtectedPost(app, ApiRoutes.User.SetSteamVisible, SetSteamVisibleEndpointName);
 
         MapPublicFind(app);
-        MapPublicStats(app);
         MapPublicRooms(app);
-        MapPublicGet(app, ApiRoutes.User.BadgeSvg, BadgeSvgEndpointName);
+        MapPublicBadgeSvg(app);
+        MapPublicStats(app);
     }
 
     private static void MapProtectedWorldStartRoom(WebApplication app)
@@ -227,6 +233,30 @@ internal static class UserEndpoints
                        });
                    })
            .WithName(RoomsEndpointName);
+    }
+
+    private static void MapPublicBadgeSvg(WebApplication app)
+    {
+        app.MapGet(ApiRoutes.User.BadgeSvg,
+                   async ([FromQuery(Name = UsernameQueryName)] string? username,
+                          [FromQuery(Name = BorderQueryName)] string? borderValue,
+                          IUserRepository userRepository,
+                          IBadgeSvgGenerator badgeSvgGenerator,
+                          CancellationToken cancellationToken) =>
+                   {
+                       if (string.IsNullOrWhiteSpace(username))
+                           return Results.BadRequest(new ErrorResponse(MissingUsernameMessage));
+
+                       var profile = await userRepository.FindPublicProfileAsync(username, null, cancellationToken).ConfigureAwait(false);
+                       if (profile?.Badge is null)
+                           return Results.NotFound();
+
+                       var includeBorder = string.Equals(borderValue, BorderEnabledValue, StringComparison.OrdinalIgnoreCase) ||
+                                           string.Equals(borderValue, BorderEnabledAlternateValue, StringComparison.OrdinalIgnoreCase);
+                       var svg = badgeSvgGenerator.GenerateSvg(profile.Badge, includeBorder);
+                       return Results.Text(svg, ContentTypes.Svg);
+                   })
+           .WithName(BadgeSvgEndpointName);
     }
 
     private static void MapPublicStats(WebApplication app)

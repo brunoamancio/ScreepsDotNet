@@ -134,6 +134,25 @@ public class UserEndpointTests : IClassFixture<TestWebApplicationFactory>
     }
 
     [Fact]
+    public async Task UserBadgeSvg_WithoutUsername_ReturnsBadRequest()
+    {
+        var response = await _client.GetAsync(ApiRoutes.User.BadgeSvg);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task UserBadgeSvg_WithUsername_ReturnsSvg()
+    {
+        var response = await _client.GetAsync(ApiRoutes.User.BadgeSvg + UsernameQueryParameter);
+
+        response.EnsureSuccessStatusCode();
+        Assert.Equal("image/svg+xml", response.Content.Headers.ContentType?.MediaType);
+        var svg = await response.Content.ReadAsStringAsync();
+        Assert.Contains("<svg", svg, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public async Task UserBranches_WithToken_ReturnsList()
     {
         var token = await AuthenticateAsync();

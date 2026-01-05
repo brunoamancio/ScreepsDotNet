@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using System.Text.Json;
+using ScreepsDotNet.Backend.Http.Constants;
 
 namespace ScreepsDotNet.Backend.Http.Health;
 
@@ -7,14 +8,12 @@ public static class HealthCheckOptionsFactory
 {
     public const string HealthEndpoint = "/health";
 
-    private const string JsonContentType = "application/json";
-
     public static HealthCheckOptions Create()
         => new()
         {
             ResponseWriter = async (context, report) =>
             {
-                context.Response.ContentType = JsonContentType;
+                context.Response.ContentType = ContentTypes.Json;
 
                 var results = report.Entries.ToDictionary(
                     entry => entry.Key,

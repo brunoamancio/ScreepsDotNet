@@ -81,12 +81,21 @@ sealed file class FakeVersionInfoProvider : IVersionInfoProvider
 
 sealed file class FakeUserRepository : IUserRepository
 {
+    private static readonly IReadOnlyDictionary<string, object?> PublicBadge = new Dictionary<string, object?>
+    {
+        ["color1"] = "#ff0000",
+        ["color2"] = "#00ff00",
+        ["color3"] = "#0000ff",
+        ["type"] = 1,
+        ["param"] = 0
+    };
+
     private static readonly UserProfile Profile = new(AuthTestValues.UserId, AuthTestValues.Username, AuthTestValues.Email, false,
                                                       true, 100, null, DateTime.UtcNow.AddDays(-1), null, null, DateTime.UtcNow.AddHours(-2),
                                                       false, null, 0, 500, new UserSteamProfile(AuthTestValues.SteamId, "Test Player", null, false),
                                                       0, 0);
 
-    private static readonly UserPublicProfile PublicProfile = new(AuthTestValues.UserId, AuthTestValues.Username, null, null, 0, AuthTestValues.SteamId);
+    private static readonly UserPublicProfile PublicProfile = new(AuthTestValues.UserId, AuthTestValues.Username, PublicBadge, null, 0, AuthTestValues.SteamId);
 
     public Task<UserProfile?> GetProfileAsync(string userId, CancellationToken cancellationToken = default)
         => Task.FromResult<UserProfile?>(Profile);
@@ -123,8 +132,8 @@ internal sealed class FakeUserWorldRepository : IUserWorldRepository
 
 internal sealed class FakeUserCodeRepository : IUserCodeRepository
 {
-    private const string DefaultBranchName = "default";
     private const string DefaultModuleName = "main";
+    private const string DefaultBranchName = "default";
     private const string SimulationBranchName = "sim";
     private const string HelloWorldScript = "console.log('hello');";
     private const string SimulationLoopScript = "module.exports.loop = function() {};";
