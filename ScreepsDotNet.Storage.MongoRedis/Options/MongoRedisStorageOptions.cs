@@ -12,5 +12,9 @@ public sealed class MongoRedisStorageOptions
 
     public string ServerInfoDocumentId { get; init; } = "serverInfo";
 
+    public string UsersCollection { get; init; } = "users";
+
+    public string RoomsCollection { get; init; } = "rooms";
+
     public string RedisConnectionString { get; init; } = "localhost:6379";
 }

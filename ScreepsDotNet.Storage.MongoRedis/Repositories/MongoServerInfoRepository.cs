@@ -1,9 +1,9 @@
-using Microsoft.Extensions.Options;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using ScreepsDotNet.Backend.Core.Models;
 using ScreepsDotNet.Backend.Core.Repositories;
 using ScreepsDotNet.Storage.MongoRedis.Options;
+using ScreepsDotNet.Storage.MongoRedis.Providers;
 
 namespace ScreepsDotNet.Storage.MongoRedis.Repositories;
 
@@ -20,12 +20,10 @@ public sealed class MongoServerInfoRepository : IServerInfoRepository
     private readonly IMongoCollection<BsonDocument> _collection;
     private readonly MongoRedisStorageOptions _options;
 
-    public MongoServerInfoRepository(IOptions<MongoRedisStorageOptions> options)
+    public MongoServerInfoRepository(IMongoDatabaseProvider databaseProvider)
     {
-        _options = options.Value;
-        var client = new MongoClient(_options.MongoConnectionString);
-        var database = client.GetDatabase(_options.MongoDatabase);
-        _collection = database.GetCollection<BsonDocument>(_options.ServerInfoCollection);
+        _options = databaseProvider.Settings;
+        _collection = databaseProvider.GetCollection<BsonDocument>(_options.ServerInfoCollection);
     }
 
     public ServerInfo GetServerInfo()
