@@ -79,8 +79,17 @@ sealed file class FakeVersionInfoProvider : IVersionInfoProvider
         => Task.FromResult(_versionInfo);
 }
 
-sealed file class FakeUserRepository : IUserRepository
+internal sealed class FakeUserRepository : IUserRepository
 {
+    private readonly Dictionary<string, object?> _notifyPrefs = new(StringComparer.Ordinal)
+    {
+        ["disabled"] = false,
+        ["disabledOnMessages"] = false,
+        ["sendOnline"] = true,
+        ["interval"] = 60,
+        ["errorsInterval"] = 60
+    };
+
     private static readonly IReadOnlyDictionary<string, object?> PublicBadge = new Dictionary<string, object?>
     {
         ["color1"] = "#ff0000",
@@ -90,7 +99,7 @@ sealed file class FakeUserRepository : IUserRepository
         ["param"] = 0
     };
 
-    private static readonly UserProfile Profile = new(AuthTestValues.UserId, AuthTestValues.Username, AuthTestValues.Email, false,
+    private static readonly UserProfile BaseProfile = new(AuthTestValues.UserId, AuthTestValues.Username, AuthTestValues.Email, false,
                                                       true, 100, null, DateTime.UtcNow.AddDays(-1), null, null, DateTime.UtcNow.AddHours(-2),
                                                       false, null, 0, 500, new UserSteamProfile(AuthTestValues.SteamId, "Test Player", null, false),
                                                       0, 0);
@@ -98,13 +107,24 @@ sealed file class FakeUserRepository : IUserRepository
     private static readonly UserPublicProfile PublicProfile = new(AuthTestValues.UserId, AuthTestValues.Username, PublicBadge, null, 0, AuthTestValues.SteamId);
 
     public Task<UserProfile?> GetProfileAsync(string userId, CancellationToken cancellationToken = default)
-        => Task.FromResult<UserProfile?>(Profile);
+        => Task.FromResult<UserProfile?>(BaseProfile with { NotifyPrefs = new Dictionary<string, object?>(_notifyPrefs) });
 
     public Task<int> GetActiveUsersCountAsync(CancellationToken cancellationToken = default)
         => Task.FromResult(1);
 
     public Task<UserPublicProfile?> FindPublicProfileAsync(string? username, string? userId, CancellationToken cancellationToken = default)
         => Task.FromResult<UserPublicProfile?>(PublicProfile);
+
+    public Task UpdateNotifyPreferencesAsync(string userId, IDictionary<string, object?> notifyPreferences, CancellationToken cancellationToken = default)
+    {
+        _notifyPrefs.Clear();
+        foreach (var kvp in notifyPreferences)
+            _notifyPrefs[kvp.Key] = kvp.Value;
+
+        return Task.CompletedTask;
+    }
+
+    public IReadOnlyDictionary<string, object?> GetNotifyPreferencesSnapshot() => new Dictionary<string, object?>(_notifyPrefs);
 }
 
 sealed file class FakeRoomRepository : IRoomRepository

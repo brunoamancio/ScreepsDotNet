@@ -32,6 +32,19 @@ Accept: application/json
 ### User - Stats (public)
 GET {{ScreepsDotNet_Backend_Http_HostAddress}}/api/user/stats?interval=8
 Accept: application/json
+
 ### User - Badge SVG (public)
 GET {{ScreepsDotNet_Backend_Http_HostAddress}}/api/user/badge-svg?username=TestUser&border=1
 Accept: image/svg+xml
+
+### User - Notify Preferences (protected)
+POST {{ScreepsDotNet_Backend_Http_HostAddress}}/api/user/notify-prefs
+X-Token: {{ScreepsDotNet_User_Token}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "disabled": true,
+  "interval": 60,
+  "errorsInterval": 60
+}

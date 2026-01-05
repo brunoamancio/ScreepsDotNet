@@ -20,4 +20,10 @@ public static class UserResponseFields
     public const string Timestamp = "timestamp";
     public const string ActiveWorld = "activeWorld";
     public const string ActiveSim = "activeSim";
+    public const string NotifyPrefs = "notifyPrefs";
+    public const string NotifyDisabled = "disabled";
+    public const string NotifyDisabledOnMessages = "disabledOnMessages";
+    public const string NotifySendOnline = "sendOnline";
+    public const string NotifyInterval = "interval";
+    public const string NotifyErrorsInterval = "errorsInterval";
 }

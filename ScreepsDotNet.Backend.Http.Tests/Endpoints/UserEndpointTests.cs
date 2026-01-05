@@ -3,6 +3,7 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
 using ScreepsDotNet.Backend.Core.Repositories;
+using ScreepsDotNet.Backend.Http.Constants;
 using ScreepsDotNet.Backend.Http.Routing;
 using ScreepsDotNet.Backend.Http.Tests.Web;
 
@@ -12,6 +13,7 @@ public class UserEndpointTests : IClassFixture<TestWebApplicationFactory>
 {
     private readonly HttpClient _client;
     private readonly FakeUserWorldRepository _userWorldRepository;
+    private readonly FakeUserRepository _userRepository;
 
     private const string CustomControllerRoom = "W12N3";
     private const string RoomsQueryUserId = "user-1";
@@ -28,6 +30,7 @@ public class UserEndpointTests : IClassFixture<TestWebApplicationFactory>
         _client = factory.CreateClient();
         var services = factory.Services;
         _userWorldRepository = (FakeUserWorldRepository)services.GetRequiredService<IUserWorldRepository>();
+        _userRepository = (FakeUserRepository)services.GetRequiredService<IUserRepository>();
     }
 
     [Fact]
@@ -134,6 +137,29 @@ public class UserEndpointTests : IClassFixture<TestWebApplicationFactory>
     }
 
     [Fact]
+    public async Task UserNotifyPrefs_WithToken_UpdatesPreferences()
+    {
+        var token = await AuthenticateAsync();
+        var request = new HttpRequestMessage(HttpMethod.Post, ApiRoutes.User.NotifyPrefs);
+        request.Headers.TryAddWithoutValidation(AuthHeaderNames.Token, token);
+        var payload = new Dictionary<string, object?>
+        {
+            [UserResponseFields.NotifyDisabled] = true,
+            [UserResponseFields.NotifyInterval] = 10,
+            [UserResponseFields.NotifyErrorsInterval] = 30
+        };
+        request.Content = JsonContent.Create(payload);
+
+        var response = await _client.SendAsync(request);
+
+        response.EnsureSuccessStatusCode();
+        var snapshot = _userRepository.GetNotifyPreferencesSnapshot();
+        Assert.True(snapshot.TryGetValue(UserResponseFields.NotifyDisabled, out var disabledValue) && disabledValue is bool disabled && disabled);
+        Assert.True(snapshot.TryGetValue(UserResponseFields.NotifyInterval, out var intervalValue) && intervalValue is int interval && interval == 10);
+        Assert.True(snapshot.TryGetValue(UserResponseFields.NotifyErrorsInterval, out var errorsIntervalValue) && errorsIntervalValue is int errorsInterval && errorsInterval == 30);
+    }
+
+    [Fact]
     public async Task UserBadgeSvg_WithoutUsername_ReturnsBadRequest()
     {
         var response = await _client.GetAsync(ApiRoutes.User.BadgeSvg);
@@ -147,7 +173,7 @@ public class UserEndpointTests : IClassFixture<TestWebApplicationFactory>
         var response = await _client.GetAsync(ApiRoutes.User.BadgeSvg + UsernameQueryParameter);
 
         response.EnsureSuccessStatusCode();
-        Assert.Equal("image/svg+xml", response.Content.Headers.ContentType?.MediaType);
+        Assert.Equal(ContentTypes.Svg, response.Content.Headers.ContentType?.MediaType);
         var svg = await response.Content.ReadAsStringAsync();
         Assert.Contains("<svg", svg, StringComparison.OrdinalIgnoreCase);
     }

@@ -1,6 +1,10 @@
 namespace ScreepsDotNet.Backend.Http.Endpoints;
 
 using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text.Json;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using ScreepsDotNet.Backend.Core.Context;
@@ -58,6 +62,8 @@ internal static class UserEndpoints
     private const string RoomsEndpointName = "GetUserRooms";
     private const string BadgeSvgEndpointName = "GetUserBadgeSvg";
     private static readonly int[] AllowedStatsIntervals = [8, 180, 1440];
+    private static readonly int[] AllowedNotifyIntervals = [5, 10, 30, 60, 180, 360, 720, 1440, 4320];
+    private static readonly int[] AllowedNotifyErrorsIntervals = [0, 5, 10, 30, 60, 180, 360, 720, 1440, 4320, 100000];
 
     public static void Map(WebApplication app)
     {
@@ -77,7 +83,7 @@ internal static class UserEndpoints
         MapProtectedGet(app, ApiRoutes.User.MemorySegment, GetMemorySegmentEndpointName);
         MapProtectedPost(app, ApiRoutes.User.MemorySegment, PostMemorySegmentEndpointName);
         MapProtectedPost(app, ApiRoutes.User.Console, ConsoleEndpointName);
-        MapProtectedPost(app, ApiRoutes.User.NotifyPrefs, NotifyPrefsEndpointName);
+        MapProtectedNotifyPrefs(app);
         MapProtectedGet(app, ApiRoutes.User.Overview, OverviewEndpointName);
         MapProtectedPost(app, ApiRoutes.User.TutorialDone, TutorialDoneEndpointName);
         MapProtectedPost(app, ApiRoutes.User.Email, EmailEndpointName);
@@ -153,6 +159,34 @@ internal static class UserEndpoints
                    })
            .RequireTokenAuthentication()
            .WithName(BranchesEndpointName);
+    }
+
+    private static void MapProtectedNotifyPrefs(WebApplication app)
+    {
+        app.MapPost(ApiRoutes.User.NotifyPrefs,
+                    async ([FromBody] NotifyPreferencesRequest request,
+                           ICurrentUserAccessor userAccessor,
+                           IUserRepository userRepository,
+                           CancellationToken cancellationToken) =>
+                    {
+                        var user = RequireUser(userAccessor);
+                        var preferences = CreateNotifyPreferencesDictionary(user.NotifyPrefs);
+
+                        ApplyBooleanPreference(preferences, UserResponseFields.NotifyDisabled, request.Disabled);
+                        ApplyBooleanPreference(preferences, UserResponseFields.NotifyDisabledOnMessages, request.DisabledOnMessages);
+                        ApplyBooleanPreference(preferences, UserResponseFields.NotifySendOnline, request.SendOnline);
+                        ApplyIntervalPreference(preferences, UserResponseFields.NotifyInterval, request.Interval, AllowedNotifyIntervals);
+                        ApplyIntervalPreference(preferences, UserResponseFields.NotifyErrorsInterval, request.ErrorsInterval, AllowedNotifyErrorsIntervals);
+
+                        await userRepository.UpdateNotifyPreferencesAsync(user.Id, preferences, cancellationToken).ConfigureAwait(false);
+
+                        return Results.Ok(new Dictionary<string, object?>
+                        {
+                            [UserResponseFields.NotifyPrefs] = preferences
+                        });
+                    })
+           .RequireTokenAuthentication()
+           .WithName(NotifyPrefsEndpointName);
     }
 
     private static void MapProtectedCode(WebApplication app)
@@ -276,10 +310,6 @@ internal static class UserEndpoints
            .WithName(StatsEndpointName);
     }
 
-    private static void MapPublicGet(WebApplication app, string route, string name)
-        => app.MapGet(route, () => NotImplemented(route))
-              .WithName(name);
-
     private static IResult NotImplemented(string route)
         => Results.Json(new { error = NotImplementedError, route }, statusCode: StatusCodes.Status501NotImplemented);
 
@@ -288,4 +318,50 @@ internal static class UserEndpoints
 
     private static bool IsValidStatsInterval(int interval)
         => Array.IndexOf(AllowedStatsIntervals, interval) >= 0;
+
+    private static Dictionary<string, object?> CreateNotifyPreferencesDictionary(object? notifyPrefs)
+    {
+        switch (notifyPrefs) {
+            case IDictionary<string, object?> typedDictionary: return new Dictionary<string, object?>(typedDictionary, StringComparer.Ordinal);
+            case IDictionary dictionary: {
+                var result = new Dictionary<string, object?>(StringComparer.Ordinal);
+                foreach (DictionaryEntry entry in dictionary)
+                {
+                    if (entry.Key is string key)
+                        result[key] = entry.Value;
+                }
+                return result;
+            }
+            case JsonElement { ValueKind: JsonValueKind.Object } element: {
+                var result = new Dictionary<string, object?>(StringComparer.Ordinal);
+                foreach (var property in element.EnumerateObject())
+                    result[property.Name] = ConvertJsonElementValue(property.Value);
+                return result;
+            }
+            default: return new Dictionary<string, object?>(StringComparer.Ordinal);
+        }
+    }
+
+    private static object? ConvertJsonElementValue(JsonElement element)
+        => element.ValueKind switch
+        {
+            JsonValueKind.True => true,
+            JsonValueKind.False => false,
+            JsonValueKind.Number when element.TryGetInt32(out var intValue) => intValue,
+            JsonValueKind.String => element.GetString(),
+            _ => null
+        };
+
+    private static void ApplyBooleanPreference(IDictionary<string, object?> preferences, string key, bool? value)
+    {
+        if (value.HasValue)
+            preferences[key] = value.Value;
+    }
+
+    private static void ApplyIntervalPreference(IDictionary<string, object?> preferences, string key, int? value, int[] allowedValues)
+    {
+        if (value.HasValue && Array.IndexOf(allowedValues, value.Value) >= 0)
+            preferences[key] = value.Value;
+    }
+
 }

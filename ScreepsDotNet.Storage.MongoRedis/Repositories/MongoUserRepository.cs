@@ -162,4 +162,15 @@ public sealed class MongoUserRepository : IUserRepository
 
         return steamDoc.TryGetValue(SteamIdField, out var idValue) && idValue.IsString ? idValue.AsString : null;
     }
+
+    public Task UpdateNotifyPreferencesAsync(string userId, IDictionary<string, object?> notifyPreferences, CancellationToken cancellationToken = default)
+    {
+        var filter = Builders<BsonDocument>.Filter.Eq(IdField, userId);
+        var document = new BsonDocument();
+        foreach (var kvp in notifyPreferences)
+            document[kvp.Key] = kvp.Value is null ? BsonNull.Value : BsonValue.Create(kvp.Value);
+
+        var update = Builders<BsonDocument>.Update.Set(NotifyPrefsField, document);
+        return _collection.UpdateOneAsync(filter, update, cancellationToken: cancellationToken);
+    }
 }
