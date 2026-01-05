@@ -14,4 +14,10 @@ public static class UserResponseFields
     public const string Power = "power";
     public const string Steam = "steam";
     public const string SteamId = "id";
+    public const string List = "list";
+    public const string Branch = "branch";
+    public const string Modules = "modules";
+    public const string Timestamp = "timestamp";
+    public const string ActiveWorld = "activeWorld";
+    public const string ActiveSim = "activeSim";
 }

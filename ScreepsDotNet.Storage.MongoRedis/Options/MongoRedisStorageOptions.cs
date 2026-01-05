@@ -14,5 +14,7 @@ public sealed class MongoRedisStorageOptions
 
     public string RoomObjectsCollection { get; init; } = "rooms.objects";
 
+    public string UserCodeCollection { get; init; } = "users.code";
+
     public string RedisConnectionString { get; init; } = "localhost:6379";
 }

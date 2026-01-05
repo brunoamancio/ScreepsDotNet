@@ -11,6 +11,16 @@ GET {{ScreepsDotNet_Backend_Http_HostAddress}}/api/user/world-status
 X-Token: {{ScreepsDotNet_User_Token}}
 Accept: application/json
 
+### User - Branches (protected)
+GET {{ScreepsDotNet_Backend_Http_HostAddress}}/api/user/branches
+X-Token: {{ScreepsDotNet_User_Token}}
+Accept: application/json
+
+### User - Code (protected)
+GET {{ScreepsDotNet_Backend_Http_HostAddress}}/api/user/code?branch=default
+X-Token: {{ScreepsDotNet_User_Token}}
+Accept: application/json
+
 ### User - Find (public)
 GET {{ScreepsDotNet_Backend_Http_HostAddress}}/api/user/find?username=TestUser
 Accept: application/json
@@ -22,4 +32,3 @@ Accept: application/json
 ### User - Stats (public)
 GET {{ScreepsDotNet_Backend_Http_HostAddress}}/api/user/stats?interval=8
 Accept: application/json
-

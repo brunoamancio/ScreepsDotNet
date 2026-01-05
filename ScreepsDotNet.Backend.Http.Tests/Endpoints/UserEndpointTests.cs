@@ -133,6 +133,35 @@ public class UserEndpointTests : IClassFixture<TestWebApplicationFactory>
         Assert.True(payload.RootElement.TryGetProperty(UserResponseFields.Stats, out _));
     }
 
+    [Fact]
+    public async Task UserBranches_WithToken_ReturnsList()
+    {
+        var token = await AuthenticateAsync();
+        var request = new HttpRequestMessage(HttpMethod.Get, ApiRoutes.User.Branches);
+        request.Headers.TryAddWithoutValidation(AuthHeaderNames.Token, token);
+
+        var response = await _client.SendAsync(request);
+
+        response.EnsureSuccessStatusCode();
+        using var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        var list = payload.RootElement.GetProperty(UserResponseFields.List);
+        Assert.True(list.GetArrayLength() > 0);
+    }
+
+    [Fact]
+    public async Task UserCode_WithToken_ReturnsModules()
+    {
+        var token = await AuthenticateAsync();
+        var request = new HttpRequestMessage(HttpMethod.Get, ApiRoutes.User.Code);
+        request.Headers.TryAddWithoutValidation(AuthHeaderNames.Token, token);
+
+        var response = await _client.SendAsync(request);
+
+        response.EnsureSuccessStatusCode();
+        using var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        Assert.True(payload.RootElement.TryGetProperty(UserResponseFields.Modules, out _));
+    }
+
     private async Task<string> AuthenticateAsync()
     {
         var response = await _client.PostAsJsonAsync(ApiRoutes.AuthSteamTicket, new

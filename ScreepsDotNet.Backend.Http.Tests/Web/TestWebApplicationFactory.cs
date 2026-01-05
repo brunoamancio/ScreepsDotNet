@@ -21,6 +21,7 @@ public sealed class TestWebApplicationFactory : WebApplicationFactory<Program>
             services.RemoveAll<IUserRepository>();
             services.RemoveAll<IRoomRepository>();
             services.RemoveAll<IUserWorldRepository>();
+            services.RemoveAll<IUserCodeRepository>();
             services.RemoveAll<ITokenService>();
 
             services.AddSingleton<IStorageAdapter, FakeStorageAdapter>();
@@ -28,6 +29,7 @@ public sealed class TestWebApplicationFactory : WebApplicationFactory<Program>
             services.AddSingleton<IUserRepository, FakeUserRepository>();
             services.AddSingleton<IRoomRepository, FakeRoomRepository>();
             services.AddSingleton<IUserWorldRepository, FakeUserWorldRepository>();
+            services.AddSingleton<IUserCodeRepository, FakeUserCodeRepository>();
             services.AddSingleton<ITokenService, FakeTokenService>();
             services.Configure<AuthOptions>(options =>
             {
@@ -105,7 +107,7 @@ sealed file class FakeRoomRepository : IRoomRepository
 internal sealed class FakeUserWorldRepository : IUserWorldRepository
 {
     public string? ControllerRoom { get; set; } = "W10N10";
-    public IReadOnlyCollection<string> ControllerRooms { get; set; } = new[] { "W10N10" };
+    public IReadOnlyCollection<string> ControllerRooms { get; set; } = ["W10N10"];
 
     public UserWorldStatus WorldStatus { get; set; } = UserWorldStatus.Normal;
 
@@ -117,6 +119,34 @@ internal sealed class FakeUserWorldRepository : IUserWorldRepository
 
     public Task<IReadOnlyCollection<string>> GetControllerRoomsAsync(string userId, CancellationToken cancellationToken = default)
         => Task.FromResult(ControllerRooms);
+}
+
+internal sealed class FakeUserCodeRepository : IUserCodeRepository
+{
+    private const string DefaultBranchName = "default";
+    private const string DefaultModuleName = "main";
+    private const string SimulationBranchName = "sim";
+    private const string HelloWorldScript = "console.log('hello');";
+    private const string SimulationLoopScript = "module.exports.loop = function() {};";
+    private const string ActiveWorldBranchIdentifier = "$activeWorld";
+
+    private readonly List<UserCodeBranch> _branches =
+    [
+        new(DefaultBranchName, new Dictionary<string, string> { [DefaultModuleName] = HelloWorldScript }, DateTime.UtcNow, true, false),
+        new(SimulationBranchName, new Dictionary<string, string> { [DefaultModuleName] = SimulationLoopScript }, DateTime.UtcNow, false, true)
+    ];
+
+    public Task<IReadOnlyCollection<UserCodeBranch>> GetBranchesAsync(string userId, CancellationToken cancellationToken = default)
+        => Task.FromResult<IReadOnlyCollection<UserCodeBranch>>(_branches);
+
+    public Task<UserCodeBranch?> GetBranchAsync(string userId, string branchIdentifier, CancellationToken cancellationToken = default)
+    {
+        if (branchIdentifier.Equals(ActiveWorldBranchIdentifier, StringComparison.OrdinalIgnoreCase))
+            return Task.FromResult<UserCodeBranch?>(_branches.First());
+
+        var branch = _branches.FirstOrDefault(b => string.Equals(b.Branch, branchIdentifier, StringComparison.OrdinalIgnoreCase));
+        return Task.FromResult(branch);
+    }
 }
 
 sealed file class FakeTokenService : ITokenService

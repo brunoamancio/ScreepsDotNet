@@ -20,9 +20,11 @@ internal static class UserEndpoints
     private const string MissingUserIdMessage = "user id is required.";
     private const string UserNotFoundMessage = "user not found";
     private const string InvalidStatsIntervalMessage = "invalid params";
+    private const string NoCodeMessage = "no code";
 
     private const string DefaultWorldStartRoom = "W5N5";
 
+    private const string ActiveWorldIdentifier = "$activeWorld";
     private const string WorldStartRoomEndpointName = "GetUserWorldStartRoom";
     private const string WorldStatusEndpointName = "GetUserWorldStatus";
     private const string BranchesEndpointName = "GetUserBranches";
@@ -55,9 +57,9 @@ internal static class UserEndpoints
     {
         MapProtectedWorldStartRoom(app);
         MapProtectedWorldStatus(app);
-        MapProtectedGet(app, ApiRoutes.User.Branches, BranchesEndpointName);
+        MapProtectedBranches(app);
         MapProtectedPost(app, ApiRoutes.User.Code, PostCodeEndpointName);
-        MapProtectedGet(app, ApiRoutes.User.Code, GetCodeEndpointName);
+        MapProtectedCode(app);
         MapProtectedPost(app, ApiRoutes.User.Badge, BadgeEndpointName);
         MapProtectedGet(app, ApiRoutes.User.RespawnProhibitedRooms, RespawnProhibitedRoomsEndpointName);
         MapProtectedPost(app, ApiRoutes.User.Respawn, RespawnEndpointName);
@@ -118,6 +120,59 @@ internal static class UserEndpoints
         => app.MapPost(route, () => NotImplemented(route))
               .RequireTokenAuthentication()
               .WithName(name);
+
+    private static void MapProtectedBranches(WebApplication app)
+    {
+        app.MapGet(ApiRoutes.User.Branches,
+                   async (ICurrentUserAccessor userAccessor,
+                          IUserCodeRepository repository,
+                          CancellationToken cancellationToken) =>
+                   {
+                       var user = RequireUser(userAccessor);
+                       var branches = await repository.GetBranchesAsync(user.Id, cancellationToken).ConfigureAwait(false);
+
+                       var payload = branches.Select(branch => new Dictionary<string, object?>
+                       {
+                           [UserResponseFields.Branch] = branch.Branch,
+                           [UserResponseFields.Modules] = branch.Modules,
+                           [UserResponseFields.Timestamp] = branch.Timestamp,
+                           [UserResponseFields.ActiveWorld] = branch.ActiveWorld,
+                           [UserResponseFields.ActiveSim] = branch.ActiveSim
+                       });
+
+                       return Results.Ok(new Dictionary<string, object?>
+                       {
+                           [UserResponseFields.List] = payload
+                       });
+                   })
+           .RequireTokenAuthentication()
+           .WithName(BranchesEndpointName);
+    }
+
+    private static void MapProtectedCode(WebApplication app)
+    {
+        app.MapGet(ApiRoutes.User.Code,
+                   async ([FromQuery] string? branch,
+                          ICurrentUserAccessor userAccessor,
+                          IUserCodeRepository repository,
+                          CancellationToken cancellationToken) =>
+                   {
+                       var user = RequireUser(userAccessor);
+                       var branchName = branch ?? ActiveWorldIdentifier;
+                       var codeBranch = await repository.GetBranchAsync(user.Id, branchName, cancellationToken).ConfigureAwait(false);
+                       if (codeBranch is null)
+                           return Results.BadRequest(new ErrorResponse(NoCodeMessage));
+
+                       return Results.Ok(new Dictionary<string, object?>
+                       {
+                           [UserResponseFields.Branch] = codeBranch.Branch,
+                           [UserResponseFields.Modules] = codeBranch.Modules
+                       });
+                   })
+           .RequireTokenAuthentication()
+           .WithName(GetCodeEndpointName);
+    }
+
 
     private static void MapPublicFind(WebApplication app)
     {
