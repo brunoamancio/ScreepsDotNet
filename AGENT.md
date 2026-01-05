@@ -21,13 +21,15 @@
 ## Local Development Workflow
 
 1. **Dependencies:** .NET 10 SDK, Docker Desktop (for Mongo/Redis), PowerShell.
-2. **Start infrastructure:**  
+2. **Start infrastructure (also seeds Mongo/Redis):**  
    ```powershell
    cd ScreepsDotNet
    docker compose up -d
    ```
-   - Seeds Mongo automatically via `docker/mongo-init/seed-server-info.js`.
-   - Uses Mongo 7.0 on `localhost:27017`, Redis 7.2 on `localhost:16379`.
+   - Mongo 7.0 (`localhost:27017`) + Redis 7.2 (`localhost:16379`).
+   - Every `docker compose up` seeds:
+     - `docker/mongo-init/seed-server-info.js` – `/api/server/info` fixture data.
+     - `docker/mongo-init/seed-users.js` – canonical `test-user` profile, owned rooms, sample notify prefs, etc., for exercising `/api/user/*` routes.
 3. **Run backend:**  
    ```powershell
    dotnet run --project ScreepsDotNet.Backend.Http/ScreepsDotNet.Backend.Http.csproj
@@ -41,6 +43,22 @@
    - `GET http://localhost:5210/health`
    - `GET http://localhost:5210/api/server/info`
 6. **Build:** ensure no running `dotnet run` locks DLLs before invoking `dotnet build`.
+
+### Resetting / Updating Seed Data
+
+- All Mongo scripts inside `docker/mongo-init` run only when the container initializes an empty volume.
+- When schemas or seed files change, do a clean reset so everyone picks up the new baseline:
+  ```powershell
+  docker compose down -v      # stops containers and removes mongo-data / redis-data volumes
+  docker compose up -d        # recreates services and reruns all init scripts
+  docker compose logs -f mongo  # optional: verify each seed script finished without errors
+  ```
+- To tweak seed data locally without nuking Redis, remove only the Mongo volume:
+  ```powershell
+  docker volume rm screepsdotnet_mongo-data
+  docker compose up -d mongo
+  ```
+- Document any new collections in both a seed script and this section so future agents know how to refresh their environment quickly.
 
 ## Configuration
 
