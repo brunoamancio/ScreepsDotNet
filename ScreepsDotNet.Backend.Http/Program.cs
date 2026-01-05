@@ -1,7 +1,9 @@
 using ScreepsDotNet.Backend.Core.Configuration;
+using ScreepsDotNet.Backend.Core.Context;
 using ScreepsDotNet.Backend.Core.Repositories;
 using ScreepsDotNet.Backend.Core.Services;
 using ScreepsDotNet.Backend.Core.Storage;
+using ScreepsDotNet.Backend.Http.Authentication;
 using ScreepsDotNet.Backend.Http.Endpoints;
 using ScreepsDotNet.Backend.Http.Health;
 using ScreepsDotNet.Storage.MongoRedis.Adapters;
@@ -24,6 +26,7 @@ builder.Services.AddSingleton<IUserRepository, MongoUserRepository>();
 builder.Services.AddSingleton<IRoomRepository, MongoRoomRepository>();
 builder.Services.AddSingleton<IVersionInfoProvider, VersionInfoProvider>();
 builder.Services.AddSingleton<ITokenService, RedisTokenService>();
+builder.Services.AddScoped<ICurrentUserAccessor, CurrentUserAccessor>();
 builder.Services.AddHealthChecks().AddCheck<StorageHealthCheck>(StorageHealthCheck.HealthCheckName);
 
 var app = builder.Build();
