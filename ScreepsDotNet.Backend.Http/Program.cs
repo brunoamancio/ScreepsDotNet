@@ -1,9 +1,12 @@
+using ScreepsDotNet.Backend.Core.Configuration;
+using ScreepsDotNet.Backend.Core.Services;
 using ScreepsDotNet.Backend.Http.Endpoints;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
+builder.Services.Configure<ServerInfoOptions>(builder.Configuration.GetSection(ServerInfoOptions.SectionName));
+builder.Services.AddSingleton<IServerInfoProvider, InMemoryServerInfoProvider>();
 
 var app = builder.Build();
 
