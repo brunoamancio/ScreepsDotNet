@@ -10,3 +10,12 @@ internal static class VersionTestValues
     public const int HistoryChunkSize = 20;
     public const int SocketUpdateThrottle = 100;
 }
+
+internal static class AuthTestValues
+{
+    public const string UserId = "test-user";
+    public const string Username = "TestUser";
+    public const string Email = "test@screeps.local";
+    public const string Ticket = "test-ticket";
+    public const string SteamId = "90071992547409920";
+}

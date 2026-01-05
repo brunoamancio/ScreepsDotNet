@@ -8,6 +8,7 @@ using ScreepsDotNet.Storage.MongoRedis.Adapters;
 using ScreepsDotNet.Storage.MongoRedis.Options;
 using ScreepsDotNet.Storage.MongoRedis.Providers;
 using ScreepsDotNet.Storage.MongoRedis.Repositories;
+using ScreepsDotNet.Storage.MongoRedis.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -15,11 +16,14 @@ builder.Services.AddOpenApi();
 builder.Services.Configure<ServerDataOptions>(builder.Configuration.GetSection(ServerDataOptions.SectionName));
 builder.Services.Configure<VersionInfoOptions>(builder.Configuration.GetSection(VersionInfoOptions.SectionName));
 builder.Services.Configure<MongoRedisStorageOptions>(builder.Configuration.GetSection(MongoRedisStorageOptions.SectionName));
+builder.Services.Configure<AuthOptions>(builder.Configuration.GetSection(AuthOptions.SectionName));
 builder.Services.AddSingleton<IStorageAdapter, MongoRedisStorageAdapter>();
 builder.Services.AddSingleton<IMongoDatabaseProvider, MongoDatabaseProvider>();
+builder.Services.AddSingleton<IRedisConnectionProvider, RedisConnectionProvider>();
 builder.Services.AddSingleton<IUserRepository, MongoUserRepository>();
 builder.Services.AddSingleton<IRoomRepository, MongoRoomRepository>();
 builder.Services.AddSingleton<IVersionInfoProvider, VersionInfoProvider>();
+builder.Services.AddSingleton<ITokenService, RedisTokenService>();
 builder.Services.AddHealthChecks().AddCheck<StorageHealthCheck>(StorageHealthCheck.HealthCheckName);
 
 var app = builder.Build();

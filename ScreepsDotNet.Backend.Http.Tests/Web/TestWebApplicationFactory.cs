@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using ScreepsDotNet.Backend.Core.Configuration;
 using ScreepsDotNet.Backend.Core.Models;
 using ScreepsDotNet.Backend.Core.Repositories;
 using ScreepsDotNet.Backend.Core.Services;
@@ -19,11 +20,27 @@ public sealed class TestWebApplicationFactory : WebApplicationFactory<Program>
             services.RemoveAll<IVersionInfoProvider>();
             services.RemoveAll<IUserRepository>();
             services.RemoveAll<IRoomRepository>();
+            services.RemoveAll<ITokenService>();
 
             services.AddSingleton<IStorageAdapter, FakeStorageAdapter>();
             services.AddSingleton<IVersionInfoProvider, FakeVersionInfoProvider>();
             services.AddSingleton<IUserRepository, FakeUserRepository>();
             services.AddSingleton<IRoomRepository, FakeRoomRepository>();
+            services.AddSingleton<ITokenService, FakeTokenService>();
+            services.Configure<AuthOptions>(options =>
+            {
+                options.UseNativeAuth = false;
+                options.TokenTtlSeconds = 60;
+                options.Tickets = new List<AuthTicketOptions>
+                {
+                    new()
+                    {
+                        Ticket = AuthTestValues.Ticket,
+                        UserId = AuthTestValues.UserId,
+                        SteamId = AuthTestValues.SteamId
+                    }
+                };
+            });
         });
     }
 }
@@ -60,6 +77,29 @@ sealed file class FakeVersionInfoProvider : IVersionInfoProvider
 
 sealed file class FakeUserRepository : IUserRepository
 {
+    private static readonly UserProfile Profile = new(
+        AuthTestValues.UserId,
+        AuthTestValues.Username,
+        AuthTestValues.Email,
+        false,
+        true,
+        100,
+        null,
+        DateTime.UtcNow.AddDays(-1),
+        null,
+        null,
+        DateTime.UtcNow.AddHours(-2),
+        false,
+        null,
+        0,
+        500,
+        new UserSteamProfile(AuthTestValues.SteamId, "Test Player", null, false),
+        0,
+        0);
+
+    public Task<UserProfile?> GetProfileAsync(string userId, CancellationToken cancellationToken = default)
+        => Task.FromResult<UserProfile?>(Profile);
+
     public Task<int> GetActiveUsersCountAsync(CancellationToken cancellationToken = default)
         => Task.FromResult(1);
 }
@@ -68,4 +108,15 @@ sealed file class FakeRoomRepository : IRoomRepository
 {
     public Task<IReadOnlyCollection<RoomSummary>> GetOwnedRoomsAsync(CancellationToken cancellationToken = default)
         => Task.FromResult<IReadOnlyCollection<RoomSummary>>(Array.Empty<RoomSummary>());
+}
+
+sealed file class FakeTokenService : ITokenService
+{
+    public const string ValidToken = "test-token";
+
+    public Task<string> IssueTokenAsync(string userId, CancellationToken cancellationToken = default)
+        => Task.FromResult(ValidToken);
+
+    public Task<string?> ResolveUserIdAsync(string token, CancellationToken cancellationToken = default)
+        => Task.FromResult(token == ValidToken ? AuthTestValues.UserId : null);
 }

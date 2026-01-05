@@ -4,8 +4,23 @@
 GET {{ScreepsDotNet_Backend_Http_HostAddress}}/health
 Accept: application/json
 
-### Server info
-GET {{ScreepsDotNet_Backend_Http_HostAddress}}/api/server/info
+### Version
+GET {{ScreepsDotNet_Backend_Http_HostAddress}}/api/version
 Accept: application/json
+
+### Auth - Steam Ticket
+POST {{ScreepsDotNet_Backend_Http_HostAddress}}/api/auth/steam-ticket
+Content-Type: application/json
+Accept: application/json
+
+{
+  "ticket": "dev-ticket",
+  "useNativeAuth": false
+}
+
+### Auth - Me
+GET {{ScreepsDotNet_Backend_Http_HostAddress}}/api/auth/me
+Accept: application/json
+X-Token: {{$dotenv token}}
 
 ###

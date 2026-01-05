@@ -1,15 +1,14 @@
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using ScreepsDotNet.Backend.Core.Models;
 using ScreepsDotNet.Backend.Core.Storage;
-using ScreepsDotNet.Storage.MongoRedis.Options;
+using ScreepsDotNet.Storage.MongoRedis.Providers;
 using StackExchange.Redis;
 
 namespace ScreepsDotNet.Storage.MongoRedis.Adapters;
 
-public sealed class MongoRedisStorageAdapter : IStorageAdapter, IDisposable
+public sealed class MongoRedisStorageAdapter : IStorageAdapter
 {
     private const string MongoPingErrorMessage = "MongoDB ping failed";
     private const string RedisPingErrorMessage = "Redis ping failed";
@@ -18,15 +17,11 @@ public sealed class MongoRedisStorageAdapter : IStorageAdapter, IDisposable
     private readonly IMongoDatabase _database;
     private readonly IConnectionMultiplexer _redis;
 
-    public MongoRedisStorageAdapter(IOptions<MongoRedisStorageOptions> options, ILogger<MongoRedisStorageAdapter> logger)
+    public MongoRedisStorageAdapter(IMongoDatabaseProvider databaseProvider, IRedisConnectionProvider redisConnectionProvider, ILogger<MongoRedisStorageAdapter> logger)
     {
         _logger = logger;
-        var settings = options.Value;
-
-        var mongoClient = new MongoClient(settings.MongoConnectionString);
-        _database = mongoClient.GetDatabase(settings.MongoDatabase);
-
-        _redis = ConnectionMultiplexer.Connect(settings.RedisConnectionString);
+        _database = databaseProvider.GetDatabase();
+        _redis = redisConnectionProvider.GetConnection();
     }
 
     public async Task<StorageStatus> GetStatusAsync(CancellationToken cancellationToken = default)
@@ -71,6 +66,4 @@ public sealed class MongoRedisStorageAdapter : IStorageAdapter, IDisposable
         }
     }
 
-    public void Dispose()
-        => _redis.Dispose();
 }
