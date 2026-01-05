@@ -17,10 +17,22 @@ Accept: application/json
   "ticket": "dev-ticket",
   "useNativeAuth": false
 }
+> {%
+    if (response.status === 200 && response.body?.token) {
+        client.global.set("authToken", response.body.token);
+    } else {
+        client.log("Auth token not captured. Check steam-ticket response.");
+    }
+%}
 
 ### Auth - Me
 GET {{ScreepsDotNet_Backend_Http_HostAddress}}/api/auth/me
 Accept: application/json
-X-Token: {{$dotenv token}}
+X-Token: {{authToken}}
+
+### Auth - Me (Invalid token sample)
+GET {{ScreepsDotNet_Backend_Http_HostAddress}}/api/auth/me
+Accept: application/json
+X-Token: invalid-token
 
 ###

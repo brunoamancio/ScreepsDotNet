@@ -46,6 +46,20 @@ public class AuthEndpointTests : IClassFixture<TestWebApplicationFactory>
     }
 
     [Fact]
+    public async Task SteamTicket_InvalidTicket_ReturnsBadRequest()
+    {
+        var response = await _client.PostAsJsonAsync(ApiRoutes.AuthSteamTicket, new
+        {
+            ticket = "invalid-ticket",
+            useNativeAuth = false
+        });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        using var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        Assert.Equal(AuthResponseMessages.CouldNotAuthenticate, payload.RootElement.GetProperty(AuthResponseFields.Error).GetString());
+    }
+
+    [Fact]
     public async Task AuthMe_MissingTokenHeader_ReturnsUnauthorized()
     {
         var response = await _client.GetAsync(ApiRoutes.AuthMe);
