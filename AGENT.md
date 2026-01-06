@@ -48,6 +48,7 @@
 ### Resetting / Updating Seed Data
 
 - All Mongo scripts inside `docker/mongo-init` run only when the container initializes an empty volume.
+- `docker/mongo-init/seed-users.js` inserts/updates the canonical `test-user` document plus sample controller/spawn objects that power `/api/user/world-*` endpoints. The newer HTTP routes (code/memory/console) lazily create their own per-user documents once you hit them.
 - When schemas or seed files change, do a clean reset so everyone picks up the new baseline:
   ```powershell
   docker compose down -v      # stops containers and removes mongo-data / redis-data volumes
@@ -83,6 +84,7 @@
 - Storage projects now centralize Mongo/BSON plumbing:
   - `Extensions/ModuleDictionaryExtensions.cs` – converts user-code module maps to mutable dictionaries / BSON documents.
   - `Extensions/BsonDocumentExtensions.cs` – shared helpers for string/number/datetime accessors; use these instead of ad-hoc `TryGetValue` blocks in repositories.
+- User API smoke tests live in `ScreepsDotNet.Backend.Http/UserEndpoints.http`. Always update this file (and `ScreepsDotNet/README.md`) whenever you add/rename an endpoint so new agents can exercise the API immediately.
 
 ## Pending / Next Steps
 
