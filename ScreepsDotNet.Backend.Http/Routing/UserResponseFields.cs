@@ -26,4 +26,7 @@ public static class UserResponseFields
     public const string NotifySendOnline = "sendOnline";
     public const string NotifyInterval = "interval";
     public const string NotifyErrorsInterval = "errorsInterval";
+    public const string StatsMax = "statsMax";
+    public const string Totals = "totals";
+    public const string GameTimes = "gametimes";
 }

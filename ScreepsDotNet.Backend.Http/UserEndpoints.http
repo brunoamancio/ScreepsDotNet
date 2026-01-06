@@ -53,3 +53,13 @@ Accept: application/json
   "interval": 60,
   "errorsInterval": 60
 }
+
+### User - Overview (protected)
+GET {{ScreepsDotNet_Backend_Http_HostAddress}}/api/user/overview?interval=8&statName=energyHarvested
+X-Token: {{ScreepsDotNet_User_Token}}
+Accept: application/json
+
+### User - Tutorial Done (protected)
+POST {{ScreepsDotNet_Backend_Http_HostAddress}}/api/user/tutorial-done
+X-Token: {{ScreepsDotNet_User_Token}}
+Accept: application/json

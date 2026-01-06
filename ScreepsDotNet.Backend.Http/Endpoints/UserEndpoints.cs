@@ -61,6 +61,7 @@ internal static class UserEndpoints
     private const string StatsEndpointName = "GetUserStats";
     private const string RoomsEndpointName = "GetUserRooms";
     private const string BadgeSvgEndpointName = "GetUserBadgeSvg";
+    private const string DefaultOverviewStatName = "energyHarvested";
     private static readonly int[] AllowedStatsIntervals = [8, 180, 1440];
     private static readonly int[] AllowedNotifyIntervals = [5, 10, 30, 60, 180, 360, 720, 1440, 4320];
     private static readonly int[] AllowedNotifyErrorsIntervals = [0, 5, 10, 30, 60, 180, 360, 720, 1440, 4320, 100000];
@@ -84,8 +85,8 @@ internal static class UserEndpoints
         MapProtectedPost(app, ApiRoutes.User.MemorySegment, PostMemorySegmentEndpointName);
         MapProtectedPost(app, ApiRoutes.User.Console, ConsoleEndpointName);
         MapProtectedNotifyPrefs(app);
-        MapProtectedGet(app, ApiRoutes.User.Overview, OverviewEndpointName);
-        MapProtectedPost(app, ApiRoutes.User.TutorialDone, TutorialDoneEndpointName);
+        MapProtectedOverview(app);
+        MapProtectedTutorialDone(app);
         MapProtectedPost(app, ApiRoutes.User.Email, EmailEndpointName);
         MapProtectedGet(app, ApiRoutes.User.MoneyHistory, MoneyHistoryEndpointName);
         MapProtectedPost(app, ApiRoutes.User.SetSteamVisible, SetSteamVisibleEndpointName);
@@ -187,6 +188,46 @@ internal static class UserEndpoints
                     })
            .RequireTokenAuthentication()
            .WithName(NotifyPrefsEndpointName);
+    }
+
+    private static void MapProtectedOverview(WebApplication app)
+    {
+        app.MapGet(ApiRoutes.User.Overview,
+                   (ICurrentUserAccessor userAccessor,
+                    [FromQuery] int? interval,
+                    [FromQuery] string? statName) =>
+                   {
+                       RequireUser(userAccessor);
+                       var intervalValue = interval ?? AllowedStatsIntervals[0];
+                       if (!IsValidStatsInterval(intervalValue))
+                           return Results.BadRequest(new ErrorResponse(InvalidStatsIntervalMessage));
+
+                       // Accept parameter to keep parity with Node backend even if unused for now.
+                       var _ = string.IsNullOrWhiteSpace(statName) ? DefaultOverviewStatName : statName;
+
+                       return Results.Ok(new Dictionary<string, object?>
+                       {
+                           [UserResponseFields.Rooms] = Array.Empty<string>(),
+                           [UserResponseFields.Stats] = new Dictionary<string, object?>(),
+                           [UserResponseFields.StatsMax] = null,
+                           [UserResponseFields.Totals] = new Dictionary<string, object?>(),
+                           [UserResponseFields.GameTimes] = Array.Empty<object>()
+                       });
+                   })
+           .RequireTokenAuthentication()
+           .WithName(OverviewEndpointName);
+    }
+
+    private static void MapProtectedTutorialDone(WebApplication app)
+    {
+        app.MapPost(ApiRoutes.User.TutorialDone,
+                    (ICurrentUserAccessor userAccessor) =>
+                    {
+                        RequireUser(userAccessor);
+                        return Results.Ok(new Dictionary<string, object?>());
+                    })
+           .RequireTokenAuthentication()
+           .WithName(TutorialDoneEndpointName);
     }
 
     private static void MapProtectedCode(WebApplication app)

@@ -88,7 +88,53 @@ public class UserEndpointTests : IClassFixture<TestWebApplicationFactory>
 
         response.EnsureSuccessStatusCode();
         using var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
-        Assert.Equal(0, payload.RootElement.GetProperty(UserResponseFields.Rooms).GetArrayLength());
+        Assert.Empty(payload.RootElement.GetProperty(UserResponseFields.Rooms).EnumerateArray());
+    }
+
+    [Fact]
+    public async Task UserOverview_WithValidInterval_ReturnsDefaultPayload()
+    {
+        var token = await AuthenticateAsync();
+        var request = new HttpRequestMessage(HttpMethod.Get, ApiRoutes.User.Overview + "?interval=8&statName=energyHarvested");
+        request.Headers.TryAddWithoutValidation(AuthHeaderNames.Token, token);
+
+        var response = await _client.SendAsync(request);
+
+        response.EnsureSuccessStatusCode();
+        using var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        var root = payload.RootElement;
+        Assert.Empty(root.GetProperty(UserResponseFields.Rooms).EnumerateArray());
+        Assert.True(root.GetProperty(UserResponseFields.Stats).ValueKind == JsonValueKind.Object);
+        Assert.True(root.GetProperty(UserResponseFields.Totals).ValueKind == JsonValueKind.Object);
+        Assert.Empty(root.GetProperty(UserResponseFields.GameTimes).EnumerateArray());
+        Assert.Equal(JsonValueKind.Null, root.GetProperty(UserResponseFields.StatsMax).ValueKind);
+    }
+
+    [Fact]
+    public async Task UserOverview_InvalidInterval_ReturnsBadRequest()
+    {
+        var token = await AuthenticateAsync();
+        var request = new HttpRequestMessage(HttpMethod.Get, ApiRoutes.User.Overview + "?interval=5");
+        request.Headers.TryAddWithoutValidation(AuthHeaderNames.Token, token);
+
+        var response = await _client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task UserTutorialDone_WithToken_ReturnsEmptyPayload()
+    {
+        var token = await AuthenticateAsync();
+        var request = new HttpRequestMessage(HttpMethod.Post, ApiRoutes.User.TutorialDone);
+        request.Headers.TryAddWithoutValidation(AuthHeaderNames.Token, token);
+
+        var response = await _client.SendAsync(request);
+
+        response.EnsureSuccessStatusCode();
+        using var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        Assert.Equal(JsonValueKind.Object, payload.RootElement.ValueKind);
+        Assert.Empty(payload.RootElement.EnumerateObject());
     }
 
     [Fact]
