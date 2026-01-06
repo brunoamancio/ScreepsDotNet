@@ -74,6 +74,14 @@
 - Health and endpoint logic extracted into dedicated classes to keep `Program.cs` minimal.
 - Constants used for repeated strings (routes, content types, field names).
 - JetBrains Rider/ReSharper rules are stored in `ScreepsDotNet.slnx.DotSettings` (solution-level). Keep this file updated when adding new inspections; don’t delete it since it enforces shared inspection severity.
+- Tests now share helper modules under `ScreepsDotNet.Backend.Http.Tests`:
+  - `TestSupport/RepositoryPathHelper.cs` – locate repo root when tests need to emit artifacts (badge gallery, etc.).
+  - `Rendering/Helpers/BadgeSampleFactory.cs` – builds consistent badge payloads (numeric + custom samples) and exposes the `BadgeSample`/`BadgePayload` types.
+  - `Rendering/Helpers/BadgeGalleryMarkdownBuilder.cs` – generates the markdown table stored in `docs/badges/BadgeGallery.md`.
+  Reuse these helpers instead of re-serializing badges or duplicating file-system logic in new tests.
+- Storage projects now centralize Mongo/BSON plumbing:
+  - `Extensions/ModuleDictionaryExtensions.cs` – converts user-code module maps to mutable dictionaries / BSON documents.
+  - `Extensions/BsonDocumentExtensions.cs` – shared helpers for string/number/datetime accessors; use these instead of ad-hoc `TryGetValue` blocks in repositories.
 
 ## Pending / Next Steps
 
