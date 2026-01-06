@@ -2,6 +2,7 @@ using MongoDB.Bson;
 using MongoDB.Driver;
 using ScreepsDotNet.Backend.Core.Models;
 using ScreepsDotNet.Backend.Core.Repositories;
+using ScreepsDotNet.Storage.MongoRedis.Extensions;
 using ScreepsDotNet.Storage.MongoRedis.Providers;
 
 namespace ScreepsDotNet.Storage.MongoRedis.Repositories;
@@ -19,6 +20,7 @@ public sealed class MongoUserCodeRepository : IUserCodeRepository
     private const string ActivePrefix = "$";
     private const string ActiveWorldIdentifier = "$activeWorld";
     private const string ActiveSimIdentifier = "$activeSim";
+    private const int MaxBranchCount = 30;
 
     private readonly IMongoCollection<BsonDocument> _collection;
 
@@ -47,6 +49,102 @@ public sealed class MongoUserCodeRepository : IUserCodeRepository
 
         var document = await _collection.Find(branchFilter).FirstOrDefaultAsync(cancellationToken).ConfigureAwait(false);
         return document is null ? null : ToBranch(document);
+    }
+
+    public async Task<bool> UpdateBranchModulesAsync(string userId, string branchIdentifier, IDictionary<string, string> modules, CancellationToken cancellationToken = default)
+    {
+        var filter = BuildBranchFilter(userId, branchIdentifier);
+        if (filter is null)
+            return false;
+
+        var update = Builders<BsonDocument>.Update
+            .Set(ModulesField, modules.ToModulesDocument())
+            .Set(TimestampField, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
+
+        var result = await _collection.UpdateOneAsync(filter, update, cancellationToken: cancellationToken).ConfigureAwait(false);
+        return result.ModifiedCount > 0;
+    }
+
+    public async Task<bool> SetActiveBranchAsync(string userId, string branchName, string activeName, CancellationToken cancellationToken = default)
+    {
+        var targetField = activeName.Equals(ActiveWorldField, StringComparison.OrdinalIgnoreCase)
+            ? ActiveWorldField
+            : activeName.Equals(ActiveSimField, StringComparison.OrdinalIgnoreCase)
+                ? ActiveSimField
+                : null;
+
+        if (targetField is null)
+            return false;
+
+        var userFilter = Builders<BsonDocument>.Filter.Eq(UserField, userId);
+        var branchFilter = Builders<BsonDocument>.Filter.And(userFilter, Builders<BsonDocument>.Filter.Eq(BranchField, branchName));
+
+        var update = Builders<BsonDocument>.Update
+            .Set(targetField, true)
+            .Set(TimestampField, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
+
+        var result = await _collection.UpdateOneAsync(branchFilter, update, cancellationToken: cancellationToken).ConfigureAwait(false);
+        if (result.ModifiedCount == 0)
+            return false;
+
+        var resetFilter = Builders<BsonDocument>.Filter.And(userFilter, Builders<BsonDocument>.Filter.Ne(BranchField, branchName));
+        var resetUpdate = Builders<BsonDocument>.Update.Set(targetField, false);
+        await _collection.UpdateManyAsync(resetFilter, resetUpdate, cancellationToken: cancellationToken).ConfigureAwait(false);
+
+        return true;
+    }
+
+    public async Task<bool> CloneBranchAsync(string userId, string? sourceBranch, string newBranchName, IDictionary<string, string>? defaultModules, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(newBranchName) || newBranchName.Length > 30)
+            return false;
+
+        var userFilter = Builders<BsonDocument>.Filter.Eq(UserField, userId);
+        var existingFilter = Builders<BsonDocument>.Filter.And(userFilter, Builders<BsonDocument>.Filter.Eq(BranchField, newBranchName));
+        var existing = await _collection.Find(existingFilter).FirstOrDefaultAsync(cancellationToken).ConfigureAwait(false);
+        if (existing is not null)
+            return false;
+
+        var branchCount = await _collection.CountDocumentsAsync(userFilter, cancellationToken: cancellationToken).ConfigureAwait(false);
+        if (branchCount >= MaxBranchCount)
+            return false;
+
+        IReadOnlyDictionary<string, string>? modules = null;
+        if (!string.IsNullOrWhiteSpace(sourceBranch))
+        {
+            var source = await GetBranchAsync(userId, sourceBranch, cancellationToken).ConfigureAwait(false);
+            modules = source?.Modules;
+        }
+
+        modules ??= defaultModules is not null
+            ? new Dictionary<string, string>(defaultModules, StringComparer.Ordinal)
+            : new Dictionary<string, string>(StringComparer.Ordinal) { [DefaultModuleName] = string.Empty };
+
+        var document = new BsonDocument
+        {
+            { UserField, userId },
+            { BranchField, newBranchName },
+            { ModulesField, modules.ToMutableModuleDictionary().ToModulesDocument() },
+            { TimestampField, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() },
+            { ActiveWorldField, false },
+            { ActiveSimField, false }
+        };
+
+        await _collection.InsertOneAsync(document, cancellationToken: cancellationToken).ConfigureAwait(false);
+        return true;
+    }
+
+    public async Task<bool> DeleteBranchAsync(string userId, string branchName, CancellationToken cancellationToken = default)
+    {
+        var userFilter = Builders<BsonDocument>.Filter.Eq(UserField, userId);
+        var deleteFilter = Builders<BsonDocument>.Filter.And(
+            userFilter,
+            Builders<BsonDocument>.Filter.Eq(BranchField, branchName),
+            Builders<BsonDocument>.Filter.Ne(ActiveWorldField, true),
+            Builders<BsonDocument>.Filter.Ne(ActiveSimField, true));
+
+        var result = await _collection.DeleteOneAsync(deleteFilter, cancellationToken).ConfigureAwait(false);
+        return result.DeletedCount > 0;
     }
 
     private static FilterDefinition<BsonDocument>? BuildBranchFilter(string userId, string branchIdentifier)

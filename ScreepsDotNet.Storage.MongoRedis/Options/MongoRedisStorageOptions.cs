@@ -16,5 +16,9 @@ public sealed class MongoRedisStorageOptions
 
     public string UserCodeCollection { get; init; } = "users.code";
 
+    public string UserMemoryCollection { get; init; } = "users.memory";
+
+    public string UserConsoleCollection { get; init; } = "users.console";
+
     public string RedisConnectionString { get; init; } = "localhost:6379";
 }
