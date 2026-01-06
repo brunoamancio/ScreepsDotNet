@@ -28,6 +28,7 @@ public sealed class TestWebApplicationFactory : WebApplicationFactory<Program>
             services.RemoveAll<IUserMemoryRepository>();
             services.RemoveAll<IUserConsoleRepository>();
             services.RemoveAll<IUserMoneyRepository>();
+            services.RemoveAll<IUserRespawnService>();
             services.RemoveAll<ITokenService>();
 
             services.AddSingleton<IStorageAdapter, FakeStorageAdapter>();
@@ -39,6 +40,7 @@ public sealed class TestWebApplicationFactory : WebApplicationFactory<Program>
             services.AddSingleton<IUserMemoryRepository, FakeUserMemoryRepository>();
             services.AddSingleton<IUserConsoleRepository, FakeUserConsoleRepository>();
             services.AddSingleton<IUserMoneyRepository, FakeUserMoneyRepository>();
+            services.AddSingleton<IUserRespawnService, FakeUserRespawnService>();
             services.AddSingleton<ITokenService, FakeTokenService>();
             services.Configure<AuthOptions>(options =>
             {
@@ -552,6 +554,14 @@ internal sealed class FakeUserMoneyRepository : IUserMoneyRepository
 
     public Task<MoneyHistoryPage> GetHistoryAsync(string userId, int page, int pageSize, CancellationToken cancellationToken = default)
         => Task.FromResult(new MoneyHistoryPage(page, false, _entries));
+}
+
+internal sealed class FakeUserRespawnService : IUserRespawnService
+{
+    public UserRespawnResult NextResult { get; set; } = UserRespawnResult.Success;
+
+    public Task<UserRespawnResult> RespawnAsync(string userId, CancellationToken cancellationToken = default)
+        => Task.FromResult(NextResult);
 }
 
 sealed file class FakeTokenService : ITokenService

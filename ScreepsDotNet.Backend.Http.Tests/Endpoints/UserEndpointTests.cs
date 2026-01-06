@@ -2,7 +2,9 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
+using ScreepsDotNet.Backend.Core.Models;
 using ScreepsDotNet.Backend.Core.Repositories;
+using ScreepsDotNet.Backend.Core.Services;
 using ScreepsDotNet.Backend.Http.Constants;
 using ScreepsDotNet.Backend.Http.Routing;
 using ScreepsDotNet.Backend.Http.Tests.Web;
@@ -14,6 +16,7 @@ public class UserEndpointTests : IClassFixture<TestWebApplicationFactory>
     private readonly HttpClient _client;
     private readonly FakeUserWorldRepository _userWorldRepository;
     private readonly FakeUserRepository _userRepository;
+    private readonly FakeUserRespawnService _userRespawnService;
 
     private const string CustomControllerRoom = "W12N3";
     private const string RoomsQueryUserId = "user-1";
@@ -31,6 +34,7 @@ public class UserEndpointTests : IClassFixture<TestWebApplicationFactory>
         var services = factory.Services;
         _userWorldRepository = (FakeUserWorldRepository)services.GetRequiredService<IUserWorldRepository>();
         _userRepository = (FakeUserRepository)services.GetRequiredService<IUserRepository>();
+        _userRespawnService = (FakeUserRespawnService)services.GetRequiredService<IUserRespawnService>();
     }
 
     [Fact]
@@ -63,7 +67,7 @@ public class UserEndpointTests : IClassFixture<TestWebApplicationFactory>
     [Fact]
     public async Task WorldStatus_WithToken_ReturnsStatus()
     {
-        _userWorldRepository.WorldStatus = Core.Models.UserWorldStatus.Lost;
+        _userWorldRepository.WorldStatus = UserWorldStatus.Lost;
         var token = await AuthenticateAsync();
 
         var request = new HttpRequestMessage(HttpMethod.Get, ApiRoutes.User.WorldStatus);
@@ -73,7 +77,7 @@ public class UserEndpointTests : IClassFixture<TestWebApplicationFactory>
 
         response.EnsureSuccessStatusCode();
         using var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
-        var expectedStatus = nameof(Core.Models.UserWorldStatus.Lost).ToLowerInvariant();
+        var expectedStatus = nameof(UserWorldStatus.Lost).ToLowerInvariant();
         Assert.Equal(expectedStatus, payload.RootElement.GetProperty(UserResponseFields.Status).GetString());
     }
 
@@ -89,6 +93,35 @@ public class UserEndpointTests : IClassFixture<TestWebApplicationFactory>
         response.EnsureSuccessStatusCode();
         using var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
         Assert.Empty(payload.RootElement.GetProperty(UserResponseFields.Rooms).EnumerateArray());
+    }
+
+    [Fact]
+    public async Task UserRespawn_WithToken_ReturnsTimestamp()
+    {
+        _userRespawnService.NextResult = UserRespawnResult.Success;
+        var token = await AuthenticateAsync();
+
+        var request = new HttpRequestMessage(HttpMethod.Post, ApiRoutes.User.Respawn);
+        request.Headers.TryAddWithoutValidation(AuthHeaderNames.Token, token);
+
+        var response = await _client.SendAsync(request);
+
+        response.EnsureSuccessStatusCode();
+        using var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        Assert.True(payload.RootElement.TryGetProperty(UserResponseFields.Timestamp, out _));
+    }
+
+    [Fact]
+    public async Task UserRespawn_InvalidStatus_ReturnsBadRequest()
+    {
+        _userRespawnService.NextResult = UserRespawnResult.InvalidStatus;
+        var token = await AuthenticateAsync();
+        var request = new HttpRequestMessage(HttpMethod.Post, ApiRoutes.User.Respawn);
+        request.Headers.TryAddWithoutValidation(AuthHeaderNames.Token, token);
+
+        var response = await _client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
     [Fact]

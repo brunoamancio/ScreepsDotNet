@@ -42,11 +42,12 @@ Modern .NET rewrite of the Screeps private server backend. The solution contains
    - `ScreepsDotNet.Backend.Http/UserEndpoints.http` contains ready-made requests for memory, code, branches, console, badge SVG, etc. Update the `@ScreepsDotNet_User_Token` variable with the token from the previous step and execute the requests directly from JetBrains Rider / VS Code (REST Client) / HTTPie.
    - `ScreepsDotNet.Backend.Http/CoreEndpoints.http` provides `/health` and `/api/server/info` requests.
 
-5. **Run automated tests (no external services required):**
+5. **Run automated tests (unit + integration):**
    ```powershell
    dotnet test
    ```
-   Integration tests replace the real repositories with fakes, so the suite is fast and hermetic.
+   - Unit tests swap repositories with fast fakes (no Docker dependencies).
+   - Integration tests spin up disposable Mongo + Redis containers via [Testcontainers](https://github.com/testcontainers/testcontainers-dotnet) and exercise the real storage adapters/endpoints (including `/api/user/respawn`). Docker Desktop must be running for these tests to pass.
 
 ## Storage Notes
 
@@ -68,7 +69,7 @@ This wipes `mongo-data` / `redis-data`, reruns every script in `docker/mongo-ini
 
 ## User API Coverage
 
-- Protected routes (`/api/user/world-*`, `/api/user/branches`, `/api/user/code`, `/api/user/memory`, `/api/user/memory-segment`, `/api/user/console`, `/api/user/notify-prefs`, `/api/user/overview`, `/api/user/tutorial-done`) now operate against the Mongo repositories (`MongoUserCodeRepository`, `MongoUserMemoryRepository`, `MongoUserConsoleRepository`, `MongoUserWorldRepository`).
+- Protected routes (`/api/user/world-*`, `/api/user/branches`, `/api/user/code`, `/api/user/memory`, `/api/user/memory-segment`, `/api/user/console`, `/api/user/notify-prefs`, `/api/user/overview`, `/api/user/tutorial-done`, `/api/user/respawn`) operate against the Mongo repositories (`MongoUserCodeRepository`, `MongoUserMemoryRepository`, `MongoUserConsoleRepository`, `MongoUserWorldRepository`, `MongoUserRespawnService`).
 - Public routes (`/api/user/find`, `/api/user/rooms`, `/api/user/badge-svg`, `/api/user/stats`) return data seeded into Mongo.
 - Profile management routes (`/api/user/badge`, `/api/user/email`, `/api/user/set-steam-visible`) update the canonical `users` document with the same validation rules as the legacy backend.
 

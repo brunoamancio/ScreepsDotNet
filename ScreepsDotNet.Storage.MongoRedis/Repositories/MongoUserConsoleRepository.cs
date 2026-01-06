@@ -1,30 +1,25 @@
-using MongoDB.Bson;
 using MongoDB.Driver;
 using ScreepsDotNet.Backend.Core.Repositories;
 using ScreepsDotNet.Storage.MongoRedis.Providers;
+using ScreepsDotNet.Storage.MongoRedis.Repositories.Documents;
 
 namespace ScreepsDotNet.Storage.MongoRedis.Repositories;
 
 public sealed class MongoUserConsoleRepository : IUserConsoleRepository
 {
-    private const string UserField = "user";
-    private const string ExpressionField = "expression";
-    private const string HiddenField = "hidden";
-    private const string CreatedAtField = "createdAt";
-
-    private readonly IMongoCollection<BsonDocument> _collection;
+    private readonly IMongoCollection<UserConsoleEntryDocument> _collection;
 
     public MongoUserConsoleRepository(IMongoDatabaseProvider databaseProvider)
-        => _collection = databaseProvider.GetCollection<BsonDocument>(databaseProvider.Settings.UserConsoleCollection);
+        => _collection = databaseProvider.GetCollection<UserConsoleEntryDocument>(databaseProvider.Settings.UserConsoleCollection);
 
     public Task EnqueueExpressionAsync(string userId, string expression, bool hidden, CancellationToken cancellationToken = default)
     {
-        var document = new BsonDocument
+        var document = new UserConsoleEntryDocument
         {
-            { UserField, userId },
-            { ExpressionField, expression },
-            { HiddenField, hidden },
-            { CreatedAtField, DateTime.UtcNow }
+            UserId = userId,
+            Expression = expression,
+            Hidden = hidden,
+            CreatedAt = DateTime.UtcNow
         };
 
         return _collection.InsertOneAsync(document, cancellationToken: cancellationToken);

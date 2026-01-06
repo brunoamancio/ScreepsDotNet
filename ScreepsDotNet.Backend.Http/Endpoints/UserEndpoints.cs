@@ -41,6 +41,7 @@ internal static class UserEndpoints
     private const string MissingModulesMessage = "modules are required.";
     private const string CodePayloadTooLargeMessage = "code length exceeds 5 MB limit";
     private const string BranchOperationFailedMessage = "branch operation failed";
+    private const string InvalidRespawnStatusMessage = "invalid status";
     private const string EmailAlreadyExistsMessage = "email already exists";
 
     private const string DefaultWorldStartRoom = "W5N5";
@@ -108,7 +109,7 @@ internal static class UserEndpoints
         MapProtectedCode(app);
         MapProtectedBadge(app);
         MapProtectedRespawnProhibitedRooms(app);
-        MapProtectedPost(app, ApiRoutes.User.Respawn, RespawnEndpointName);
+        MapProtectedRespawn(app);
         MapProtectedSetActiveBranch(app);
         MapProtectedCloneBranch(app);
         MapProtectedDeleteBranch(app);
@@ -714,6 +715,26 @@ internal static class UserEndpoints
                    }))
            .RequireTokenAuthentication()
            .WithName(RespawnProhibitedRoomsEndpointName);
+    }
+
+    private static void MapProtectedRespawn(WebApplication app)
+    {
+        app.MapPost(ApiRoutes.User.Respawn,
+                    async (ICurrentUserAccessor userAccessor,
+                           IUserRespawnService respawnService,
+                           CancellationToken cancellationToken) =>
+                    {
+                        var user = UserEndpointGuards.RequireUser(userAccessor, MissingUserContextMessage);
+                        var result = await respawnService.RespawnAsync(user.Id, cancellationToken).ConfigureAwait(false);
+                        return result switch
+                        {
+                            UserRespawnResult.InvalidStatus => Results.BadRequest(new ErrorResponse(InvalidRespawnStatusMessage)),
+                            UserRespawnResult.UserNotFound => Results.NotFound(new ErrorResponse(UserNotFoundMessage)),
+                            _ => Results.Ok(UserResponseFactory.CreateTimestamp())
+                        };
+                    })
+           .RequireTokenAuthentication()
+           .WithName(RespawnEndpointName);
     }
 
 }

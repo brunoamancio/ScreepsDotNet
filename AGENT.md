@@ -15,10 +15,11 @@
 
 - `/health` – ASP.NET health checks with custom JSON output (Mongo/Redis probe).
 - `/api/server/info` – reads metadata from Mongo `serverData` (seeded automatically).
-- `/api/user/*` (branches, code, memory, console, notify prefs, badge SVG) – wired to Mongo/Redis repositories (`MongoUserCodeRepository`, `MongoUserMemoryRepository`, `MongoUserConsoleRepository`) with the same semantics as the legacy Screeps backend.
+- `/api/user/*` (branches, code, memory, console, notify prefs, badge SVG, respawn) – wired to Mongo/Redis repositories (`MongoUserCodeRepository`, `MongoUserMemoryRepository`, `MongoUserConsoleRepository`, `MongoUserRespawnService`, `MongoUserWorldRepository`) with the same semantics as the legacy Screeps backend.
 - `/api/user/badge`, `/api/user/email`, `/api/user/set-steam-visible` – newly implemented profile management endpoints writing to the `users` collection with the same validation rules as the Node server.
 - Core abstractions defined for server info, users, rooms, CLI sessions, storage status, and engine ticks.
 - Mongo repositories implemented for server info, users, and owned rooms; ready for future endpoints.
+- Integration tests spin up disposable Mongo + Redis containers via Testcontainers to validate real storage behavior.
 
 ## Local Development Workflow
 
@@ -40,7 +41,8 @@
    ```powershell
    dotnet test
    ```
-   - Integration tests live in `ScreepsDotNet.Backend.Http.Tests` and rely on `WebApplicationFactory<Program>` with faked storage dependencies, so no external services are required to run them.
+   - Unit tests swap repositories with fakes (fast, hermetic).
+   - Integration tests (also under `ScreepsDotNet.Backend.Http.Tests`) spin up Mongo + Redis containers via Testcontainers; keep Docker Desktop running.
 5. **Manual smoke tests:**  
    - `GET http://localhost:5210/health`
    - `GET http://localhost:5210/api/server/info`
@@ -89,10 +91,8 @@
 
 ## Pending / Next Steps
 
-1. Build additional HTTP endpoints for users/rooms leveraging new repositories.
-2. Add automated tests (unit + integration) spinning up Docker services.
-3. Scaffold CLI host (`ScreepsDotNet.Backend.Cli`) when backend surfaces are stable.
-4. Replace in-memory server-info provider once storage-backed provider is fully vetted.
+1. Scaffold CLI host (`ScreepsDotNet.Backend.Cli`) when backend surfaces are stable.
+2. Replace in-memory server-info provider once storage-backed provider is fully vetted.
 
 ## Tips for Agents
 

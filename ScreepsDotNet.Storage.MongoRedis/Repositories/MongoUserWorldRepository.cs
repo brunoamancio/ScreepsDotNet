@@ -1,37 +1,35 @@
-using MongoDB.Bson;
 using MongoDB.Driver;
 using ScreepsDotNet.Backend.Core.Models;
 using ScreepsDotNet.Backend.Core.Repositories;
-using ScreepsDotNet.Storage.MongoRedis.Extensions;
 using ScreepsDotNet.Storage.MongoRedis.Providers;
+using ScreepsDotNet.Storage.MongoRedis.Repositories.Documents;
 
 namespace ScreepsDotNet.Storage.MongoRedis.Repositories;
 
 public sealed class MongoUserWorldRepository : IUserWorldRepository
 {
-    private const string UserField = "user";
-    private const string TypeField = "type";
-    private const string RoomField = "room";
     private const string ControllerType = "controller";
     private const string SpawnType = "spawn";
-    private const string LevelField = "level";
 
-    private readonly IMongoCollection<BsonDocument> _collection;
+    private readonly IMongoCollection<RoomObjectDocument> _collection;
 
     public MongoUserWorldRepository(IMongoDatabaseProvider databaseProvider)
-        => _collection = databaseProvider.GetCollection<BsonDocument>(databaseProvider.Settings.RoomObjectsCollection);
+        => _collection = databaseProvider.GetCollection<RoomObjectDocument>(databaseProvider.Settings.RoomObjectsCollection);
 
     public async Task<string?> GetRandomControllerRoomAsync(string userId, CancellationToken cancellationToken = default)
     {
-        var filter = Builders<BsonDocument>.Filter.And(Builders<BsonDocument>.Filter.Eq(UserField, userId),
-                                                       Builders<BsonDocument>.Filter.Eq(TypeField, ControllerType));
+        var filter = Builders<RoomObjectDocument>.Filter.And(
+            Builders<RoomObjectDocument>.Filter.Eq(document => document.UserId, userId),
+            Builders<RoomObjectDocument>.Filter.Eq(document => document.Type, ControllerType));
 
         var rooms = await _collection.Find(filter)
-                                     .Project(document => document.GetStringOrNull(RoomField))
+                                     .Project(document => document.Room)
                                      .ToListAsync(cancellationToken)
                                      .ConfigureAwait(false);
 
-        var filteredRooms = rooms.Where(room => !string.IsNullOrEmpty(room)).Select(room => room!).ToList();
+        var filteredRooms = rooms.Where(room => !string.IsNullOrEmpty(room))
+                                 .Select(room => room!)
+                                 .ToList();
 
         if (filteredRooms.Count == 0)
             return null;
@@ -42,43 +40,46 @@ public sealed class MongoUserWorldRepository : IUserWorldRepository
 
     public async Task<UserWorldStatus> GetWorldStatusAsync(string userId, CancellationToken cancellationToken = default)
     {
-        var userFilter = Builders<BsonDocument>.Filter.Eq(UserField, userId);
+        var userFilter = Builders<RoomObjectDocument>.Filter.Eq(document => document.UserId, userId);
         var objectsCount = await _collection.CountDocumentsAsync(userFilter, cancellationToken: cancellationToken).ConfigureAwait(false);
         if (objectsCount == 0)
             return UserWorldStatus.Empty;
 
-        var typeFilter = Builders<BsonDocument>.Filter.In(TypeField, [SpawnType, ControllerType]);
-        var documents = await _collection.Find(Builders<BsonDocument>.Filter.And(userFilter, typeFilter))
-                                         .Project(document => new RoomObject(document.GetStringOrNull(TypeField) ?? string.Empty,
-                                                                             document.GetStringOrNull(RoomField) ?? string.Empty))
-                                         .ToListAsync(cancellationToken)
-                                         .ConfigureAwait(false);
+        var typeFilter = Builders<RoomObjectDocument>.Filter.In(document => document.Type, [SpawnType, ControllerType]);
+        var roomObjects = await _collection.Find(Builders<RoomObjectDocument>.Filter.And(userFilter, typeFilter))
+                                           .Project(document => new RoomObject(document.Type, document.Room))
+                                           .ToListAsync(cancellationToken)
+                                           .ConfigureAwait(false);
 
-        var controllerRooms = documents.Where(o => o.Type == ControllerType)
+        var controllerRooms = roomObjects.Where(o => string.Equals(o.Type, ControllerType, StringComparison.Ordinal))
+                                         .Select(o => o.Room)
+                                         .Where(room => !string.IsNullOrEmpty(room))
+                                         .ToHashSet(StringComparer.Ordinal);
+
+        var hasValidSpawn = roomObjects.Where(o => string.Equals(o.Type, SpawnType, StringComparison.Ordinal))
                                        .Select(o => o.Room)
-                                       .Where(room => !string.IsNullOrEmpty(room))
-                                       .ToHashSet(StringComparer.Ordinal);
-
-        var hasValidSpawn = documents.Where(o => o.Type == SpawnType)
-                                     .Select(o => o.Room)
-                                     .Any(room => !string.IsNullOrEmpty(room) && controllerRooms.Contains(room));
+                                      .Any(room => !string.IsNullOrEmpty(room) && controllerRooms.Contains(room));
 
         return hasValidSpawn ? UserWorldStatus.Normal : UserWorldStatus.Lost;
     }
 
-    private sealed record RoomObject(string Type, string Room);
+    private sealed record RoomObject(string? Type, string? Room);
 
     public async Task<IReadOnlyCollection<string>> GetControllerRoomsAsync(string userId, CancellationToken cancellationToken = default)
     {
-        var filter = Builders<BsonDocument>.Filter.And(Builders<BsonDocument>.Filter.Eq(UserField, userId),
-                                                       Builders<BsonDocument>.Filter.Eq(TypeField, ControllerType));
+        var filter = Builders<RoomObjectDocument>.Filter.And(
+            Builders<RoomObjectDocument>.Filter.Eq(document => document.UserId, userId),
+            Builders<RoomObjectDocument>.Filter.Eq(document => document.Type, ControllerType));
 
-        var sort = Builders<BsonDocument>.Sort.Descending(LevelField);
-        var rooms = await _collection.Find(filter).Sort(sort)
-                                     .Project(document => document.GetStringOrNull(RoomField))
+        var sort = Builders<RoomObjectDocument>.Sort.Descending(document => document.Level);
+        var rooms = await _collection.Find(filter)
+                                     .Sort(sort)
+                                     .Project(document => document.Room)
                                      .ToListAsync(cancellationToken)
                                      .ConfigureAwait(false);
 
-        return rooms.Where(room => !string.IsNullOrEmpty(room)).Select(room => room!).ToList();
+        return rooms.Where(room => !string.IsNullOrEmpty(room))
+                    .Select(room => room!)
+                    .ToList();
     }
 }

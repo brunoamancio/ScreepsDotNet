@@ -1,27 +1,23 @@
-using MongoDB.Bson;
 using MongoDB.Driver;
 using ScreepsDotNet.Backend.Core.Models;
 using ScreepsDotNet.Backend.Core.Repositories;
-using ScreepsDotNet.Storage.MongoRedis.Extensions;
 using ScreepsDotNet.Storage.MongoRedis.Providers;
+using ScreepsDotNet.Storage.MongoRedis.Repositories.Documents;
 
 namespace ScreepsDotNet.Storage.MongoRedis.Repositories;
 
 public sealed class MongoUserMoneyRepository : IUserMoneyRepository
 {
-    private const string UserField = "user";
-    private const string DateField = "date";
-
-    private readonly IMongoCollection<BsonDocument> _collection;
+    private readonly IMongoCollection<UserMoneyEntryDocument> _collection;
 
     public MongoUserMoneyRepository(IMongoDatabaseProvider databaseProvider)
-        => _collection = databaseProvider.GetCollection<BsonDocument>(databaseProvider.Settings.UserMoneyCollection);
+        => _collection = databaseProvider.GetCollection<UserMoneyEntryDocument>(databaseProvider.Settings.UserMoneyCollection);
 
     public async Task<MoneyHistoryPage> GetHistoryAsync(string userId, int page, int pageSize, CancellationToken cancellationToken = default)
     {
-        var filter = Builders<BsonDocument>.Filter.Eq(UserField, userId);
+        var filter = Builders<UserMoneyEntryDocument>.Filter.Eq(document => document.UserId, userId);
         var documents = await _collection.Find(filter)
-                                         .Sort(Builders<BsonDocument>.Sort.Descending(DateField))
+                                         .Sort(Builders<UserMoneyEntryDocument>.Sort.Descending(document => document.Date))
                                          .Skip(page * pageSize)
                                          .Limit(pageSize + 1)
                                          .ToListAsync(cancellationToken)
@@ -29,9 +25,20 @@ public sealed class MongoUserMoneyRepository : IUserMoneyRepository
 
         var hasMore = documents.Count > pageSize;
         var entries = (hasMore ? documents.Take(pageSize) : documents)
-            .Select(document => (IReadOnlyDictionary<string, object?>)document.ToPlainDictionary())
-            .ToList();
+                                          .Select(ToDictionary)
+                                          .ToList();
 
         return new MoneyHistoryPage(page, hasMore, entries);
+    }
+
+    private static IReadOnlyDictionary<string, object?> ToDictionary(UserMoneyEntryDocument document)
+    {
+        var payload = new Dictionary<string, object?>(document.ExtraElements, StringComparer.Ordinal)
+        {
+            ["user"] = document.UserId,
+            ["date"] = document.Date
+        };
+
+        return payload;
     }
 }

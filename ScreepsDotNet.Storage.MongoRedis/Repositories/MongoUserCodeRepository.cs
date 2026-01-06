@@ -1,22 +1,13 @@
-
-
-using MongoDB.Bson;
 using MongoDB.Driver;
 using ScreepsDotNet.Backend.Core.Models;
 using ScreepsDotNet.Backend.Core.Repositories;
-using ScreepsDotNet.Storage.MongoRedis.Extensions;
 using ScreepsDotNet.Storage.MongoRedis.Providers;
+using ScreepsDotNet.Storage.MongoRedis.Repositories.Documents;
 
 namespace ScreepsDotNet.Storage.MongoRedis.Repositories;
 
 public sealed class MongoUserCodeRepository : IUserCodeRepository
 {
-    private const string UserField = "user";
-    private const string BranchField = "branch";
-    private const string ModulesField = "modules";
-    private const string TimestampField = "timestamp";
-    private const string ActiveWorldField = "activeWorld";
-    private const string ActiveSimField = "activeSim";
     private const string DefaultBranchName = "default";
     private const string DefaultModuleName = "main";
     private const string ActivePrefix = "$";
@@ -24,20 +15,19 @@ public sealed class MongoUserCodeRepository : IUserCodeRepository
     private const string ActiveSimIdentifier = "$activeSim";
     private const int MaxBranchCount = 30;
 
-    private readonly IMongoCollection<BsonDocument> _collection;
+    private readonly IMongoCollection<UserCodeDocument> _collection;
 
     public MongoUserCodeRepository(IMongoDatabaseProvider databaseProvider)
-        => _collection = databaseProvider.GetCollection<BsonDocument>(databaseProvider.Settings.UserCodeCollection);
+        => _collection = databaseProvider.GetCollection<UserCodeDocument>(databaseProvider.Settings.UserCodeCollection);
 
     public async Task<IReadOnlyCollection<UserCodeBranch>> GetBranchesAsync(string userId, CancellationToken cancellationToken = default)
     {
-        var filter = Builders<BsonDocument>.Filter.Eq(UserField, userId);
-        var branches = await _collection.Find(filter).ToListAsync(cancellationToken).ConfigureAwait(false);
+        var filter = Builders<UserCodeDocument>.Filter.Eq(document => document.UserId, userId);
+        var branches = await _collection.Find(filter)
+                                        .ToListAsync(cancellationToken)
+                                        .ConfigureAwait(false);
 
-        if (branches.All(document => {
-                var resolveBranchName = ResolveBranchName(document);
-                return !string.Equals(resolveBranchName, DefaultBranchName, StringComparison.Ordinal);
-            }))
+        if (branches.All(document => !string.Equals(ResolveBranchName(document), DefaultBranchName, StringComparison.Ordinal)))
         {
             await CreateDefaultBranchAsync(userId, cancellationToken).ConfigureAwait(false);
             branches = await _collection.Find(filter).ToListAsync(cancellationToken).ConfigureAwait(false);
@@ -48,11 +38,13 @@ public sealed class MongoUserCodeRepository : IUserCodeRepository
 
     public async Task<UserCodeBranch?> GetBranchAsync(string userId, string branchIdentifier, CancellationToken cancellationToken = default)
     {
-        var branchFilter = BuildBranchFilter(userId, branchIdentifier);
-        if (branchFilter is null)
+        var filter = BuildBranchFilter(userId, branchIdentifier);
+        if (filter is null)
             return null;
 
-        var document = await _collection.Find(branchFilter).FirstOrDefaultAsync(cancellationToken).ConfigureAwait(false);
+        var document = await _collection.Find(filter)
+                                         .FirstOrDefaultAsync(cancellationToken)
+                                         .ConfigureAwait(false);
         return document is null ? null : ToBranch(document);
     }
 
@@ -62,9 +54,9 @@ public sealed class MongoUserCodeRepository : IUserCodeRepository
         if (filter is null)
             return false;
 
-        var update = Builders<BsonDocument>.Update
-            .Set(ModulesField, modules.ToModulesDocument())
-            .Set(TimestampField, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
+        var update = Builders<UserCodeDocument>.Update
+            .Set(document => document.Modules, new Dictionary<string, string>(modules, StringComparer.Ordinal))
+            .Set(document => document.Timestamp, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
 
         var result = await _collection.UpdateOneAsync(filter, update, cancellationToken: cancellationToken).ConfigureAwait(false);
         return result.ModifiedCount > 0;
@@ -72,30 +64,29 @@ public sealed class MongoUserCodeRepository : IUserCodeRepository
 
     public async Task<bool> SetActiveBranchAsync(string userId, string branchName, string activeName, CancellationToken cancellationToken = default)
     {
-        var targetField = activeName.Equals(ActiveWorldField, StringComparison.OrdinalIgnoreCase)
-            ? ActiveWorldField
-            : activeName.Equals(ActiveSimField, StringComparison.OrdinalIgnoreCase)
-                ? ActiveSimField
+        string? targetField = activeName.Equals("activeWorld", StringComparison.OrdinalIgnoreCase)
+            ? nameof(UserCodeDocument.ActiveWorld)
+            : activeName.Equals("activeSim", StringComparison.OrdinalIgnoreCase)
+                ? nameof(UserCodeDocument.ActiveSim)
                 : null;
 
         if (targetField is null)
             return false;
 
-        var userFilter = Builders<BsonDocument>.Filter.Eq(UserField, userId);
-        var branchFilter = Builders<BsonDocument>.Filter.And(userFilter, Builders<BsonDocument>.Filter.Eq(BranchField, branchName));
+        var userFilter = Builders<UserCodeDocument>.Filter.Eq(document => document.UserId, userId);
+        var branchFilter = Builders<UserCodeDocument>.Filter.And(userFilter, Builders<UserCodeDocument>.Filter.Eq(document => document.Branch, branchName));
 
-        var update = Builders<BsonDocument>.Update
+        var update = Builders<UserCodeDocument>.Update
             .Set(targetField, true)
-            .Set(TimestampField, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
+            .Set(document => document.Timestamp, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
 
         var result = await _collection.UpdateOneAsync(branchFilter, update, cancellationToken: cancellationToken).ConfigureAwait(false);
         if (result.ModifiedCount == 0)
             return false;
 
-        var resetFilter = Builders<BsonDocument>.Filter.And(userFilter, Builders<BsonDocument>.Filter.Ne(BranchField, branchName));
-        var resetUpdate = Builders<BsonDocument>.Update.Set(targetField, false);
+        var resetFilter = Builders<UserCodeDocument>.Filter.And(userFilter, Builders<UserCodeDocument>.Filter.Ne(document => document.Branch, branchName));
+        var resetUpdate = Builders<UserCodeDocument>.Update.Set(targetField, false);
         await _collection.UpdateManyAsync(resetFilter, resetUpdate, cancellationToken: cancellationToken).ConfigureAwait(false);
-
         return true;
     }
 
@@ -104,8 +95,8 @@ public sealed class MongoUserCodeRepository : IUserCodeRepository
         if (string.IsNullOrWhiteSpace(newBranchName) || newBranchName.Length > 30)
             return false;
 
-        var userFilter = Builders<BsonDocument>.Filter.Eq(UserField, userId);
-        var existingFilter = Builders<BsonDocument>.Filter.And(userFilter, Builders<BsonDocument>.Filter.Eq(BranchField, newBranchName));
+        var userFilter = Builders<UserCodeDocument>.Filter.Eq(document => document.UserId, userId);
+        var existingFilter = Builders<UserCodeDocument>.Filter.And(userFilter, Builders<UserCodeDocument>.Filter.Eq(document => document.Branch, newBranchName));
         var existing = await _collection.Find(existingFilter).FirstOrDefaultAsync(cancellationToken).ConfigureAwait(false);
         if (existing is not null)
             return false;
@@ -125,14 +116,14 @@ public sealed class MongoUserCodeRepository : IUserCodeRepository
             ? new Dictionary<string, string>(defaultModules, StringComparer.Ordinal)
             : new Dictionary<string, string>(StringComparer.Ordinal) { [DefaultModuleName] = string.Empty };
 
-        var document = new BsonDocument
+        var document = new UserCodeDocument
         {
-            { UserField, userId },
-            { BranchField, newBranchName },
-            { ModulesField, modules.ToMutableModuleDictionary().ToModulesDocument() },
-            { TimestampField, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() },
-            { ActiveWorldField, false },
-            { ActiveSimField, false }
+            UserId = userId,
+            Branch = newBranchName,
+            Modules = new Dictionary<string, string>(modules, StringComparer.Ordinal),
+            Timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+            ActiveWorld = false,
+            ActiveSim = false
         };
 
         await _collection.InsertOneAsync(document, cancellationToken: cancellationToken).ConfigureAwait(false);
@@ -141,76 +132,66 @@ public sealed class MongoUserCodeRepository : IUserCodeRepository
 
     public async Task<bool> DeleteBranchAsync(string userId, string branchName, CancellationToken cancellationToken = default)
     {
-        var userFilter = Builders<BsonDocument>.Filter.Eq(UserField, userId);
-        var deleteFilter = Builders<BsonDocument>.Filter.And(
+        var userFilter = Builders<UserCodeDocument>.Filter.Eq(document => document.UserId, userId);
+        var deleteFilter = Builders<UserCodeDocument>.Filter.And(
             userFilter,
-            Builders<BsonDocument>.Filter.Eq(BranchField, branchName),
-            Builders<BsonDocument>.Filter.Ne(ActiveWorldField, true),
-            Builders<BsonDocument>.Filter.Ne(ActiveSimField, true));
+            Builders<UserCodeDocument>.Filter.Eq(document => document.Branch, branchName),
+            Builders<UserCodeDocument>.Filter.Ne(document => document.ActiveWorld, true),
+            Builders<UserCodeDocument>.Filter.Ne(document => document.ActiveSim, true));
 
         var result = await _collection.DeleteOneAsync(deleteFilter, cancellationToken).ConfigureAwait(false);
         return result.DeletedCount > 0;
     }
 
-    private static FilterDefinition<BsonDocument>? BuildBranchFilter(string userId, string branchIdentifier)
+    private static FilterDefinition<UserCodeDocument>? BuildBranchFilter(string userId, string branchIdentifier)
     {
-        var userFilter = Builders<BsonDocument>.Filter.Eq(UserField, userId);
+        var userFilter = Builders<UserCodeDocument>.Filter.Eq(document => document.UserId, userId);
 
         if (string.IsNullOrWhiteSpace(branchIdentifier))
-            return Builders<BsonDocument>.Filter.And(userFilter, Builders<BsonDocument>.Filter.Eq(BranchField, DefaultBranchName));
+            return Builders<UserCodeDocument>.Filter.And(userFilter, Builders<UserCodeDocument>.Filter.Eq(document => document.Branch, DefaultBranchName));
 
         if (branchIdentifier.StartsWith(ActivePrefix, StringComparison.Ordinal))
         {
-            var fieldName = branchIdentifier.Equals(ActiveWorldIdentifier, StringComparison.OrdinalIgnoreCase)
-                ? ActiveWorldField
-                : branchIdentifier.Equals(ActiveSimIdentifier, StringComparison.OrdinalIgnoreCase)
-                    ? ActiveSimField
-                    : null;
+            if (branchIdentifier.Equals(ActiveWorldIdentifier, StringComparison.OrdinalIgnoreCase))
+                return Builders<UserCodeDocument>.Filter.And(userFilter, Builders<UserCodeDocument>.Filter.Eq(document => document.ActiveWorld, true));
 
-            if (fieldName is null)
-                return null;
+            if (branchIdentifier.Equals(ActiveSimIdentifier, StringComparison.OrdinalIgnoreCase))
+                return Builders<UserCodeDocument>.Filter.And(userFilter, Builders<UserCodeDocument>.Filter.Eq(document => document.ActiveSim, true));
 
-            return Builders<BsonDocument>.Filter.And(userFilter, Builders<BsonDocument>.Filter.Eq(fieldName, true));
+            return null;
         }
 
-        return Builders<BsonDocument>.Filter.And(userFilter, Builders<BsonDocument>.Filter.Eq(BranchField, branchIdentifier));
+        return Builders<UserCodeDocument>.Filter.And(userFilter, Builders<UserCodeDocument>.Filter.Eq(document => document.Branch, branchIdentifier));
     }
 
-    private static UserCodeBranch ToBranch(BsonDocument document)
+    private static UserCodeBranch ToBranch(UserCodeDocument document)
     {
-        var modules = new Dictionary<string, string>(StringComparer.Ordinal);
-        if (document.TryGetValue(ModulesField, out var modulesValue) && modulesValue is BsonDocument modulesDocument)
-        {
-            foreach (var element in modulesDocument.Elements)
-            {
-                if (element.Value.IsString)
-                    modules[element.Name] = element.Value.AsString;
-            }
-        }
+        var timestamp = document.Timestamp.HasValue
+            ? DateTimeOffset.FromUnixTimeMilliseconds(document.Timestamp.Value).UtcDateTime
+            : (DateTime?)null;
 
-        return new UserCodeBranch(ResolveBranchName(document),
-                                  modules,
-                                  document.TryGetValue(TimestampField, out var timestampValue) && timestampValue.IsNumeric
-                                      ? DateTimeOffset.FromUnixTimeMilliseconds(timestampValue.ToInt64()).UtcDateTime : null,
-                                  document.GetBooleanOrDefault(ActiveWorldField),
-                                  document.GetBooleanOrDefault(ActiveSimField));
+        var modules = document.Modules is null
+            ? new Dictionary<string, string>(StringComparer.Ordinal)
+            : new Dictionary<string, string>(document.Modules, StringComparer.Ordinal);
+
+        return new UserCodeBranch(ResolveBranchName(document), modules, timestamp, document.ActiveWorld ?? false, document.ActiveSim ?? false);
     }
 
     private Task CreateDefaultBranchAsync(string userId, CancellationToken cancellationToken)
     {
-        var document = new BsonDocument
+        var document = new UserCodeDocument
         {
-            { UserField, userId },
-            { BranchField, DefaultBranchName },
-            { ModulesField, new BsonDocument { { DefaultModuleName, string.Empty } } },
-            { TimestampField, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() },
-            { ActiveWorldField, true },
-            { ActiveSimField, false }
+            UserId = userId,
+            Branch = DefaultBranchName,
+            Modules = new Dictionary<string, string>(StringComparer.Ordinal) { [DefaultModuleName] = string.Empty },
+            Timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+            ActiveWorld = true,
+            ActiveSim = false
         };
 
         return _collection.InsertOneAsync(document, cancellationToken: cancellationToken);
     }
 
-    private static string ResolveBranchName(BsonDocument document)
-        => document.GetStringOrNull(BranchField) ?? DefaultBranchName;
+    private static string ResolveBranchName(UserCodeDocument document)
+        => string.IsNullOrWhiteSpace(document.Branch) ? DefaultBranchName : document.Branch;
 }

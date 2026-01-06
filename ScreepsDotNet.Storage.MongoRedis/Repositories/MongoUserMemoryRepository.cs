@@ -1,97 +1,97 @@
 using System.Text.Json;
-using MongoDB.Bson;
 using MongoDB.Driver;
 using ScreepsDotNet.Backend.Core.Repositories;
 using ScreepsDotNet.Storage.MongoRedis.Extensions;
 using ScreepsDotNet.Storage.MongoRedis.Providers;
+using ScreepsDotNet.Storage.MongoRedis.Repositories.Documents;
 
 namespace ScreepsDotNet.Storage.MongoRedis.Repositories;
 
 public sealed class MongoUserMemoryRepository : IUserMemoryRepository
 {
-    private const string IdField = "_id";
-    private const string MemoryField = "memory";
-    private const string SegmentsField = "segments";
-
-    private readonly IMongoCollection<BsonDocument> _collection;
+    private readonly IMongoCollection<UserMemoryDocument> _collection;
 
     public MongoUserMemoryRepository(IMongoDatabaseProvider databaseProvider)
-        => _collection = databaseProvider.GetCollection<BsonDocument>(databaseProvider.Settings.UserMemoryCollection);
+        => _collection = databaseProvider.GetCollection<UserMemoryDocument>(databaseProvider.Settings.UserMemoryCollection);
 
     public async Task<IDictionary<string, object?>> GetMemoryAsync(string userId, CancellationToken cancellationToken = default)
     {
         var document = await FindDocumentAsync(userId, cancellationToken).ConfigureAwait(false);
-        if (document.TryGetValue(MemoryField, out var memoryValue) && memoryValue.IsBsonDocument)
-            return memoryValue.AsBsonDocument.ToPlainDictionary();
-
-        return new Dictionary<string, object?>(StringComparer.Ordinal);
+        return document?.Memory is { Count: > 0 } memory
+            ? new Dictionary<string, object?>(memory, StringComparer.Ordinal)
+            : new Dictionary<string, object?>(StringComparer.Ordinal);
     }
 
     public async Task UpdateMemoryAsync(string userId, string? path, JsonElement value, CancellationToken cancellationToken = default)
     {
-        var document = await FindDocumentAsync(userId, cancellationToken).ConfigureAwait(false);
-        var memory = document.TryGetValue(MemoryField, out var memoryValue) && memoryValue.IsBsonDocument
-            ? memoryValue.AsBsonDocument : [];
+        var document = await FindDocumentAsync(userId, cancellationToken).ConfigureAwait(false) ?? new UserMemoryDocument { UserId = userId };
+        document.Memory ??= new Dictionary<string, object?>(StringComparer.Ordinal);
 
-        ApplyMemoryMutation(memory, path, value);
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            document.Memory.Clear();
+            if (value.ValueKind != JsonValueKind.Undefined)
+            {
+                var payload = value.ToObjectValue();
+                if (payload is IDictionary<string, object?> dictionary)
+                {
+                    foreach (var kvp in dictionary)
+                        document.Memory[kvp.Key] = kvp.Value;
+                }
+                else
+                {
+                    document.Memory["value"] = payload;
+                }
+            }
+        }
+        else
+        {
+            var segments = path.Split('.', StringSplitOptions.RemoveEmptyEntries);
+            if (segments.Length == 0)
+                return;
 
-        document[MemoryField] = memory;
-        await _collection.ReplaceOneAsync(Builders<BsonDocument>.Filter.Eq(IdField, userId), document, new ReplaceOptions { IsUpsert = true }, cancellationToken).ConfigureAwait(false);
+            if (value.ValueKind == JsonValueKind.Undefined)
+            {
+                document.Memory.RemoveValueAtPath(segments);
+            }
+            else
+            {
+                document.Memory.SetValueAtPath(segments, value.ToObjectValue());
+            }
+        }
+
+        await _collection.ReplaceOneAsync(doc => doc.UserId == userId,
+                                          document,
+                                          new ReplaceOptions { IsUpsert = true },
+                                          cancellationToken)
+                         .ConfigureAwait(false);
     }
 
     public async Task<string?> GetMemorySegmentAsync(string userId, int segment, CancellationToken cancellationToken = default)
     {
         var document = await FindDocumentAsync(userId, cancellationToken).ConfigureAwait(false);
-        if (document.TryGetValue(SegmentsField, out var segmentsValue) && segmentsValue.IsBsonDocument)
-        {
-            var segments = segmentsValue.AsBsonDocument;
-            var key = segment.ToString();
-            return segments.GetStringOrNull(key);
-        }
+        if (document?.Segments is null)
+            return null;
 
-        return null;
+        var key = segment.ToString();
+        return document.Segments.TryGetValue(key, out var data) ? data : null;
     }
 
-    public async Task SetMemorySegmentAsync(string userId, int segment, string? data, CancellationToken cancellationToken = default)
+    public Task SetMemorySegmentAsync(string userId, int segment, string? data, CancellationToken cancellationToken = default)
     {
-        var filter = Builders<BsonDocument>.Filter.Eq(IdField, userId);
+        var key = segment.ToString();
         var update = data is null
-            ? Builders<BsonDocument>.Update.Unset($"{SegmentsField}.{segment}")
-            : Builders<BsonDocument>.Update.Set($"{SegmentsField}.{segment}", data);
+            ? Builders<UserMemoryDocument>.Update.Unset($"segments.{key}")
+            : Builders<UserMemoryDocument>.Update.Set($"segments.{key}", data);
 
-        await _collection.UpdateOneAsync(filter, update, new UpdateOptions { IsUpsert = true }, cancellationToken).ConfigureAwait(false);
+        return _collection.UpdateOneAsync(document => document.UserId == userId,
+                                           update,
+                                           new UpdateOptions { IsUpsert = true },
+                                           cancellationToken);
     }
 
-    private Task<BsonDocument> FindDocumentAsync(string userId, CancellationToken cancellationToken)
-        => _collection.Find(Builders<BsonDocument>.Filter.Eq(IdField, userId)).FirstOrDefaultAsync(cancellationToken);
-
-    private static void ApplyMemoryMutation(BsonDocument memory, string? path, JsonElement value)
-    {
-        if (string.IsNullOrWhiteSpace(path))
-        {
-            memory.Clear();
-            if (value.ValueKind != JsonValueKind.Undefined)
-            {
-                var newValue = value.ToBsonValue();
-                if (newValue is BsonDocument newDoc)
-                {
-                    foreach (var element in newDoc)
-                        memory[element.Name] = element.Value;
-                }
-            }
-
-            return;
-        }
-
-        var segments = path.Split('.', StringSplitOptions.RemoveEmptyEntries);
-        if (value.ValueKind == JsonValueKind.Undefined)
-        {
-            memory.RemoveValueAtPath(segments);
-        }
-        else
-        {
-            var bsonValue = value.ToBsonValue();
-            memory.SetValueAtPath(segments, bsonValue);
-        }
-    }
+    private async Task<UserMemoryDocument?> FindDocumentAsync(string userId, CancellationToken cancellationToken)
+        => await _collection.Find(document => document.UserId == userId)
+                            .FirstOrDefaultAsync(cancellationToken)
+                            .ConfigureAwait(false);
 }

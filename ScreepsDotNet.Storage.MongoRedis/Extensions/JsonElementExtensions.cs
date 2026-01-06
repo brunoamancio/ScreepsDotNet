@@ -1,36 +1,37 @@
-using System.Text.Json;
-using MongoDB.Bson;
-
 namespace ScreepsDotNet.Storage.MongoRedis.Extensions;
+
+using System;
+using System.Collections.Generic;
+using System.Text.Json;
 
 internal static class JsonElementExtensions
 {
-    public static BsonValue ToBsonValue(this JsonElement element)
+    public static object? ToObjectValue(this JsonElement element)
         => element.ValueKind switch
         {
-            JsonValueKind.Object => element.ToBsonDocument(),
-            JsonValueKind.Array => element.ToBsonArray(),
+            JsonValueKind.Object => element.ToDictionary(),
+            JsonValueKind.Array => element.ToList(),
             JsonValueKind.String => element.GetString(),
             JsonValueKind.Number when element.TryGetInt64(out var longValue) => longValue,
             JsonValueKind.Number => element.GetDouble(),
             JsonValueKind.True => true,
             JsonValueKind.False => false,
-            _ => BsonNull.Value
+            _ => null
         };
 
-    private static BsonDocument ToBsonDocument(this JsonElement element)
+    private static IDictionary<string, object?> ToDictionary(this JsonElement element)
     {
-        var document = new BsonDocument();
+        var dictionary = new Dictionary<string, object?>(StringComparer.Ordinal);
         foreach (var property in element.EnumerateObject())
-            document[property.Name] = property.Value.ToBsonValue();
-        return document;
+            dictionary[property.Name] = property.Value.ToObjectValue();
+        return dictionary;
     }
 
-    private static BsonArray ToBsonArray(this JsonElement element)
+    private static IList<object?> ToList(this JsonElement element)
     {
-        var array = new BsonArray();
+        var list = new List<object?>();
         foreach (var item in element.EnumerateArray())
-            array.Add(item.ToBsonValue());
-        return array;
+            list.Add(item.ToObjectValue());
+        return list;
     }
 }

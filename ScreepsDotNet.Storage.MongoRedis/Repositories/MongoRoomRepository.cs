@@ -1,48 +1,35 @@
-using MongoDB.Bson;
 using MongoDB.Driver;
 using ScreepsDotNet.Backend.Core.Models;
 using ScreepsDotNet.Backend.Core.Repositories;
-using ScreepsDotNet.Storage.MongoRedis.Extensions;
 using ScreepsDotNet.Storage.MongoRedis.Providers;
+using ScreepsDotNet.Storage.MongoRedis.Repositories.Documents;
 
 namespace ScreepsDotNet.Storage.MongoRedis.Repositories;
 
 public sealed class MongoRoomRepository : IRoomRepository
 {
-    private const string RoomNameField = "name";
-    private const string OwnerField = "owner";
-    private const string ControllerField = "controller";
-    private const string ControllerLevelField = "level";
-    private const string EnergyAvailableField = "energyAvailable";
     private const string UnknownRoomName = "Unknown";
 
-    private readonly IMongoCollection<BsonDocument> _collection;
+    private readonly IMongoCollection<RoomDocument> _collection;
 
     public MongoRoomRepository(IMongoDatabaseProvider databaseProvider)
-        => _collection = databaseProvider.GetCollection<BsonDocument>(databaseProvider.Settings.RoomsCollection);
+        => _collection = databaseProvider.GetCollection<RoomDocument>(databaseProvider.Settings.RoomsCollection);
 
     public async Task<IReadOnlyCollection<RoomSummary>> GetOwnedRoomsAsync(CancellationToken cancellationToken = default)
     {
-        var ownedFilter = Builders<BsonDocument>.Filter.Exists(OwnerField);
-        var documents = await _collection.Find(ownedFilter).ToListAsync(cancellationToken);
+        var ownedFilter = Builders<RoomDocument>.Filter.Ne(document => document.Owner, null);
+        var documents = await _collection.Find(ownedFilter)
+                                         .ToListAsync(cancellationToken)
+                                         .ConfigureAwait(false);
 
         return documents.Select(document =>
-                                {
-                                    var name = document.GetStringOrNull(RoomNameField) ?? UnknownRoomName;
-                                    var owner = document.GetStringOrNull(OwnerField);
-
-                                    var controllerLevel = 0;
-                                    if (document.TryGetValue(ControllerField, out var controllerValue) &&
-                                        controllerValue.IsBsonDocument &&
-                                        controllerValue.AsBsonDocument.TryGetValue(ControllerLevelField, out var levelValue) &&
-                                        levelValue.IsNumeric)
-                                    {
-                                        controllerLevel = levelValue.ToInt32();
-                                    }
-
-                                    var energy = document.GetInt32OrDefault(EnergyAvailableField);
-                                    return new RoomSummary(name, owner, controllerLevel, energy);
-                                })
-                          .ToList();
+        {
+            var controllerLevel = document.Controller?.Level ?? 0;
+            var energy = document.EnergyAvailable ?? 0;
+            return new RoomSummary(document.Name ?? UnknownRoomName,
+                                    document.Owner,
+                                    controllerLevel,
+                                    energy);
+        }).ToList();
     }
 }
