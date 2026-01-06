@@ -78,6 +78,20 @@ public class UserEndpointTests : IClassFixture<TestWebApplicationFactory>
     }
 
     [Fact]
+    public async Task RespawnProhibitedRooms_WithToken_ReturnsEmptyList()
+    {
+        var token = await AuthenticateAsync();
+        var request = new HttpRequestMessage(HttpMethod.Get, ApiRoutes.User.RespawnProhibitedRooms);
+        request.Headers.TryAddWithoutValidation(AuthHeaderNames.Token, token);
+
+        var response = await _client.SendAsync(request);
+
+        response.EnsureSuccessStatusCode();
+        using var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        Assert.Equal(0, payload.RootElement.GetProperty(UserResponseFields.Rooms).GetArrayLength());
+    }
+
+    [Fact]
     public async Task UserFind_WithoutParams_ReturnsBadRequest()
     {
         var response = await _client.GetAsync(ApiRoutes.User.Find);

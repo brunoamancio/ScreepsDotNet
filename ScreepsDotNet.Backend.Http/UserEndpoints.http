@@ -11,6 +11,11 @@ GET {{ScreepsDotNet_Backend_Http_HostAddress}}/api/user/world-status
 X-Token: {{ScreepsDotNet_User_Token}}
 Accept: application/json
 
+### User - Respawn Prohibited Rooms (protected)
+GET {{ScreepsDotNet_Backend_Http_HostAddress}}/api/user/respawn-prohibited-rooms
+X-Token: {{ScreepsDotNet_User_Token}}
+Accept: application/json
+
 ### User - Branches (protected)
 GET {{ScreepsDotNet_Backend_Http_HostAddress}}/api/user/branches
 X-Token: {{ScreepsDotNet_User_Token}}

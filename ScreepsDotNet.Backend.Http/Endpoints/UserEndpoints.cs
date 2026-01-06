@@ -73,7 +73,7 @@ internal static class UserEndpoints
         MapProtectedPost(app, ApiRoutes.User.Code, PostCodeEndpointName);
         MapProtectedCode(app);
         MapProtectedPost(app, ApiRoutes.User.Badge, BadgeEndpointName);
-        MapProtectedGet(app, ApiRoutes.User.RespawnProhibitedRooms, RespawnProhibitedRoomsEndpointName);
+        MapProtectedRespawnProhibitedRooms(app);
         MapProtectedPost(app, ApiRoutes.User.Respawn, RespawnEndpointName);
         MapProtectedPost(app, ApiRoutes.User.SetActiveBranch, SetActiveBranchEndpointName);
         MapProtectedPost(app, ApiRoutes.User.CloneBranch, CloneBranchEndpointName);
@@ -364,4 +364,14 @@ internal static class UserEndpoints
             preferences[key] = value.Value;
     }
 
+    private static void MapProtectedRespawnProhibitedRooms(WebApplication app)
+    {
+        app.MapGet(ApiRoutes.User.RespawnProhibitedRooms,
+                   () => Results.Ok(new Dictionary<string, object?>
+                   {
+                       [UserResponseFields.Rooms] = Array.Empty<string>()
+                   }))
+           .RequireTokenAuthentication()
+           .WithName(RespawnProhibitedRoomsEndpointName);
+    }
 }
