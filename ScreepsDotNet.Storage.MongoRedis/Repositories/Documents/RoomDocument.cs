@@ -7,10 +7,20 @@ using MongoDB.Bson.Serialization.Attributes;
 public sealed class RoomDocument
 {
     [BsonId]
-    public ObjectId Id { get; set; }
+    [BsonRepresentation(BsonType.String)]
+    public string Id { get; set; } = string.Empty;
 
-    [BsonElement("name")]
-    public string? Name { get; set; }
+    [BsonElement("status")]
+    public string? Status { get; set; }
+
+    [BsonElement("novice")]
+    public bool? Novice { get; set; }
+
+    [BsonElement("respawnArea")]
+    public bool? RespawnArea { get; set; }
+
+    [BsonElement("openTime")]
+    public long? OpenTime { get; set; }
 
     [BsonElement("owner")]
     public string? Owner { get; set; }
@@ -20,6 +30,13 @@ public sealed class RoomDocument
 
     [BsonElement("energyAvailable")]
     public int? EnergyAvailable { get; set; }
+
+    [BsonIgnore]
+    public string? Name
+    {
+        get => Id;
+        set { }
+    }
 }
 
 [BsonIgnoreExtraElements]

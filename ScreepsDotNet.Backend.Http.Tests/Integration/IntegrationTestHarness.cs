@@ -15,10 +15,13 @@ public sealed class IntegrationTestHarness : IAsyncLifetime
     private const string UsersCollectionName = "users";
     private const string RoomsCollectionName = "rooms";
     private const string RoomsObjectsCollectionName = "rooms.objects";
+    private const string RoomsTerrainCollectionName = "rooms.terrain";
     private const string ServerDataCollectionName = "server.data";
     private const string UserMoneyCollectionName = "users.money";
     private const string UserConsoleCollectionName = "users.console";
     private const string UserMemoryCollectionName = "users.memory";
+    private const string MarketOrdersCollectionName = "market.orders";
+    private const string MarketStatsCollectionName = "market.stats";
     private const string ControllerTypeValue = "controller";
     private const string SpawnTypeValue = "spawn";
     private const string MongoNamespaceNotFoundCode = "NamespaceNotFound";
@@ -70,17 +73,23 @@ public sealed class IntegrationTestHarness : IAsyncLifetime
         await DropCollectionIfExistsAsync(UsersCollectionName);
         await DropCollectionIfExistsAsync(RoomsCollectionName);
         await DropCollectionIfExistsAsync(RoomsObjectsCollectionName);
+        await DropCollectionIfExistsAsync(RoomsTerrainCollectionName);
         await DropCollectionIfExistsAsync(ServerDataCollectionName);
         await DropCollectionIfExistsAsync(UserMoneyCollectionName);
         await DropCollectionIfExistsAsync(UserConsoleCollectionName);
         await DropCollectionIfExistsAsync(UserMemoryCollectionName);
+        await DropCollectionIfExistsAsync(MarketOrdersCollectionName);
+        await DropCollectionIfExistsAsync(MarketStatsCollectionName);
 
         await SeedUsersAsync();
         await SeedRoomsAsync();
+        await SeedRoomTerrainAsync();
         await SeedServerDataAsync();
         await SeedRoomObjectsAsync();
         await SeedMoneyHistoryAsync();
         await SeedUserMemoryAsync();
+        await SeedMarketOrdersAsync();
+        await SeedMarketStatsAsync();
     }
 
     private async Task DropCollectionIfExistsAsync(string name)
@@ -191,8 +200,10 @@ public sealed class IntegrationTestHarness : IAsyncLifetime
         var rooms = Database.GetCollection<RoomDocument>(RoomsCollectionName);
         var document = new RoomDocument
         {
-            Id = ObjectId.GenerateNewId(),
-            Name = IntegrationTestValues.World.StartRoom,
+            Id = IntegrationTestValues.World.StartRoom,
+            Status = "normal",
+            Novice = false,
+            RespawnArea = false,
             Owner = IntegrationTestValues.User.Username,
             Controller = new RoomControllerDocument
             {
@@ -201,7 +212,23 @@ public sealed class IntegrationTestHarness : IAsyncLifetime
             EnergyAvailable = 500
         };
 
-        return rooms.InsertOneAsync(document);
+        return rooms.ReplaceOneAsync(room => room.Id == document.Id,
+                                      document,
+                                      new ReplaceOptions { IsUpsert = true });
+    }
+
+    private Task SeedRoomTerrainAsync()
+    {
+        var terrains = Database.GetCollection<RoomTerrainDocument>(RoomsTerrainCollectionName);
+        var document = new RoomTerrainDocument
+        {
+            Id = ObjectId.GenerateNewId(),
+            Room = IntegrationTestValues.World.StartRoom,
+            Type = "terrain",
+            Terrain = new string('0', 2500)
+        };
+
+        return terrains.InsertOneAsync(document);
     }
 
     private Task SeedServerDataAsync()
@@ -223,6 +250,76 @@ public sealed class IntegrationTestHarness : IAsyncLifetime
         return collection.ReplaceOneAsync(doc => doc.Id == ServerDataDocument.DefaultId,
                                           document,
                                           new ReplaceOptions { IsUpsert = true });
+    }
+
+    private Task SeedMarketOrdersAsync()
+    {
+        var collection = Database.GetCollection<MarketOrderDocument>(MarketOrdersCollectionName);
+        var orders = new List<MarketOrderDocument>
+        {
+            new()
+            {
+                Id = ObjectId.GenerateNewId(),
+                Active = true,
+                UserId = IntegrationTestValues.User.Id,
+                Type = "sell",
+                RoomName = IntegrationTestValues.World.StartRoom,
+                ResourceType = "energy",
+                Price = 5000,
+                Amount = 1000,
+                RemainingAmount = 750,
+                TotalAmount = 1000,
+                CreatedTick = 12345,
+                CreatedTimestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
+            },
+            new()
+            {
+                Id = ObjectId.GenerateNewId(),
+                Active = true,
+                UserId = null,
+                Type = "buy",
+                RoomName = "W2N2",
+                ResourceType = "energy",
+                Price = 4500,
+                Amount = 800,
+                RemainingAmount = 800,
+                TotalAmount = 800,
+                CreatedTick = 12346,
+                CreatedTimestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
+            }
+        };
+
+        return collection.InsertManyAsync(orders);
+    }
+
+    private Task SeedMarketStatsAsync()
+    {
+        var collection = Database.GetCollection<MarketStatsDocument>(MarketStatsCollectionName);
+        var entries = new List<MarketStatsDocument>
+        {
+            new()
+            {
+                Id = ObjectId.GenerateNewId(),
+                ResourceType = "energy",
+                Date = DateTime.UtcNow.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+                Transactions = 10,
+                Volume = 5000,
+                AveragePrice = 4.8,
+                StandardDeviation = 0.3
+            },
+            new()
+            {
+                Id = ObjectId.GenerateNewId(),
+                ResourceType = "energy",
+                Date = DateTime.UtcNow.AddDays(-1).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+                Transactions = 5,
+                Volume = 2500,
+                AveragePrice = 4.5,
+                StandardDeviation = 0.25
+            }
+        };
+
+        return collection.InsertManyAsync(entries);
     }
 
     public async Task DisposeAsync()

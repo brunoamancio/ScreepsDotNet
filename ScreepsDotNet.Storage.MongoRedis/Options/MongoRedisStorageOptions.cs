@@ -14,6 +14,8 @@ public sealed class MongoRedisStorageOptions
 
     public string RoomObjectsCollection { get; init; } = "rooms.objects";
 
+    public string RoomTerrainCollection { get; init; } = "rooms.terrain";
+
     public string UserCodeCollection { get; init; } = "users.code";
 
     public string UserMemoryCollection { get; init; } = "users.memory";
@@ -23,6 +25,10 @@ public sealed class MongoRedisStorageOptions
     public string UserMoneyCollection { get; init; } = "users.money";
 
     public string ServerDataCollection { get; init; } = "server.data";
+
+    public string MarketOrdersCollection { get; init; } = "market.orders";
+
+    public string MarketStatsCollection { get; init; } = "market.stats";
 
     public string RedisConnectionString { get; init; } = "localhost:6379";
 }

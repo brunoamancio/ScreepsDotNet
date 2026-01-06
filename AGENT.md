@@ -96,13 +96,18 @@
 ## Pending / Next Steps
 
 1. **Market Endpoint Parity**
-   - Inventory the Node backend routes under `/api/game/market/*` (orders, history, stats) and map each one to the equivalent .NET controller/route.
-   - Design Mongo POCOs for `market.orders`, `market.stats`, and any supporting collections; document the schemas in this guide.
-   - Extend `IntegrationTestHarness` to seed representative market documents (buy/sell orders, credits history) and add integration tests that hit the new routes with both success/error scenarios.
-   - Mirror the legacy validation rules (order limits, visibility, resource types) and capture them in unit tests so regressions are obvious.
-   - Update the HTTP scratch files (`UserEndpoints.http` or a new `MarketEndpoints.http`) so manual smoke tests stay trivial.
+   - See `docs/specs/MarketWorldEndpoints.md` for the detailed scope. It captures every `/api/game/market/*` and `/api/game/*` route we still owe, plus the Mongo schemas and test expectations.
+   - Implement the Mongo POCOs (`MarketOrderDocument`, `MarketStatsDocument`, terrain/status extensions) and repository contracts described there.
+   - Extend `IntegrationTestHarness` and docker seed scripts with representative `market.orders`, `market.stats`, `rooms`, `rooms.objects`, and `rooms.terrain` data.
+   - Mirror the legacy validation rules (order limits, resource filters, stat-name validation) with unit + integration tests.
+   - Update HTTP scratch files (create `MarketEndpoints.http` / `WorldEndpoints.http`) so manual smoke tests stay trivial.
 2. Scaffold CLI host (`ScreepsDotNet.Backend.Cli`) when backend surfaces are stable.
 3. Replace in-memory server-info provider once storage-backed provider is fully vetted.
+
+## Market & World API Spec Snapshot
+
+- `docs/specs/MarketWorldEndpoints.md` is now the canonical reference for legacy behavior, Mongo schemas, .NET repository contracts, and the integration test matrix required before we call parity done.
+- Scope priorities (in order): market orders/index/stats, world read APIs (`map-stats`, `room-status`, `room-terrain`, `rooms`, `world-size`, `time`, `tick`), then remaining write-heavy endpoints (spawn placement, flags, intents) once the read-model is stable.
 
 ## Tips for Agents
 

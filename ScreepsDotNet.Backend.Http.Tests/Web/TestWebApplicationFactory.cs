@@ -29,6 +29,10 @@ public sealed class TestWebApplicationFactory : WebApplicationFactory<Program>
             services.RemoveAll<IUserMemoryRepository>();
             services.RemoveAll<IUserConsoleRepository>();
             services.RemoveAll<IUserMoneyRepository>();
+            services.RemoveAll<IMarketOrderRepository>();
+            services.RemoveAll<IMarketStatsRepository>();
+            services.RemoveAll<IRoomStatusRepository>();
+            services.RemoveAll<IRoomTerrainRepository>();
             services.RemoveAll<IUserRespawnService>();
             services.RemoveAll<ITokenService>();
 
@@ -42,6 +46,10 @@ public sealed class TestWebApplicationFactory : WebApplicationFactory<Program>
             services.AddSingleton<IUserMemoryRepository, FakeUserMemoryRepository>();
             services.AddSingleton<IUserConsoleRepository, FakeUserConsoleRepository>();
             services.AddSingleton<IUserMoneyRepository, FakeUserMoneyRepository>();
+            services.AddSingleton<IMarketOrderRepository, FakeMarketOrderRepository>();
+            services.AddSingleton<IMarketStatsRepository, FakeMarketStatsRepository>();
+            services.AddSingleton<IRoomStatusRepository, FakeRoomStatusRepository>();
+            services.AddSingleton<IRoomTerrainRepository, FakeRoomTerrainRepository>();
             services.AddSingleton<IUserRespawnService, FakeUserRespawnService>();
             services.AddSingleton<ITokenService, FakeTokenService>();
             services.Configure<AuthOptions>(options =>
@@ -568,6 +576,72 @@ internal sealed class FakeUserMoneyRepository : IUserMoneyRepository
         => Task.FromResult(new MoneyHistoryPage(page, false, _entries));
 }
 
+sealed file class FakeMarketOrderRepository : IMarketOrderRepository
+{
+    private static readonly IReadOnlyList<MarketOrderSummary> Summaries =
+    [
+        new("energy", 2, 1, 1)
+    ];
+
+    private static readonly IReadOnlyList<MarketOrder> Orders =
+    [
+        new("order-1", AuthTestValues.UserId, "energy", "sell", "W1N1", 5.0m, 1000, 750, 1000, 1000, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()),
+        new("order-2", null, "energy", "buy", "W2N2", 4.5m, 500, 500, 500, 1001, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds())
+    ];
+
+    public Task<IReadOnlyList<MarketOrderSummary>> GetActiveOrderIndexAsync(CancellationToken cancellationToken = default)
+        => Task.FromResult(Summaries);
+
+    public Task<IReadOnlyList<MarketOrder>> GetActiveOrdersByResourceAsync(string resourceType, CancellationToken cancellationToken = default)
+        => Task.FromResult<IReadOnlyList<MarketOrder>>(Orders.Where(o => string.Equals(o.ResourceType, resourceType, StringComparison.OrdinalIgnoreCase)).ToList());
+
+    public Task<IReadOnlyList<MarketOrder>> GetOrdersByUserAsync(string userId, CancellationToken cancellationToken = default)
+        => Task.FromResult<IReadOnlyList<MarketOrder>>(Orders.Where(o => string.Equals(o.UserId, userId, StringComparison.Ordinal)).ToList());
+}
+
+sealed file class FakeMarketStatsRepository : IMarketStatsRepository
+{
+    private static readonly IReadOnlyList<MarketStatsEntry> Entries =
+    [
+        new("energy", "2026-01-06", 10, 5000, 4.8, 0.3)
+    ];
+
+    public Task<IReadOnlyList<MarketStatsEntry>> GetStatsAsync(string resourceType, CancellationToken cancellationToken = default)
+        => Task.FromResult<IReadOnlyList<MarketStatsEntry>>(Entries.Where(e => string.Equals(e.ResourceType, resourceType, StringComparison.OrdinalIgnoreCase)).ToList());
+}
+
+sealed file class FakeRoomStatusRepository : IRoomStatusRepository
+{
+    private static readonly RoomStatusInfo Status = new("W1N1", "normal", false, false, null);
+
+    public Task<RoomStatusInfo?> GetRoomStatusAsync(string roomName, CancellationToken cancellationToken = default)
+        => Task.FromResult(string.Equals(roomName, Status.RoomName, StringComparison.OrdinalIgnoreCase) ? Status : null);
+
+    public Task<IReadOnlyDictionary<string, RoomStatusInfo>> GetRoomStatusesAsync(IEnumerable<string> roomNames, CancellationToken cancellationToken = default)
+    {
+        var dictionary = roomNames.Where(name => string.Equals(name, Status.RoomName, StringComparison.OrdinalIgnoreCase))
+                                  .Distinct(StringComparer.OrdinalIgnoreCase)
+                                  .ToDictionary(name => name, _ => Status, StringComparer.OrdinalIgnoreCase);
+        return Task.FromResult<IReadOnlyDictionary<string, RoomStatusInfo>>(dictionary);
+    }
+}
+
+sealed file class FakeRoomTerrainRepository : IRoomTerrainRepository
+{
+    private static readonly IReadOnlyList<RoomTerrainData> Entries =
+    [
+        new("W1N1", "terrain", new string('0', 2500))
+    ];
+
+    public Task<IReadOnlyList<RoomTerrainData>> GetTerrainEntriesAsync(IEnumerable<string> roomNames, CancellationToken cancellationToken = default)
+    {
+        var requested = roomNames.ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var result = requested.Count == 0
+            ? Entries.ToList()
+            : Entries.Where(entry => requested.Contains(entry.RoomName)).ToList();
+        return Task.FromResult<IReadOnlyList<RoomTerrainData>>(result);
+    }
+}
 internal sealed class FakeUserRespawnService : IUserRespawnService
 {
     public UserRespawnResult NextResult { get; set; } = UserRespawnResult.Success;
@@ -584,5 +658,5 @@ sealed file class FakeTokenService : ITokenService
         => Task.FromResult(ValidToken);
 
     public Task<string?> ResolveUserIdAsync(string token, CancellationToken cancellationToken = default)
-        => Task.FromResult<string?>(token == ValidToken ? AuthTestValues.UserId : null);
+        => Task.FromResult(token == ValidToken ? AuthTestValues.UserId : null);
 }
