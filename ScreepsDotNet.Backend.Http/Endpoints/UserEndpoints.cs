@@ -3,7 +3,10 @@ namespace ScreepsDotNet.Backend.Http.Endpoints;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
+using System.IO.Compression;
 using System.Linq;
+using System.Text;
 using System.Text.Json;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -31,6 +34,13 @@ internal static class UserEndpoints
     private const string UserNotFoundMessage = "user not found";
     private const string InvalidStatsIntervalMessage = "invalid params";
     private const string NoCodeMessage = "no code";
+    private const string InvalidMemorySegmentMessage = "invalid segment ID";
+    private const string MemorySizeExceededMessage = "memory size is too large";
+    private const string MemoryPathErrorMessage = "Incorrect memory path";
+    private const string MemorySegmentLengthExceededMessage = "length limit exceeded";
+    private const string ExpressionTooLargeMessage = "expression size is too large";
+    private const string MissingModulesMessage = "modules are required.";
+    private const string CodePayloadTooLargeMessage = "code length exceeds 5 MB limit";
 
     private const string DefaultWorldStartRoom = "W5N5";
 
@@ -65,25 +75,42 @@ internal static class UserEndpoints
     private static readonly int[] AllowedStatsIntervals = [8, 180, 1440];
     private static readonly int[] AllowedNotifyIntervals = [5, 10, 30, 60, 180, 360, 720, 1440, 4320];
     private static readonly int[] AllowedNotifyErrorsIntervals = [0, 5, 10, 30, 60, 180, 360, 720, 1440, 4320, 100000];
+    private const int MaxMemoryBytes = 1024 * 1024;
+    private const int MaxConsoleExpressionBytes = 1024;
+    private const int MaxMemorySegmentSizeBytes = 100 * 1024;
+    private const int MaxCodePayloadBytes = 5 * 1024 * 1024;
+    private const int MaxBranchNameLength = 30;
+
+    private const string MemorySettingsKey = "settings";
+    private const string MemoryRoomsKey = "rooms";
+    private const string MemoryLogLevelKey = "logLevel";
+    private const string DefaultMemoryLogLevel = "info";
+
+    private static readonly IReadOnlyDictionary<string, object?> DefaultMemory = new Dictionary<string, object?>(StringComparer.Ordinal)
+    {
+        [MemorySettingsKey] = new Dictionary<string, object?>(StringComparer.Ordinal)
+        {
+            [MemoryLogLevelKey] = DefaultMemoryLogLevel
+        },
+        [MemoryRoomsKey] = new Dictionary<string, object?>(StringComparer.Ordinal)
+    };
 
     public static void Map(WebApplication app)
     {
         MapProtectedWorldStartRoom(app);
         MapProtectedWorldStatus(app);
         MapProtectedBranches(app);
-        MapProtectedPost(app, ApiRoutes.User.Code, PostCodeEndpointName);
+        MapProtectedUpdateCode(app);
         MapProtectedCode(app);
         MapProtectedPost(app, ApiRoutes.User.Badge, BadgeEndpointName);
         MapProtectedRespawnProhibitedRooms(app);
         MapProtectedPost(app, ApiRoutes.User.Respawn, RespawnEndpointName);
-        MapProtectedPost(app, ApiRoutes.User.SetActiveBranch, SetActiveBranchEndpointName);
-        MapProtectedPost(app, ApiRoutes.User.CloneBranch, CloneBranchEndpointName);
-        MapProtectedPost(app, ApiRoutes.User.DeleteBranch, DeleteBranchEndpointName);
-        MapProtectedGet(app, ApiRoutes.User.Memory, GetMemoryEndpointName);
-        MapProtectedPost(app, ApiRoutes.User.Memory, PostMemoryEndpointName);
-        MapProtectedGet(app, ApiRoutes.User.MemorySegment, GetMemorySegmentEndpointName);
-        MapProtectedPost(app, ApiRoutes.User.MemorySegment, PostMemorySegmentEndpointName);
-        MapProtectedPost(app, ApiRoutes.User.Console, ConsoleEndpointName);
+        MapProtectedSetActiveBranch(app);
+        MapProtectedCloneBranch(app);
+        MapProtectedDeleteBranch(app);
+        MapProtectedMemory(app);
+        MapProtectedMemorySegments(app);
+        MapProtectedConsole(app);
         MapProtectedNotifyPrefs(app);
         MapProtectedOverview(app);
         MapProtectedTutorialDone(app);
@@ -162,6 +189,74 @@ internal static class UserEndpoints
            .WithName(BranchesEndpointName);
     }
 
+    private static void MapProtectedUpdateCode(WebApplication app)
+    {
+        app.MapPost(ApiRoutes.User.Code,
+                    ([FromBody] UserCodeUpdateRequest request,
+                     ICurrentUserAccessor userAccessor) =>
+                    {
+                        RequireUser(userAccessor);
+                        if (request.Modules is null || request.Modules.Count == 0)
+                            return Results.BadRequest(new ErrorResponse(MissingModulesMessage));
+
+                        var payloadSize = Encoding.UTF8.GetByteCount(JsonSerializer.Serialize(request.Modules));
+                        if (payloadSize > MaxCodePayloadBytes)
+                            return Results.BadRequest(new ErrorResponse(CodePayloadTooLargeMessage));
+
+                        return Results.Ok(CreateTimestampResponse());
+                    })
+           .RequireTokenAuthentication()
+           .WithName(PostCodeEndpointName);
+    }
+
+    private static void MapProtectedSetActiveBranch(WebApplication app)
+    {
+        app.MapPost(ApiRoutes.User.SetActiveBranch,
+                    ([FromBody] SetActiveBranchRequest request,
+                     ICurrentUserAccessor userAccessor) =>
+                    {
+                        RequireUser(userAccessor);
+                        if (!IsValidActiveName(request.ActiveName) || string.IsNullOrWhiteSpace(request.Branch))
+                            return Results.BadRequest(new ErrorResponse(InvalidStatsIntervalMessage));
+
+                        return Results.Ok(CreateTimestampResponse());
+                    })
+           .RequireTokenAuthentication()
+           .WithName(SetActiveBranchEndpointName);
+    }
+
+    private static void MapProtectedCloneBranch(WebApplication app)
+    {
+        app.MapPost(ApiRoutes.User.CloneBranch,
+                    ([FromBody] CloneBranchRequest request,
+                     ICurrentUserAccessor userAccessor) =>
+                    {
+                        RequireUser(userAccessor);
+                        if (!IsValidBranchName(request.NewName))
+                            return Results.BadRequest(new ErrorResponse(InvalidStatsIntervalMessage));
+
+                        return Results.Ok(CreateTimestampResponse());
+                    })
+           .RequireTokenAuthentication()
+           .WithName(CloneBranchEndpointName);
+    }
+
+    private static void MapProtectedDeleteBranch(WebApplication app)
+    {
+        app.MapPost(ApiRoutes.User.DeleteBranch,
+                    ([FromBody] DeleteBranchRequest request,
+                     ICurrentUserAccessor userAccessor) =>
+                    {
+                        RequireUser(userAccessor);
+                        if (!IsValidBranchName(request.Branch))
+                            return Results.BadRequest(new ErrorResponse(InvalidStatsIntervalMessage));
+
+                        return Results.Ok(CreateTimestampResponse());
+                    })
+           .RequireTokenAuthentication()
+           .WithName(DeleteBranchEndpointName);
+    }
+
     private static void MapProtectedNotifyPrefs(WebApplication app)
     {
         app.MapPost(ApiRoutes.User.NotifyPrefs,
@@ -188,6 +283,94 @@ internal static class UserEndpoints
                     })
            .RequireTokenAuthentication()
            .WithName(NotifyPrefsEndpointName);
+    }
+
+    private static void MapProtectedMemory(WebApplication app)
+    {
+        app.MapGet(ApiRoutes.User.Memory,
+                   ([FromQuery] string? path,
+                    ICurrentUserAccessor userAccessor) =>
+                   {
+                       RequireUser(userAccessor);
+                       var value = ResolveMemoryPath(path);
+                       if (value is null)
+                           return Results.Ok(new Dictionary<string, object?> { [UserResponseFields.Data] = MemoryPathErrorMessage });
+
+                       return Results.Ok(new Dictionary<string, object?>
+                       {
+                           [UserResponseFields.Data] = EncodeMemoryValue(value)
+                       });
+                   })
+           .RequireTokenAuthentication()
+           .WithName(GetMemoryEndpointName);
+
+        app.MapPost(ApiRoutes.User.Memory,
+                    ([FromBody] MemoryUpdateRequest request,
+                     ICurrentUserAccessor userAccessor) =>
+                    {
+                        RequireUser(userAccessor);
+                        var json = request.Value.ValueKind == JsonValueKind.Undefined ? "null" : request.Value.GetRawText();
+                        if (Encoding.UTF8.GetByteCount(json) > MaxMemoryBytes)
+                            return Results.BadRequest(new ErrorResponse(MemorySizeExceededMessage));
+
+                        return Results.Ok(CreateEmptyResponse());
+                    })
+           .RequireTokenAuthentication()
+           .WithName(PostMemoryEndpointName);
+    }
+
+    private static void MapProtectedMemorySegments(WebApplication app)
+    {
+        app.MapGet(ApiRoutes.User.MemorySegment,
+                   ([FromQuery(Name = "segment")] int? segment,
+                    ICurrentUserAccessor userAccessor) =>
+                   {
+                       RequireUser(userAccessor);
+                       if (!IsValidMemorySegment(segment))
+                           return Results.BadRequest(new ErrorResponse(InvalidMemorySegmentMessage));
+
+                       return Results.Ok(new Dictionary<string, object?>
+                       {
+                           [UserResponseFields.Data] = string.Empty
+                       });
+                   })
+           .RequireTokenAuthentication()
+           .WithName(GetMemorySegmentEndpointName);
+
+        app.MapPost(ApiRoutes.User.MemorySegment,
+                    ([FromBody] MemorySegmentRequest request,
+                     ICurrentUserAccessor userAccessor) =>
+                    {
+                        RequireUser(userAccessor);
+                        if (!IsValidMemorySegment(request.Segment))
+                            return Results.BadRequest(new ErrorResponse(InvalidMemorySegmentMessage));
+
+                        var length = request.Data is null ? 0 : Encoding.UTF8.GetByteCount(request.Data);
+                        if (length > MaxMemorySegmentSizeBytes)
+                            return Results.BadRequest(new ErrorResponse(MemorySegmentLengthExceededMessage));
+
+                        return Results.Ok(CreateEmptyResponse());
+                    })
+           .RequireTokenAuthentication()
+           .WithName(PostMemorySegmentEndpointName);
+    }
+
+    private static void MapProtectedConsole(WebApplication app)
+    {
+        app.MapPost(ApiRoutes.User.Console,
+                    ([FromBody] ConsoleExpressionRequest request,
+                     ICurrentUserAccessor userAccessor) =>
+                    {
+                        RequireUser(userAccessor);
+                        var expression = request.Expression ?? string.Empty;
+                        var length = Encoding.UTF8.GetByteCount(expression);
+                        if (length > MaxConsoleExpressionBytes)
+                            return Results.BadRequest(new ErrorResponse(ExpressionTooLargeMessage));
+
+                        return Results.Ok(CreateEmptyResponse());
+                    })
+           .RequireTokenAuthentication()
+           .WithName(ConsoleEndpointName);
     }
 
     private static void MapProtectedOverview(WebApplication app)
@@ -351,14 +534,21 @@ internal static class UserEndpoints
            .WithName(StatsEndpointName);
     }
 
-    private static IResult NotImplemented(string route)
-        => Results.Json(new { error = NotImplementedError, route }, statusCode: StatusCodes.Status501NotImplemented);
-
     private static UserProfile RequireUser(ICurrentUserAccessor accessor)
         => accessor.CurrentUser ?? throw new InvalidOperationException(MissingUserContextMessage);
 
     private static bool IsValidStatsInterval(int interval)
         => Array.IndexOf(AllowedStatsIntervals, interval) >= 0;
+
+    private static bool IsValidMemorySegment(int? segmentId)
+        => segmentId is >= 0 and <= 99;
+
+    private static bool IsValidBranchName(string? branchName)
+        => !string.IsNullOrWhiteSpace(branchName) && branchName.Length <= MaxBranchNameLength;
+
+    private static bool IsValidActiveName(string? activeName)
+        => string.Equals(activeName, UserResponseFields.ActiveWorld, StringComparison.OrdinalIgnoreCase) ||
+           string.Equals(activeName, UserResponseFields.ActiveSim, StringComparison.OrdinalIgnoreCase);
 
     private static Dictionary<string, object?> CreateNotifyPreferencesDictionary(object? notifyPrefs)
     {
@@ -404,6 +594,54 @@ internal static class UserEndpoints
         if (value.HasValue && Array.IndexOf(allowedValues, value.Value) >= 0)
             preferences[key] = value.Value;
     }
+
+    private static string EncodeMemoryValue(object value)
+    {
+        using var buffer = new MemoryStream();
+        using (var gzip = new GZipStream(buffer, CompressionLevel.SmallestSize, leaveOpen: true))
+        using (var writer = new StreamWriter(gzip, Encoding.UTF8))
+        {
+            var json = JsonSerializer.Serialize(value);
+            writer.Write(json);
+        }
+
+        return MemoryConstants.GzipPrefix + Convert.ToBase64String(buffer.ToArray());
+    }
+
+    private static object? ResolveMemoryPath(string? path)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+            return DefaultMemory;
+
+        var segments = path.Split('.', StringSplitOptions.RemoveEmptyEntries);
+        object? current = DefaultMemory;
+        foreach (var segment in segments)
+        {
+            if (current is IReadOnlyDictionary<string, object?> dictionary)
+            {
+                if (!dictionary.TryGetValue(segment, out current))
+                    return null;
+
+                continue;
+            }
+
+            return null;
+        }
+
+        return current;
+    }
+
+    private static Dictionary<string, object?> CreateEmptyResponse()
+        => new(StringComparer.Ordinal);
+
+    private static Dictionary<string, object?> CreateTimestampResponse()
+        => new(StringComparer.Ordinal)
+        {
+            [UserResponseFields.Timestamp] = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
+        };
+
+    private static IResult NotImplemented(string route)
+        => Results.Json(new { error = NotImplementedError, route }, statusCode: StatusCodes.Status501NotImplemented);
 
     private static void MapProtectedRespawnProhibitedRooms(WebApplication app)
     {

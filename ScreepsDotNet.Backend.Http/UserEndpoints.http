@@ -54,6 +54,94 @@ Accept: application/json
   "errorsInterval": 60
 }
 
+### User - Memory (protected)
+GET {{ScreepsDotNet_Backend_Http_HostAddress}}/api/user/memory
+X-Token: {{ScreepsDotNet_User_Token}}
+Accept: application/json
+
+### User - Memory Update (protected)
+POST {{ScreepsDotNet_Backend_Http_HostAddress}}/api/user/memory
+X-Token: {{ScreepsDotNet_User_Token}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "path": "settings.logLevel",
+  "value": "debug"
+}
+
+### User - Memory Segment (protected)
+GET {{ScreepsDotNet_Backend_Http_HostAddress}}/api/user/memory-segment?segment=1
+X-Token: {{ScreepsDotNet_User_Token}}
+Accept: application/json
+
+### User - Memory Segment Update (protected)
+POST {{ScreepsDotNet_Backend_Http_HostAddress}}/api/user/memory-segment
+X-Token: {{ScreepsDotNet_User_Token}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "segment": 1,
+  "data": "segment-payload"
+}
+
+### User - Console (protected)
+POST {{ScreepsDotNet_Backend_Http_HostAddress}}/api/user/console
+X-Token: {{ScreepsDotNet_User_Token}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "expression": "console.log('hello from http file');"
+}
+
+### User - Update Code (protected)
+POST {{ScreepsDotNet_Backend_Http_HostAddress}}/api/user/code
+X-Token: {{ScreepsDotNet_User_Token}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "branch": "default",
+  "modules": {
+    "main": "module.exports.loop = function () { Game.notify('tick'); };"
+  },
+  "_hash": "local"
+}
+
+### User - Set Active Branch (protected)
+POST {{ScreepsDotNet_Backend_Http_HostAddress}}/api/user/set-active-branch
+X-Token: {{ScreepsDotNet_User_Token}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "branch": "default",
+  "activeName": "activeWorld"
+}
+
+### User - Clone Branch (protected)
+POST {{ScreepsDotNet_Backend_Http_HostAddress}}/api/user/clone-branch
+X-Token: {{ScreepsDotNet_User_Token}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "branch": "default",
+  "newName": "sim-copy"
+}
+
+### User - Delete Branch (protected)
+POST {{ScreepsDotNet_Backend_Http_HostAddress}}/api/user/delete-branch
+X-Token: {{ScreepsDotNet_User_Token}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "branch": "old-branch"
+}
+
 ### User - Overview (protected)
 GET {{ScreepsDotNet_Backend_Http_HostAddress}}/api/user/overview?interval=8&statName=energyHarvested
 X-Token: {{ScreepsDotNet_User_Token}}

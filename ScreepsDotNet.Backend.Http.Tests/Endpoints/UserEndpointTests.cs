@@ -92,6 +92,80 @@ public class UserEndpointTests : IClassFixture<TestWebApplicationFactory>
     }
 
     [Fact]
+    public async Task UserMemory_WithToken_ReturnsCompressedPayload()
+    {
+        var token = await AuthenticateAsync();
+        var request = new HttpRequestMessage(HttpMethod.Get, ApiRoutes.User.Memory);
+        request.Headers.TryAddWithoutValidation(AuthHeaderNames.Token, token);
+
+        var response = await _client.SendAsync(request);
+
+        response.EnsureSuccessStatusCode();
+        using var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        var data = payload.RootElement.GetProperty(UserResponseFields.Data).GetString();
+        Assert.False(string.IsNullOrWhiteSpace(data));
+        Assert.StartsWith(MemoryConstants.GzipPrefix, data, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task UserMemory_PostTooLarge_ReturnsBadRequest()
+    {
+        var token = await AuthenticateAsync();
+        var request = new HttpRequestMessage(HttpMethod.Post, ApiRoutes.User.Memory);
+        request.Headers.TryAddWithoutValidation(AuthHeaderNames.Token, token);
+        request.Content = JsonContent.Create(new
+        {
+            value = new string('x', (1024 * 1024) + 1)
+        });
+
+        var response = await _client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task UserMemorySegment_InvalidId_ReturnsBadRequest()
+    {
+        var token = await AuthenticateAsync();
+        var request = new HttpRequestMessage(HttpMethod.Get, ApiRoutes.User.MemorySegment + "?segment=200");
+        request.Headers.TryAddWithoutValidation(AuthHeaderNames.Token, token);
+
+        var response = await _client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task UserMemorySegment_WithToken_ReturnsEmptyData()
+    {
+        var token = await AuthenticateAsync();
+        var request = new HttpRequestMessage(HttpMethod.Get, ApiRoutes.User.MemorySegment + "?segment=1");
+        request.Headers.TryAddWithoutValidation(AuthHeaderNames.Token, token);
+
+        var response = await _client.SendAsync(request);
+
+        response.EnsureSuccessStatusCode();
+        using var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        Assert.Equal(string.Empty, payload.RootElement.GetProperty(UserResponseFields.Data).GetString());
+    }
+
+    [Fact]
+    public async Task UserConsole_WithToken_ReturnsEmptyObject()
+    {
+        var token = await AuthenticateAsync();
+        var request = new HttpRequestMessage(HttpMethod.Post, ApiRoutes.User.Console);
+        request.Headers.TryAddWithoutValidation(AuthHeaderNames.Token, token);
+        request.Content = JsonContent.Create(new { expression = "console.log('test');" });
+
+        var response = await _client.SendAsync(request);
+
+        response.EnsureSuccessStatusCode();
+        using var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        Assert.Equal(JsonValueKind.Object, payload.RootElement.ValueKind);
+        Assert.Empty(payload.RootElement.EnumerateObject());
+    }
+
+    [Fact]
     public async Task UserOverview_WithValidInterval_ReturnsDefaultPayload()
     {
         var token = await AuthenticateAsync();
@@ -120,6 +194,87 @@ public class UserEndpointTests : IClassFixture<TestWebApplicationFactory>
         var response = await _client.SendAsync(request);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task UserCode_PostModules_ReturnsTimestamp()
+    {
+        var token = await AuthenticateAsync();
+        var request = new HttpRequestMessage(HttpMethod.Post, ApiRoutes.User.Code);
+        request.Headers.TryAddWithoutValidation(AuthHeaderNames.Token, token);
+        request.Content = JsonContent.Create(new
+        {
+            modules = new Dictionary<string, string>
+            {
+                ["main"] = "module.exports.loop = function () { Game.notify('tick'); };"
+            },
+            branch = "default",
+            hash = "abc123"
+        });
+
+        var response = await _client.SendAsync(request);
+
+        response.EnsureSuccessStatusCode();
+        using var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        Assert.True(payload.RootElement.TryGetProperty(UserResponseFields.Timestamp, out _));
+    }
+
+    [Fact]
+    public async Task UserSetActiveBranch_InvalidName_ReturnsBadRequest()
+    {
+        var token = await AuthenticateAsync();
+        var request = new HttpRequestMessage(HttpMethod.Post, ApiRoutes.User.SetActiveBranch);
+        request.Headers.TryAddWithoutValidation(AuthHeaderNames.Token, token);
+        request.Content = JsonContent.Create(new { branch = "default", activeName = "invalid" });
+
+        var response = await _client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task UserSetActiveBranch_WithToken_ReturnsTimestamp()
+    {
+        var token = await AuthenticateAsync();
+        var request = new HttpRequestMessage(HttpMethod.Post, ApiRoutes.User.SetActiveBranch);
+        request.Headers.TryAddWithoutValidation(AuthHeaderNames.Token, token);
+        request.Content = JsonContent.Create(new { branch = "default", activeName = "activeWorld" });
+
+        var response = await _client.SendAsync(request);
+
+        response.EnsureSuccessStatusCode();
+        using var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        Assert.True(payload.RootElement.TryGetProperty(UserResponseFields.Timestamp, out _));
+    }
+
+    [Fact]
+    public async Task UserCloneBranch_WithToken_ReturnsTimestamp()
+    {
+        var token = await AuthenticateAsync();
+        var request = new HttpRequestMessage(HttpMethod.Post, ApiRoutes.User.CloneBranch);
+        request.Headers.TryAddWithoutValidation(AuthHeaderNames.Token, token);
+        request.Content = JsonContent.Create(new { branch = "default", newName = "sim-copy" });
+
+        var response = await _client.SendAsync(request);
+
+        response.EnsureSuccessStatusCode();
+        using var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        Assert.True(payload.RootElement.TryGetProperty(UserResponseFields.Timestamp, out _));
+    }
+
+    [Fact]
+    public async Task UserDeleteBranch_WithToken_ReturnsTimestamp()
+    {
+        var token = await AuthenticateAsync();
+        var request = new HttpRequestMessage(HttpMethod.Post, ApiRoutes.User.DeleteBranch);
+        request.Headers.TryAddWithoutValidation(AuthHeaderNames.Token, token);
+        request.Content = JsonContent.Create(new { branch = "old-branch" });
+
+        var response = await _client.SendAsync(request);
+
+        response.EnsureSuccessStatusCode();
+        using var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        Assert.True(payload.RootElement.TryGetProperty(UserResponseFields.Timestamp, out _));
     }
 
     [Fact]
