@@ -8,29 +8,22 @@ namespace ScreepsDotNet.Backend.Core.Services;
 public sealed class VersionInfoProvider : IVersionInfoProvider
 {
     private readonly IUserRepository _userRepository;
-    private readonly IOptionsMonitor<ServerDataOptions> _serverDataOptions;
+    private readonly IServerDataRepository _serverDataRepository;
     private readonly IOptions<VersionInfoOptions> _versionOptions;
 
-    public VersionInfoProvider(IUserRepository userRepository, IOptionsMonitor<ServerDataOptions> serverDataOptions, IOptions<VersionInfoOptions> versionOptions)
+    public VersionInfoProvider(IUserRepository userRepository, IServerDataRepository serverDataRepository, IOptions<VersionInfoOptions> versionOptions)
     {
         _userRepository = userRepository;
-        _serverDataOptions = serverDataOptions;
+        _serverDataRepository = serverDataRepository;
         _versionOptions = versionOptions;
     }
 
     public async Task<VersionInfo> GetAsync(CancellationToken cancellationToken = default)
     {
         var users = await _userRepository.GetActiveUsersCountAsync(cancellationToken).ConfigureAwait(false);
-        var serverData = BuildServerData(_serverDataOptions.CurrentValue);
+        var serverData = await _serverDataRepository.GetServerDataAsync(cancellationToken).ConfigureAwait(false);
         var version = _versionOptions.Value;
 
         return new VersionInfo(version.ProtocolVersion, version.UseNativeAuth, users, serverData, version.PackageVersion);
-    }
-
-    private static ServerData BuildServerData(ServerDataOptions options)
-    {
-        return new ServerData(options.WelcomeText, new Dictionary<string, object>(options.CustomObjectTypes), options.HistoryChunkSize,
-                              options.SocketUpdateThrottle, new RendererData(new Dictionary<string, object>(options.Renderer.Resources),
-                                                                             new Dictionary<string, object>(options.Renderer.Metadata)));
     }
 }

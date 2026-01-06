@@ -31,8 +31,8 @@
    ```
    - Mongo 7.0 (`localhost:27017`) + Redis 7.2 (`localhost:16379`).
    - Every `docker compose up` seeds:
-     - `docker/mongo-init/seed-server-info.js` – `/api/server/info` fixture data.
-     - `docker/mongo-init/seed-users.js` – canonical `test-user` profile, owned rooms, sample notify prefs, etc., for exercising `/api/user/*` routes.
+  - `docker/mongo-init/seed-server-data.js` – `/api/server/info` + `/api/version.serverData` fixture data.
+  - `docker/mongo-init/seed-users.js` – canonical `test-user` profile, owned rooms, sample notify prefs, etc., for exercising `/api/user/*` routes.
 3. **Run backend:**  
    ```powershell
    dotnet run --project ScreepsDotNet.Backend.Http/ScreepsDotNet.Backend.Http.csproj
@@ -51,6 +51,7 @@
 ### Resetting / Updating Seed Data
 
 - All Mongo scripts inside `docker/mongo-init` run only when the container initializes an empty volume.
+- `docker/mongo-init/seed-server-data.js` keeps the canonical server metadata document (`server.data` collection) in sync with the legacy backend defaults (`welcomeText`, socket throttles, renderer metadata).
 - `docker/mongo-init/seed-users.js` inserts/updates the canonical `test-user` record plus sample controller/spawn objects (`rooms.objects`) and a short credit history in `users.money` so `/api/user/money-history` has data. The newer HTTP routes (code/memory/console) lazily create their own per-user documents once you hit them.
 - When schemas or seed files change, do a clean reset so everyone picks up the new baseline:
   ```powershell

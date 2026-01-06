@@ -8,9 +8,14 @@ public static class ApiRoutes
 
     public const string AuthMe = "/api/auth/me";
 
+    public static class Server
+    {
+        public const string Info = "/api/server/info";
+    }
+
     public static class User
     {
-        public const string Base = "/api/user";
+        private const string Base = "/api/user";
         public const string WorldStartRoom = $"{Base}/world-start-room";
         public const string WorldStatus = $"{Base}/world-status";
         public const string Branches = $"{Base}/branches";

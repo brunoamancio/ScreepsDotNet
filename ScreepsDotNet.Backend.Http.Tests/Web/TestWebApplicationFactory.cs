@@ -21,6 +21,7 @@ public sealed class TestWebApplicationFactory : WebApplicationFactory<Program>
         {
             services.RemoveAll<IStorageAdapter>();
             services.RemoveAll<IVersionInfoProvider>();
+            services.RemoveAll<IServerDataRepository>();
             services.RemoveAll<IUserRepository>();
             services.RemoveAll<IRoomRepository>();
             services.RemoveAll<IUserWorldRepository>();
@@ -33,6 +34,7 @@ public sealed class TestWebApplicationFactory : WebApplicationFactory<Program>
 
             services.AddSingleton<IStorageAdapter, FakeStorageAdapter>();
             services.AddSingleton<IVersionInfoProvider, FakeVersionInfoProvider>();
+            services.AddSingleton<IServerDataRepository, FakeServerDataRepository>();
             services.AddSingleton<IUserRepository, FakeUserRepository>();
             services.AddSingleton<IRoomRepository, FakeRoomRepository>();
             services.AddSingleton<IUserWorldRepository, FakeUserWorldRepository>();
@@ -66,19 +68,29 @@ sealed file class FakeStorageAdapter : IStorageAdapter
         => Task.FromResult(new StorageStatus(true, DateTimeOffset.UtcNow, null));
 }
 
+internal static class FakeServerDataFactory
+{
+    public static ServerData Create()
+        => new(VersionTestValues.WelcomeText,
+               new Dictionary<string, object>(),
+               VersionTestValues.HistoryChunkSize,
+               VersionTestValues.SocketUpdateThrottle,
+               new RendererData(new Dictionary<string, object>(), new Dictionary<string, object>()));
+}
+
+sealed file class FakeServerDataRepository : IServerDataRepository
+{
+    public Task<ServerData> GetServerDataAsync(CancellationToken cancellationToken = default)
+        => Task.FromResult(FakeServerDataFactory.Create());
+}
+
 sealed file class FakeVersionInfoProvider : IVersionInfoProvider
 {
     private readonly VersionInfo _versionInfo;
 
     public FakeVersionInfoProvider()
     {
-        var serverData = new ServerData(
-            VersionTestValues.WelcomeText,
-            new Dictionary<string, object>(),
-            VersionTestValues.HistoryChunkSize,
-            VersionTestValues.SocketUpdateThrottle,
-            new RendererData(new Dictionary<string, object>(), new Dictionary<string, object>()));
-
+        var serverData = FakeServerDataFactory.Create();
         _versionInfo = new VersionInfo(VersionTestValues.Protocol,
                                        VersionTestValues.UseNativeAuth,
                                        VersionTestValues.Users,

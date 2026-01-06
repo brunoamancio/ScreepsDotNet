@@ -42,4 +42,29 @@ internal static class IntegrationTestValues
         public const int SegmentId = 5;
         public const string SegmentValue = "integration-segment";
     }
+
+    internal static class ServerData
+    {
+        public const string WelcomeText = "<h4>Integration Harness</h4>";
+        public const int HistoryChunkSize = 42;
+        public const int SocketUpdateThrottle = 250;
+
+        public static Dictionary<string, object> CreateCustomObjectTypes()
+            => new(StringComparer.Ordinal)
+            {
+                ["testObject"] = "demo"
+            };
+
+        public static Dictionary<string, object> CreateRendererResources()
+            => new(StringComparer.Ordinal)
+            {
+                ["sprite"] = "integration.png"
+            };
+
+        public static Dictionary<string, object> CreateRendererMetadata()
+            => new(StringComparer.Ordinal)
+            {
+                ["build"] = "integration"
+            };
+    }
 }

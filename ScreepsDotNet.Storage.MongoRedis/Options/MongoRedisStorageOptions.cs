@@ -22,5 +22,7 @@ public sealed class MongoRedisStorageOptions
 
     public string UserMoneyCollection { get; init; } = "users.money";
 
+    public string ServerDataCollection { get; init; } = "server.data";
+
     public string RedisConnectionString { get; init; } = "localhost:6379";
 }

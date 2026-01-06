@@ -18,7 +18,9 @@ Modern .NET rewrite of the Screeps private server backend. The solution contains
    This launches:
    - MongoDB on `localhost:27017` with the `screeps` database.
    - Redis on `localhost:16379`.
-   - Mongo seed script `docker/mongo-init/seed-users.js`, which ensures `test-user` exists together with example controller/spawn records.
+   - Mongo seed scripts:
+     - `docker/mongo-init/seed-users.js` ensures `test-user` exists together with example controller/spawn records.
+     - `docker/mongo-init/seed-server-data.js` keeps the `/api/server/info` payload in sync with the legacy backend defaults.
 
 2. **Run the HTTP backend:**
    ```powershell
@@ -40,7 +42,7 @@ Modern .NET rewrite of the Screeps private server backend. The solution contains
 
 4. **Use the `.http` helpers for smoke testing:**
    - `ScreepsDotNet.Backend.Http/UserEndpoints.http` contains ready-made requests for memory, code, branches, console, badge SVG, etc. Update the `@ScreepsDotNet_User_Token` variable with the token from the previous step and execute the requests directly from JetBrains Rider / VS Code (REST Client) / HTTPie.
-   - `ScreepsDotNet.Backend.Http/CoreEndpoints.http` provides `/health` and `/api/server/info` requests.
+   - `ScreepsDotNet.Backend.Http/CoreEndpoints.http` provides `/health`, `/api/version`, and `/api/server/info` requests.
 
 5. **Run automated tests (unit + integration):**
    ```powershell
@@ -55,7 +57,8 @@ Modern .NET rewrite of the Screeps private server backend. The solution contains
   - `users` – canonical player documents (`seed-users.js` keeps `test-user` up-to-date).
   - `users.code`, `users.memory`, `users.console` – lazily created by the new repositories when the HTTP endpoints mutate state.
   - `users.money` – rolling credit transactions surfaced via `/api/user/money-history`.
-- `rooms.objects` – source of controller/spawn information for `/api/user/world-*` endpoints.
+  - `rooms.objects` – source of controller/spawn information for `/api/user/world-*` endpoints.
+- Server metadata (`server.data` collection) powers both `/api/server/info` and the `serverData` portion of `/api/version`. If you tweak the welcome text or renderer metadata, update `seed-server-data.js` so everyone shares the same defaults.
 - Redis is reserved for token storage and other future Screeps subsystems; the `docker compose` file already wires the container, but current endpoints do not rely on it yet.
 
 ### Repository Conventions

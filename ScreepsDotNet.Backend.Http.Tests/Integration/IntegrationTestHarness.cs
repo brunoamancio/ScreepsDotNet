@@ -15,6 +15,7 @@ public sealed class IntegrationTestHarness : IAsyncLifetime
     private const string UsersCollectionName = "users";
     private const string RoomsCollectionName = "rooms";
     private const string RoomsObjectsCollectionName = "rooms.objects";
+    private const string ServerDataCollectionName = "server.data";
     private const string UserMoneyCollectionName = "users.money";
     private const string UserConsoleCollectionName = "users.console";
     private const string UserMemoryCollectionName = "users.memory";
@@ -69,12 +70,14 @@ public sealed class IntegrationTestHarness : IAsyncLifetime
         await DropCollectionIfExistsAsync(UsersCollectionName);
         await DropCollectionIfExistsAsync(RoomsCollectionName);
         await DropCollectionIfExistsAsync(RoomsObjectsCollectionName);
+        await DropCollectionIfExistsAsync(ServerDataCollectionName);
         await DropCollectionIfExistsAsync(UserMoneyCollectionName);
         await DropCollectionIfExistsAsync(UserConsoleCollectionName);
         await DropCollectionIfExistsAsync(UserMemoryCollectionName);
 
         await SeedUsersAsync();
         await SeedRoomsAsync();
+        await SeedServerDataAsync();
         await SeedRoomObjectsAsync();
         await SeedMoneyHistoryAsync();
         await SeedUserMemoryAsync();
@@ -199,6 +202,27 @@ public sealed class IntegrationTestHarness : IAsyncLifetime
         };
 
         return rooms.InsertOneAsync(document);
+    }
+
+    private Task SeedServerDataAsync()
+    {
+        var collection = Database.GetCollection<ServerDataDocument>(ServerDataCollectionName);
+        var document = new ServerDataDocument
+        {
+            WelcomeText = IntegrationTestValues.ServerData.WelcomeText,
+            CustomObjectTypes = IntegrationTestValues.ServerData.CreateCustomObjectTypes(),
+            HistoryChunkSize = IntegrationTestValues.ServerData.HistoryChunkSize,
+            SocketUpdateThrottle = IntegrationTestValues.ServerData.SocketUpdateThrottle,
+            Renderer = new ServerRendererDocument
+            {
+                Resources = IntegrationTestValues.ServerData.CreateRendererResources(),
+                Metadata = IntegrationTestValues.ServerData.CreateRendererMetadata()
+            }
+        };
+
+        return collection.ReplaceOneAsync(doc => doc.Id == ServerDataDocument.DefaultId,
+                                          document,
+                                          new ReplaceOptions { IsUpsert = true });
     }
 
     public async Task DisposeAsync()

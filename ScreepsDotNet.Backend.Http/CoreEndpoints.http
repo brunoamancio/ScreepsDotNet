@@ -8,6 +8,10 @@ Accept: application/json
 GET {{ScreepsDotNet_Backend_Http_HostAddress}}/api/version
 Accept: application/json
 
+### Server Info
+GET {{ScreepsDotNet_Backend_Http_HostAddress}}/api/server/info
+Accept: application/json
+
 ### Auth - Steam Ticket
 POST {{ScreepsDotNet_Backend_Http_HostAddress}}/api/auth/steam-ticket
 Content-Type: application/json
