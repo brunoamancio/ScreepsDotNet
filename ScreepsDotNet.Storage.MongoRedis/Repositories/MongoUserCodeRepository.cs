@@ -1,3 +1,5 @@
+
+
 using MongoDB.Bson;
 using MongoDB.Driver;
 using ScreepsDotNet.Backend.Core.Models;
@@ -32,7 +34,10 @@ public sealed class MongoUserCodeRepository : IUserCodeRepository
         var filter = Builders<BsonDocument>.Filter.Eq(UserField, userId);
         var branches = await _collection.Find(filter).ToListAsync(cancellationToken).ConfigureAwait(false);
 
-        if (branches.All(document => !string.Equals(document.GetValue(BranchField, BsonNull.Value).AsString, DefaultBranchName, StringComparison.Ordinal)))
+        if (branches.All(document => {
+                var resolveBranchName = ResolveBranchName(document);
+                return !string.Equals(resolveBranchName, DefaultBranchName, StringComparison.Ordinal);
+            }))
         {
             await CreateDefaultBranchAsync(userId, cancellationToken).ConfigureAwait(false);
             branches = await _collection.Find(filter).ToListAsync(cancellationToken).ConfigureAwait(false);
@@ -177,17 +182,18 @@ public sealed class MongoUserCodeRepository : IUserCodeRepository
         if (document.TryGetValue(ModulesField, out var modulesValue) && modulesValue is BsonDocument modulesDocument)
         {
             foreach (var element in modulesDocument.Elements)
-                modules[element.Name] = element.Value.AsString;
+            {
+                if (element.Value.IsString)
+                    modules[element.Name] = element.Value.AsString;
+            }
         }
 
-        return new UserCodeBranch(
-            document.GetValue(BranchField, DefaultBranchName).AsString,
-            modules,
-            document.TryGetValue(TimestampField, out var timestampValue) && timestampValue.IsNumeric
-                ? DateTimeOffset.FromUnixTimeMilliseconds(timestampValue.ToInt64()).UtcDateTime
-                : null,
-            document.TryGetValue(ActiveWorldField, out var activeWorldValue) && activeWorldValue.ToBoolean(),
-            document.TryGetValue(ActiveSimField, out var activeSimValue) && activeSimValue.ToBoolean());
+        return new UserCodeBranch(ResolveBranchName(document),
+                                  modules,
+                                  document.TryGetValue(TimestampField, out var timestampValue) && timestampValue.IsNumeric
+                                      ? DateTimeOffset.FromUnixTimeMilliseconds(timestampValue.ToInt64()).UtcDateTime : null,
+                                  document.GetBooleanOrDefault(ActiveWorldField),
+                                  document.GetBooleanOrDefault(ActiveSimField));
     }
 
     private Task CreateDefaultBranchAsync(string userId, CancellationToken cancellationToken)
@@ -204,4 +210,7 @@ public sealed class MongoUserCodeRepository : IUserCodeRepository
 
         return _collection.InsertOneAsync(document, cancellationToken: cancellationToken);
     }
+
+    private static string ResolveBranchName(BsonDocument document)
+        => document.GetStringOrNull(BranchField) ?? DefaultBranchName;
 }

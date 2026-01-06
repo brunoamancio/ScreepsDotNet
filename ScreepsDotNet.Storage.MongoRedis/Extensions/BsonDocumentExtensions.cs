@@ -39,4 +39,12 @@ internal static class BsonDocumentExtensions
 
     public static object? ToDotNet(this BsonDocument document, string fieldName, BsonValue defaultValue)
         => document.GetValue(fieldName, defaultValue).ToDotNet();
+
+    public static IDictionary<string, object?> ToPlainDictionary(this BsonDocument document)
+    {
+        var result = new Dictionary<string, object?>(StringComparer.Ordinal);
+        foreach (var element in document)
+            result[element.Name] = element.Value.ToPlainObject();
+        return result;
+    }
 }
