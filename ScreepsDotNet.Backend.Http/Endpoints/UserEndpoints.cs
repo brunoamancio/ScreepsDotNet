@@ -580,19 +580,32 @@ internal static class UserEndpoints
     private static void MapPublicStats(WebApplication app)
     {
         app.MapGet(ApiRoutes.User.Stats,
-                   ([FromQuery] int? interval) =>
+                   async ([FromQuery] int? interval,
+                          IUserRepository userRepository,
+                          IRoomRepository roomRepository,
+                          CancellationToken cancellationToken) =>
                    {
-                       var intervalValue = interval ?? 0;
+                       var intervalValue = interval ?? AllowedStatsIntervals[0];
                        if (!IsValidStatsInterval(intervalValue))
                            return Results.BadRequest(new ErrorResponse(InvalidStatsIntervalMessage));
 
+                       var activeUsers = await userRepository.GetActiveUsersCountAsync(cancellationToken).ConfigureAwait(false);
+                       var rooms = await roomRepository.GetOwnedRoomsAsync(cancellationToken).ConfigureAwait(false);
+
+                       var statsPayload = new Dictionary<string, object?>
+                       {
+                           [UserResponseFields.Interval] = intervalValue,
+                           [UserResponseFields.ActiveUsers] = activeUsers,
+                           [UserResponseFields.RoomsControlled] = rooms.Count
+                       };
+
                        return Results.Ok(new Dictionary<string, object?>
                        {
-                           [UserResponseFields.Stats] = new Dictionary<string, object?>()
+                           [UserResponseFields.Stats] = statsPayload
                        });
                    })
            .WithName(StatsEndpointName);
-    }
+   }
 
     private static UserProfile RequireUser(ICurrentUserAccessor accessor)
         => accessor.CurrentUser ?? throw new InvalidOperationException(MissingUserContextMessage);

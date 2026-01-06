@@ -30,4 +30,7 @@ public static class UserResponseFields
     public const string StatsMax = "statsMax";
     public const string Totals = "totals";
     public const string GameTimes = "gametimes";
+    public const string Interval = "interval";
+    public const string ActiveUsers = "activeUsers";
+    public const string RoomsControlled = "roomsControlled";
 }

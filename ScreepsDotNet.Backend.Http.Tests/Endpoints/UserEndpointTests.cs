@@ -357,7 +357,11 @@ public class UserEndpointTests : IClassFixture<TestWebApplicationFactory>
 
         response.EnsureSuccessStatusCode();
         using var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
-        Assert.True(payload.RootElement.TryGetProperty(UserResponseFields.Stats, out _));
+        var stats = payload.RootElement.GetProperty(UserResponseFields.Stats);
+        Assert.Equal(int.Parse(StatsValidInterval, System.Globalization.CultureInfo.InvariantCulture),
+                     stats.GetProperty(UserResponseFields.Interval).GetInt32());
+        Assert.True(stats.GetProperty(UserResponseFields.ActiveUsers).GetInt32() > 0);
+        Assert.Equal(0, stats.GetProperty(UserResponseFields.RoomsControlled).GetInt32());
     }
 
     [Fact]
