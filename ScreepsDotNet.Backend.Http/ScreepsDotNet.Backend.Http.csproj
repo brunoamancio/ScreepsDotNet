@@ -1,17 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
 
     <ItemGroup>
-        <PackageReference Include="Jint" Version="4.4.2" />
         <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.1" />
     </ItemGroup>
 
     <ItemGroup>
         <ProjectReference Include="..\ScreepsDotNet.Backend.Core\ScreepsDotNet.Backend.Core.csproj" />
         <ProjectReference Include="..\ScreepsDotNet.Storage.MongoRedis\ScreepsDotNet.Storage.MongoRedis.csproj" />
-    </ItemGroup>
-
-    <ItemGroup>
-        <EmbeddedResource Include="Rendering\Scripts\badge-generator.js" />
     </ItemGroup>
 
 </Project>
