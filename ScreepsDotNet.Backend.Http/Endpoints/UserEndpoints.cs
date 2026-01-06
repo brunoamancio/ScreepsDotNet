@@ -1,10 +1,7 @@
 namespace ScreepsDotNet.Backend.Http.Endpoints;
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.IO;
-using System.IO.Compression;
 using System.Linq;
 using System.Text;
 using System.Text.Json;
@@ -16,6 +13,7 @@ using ScreepsDotNet.Backend.Core.Repositories;
 using ScreepsDotNet.Backend.Core.Services;
 using ScreepsDotNet.Backend.Http.Constants;
 using ScreepsDotNet.Backend.Http.Authentication;
+using ScreepsDotNet.Backend.Http.Endpoints.Helpers;
 using ScreepsDotNet.Backend.Http.Endpoints.Models;
 using ScreepsDotNet.Backend.Http.Routing;
 
@@ -43,6 +41,7 @@ internal static class UserEndpoints
     private const string MissingModulesMessage = "modules are required.";
     private const string CodePayloadTooLargeMessage = "code length exceeds 5 MB limit";
     private const string BranchOperationFailedMessage = "branch operation failed";
+    private const string EmailAlreadyExistsMessage = "email already exists";
 
     private const string DefaultWorldStartRoom = "W5N5";
 
@@ -83,6 +82,8 @@ internal static class UserEndpoints
     private const int MaxCodePayloadBytes = 5 * 1024 * 1024;
     private const int MaxBranchNameLength = 30;
     private const int MoneyHistoryPageSize = 20;
+    private const int MinMemorySegmentId = 0;
+    private const int MaxMemorySegmentId = 99;
 
     private const string MemorySettingsKey = "settings";
     private const string MemoryRoomsKey = "rooms";
@@ -105,7 +106,7 @@ internal static class UserEndpoints
         MapProtectedBranches(app);
         MapProtectedUpdateCode(app);
         MapProtectedCode(app);
-        MapProtectedPost(app, ApiRoutes.User.Badge, BadgeEndpointName);
+        MapProtectedBadge(app);
         MapProtectedRespawnProhibitedRooms(app);
         MapProtectedPost(app, ApiRoutes.User.Respawn, RespawnEndpointName);
         MapProtectedSetActiveBranch(app);
@@ -117,9 +118,9 @@ internal static class UserEndpoints
         MapProtectedNotifyPrefs(app);
         MapProtectedOverview(app);
         MapProtectedTutorialDone(app);
-        MapProtectedPost(app, ApiRoutes.User.Email, EmailEndpointName);
+        MapProtectedEmail(app);
         MapProtectedMoneyHistory(app);
-        MapProtectedPost(app, ApiRoutes.User.SetSteamVisible, SetSteamVisibleEndpointName);
+        MapProtectedSetSteamVisible(app);
 
         MapPublicFind(app);
         MapPublicRooms(app);
@@ -132,7 +133,7 @@ internal static class UserEndpoints
         app.MapGet(ApiRoutes.User.WorldStartRoom,
                    async (ICurrentUserAccessor userAccessor, IUserWorldRepository repository, CancellationToken cancellationToken) =>
                    {
-                       var user = RequireUser(userAccessor);
+                       var user = UserEndpointGuards.RequireUser(userAccessor, MissingUserContextMessage);
                        var room = await repository.GetRandomControllerRoomAsync(user.Id, cancellationToken).ConfigureAwait(false)
                                   ?? DefaultWorldStartRoom;
                        return Results.Ok(new { room = new[] { room } });
@@ -146,12 +147,34 @@ internal static class UserEndpoints
         app.MapGet(ApiRoutes.User.WorldStatus,
                    async (ICurrentUserAccessor userAccessor, IUserWorldRepository repository, CancellationToken cancellationToken) =>
                    {
-                       var user = RequireUser(userAccessor);
+                       var user = UserEndpointGuards.RequireUser(userAccessor, MissingUserContextMessage);
                        var status = await repository.GetWorldStatusAsync(user.Id, cancellationToken).ConfigureAwait(false);
                        return Results.Ok(new { status = status.ToString().ToLowerInvariant() });
                    })
            .RequireTokenAuthentication()
            .WithName(WorldStatusEndpointName);
+    }
+
+    private static void MapProtectedBadge(WebApplication app)
+    {
+        app.MapPost(ApiRoutes.User.Badge,
+                    async ([FromBody] UserBadgeUpdateRequest request,
+                           ICurrentUserAccessor userAccessor,
+                           IUserRepository userRepository,
+                           CancellationToken cancellationToken) =>
+                    {
+                        var user = UserEndpointGuards.RequireUser(userAccessor, MissingUserContextMessage);
+                        if (!UserBadgeUpdateFactory.TryCreate(request.Badge, user, out var badgeUpdate, out var errorMessage))
+                            return Results.BadRequest(new ErrorResponse(errorMessage ?? UserBadgeUpdateFactory.InvalidBadgeParamsMessage));
+
+                        var success = await userRepository.UpdateBadgeAsync(user.Id, badgeUpdate!, cancellationToken).ConfigureAwait(false);
+                        if (!success)
+                            return Results.BadRequest(new ErrorResponse(UserNotFoundMessage));
+
+                        return Results.Ok(UserResponseFactory.CreateEmpty());
+                    })
+           .RequireTokenAuthentication()
+           .WithName(BadgeEndpointName);
     }
 
     private static void MapProtectedGet(WebApplication app, string route, string name)
@@ -171,7 +194,7 @@ internal static class UserEndpoints
                           IUserCodeRepository repository,
                           CancellationToken cancellationToken) =>
                    {
-                       var user = RequireUser(userAccessor);
+                       var user = UserEndpointGuards.RequireUser(userAccessor, MissingUserContextMessage);
                        var branches = await repository.GetBranchesAsync(user.Id, cancellationToken).ConfigureAwait(false);
 
                        var payload = branches.Select(branch => new Dictionary<string, object?>
@@ -200,7 +223,7 @@ internal static class UserEndpoints
                            IUserCodeRepository repository,
                            CancellationToken cancellationToken) =>
                     {
-                        var user = RequireUser(userAccessor);
+                        var user = UserEndpointGuards.RequireUser(userAccessor, MissingUserContextMessage);
                         if (request.Modules is null || request.Modules.Count == 0)
                             return Results.BadRequest(new ErrorResponse(MissingModulesMessage));
 
@@ -208,15 +231,15 @@ internal static class UserEndpoints
                         if (payloadSize > MaxCodePayloadBytes)
                             return Results.BadRequest(new ErrorResponse(CodePayloadTooLargeMessage));
 
-                        var branchIdentifier = ResolveBranchIdentifier(request.Branch);
-                        if (!IsAllowedBranchIdentifier(branchIdentifier))
+                        var branchIdentifier = UserEndpointGuards.ResolveBranchIdentifier(request.Branch, ActiveWorldIdentifier);
+                        if (!UserEndpointGuards.IsAllowedBranchIdentifier(branchIdentifier, ActiveWorldIdentifier, MaxBranchNameLength))
                             return Results.BadRequest(new ErrorResponse(InvalidStatsIntervalMessage));
 
                         var updated = await repository.UpdateBranchModulesAsync(user.Id, branchIdentifier, request.Modules, cancellationToken).ConfigureAwait(false);
                         if (!updated)
                             return Results.BadRequest(new ErrorResponse(BranchOperationFailedMessage));
 
-                        return Results.Ok(CreateTimestampResponse());
+                        return Results.Ok(UserResponseFactory.CreateTimestamp());
                     })
            .RequireTokenAuthentication()
            .WithName(PostCodeEndpointName);
@@ -230,15 +253,16 @@ internal static class UserEndpoints
                            IUserCodeRepository repository,
                            CancellationToken cancellationToken) =>
                     {
-                        var user = RequireUser(userAccessor);
-                        if (!IsValidActiveName(request.ActiveName) || !IsValidBranchName(request.Branch))
+                        var user = UserEndpointGuards.RequireUser(userAccessor, MissingUserContextMessage);
+                        if (!UserEndpointGuards.IsValidActiveName(request.ActiveName, UserResponseFields.ActiveWorld, UserResponseFields.ActiveSim) ||
+                            !UserEndpointGuards.IsValidBranchName(request.Branch, MaxBranchNameLength))
                             return Results.BadRequest(new ErrorResponse(InvalidStatsIntervalMessage));
 
                         var success = await repository.SetActiveBranchAsync(user.Id, request.Branch!, request.ActiveName!, cancellationToken).ConfigureAwait(false);
                         if (!success)
                             return Results.BadRequest(new ErrorResponse(BranchOperationFailedMessage));
 
-                        return Results.Ok(CreateTimestampResponse());
+                        return Results.Ok(UserResponseFactory.CreateTimestamp());
                     })
            .RequireTokenAuthentication()
            .WithName(SetActiveBranchEndpointName);
@@ -252,11 +276,11 @@ internal static class UserEndpoints
                            IUserCodeRepository repository,
                            CancellationToken cancellationToken) =>
                     {
-                        var user = RequireUser(userAccessor);
-                        if (!IsValidBranchName(request.NewName))
+                        var user = UserEndpointGuards.RequireUser(userAccessor, MissingUserContextMessage);
+                        if (!UserEndpointGuards.IsValidBranchName(request.NewName, MaxBranchNameLength))
                             return Results.BadRequest(new ErrorResponse(InvalidStatsIntervalMessage));
 
-                        if (!string.IsNullOrWhiteSpace(request.Branch) && !IsValidBranchName(request.Branch))
+                        if (!string.IsNullOrWhiteSpace(request.Branch) && !UserEndpointGuards.IsValidBranchName(request.Branch, MaxBranchNameLength))
                             return Results.BadRequest(new ErrorResponse(InvalidStatsIntervalMessage));
 
                         var success = await repository.CloneBranchAsync(user.Id,
@@ -267,7 +291,7 @@ internal static class UserEndpoints
                         if (!success)
                             return Results.BadRequest(new ErrorResponse(BranchOperationFailedMessage));
 
-                        return Results.Ok(CreateTimestampResponse());
+                        return Results.Ok(UserResponseFactory.CreateTimestamp());
                     })
            .RequireTokenAuthentication()
            .WithName(CloneBranchEndpointName);
@@ -281,15 +305,15 @@ internal static class UserEndpoints
                            IUserCodeRepository repository,
                            CancellationToken cancellationToken) =>
                     {
-                        var user = RequireUser(userAccessor);
-                        if (!IsValidBranchName(request.Branch))
+                        var user = UserEndpointGuards.RequireUser(userAccessor, MissingUserContextMessage);
+                        if (!UserEndpointGuards.IsValidBranchName(request.Branch, MaxBranchNameLength))
                             return Results.BadRequest(new ErrorResponse(InvalidStatsIntervalMessage));
 
                         var success = await repository.DeleteBranchAsync(user.Id, request.Branch!, cancellationToken).ConfigureAwait(false);
                         if (!success)
                             return Results.BadRequest(new ErrorResponse(BranchOperationFailedMessage));
 
-                        return Results.Ok(CreateTimestampResponse());
+                        return Results.Ok(UserResponseFactory.CreateTimestamp());
                     })
            .RequireTokenAuthentication()
            .WithName(DeleteBranchEndpointName);
@@ -303,14 +327,14 @@ internal static class UserEndpoints
                            IUserRepository userRepository,
                            CancellationToken cancellationToken) =>
                     {
-                        var user = RequireUser(userAccessor);
-                        var preferences = CreateNotifyPreferencesDictionary(user.NotifyPrefs);
+                        var user = UserEndpointGuards.RequireUser(userAccessor, MissingUserContextMessage);
+                        var preferences = NotifyPreferencesHelper.CreatePreferencesDictionary(user.NotifyPrefs);
 
-                        ApplyBooleanPreference(preferences, UserResponseFields.NotifyDisabled, request.Disabled);
-                        ApplyBooleanPreference(preferences, UserResponseFields.NotifyDisabledOnMessages, request.DisabledOnMessages);
-                        ApplyBooleanPreference(preferences, UserResponseFields.NotifySendOnline, request.SendOnline);
-                        ApplyIntervalPreference(preferences, UserResponseFields.NotifyInterval, request.Interval, AllowedNotifyIntervals);
-                        ApplyIntervalPreference(preferences, UserResponseFields.NotifyErrorsInterval, request.ErrorsInterval, AllowedNotifyErrorsIntervals);
+                        NotifyPreferencesHelper.ApplyBooleanPreference(preferences, UserResponseFields.NotifyDisabled, request.Disabled);
+                        NotifyPreferencesHelper.ApplyBooleanPreference(preferences, UserResponseFields.NotifyDisabledOnMessages, request.DisabledOnMessages);
+                        NotifyPreferencesHelper.ApplyBooleanPreference(preferences, UserResponseFields.NotifySendOnline, request.SendOnline);
+                        NotifyPreferencesHelper.ApplyIntervalPreference(preferences, UserResponseFields.NotifyInterval, request.Interval, AllowedNotifyIntervals);
+                        NotifyPreferencesHelper.ApplyIntervalPreference(preferences, UserResponseFields.NotifyErrorsInterval, request.ErrorsInterval, AllowedNotifyErrorsIntervals);
 
                         await userRepository.UpdateNotifyPreferencesAsync(user.Id, preferences, cancellationToken).ConfigureAwait(false);
 
@@ -331,16 +355,16 @@ internal static class UserEndpoints
                           IUserMemoryRepository memoryRepository,
                           CancellationToken cancellationToken) =>
                    {
-                       var user = RequireUser(userAccessor);
+                       var user = UserEndpointGuards.RequireUser(userAccessor, MissingUserContextMessage);
                        var memory = await memoryRepository.GetMemoryAsync(user.Id, cancellationToken).ConfigureAwait(false);
-                       var effectiveMemory = EnsureEffectiveMemory(memory);
-                       var value = ResolveMemoryPath(effectiveMemory, path);
+                       var effectiveMemory = UserMemoryHelper.EnsureEffectiveMemory(memory, DefaultMemory);
+                       var value = UserMemoryHelper.ResolveMemoryPath(effectiveMemory, path);
                        if (value is null)
                            return Results.Ok(new Dictionary<string, object?> { [UserResponseFields.Data] = MemoryPathErrorMessage });
 
                        return Results.Ok(new Dictionary<string, object?>
                        {
-                           [UserResponseFields.Data] = EncodeMemoryValue(value)
+                           [UserResponseFields.Data] = UserMemoryHelper.EncodeMemoryValue(value, MemoryConstants.GzipPrefix)
                        });
                    })
            .RequireTokenAuthentication()
@@ -352,7 +376,7 @@ internal static class UserEndpoints
                            IUserMemoryRepository memoryRepository,
                            CancellationToken cancellationToken) =>
                     {
-                        var user = RequireUser(userAccessor);
+                        var user = UserEndpointGuards.RequireUser(userAccessor, MissingUserContextMessage);
                         var json = request.Value.ValueKind == JsonValueKind.Undefined ? "null" : request.Value.GetRawText();
                         if (Encoding.UTF8.GetByteCount(json) > MaxMemoryBytes)
                             return Results.BadRequest(new ErrorResponse(MemorySizeExceededMessage));
@@ -360,7 +384,7 @@ internal static class UserEndpoints
                         var path = string.IsNullOrWhiteSpace(request.Path) ? null : request.Path;
                         await memoryRepository.UpdateMemoryAsync(user.Id, path, request.Value, cancellationToken).ConfigureAwait(false);
 
-                        return Results.Ok(CreateTimestampResponse());
+                        return Results.Ok(UserResponseFactory.CreateTimestamp());
                     })
            .RequireTokenAuthentication()
            .WithName(PostMemoryEndpointName);
@@ -374,8 +398,8 @@ internal static class UserEndpoints
                           IUserMemoryRepository memoryRepository,
                           CancellationToken cancellationToken) =>
                    {
-                       var user = RequireUser(userAccessor);
-                       if (!IsValidMemorySegment(segment))
+                       var user = UserEndpointGuards.RequireUser(userAccessor, MissingUserContextMessage);
+                       if (!UserEndpointGuards.IsValidMemorySegment(segment, MinMemorySegmentId, MaxMemorySegmentId))
                            return Results.BadRequest(new ErrorResponse(InvalidMemorySegmentMessage));
 
                        var data = await memoryRepository.GetMemorySegmentAsync(user.Id, segment!.Value, cancellationToken).ConfigureAwait(false);
@@ -393,8 +417,8 @@ internal static class UserEndpoints
                            IUserMemoryRepository memoryRepository,
                            CancellationToken cancellationToken) =>
                     {
-                        var user = RequireUser(userAccessor);
-                        if (!IsValidMemorySegment(request.Segment))
+                        var user = UserEndpointGuards.RequireUser(userAccessor, MissingUserContextMessage);
+                        if (!UserEndpointGuards.IsValidMemorySegment(request.Segment, MinMemorySegmentId, MaxMemorySegmentId))
                             return Results.BadRequest(new ErrorResponse(InvalidMemorySegmentMessage));
 
                         var length = request.Data is null ? 0 : Encoding.UTF8.GetByteCount(request.Data);
@@ -403,7 +427,7 @@ internal static class UserEndpoints
 
                         await memoryRepository.SetMemorySegmentAsync(user.Id, request.Segment, request.Data, cancellationToken).ConfigureAwait(false);
 
-                        return Results.Ok(CreateTimestampResponse());
+                        return Results.Ok(UserResponseFactory.CreateTimestamp());
                     })
            .RequireTokenAuthentication()
            .WithName(PostMemorySegmentEndpointName);
@@ -417,14 +441,14 @@ internal static class UserEndpoints
                            IUserConsoleRepository consoleRepository,
                            CancellationToken cancellationToken) =>
                     {
-                        var user = RequireUser(userAccessor);
+                        var user = UserEndpointGuards.RequireUser(userAccessor, MissingUserContextMessage);
                         var expression = request.Expression ?? string.Empty;
                         var length = Encoding.UTF8.GetByteCount(expression);
                         if (length > MaxConsoleExpressionBytes)
                             return Results.BadRequest(new ErrorResponse(ExpressionTooLargeMessage));
 
                         await consoleRepository.EnqueueExpressionAsync(user.Id, expression, hidden: false, cancellationToken).ConfigureAwait(false);
-                        return Results.Ok(CreateEmptyResponse());
+                        return Results.Ok(UserResponseFactory.CreateEmpty());
                     })
            .RequireTokenAuthentication()
            .WithName(ConsoleEndpointName);
@@ -439,9 +463,9 @@ internal static class UserEndpoints
                           IUserWorldRepository userWorldRepository,
                           CancellationToken cancellationToken) =>
                    {
-                       var user = RequireUser(userAccessor);
+                       var user = UserEndpointGuards.RequireUser(userAccessor, MissingUserContextMessage);
                        var intervalValue = interval ?? AllowedStatsIntervals[0];
-                       if (!IsValidStatsInterval(intervalValue))
+                       if (!UserEndpointGuards.IsValidStatsInterval(intervalValue, AllowedStatsIntervals))
                            return Results.BadRequest(new ErrorResponse(InvalidStatsIntervalMessage));
 
                        // Accept parameter to keep parity with Node backend even if unused for now.
@@ -468,11 +492,37 @@ internal static class UserEndpoints
         app.MapPost(ApiRoutes.User.TutorialDone,
                     (ICurrentUserAccessor userAccessor) =>
                     {
-                        RequireUser(userAccessor);
-                        return Results.Ok(new Dictionary<string, object?>());
+                        UserEndpointGuards.RequireUser(userAccessor, MissingUserContextMessage);
+                        return Results.Ok(UserResponseFactory.CreateEmpty());
                     })
            .RequireTokenAuthentication()
            .WithName(TutorialDoneEndpointName);
+    }
+
+    private static void MapProtectedEmail(WebApplication app)
+    {
+        app.MapPost(ApiRoutes.User.Email,
+                    async ([FromBody] EmailUpdateRequest request,
+                           ICurrentUserAccessor userAccessor,
+                           IUserRepository userRepository,
+                           CancellationToken cancellationToken) =>
+                    {
+                        var user = UserEndpointGuards.RequireUser(userAccessor, MissingUserContextMessage);
+                        var email = request.Email?.Trim();
+                        if (!EmailValidator.IsValid(email))
+                            return Results.BadRequest(new ErrorResponse(EmailValidator.InvalidEmailMessage));
+
+                        var normalizedEmail = email!.ToLowerInvariant();
+                        var result = await userRepository.UpdateEmailAsync(user.Id, normalizedEmail, cancellationToken).ConfigureAwait(false);
+                        return result switch
+                        {
+                            EmailUpdateResult.Success => Results.Ok(UserResponseFactory.CreateEmpty()),
+                            EmailUpdateResult.AlreadyExists => Results.BadRequest(new ErrorResponse(EmailAlreadyExistsMessage)),
+                            _ => Results.BadRequest(new ErrorResponse(UserNotFoundMessage))
+                        };
+                    })
+           .RequireTokenAuthentication()
+           .WithName(EmailEndpointName);
     }
 
     private static void MapProtectedMoneyHistory(WebApplication app)
@@ -483,7 +533,7 @@ internal static class UserEndpoints
                           IUserMoneyRepository moneyRepository,
                           CancellationToken cancellationToken) =>
                    {
-                       var user = RequireUser(userAccessor);
+                       var user = UserEndpointGuards.RequireUser(userAccessor, MissingUserContextMessage);
                        var pageNumber = page ?? 0;
                        if (pageNumber < 0)
                            return Results.BadRequest(new ErrorResponse(InvalidPageMessage));
@@ -501,6 +551,23 @@ internal static class UserEndpoints
            .WithName(MoneyHistoryEndpointName);
     }
 
+    private static void MapProtectedSetSteamVisible(WebApplication app)
+    {
+        app.MapPost(ApiRoutes.User.SetSteamVisible,
+                    async ([FromBody] SetSteamVisibleRequest request,
+                           ICurrentUserAccessor userAccessor,
+                           IUserRepository userRepository,
+                           CancellationToken cancellationToken) =>
+                    {
+                        var user = UserEndpointGuards.RequireUser(userAccessor, MissingUserContextMessage);
+                        var visible = request.Visible ?? false;
+                        await userRepository.SetSteamVisibilityAsync(user.Id, visible, cancellationToken).ConfigureAwait(false);
+                        return Results.Ok(UserResponseFactory.CreateEmpty());
+                    })
+           .RequireTokenAuthentication()
+           .WithName(SetSteamVisibleEndpointName);
+    }
+
     private static void MapProtectedCode(WebApplication app)
     {
         app.MapGet(ApiRoutes.User.Code,
@@ -509,7 +576,7 @@ internal static class UserEndpoints
                           IUserCodeRepository repository,
                           CancellationToken cancellationToken) =>
                    {
-                       var user = RequireUser(userAccessor);
+                       var user = UserEndpointGuards.RequireUser(userAccessor, MissingUserContextMessage);
                        var branchName = branch ?? ActiveWorldIdentifier;
                        var codeBranch = await repository.GetBranchAsync(user.Id, branchName, cancellationToken).ConfigureAwait(false);
                        if (codeBranch is null)
@@ -614,7 +681,7 @@ internal static class UserEndpoints
                           CancellationToken cancellationToken) =>
                    {
                        var intervalValue = interval ?? AllowedStatsIntervals[0];
-                       if (!IsValidStatsInterval(intervalValue))
+                       if (!UserEndpointGuards.IsValidStatsInterval(intervalValue, AllowedStatsIntervals))
                            return Results.BadRequest(new ErrorResponse(InvalidStatsIntervalMessage));
 
                        var activeUsers = await userRepository.GetActiveUsersCountAsync(cancellationToken).ConfigureAwait(false);
@@ -635,132 +702,6 @@ internal static class UserEndpoints
            .WithName(StatsEndpointName);
    }
 
-    private static UserProfile RequireUser(ICurrentUserAccessor accessor)
-        => accessor.CurrentUser ?? throw new InvalidOperationException(MissingUserContextMessage);
-
-    private static bool IsValidStatsInterval(int interval)
-        => Array.IndexOf(AllowedStatsIntervals, interval) >= 0;
-
-    private static bool IsValidMemorySegment(int? segmentId)
-        => segmentId is >= 0 and <= 99;
-
-    private static bool IsValidBranchName(string? branchName)
-        => !string.IsNullOrWhiteSpace(branchName) && branchName.Length <= MaxBranchNameLength;
-
-    private static bool IsValidActiveName(string? activeName)
-        => string.Equals(activeName, UserResponseFields.ActiveWorld, StringComparison.OrdinalIgnoreCase) ||
-           string.Equals(activeName, UserResponseFields.ActiveSim, StringComparison.OrdinalIgnoreCase);
-
-    private static IReadOnlyDictionary<string, object?> EnsureEffectiveMemory(IDictionary<string, object?> memory)
-        => memory.Count == 0
-            ? DefaultMemory
-            : memory as IReadOnlyDictionary<string, object?> ?? new Dictionary<string, object?>(memory, StringComparer.Ordinal);
-
-    private static string ResolveBranchIdentifier(string? branch)
-        => string.IsNullOrWhiteSpace(branch) ? ActiveWorldIdentifier : branch.Trim();
-
-    private static bool IsAllowedBranchIdentifier(string branchIdentifier)
-        => string.Equals(branchIdentifier, ActiveWorldIdentifier, StringComparison.OrdinalIgnoreCase) ||
-           IsValidBranchName(branchIdentifier);
-
-    private static Dictionary<string, object?> CreateNotifyPreferencesDictionary(object? notifyPrefs)
-    {
-        switch (notifyPrefs) {
-            case IDictionary<string, object?> typedDictionary: return new Dictionary<string, object?>(typedDictionary, StringComparer.Ordinal);
-            case IDictionary dictionary: {
-                var result = new Dictionary<string, object?>(StringComparer.Ordinal);
-                foreach (DictionaryEntry entry in dictionary)
-                {
-                    if (entry.Key is string key)
-                        result[key] = entry.Value;
-                }
-                return result;
-            }
-            case JsonElement { ValueKind: JsonValueKind.Object } element: {
-                var result = new Dictionary<string, object?>(StringComparer.Ordinal);
-                foreach (var property in element.EnumerateObject())
-                    result[property.Name] = ConvertJsonElementValue(property.Value);
-                return result;
-            }
-            default: return new Dictionary<string, object?>(StringComparer.Ordinal);
-        }
-    }
-
-    private static object? ConvertJsonElementValue(JsonElement element)
-        => element.ValueKind switch
-        {
-            JsonValueKind.True => true,
-            JsonValueKind.False => false,
-            JsonValueKind.Number when element.TryGetInt32(out var intValue) => intValue,
-            JsonValueKind.String => element.GetString(),
-            _ => null
-        };
-
-    private static void ApplyBooleanPreference(IDictionary<string, object?> preferences, string key, bool? value)
-    {
-        if (value.HasValue)
-            preferences[key] = value.Value;
-    }
-
-    private static void ApplyIntervalPreference(IDictionary<string, object?> preferences, string key, int? value, int[] allowedValues)
-    {
-        if (value.HasValue && Array.IndexOf(allowedValues, value.Value) >= 0)
-            preferences[key] = value.Value;
-    }
-
-    private static string EncodeMemoryValue(object value)
-    {
-        using var buffer = new MemoryStream();
-        using (var gzip = new GZipStream(buffer, CompressionLevel.SmallestSize, leaveOpen: true))
-        using (var writer = new StreamWriter(gzip, Encoding.UTF8))
-        {
-            var json = JsonSerializer.Serialize(value);
-            writer.Write(json);
-        }
-
-        return MemoryConstants.GzipPrefix + Convert.ToBase64String(buffer.ToArray());
-    }
-
-    private static object? ResolveMemoryPath(IReadOnlyDictionary<string, object?> root, string? path)
-    {
-        if (string.IsNullOrWhiteSpace(path))
-            return root;
-
-        var segments = path.Split('.', StringSplitOptions.RemoveEmptyEntries);
-        object? current = root;
-        foreach (var segment in segments)
-        {
-            if (current is IReadOnlyDictionary<string, object?> dictionary)
-            {
-                if (!dictionary.TryGetValue(segment, out current))
-                    return null;
-
-                continue;
-            }
-
-            if (current is IDictionary<string, object?> mutableDictionary)
-            {
-                if (!mutableDictionary.TryGetValue(segment, out current))
-                    return null;
-
-                continue;
-            }
-
-            return null;
-        }
-
-        return current;
-    }
-
-    private static Dictionary<string, object?> CreateEmptyResponse()
-        => new(StringComparer.Ordinal);
-
-    private static Dictionary<string, object?> CreateTimestampResponse()
-        => new(StringComparer.Ordinal)
-        {
-            [UserResponseFields.Timestamp] = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
-        };
-
     private static IResult NotImplemented(string route)
         => Results.Json(new { error = NotImplementedError, route }, statusCode: StatusCodes.Status501NotImplemented);
 
@@ -774,4 +715,5 @@ internal static class UserEndpoints
            .RequireTokenAuthentication()
            .WithName(RespawnProhibitedRoomsEndpointName);
     }
+
 }

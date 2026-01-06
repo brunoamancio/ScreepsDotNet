@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using ScreepsDotNet.Backend.Core.Configuration;
+using ScreepsDotNet.Backend.Core.Constants;
 using ScreepsDotNet.Backend.Core.Models;
 using ScreepsDotNet.Backend.Core.Repositories;
 using ScreepsDotNet.Backend.Core.Services;
@@ -89,6 +90,8 @@ sealed file class FakeVersionInfoProvider : IVersionInfoProvider
 
 internal sealed class FakeUserRepository : IUserRepository
 {
+    public const string DuplicateEmail = "duplicate@example.com";
+
     private readonly Dictionary<string, object?> _notifyPrefs = new(StringComparer.Ordinal)
     {
         [UserResponseFields.NotifyDisabled] = false,
@@ -98,24 +101,47 @@ internal sealed class FakeUserRepository : IUserRepository
         [UserResponseFields.NotifyErrorsInterval] = 60
     };
 
+    private UserBadgeUpdate? _latestBadge;
+    private string _currentEmail = AuthTestValues.Email;
+    private bool _steamProfileHidden;
+
     private static readonly IReadOnlyDictionary<string, object?> PublicBadge = new Dictionary<string, object?>
     {
-        ["color1"] = "#ff0000",
-        ["color2"] = "#00ff00",
-        ["color3"] = "#0000ff",
-        ["type"] = 1,
-        ["param"] = 0
+        [BadgeDocumentFields.Color1] = "#ff0000",
+        [BadgeDocumentFields.Color2] = "#00ff00",
+        [BadgeDocumentFields.Color3] = "#0000ff",
+        [BadgeDocumentFields.Type] = 1,
+        [BadgeDocumentFields.Param] = 0
+    };
+
+    private static readonly IDictionary<string, object?> CustomBadge = new Dictionary<string, object?>(StringComparer.Ordinal)
+    {
+        ["src"] = "custom"
     };
 
     private static readonly UserProfile BaseProfile = new(AuthTestValues.UserId, AuthTestValues.Username, AuthTestValues.Email, false,
                                                       true, 100, null, DateTime.UtcNow.AddDays(-1), null, null, DateTime.UtcNow.AddHours(-2),
-                                                      false, null, 0, 500, new UserSteamProfile(AuthTestValues.SteamId, "Test Player", null, false),
+                                                      false, CustomBadge, 0, 500, new UserSteamProfile(AuthTestValues.SteamId, "Test Player", null, false),
                                                       0, 0);
 
     private static readonly UserPublicProfile PublicProfile = new(AuthTestValues.UserId, AuthTestValues.Username, PublicBadge, null, 0, AuthTestValues.SteamId);
 
     public Task<UserProfile?> GetProfileAsync(string userId, CancellationToken cancellationToken = default)
-        => Task.FromResult<UserProfile?>(BaseProfile with { NotifyPrefs = new Dictionary<string, object?>(_notifyPrefs) });
+    {
+        var badge = _latestBadge is null ? null : BuildBadgeDictionary(_latestBadge);
+        var steam = BaseProfile.Steam is null
+            ? null : BaseProfile.Steam with { SteamProfileLinkHidden = _steamProfileHidden };
+
+        var profile = BaseProfile with
+        {
+            Email = _currentEmail,
+            Badge = badge,
+            NotifyPrefs = new Dictionary<string, object?>(_notifyPrefs),
+            Steam = steam
+        };
+
+        return Task.FromResult<UserProfile?>(profile);
+    }
 
     public Task<int> GetActiveUsersCountAsync(CancellationToken cancellationToken = default)
         => Task.FromResult(1);
@@ -133,6 +159,44 @@ internal sealed class FakeUserRepository : IUserRepository
     }
 
     public IReadOnlyDictionary<string, object?> GetNotifyPreferencesSnapshot() => new Dictionary<string, object?>(_notifyPrefs);
+
+    public UserBadgeUpdate? LastBadgeUpdate => _latestBadge;
+
+    public string CurrentEmail => _currentEmail;
+
+    public bool IsSteamProfileHidden => _steamProfileHidden;
+
+    public Task<bool> UpdateBadgeAsync(string userId, UserBadgeUpdate badge, CancellationToken cancellationToken = default)
+    {
+        _latestBadge = badge;
+        return Task.FromResult(true);
+    }
+
+    public Task<EmailUpdateResult> UpdateEmailAsync(string userId, string email, CancellationToken cancellationToken = default)
+    {
+        if (string.Equals(email, DuplicateEmail, StringComparison.OrdinalIgnoreCase))
+            return Task.FromResult(EmailUpdateResult.AlreadyExists);
+
+        _currentEmail = email;
+        return Task.FromResult(EmailUpdateResult.Success);
+    }
+
+    public Task SetSteamVisibilityAsync(string userId, bool visible, CancellationToken cancellationToken = default)
+    {
+        _steamProfileHidden = !visible;
+        return Task.CompletedTask;
+    }
+
+    private static IDictionary<string, object?> BuildBadgeDictionary(UserBadgeUpdate badge)
+        => new Dictionary<string, object?>(StringComparer.Ordinal)
+        {
+            [BadgeDocumentFields.Type] = badge.Type,
+            [BadgeDocumentFields.Color1] = badge.Color1,
+            [BadgeDocumentFields.Color2] = badge.Color2,
+            [BadgeDocumentFields.Color3] = badge.Color3,
+            [BadgeDocumentFields.Param] = badge.Param,
+            [BadgeDocumentFields.Flip] = badge.Flip
+        };
 }
 
 sealed file class FakeRoomRepository : IRoomRepository

@@ -452,6 +452,110 @@ public class UserEndpointTests : IClassFixture<TestWebApplicationFactory>
         Assert.True(payload.RootElement.TryGetProperty(UserResponseFields.Modules, out _));
     }
 
+    [Fact]
+    public async Task UserBadge_WithValidPayload_UpdatesState()
+    {
+        var token = await AuthenticateAsync();
+        var request = new HttpRequestMessage(HttpMethod.Post, ApiRoutes.User.Badge);
+        request.Headers.TryAddWithoutValidation(AuthHeaderNames.Token, token);
+        request.Content = JsonContent.Create(new
+        {
+            badge = new
+            {
+                type = 2,
+                color1 = "#abcdef",
+                color2 = "#123456",
+                color3 = "#654321",
+                param = 5,
+                flip = true
+            }
+        });
+
+        var response = await _client.SendAsync(request);
+
+        response.EnsureSuccessStatusCode();
+        Assert.NotNull(_userRepository.LastBadgeUpdate);
+        Assert.Equal(2, _userRepository.LastBadgeUpdate?.Type);
+    }
+
+    [Fact]
+    public async Task UserBadge_InvalidColor_ReturnsBadRequest()
+    {
+        var token = await AuthenticateAsync();
+        var request = new HttpRequestMessage(HttpMethod.Post, ApiRoutes.User.Badge);
+        request.Headers.TryAddWithoutValidation(AuthHeaderNames.Token, token);
+        request.Content = JsonContent.Create(new
+        {
+            badge = new
+            {
+                type = 2,
+                color1 = "invalid",
+                color2 = "#123456",
+                color3 = "#654321",
+                param = 5,
+                flip = true
+            }
+        });
+
+        var response = await _client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task UserEmail_InvalidFormat_ReturnsBadRequest()
+    {
+        var token = await AuthenticateAsync();
+        var request = new HttpRequestMessage(HttpMethod.Post, ApiRoutes.User.Email);
+        request.Headers.TryAddWithoutValidation(AuthHeaderNames.Token, token);
+        request.Content = JsonContent.Create(new { email = "not-an-email" });
+
+        var response = await _client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task UserEmail_Duplicate_ReturnsBadRequest()
+    {
+        var token = await AuthenticateAsync();
+        var request = new HttpRequestMessage(HttpMethod.Post, ApiRoutes.User.Email);
+        request.Headers.TryAddWithoutValidation(AuthHeaderNames.Token, token);
+        request.Content = JsonContent.Create(new { email = FakeUserRepository.DuplicateEmail });
+
+        var response = await _client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task UserEmail_Valid_UpdatesRepository()
+    {
+        var token = await AuthenticateAsync();
+        var request = new HttpRequestMessage(HttpMethod.Post, ApiRoutes.User.Email);
+        request.Headers.TryAddWithoutValidation(AuthHeaderNames.Token, token);
+        request.Content = JsonContent.Create(new { email = "new-email@example.com" });
+
+        var response = await _client.SendAsync(request);
+
+        response.EnsureSuccessStatusCode();
+        Assert.Equal("new-email@example.com", _userRepository.CurrentEmail);
+    }
+
+    [Fact]
+    public async Task UserSetSteamVisible_TogglesHiddenFlag()
+    {
+        var token = await AuthenticateAsync();
+        var request = new HttpRequestMessage(HttpMethod.Post, ApiRoutes.User.SetSteamVisible);
+        request.Headers.TryAddWithoutValidation(AuthHeaderNames.Token, token);
+        request.Content = JsonContent.Create(new { visible = true });
+
+        var response = await _client.SendAsync(request);
+
+        response.EnsureSuccessStatusCode();
+        Assert.False(_userRepository.IsSteamProfileHidden);
+    }
+
     private async Task<string> AuthenticateAsync()
     {
         var response = await _client.PostAsJsonAsync(ApiRoutes.AuthSteamTicket, new

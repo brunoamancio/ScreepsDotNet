@@ -59,6 +59,33 @@ Accept: application/json
   "errorsInterval": 60
 }
 
+### User - Update Badge (protected)
+POST {{ScreepsDotNet_Backend_Http_HostAddress}}/api/user/badge
+X-Token: {{ScreepsDotNet_User_Token}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "badge": {
+    "type": 2,
+    "color1": "#abcdef",
+    "color2": "#123456",
+    "color3": "#654321",
+    "param": 5,
+    "flip": true
+  }
+}
+
+### User - Update Email (protected)
+POST {{ScreepsDotNet_Backend_Http_HostAddress}}/api/user/email
+X-Token: {{ScreepsDotNet_User_Token}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "email": "new-email@example.com"
+}
+
 ### User - Memory (protected)
 GET {{ScreepsDotNet_Backend_Http_HostAddress}}/api/user/memory
 X-Token: {{ScreepsDotNet_User_Token}}
@@ -156,3 +183,13 @@ Accept: application/json
 POST {{ScreepsDotNet_Backend_Http_HostAddress}}/api/user/tutorial-done
 X-Token: {{ScreepsDotNet_User_Token}}
 Accept: application/json
+
+### User - Set Steam Visibility (protected)
+POST {{ScreepsDotNet_Backend_Http_HostAddress}}/api/user/set-steam-visible
+X-Token: {{ScreepsDotNet_User_Token}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "visible": true
+}

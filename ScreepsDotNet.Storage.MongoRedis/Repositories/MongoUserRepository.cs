@@ -1,5 +1,6 @@
 using MongoDB.Bson;
 using MongoDB.Driver;
+using ScreepsDotNet.Backend.Core.Constants;
 using ScreepsDotNet.Backend.Core.Repositories;
 using ScreepsDotNet.Backend.Core.Models;
 using ScreepsDotNet.Storage.MongoRedis.Extensions;
@@ -148,5 +149,60 @@ public sealed class MongoUserRepository : IUserRepository
 
         var update = Builders<BsonDocument>.Update.Set(NotifyPrefsField, document);
         return _collection.UpdateOneAsync(filter, update, cancellationToken: cancellationToken);
+    }
+
+    public async Task<bool> UpdateBadgeAsync(string userId, UserBadgeUpdate badge, CancellationToken cancellationToken = default)
+    {
+        var filter = Builders<BsonDocument>.Filter.Eq(IdField, userId);
+        var badgeDocument = BuildBadgeDocument(badge);
+        var update = Builders<BsonDocument>.Update.Set(BadgeField, badgeDocument);
+        var result = await _collection.UpdateOneAsync(filter, update, cancellationToken: cancellationToken).ConfigureAwait(false);
+        return result.MatchedCount > 0;
+    }
+
+    public async Task<EmailUpdateResult> UpdateEmailAsync(string userId, string email, CancellationToken cancellationToken = default)
+    {
+        var duplicateFilter = Builders<BsonDocument>.Filter.And(
+            Builders<BsonDocument>.Filter.Eq(EmailField, email),
+            Builders<BsonDocument>.Filter.Ne(IdField, userId));
+
+        var duplicateExists = await _collection.Find(duplicateFilter)
+                                                .Limit(1)
+                                                .AnyAsync(cancellationToken)
+                                                .ConfigureAwait(false);
+
+        if (duplicateExists)
+            return EmailUpdateResult.AlreadyExists;
+
+        var filter = Builders<BsonDocument>.Filter.Eq(IdField, userId);
+        var update = Builders<BsonDocument>.Update
+                                           .Set(EmailField, email)
+                                           .Set(EmailDirtyField, false);
+
+        var result = await _collection.UpdateOneAsync(filter, update, cancellationToken: cancellationToken).ConfigureAwait(false);
+        return result.MatchedCount == 0 ? EmailUpdateResult.UserNotFound : EmailUpdateResult.Success;
+    }
+
+    public Task SetSteamVisibilityAsync(string userId, bool visible, CancellationToken cancellationToken = default)
+    {
+        var filter = Builders<BsonDocument>.Filter.Eq(IdField, userId);
+        var hiddenValue = visible ? 0 : 1;
+        var update = Builders<BsonDocument>.Update.Set($"{SteamField}.{SteamProfileHiddenField}", hiddenValue);
+        return _collection.UpdateOneAsync(filter, update, cancellationToken: cancellationToken);
+    }
+
+    private static BsonDocument BuildBadgeDocument(UserBadgeUpdate badge)
+    {
+        var document = new BsonDocument
+        {
+            [BadgeDocumentFields.Type] = BsonValue.Create(badge.Type),
+            [BadgeDocumentFields.Color1] = badge.Color1,
+            [BadgeDocumentFields.Color2] = badge.Color2,
+            [BadgeDocumentFields.Color3] = badge.Color3,
+            [BadgeDocumentFields.Param] = badge.Param,
+            [BadgeDocumentFields.Flip] = badge.Flip
+        };
+
+        return document;
     }
 }
