@@ -29,6 +29,7 @@ builder.Services.AddSingleton<IUserWorldRepository, MongoUserWorldRepository>();
 builder.Services.AddSingleton<IUserCodeRepository, MongoUserCodeRepository>();
 builder.Services.AddSingleton<IUserMemoryRepository, MongoUserMemoryRepository>();
 builder.Services.AddSingleton<IUserConsoleRepository, MongoUserConsoleRepository>();
+builder.Services.AddSingleton<IUserMoneyRepository, MongoUserMoneyRepository>();
 builder.Services.AddSingleton<IBadgeSvgGenerator, BadgeSvgGenerator>();
 builder.Services.AddSingleton<IVersionInfoProvider, VersionInfoProvider>();
 builder.Services.AddSingleton<ITokenService, RedisTokenService>();

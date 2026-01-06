@@ -265,6 +265,23 @@ public class UserEndpointTests : IClassFixture<TestWebApplicationFactory>
     }
 
     [Fact]
+    public async Task UserMoneyHistory_WithToken_ReturnsPagedList()
+    {
+        var token = await AuthenticateAsync();
+        var request = new HttpRequestMessage(HttpMethod.Get, ApiRoutes.User.MoneyHistory + "?page=0");
+        request.Headers.TryAddWithoutValidation(AuthHeaderNames.Token, token);
+
+        var response = await _client.SendAsync(request);
+
+        response.EnsureSuccessStatusCode();
+        using var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        var root = payload.RootElement;
+        Assert.Equal(0, root.GetProperty(UserResponseFields.Page).GetInt32());
+        Assert.True(root.GetProperty(UserResponseFields.List).EnumerateArray().Any());
+        Assert.False(root.GetProperty(UserResponseFields.HasMore).GetBoolean());
+    }
+
+    [Fact]
     public async Task UserDeleteBranch_WithToken_ReturnsTimestamp()
     {
         var token = await AuthenticateAsync();

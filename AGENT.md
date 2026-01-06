@@ -48,7 +48,7 @@
 ### Resetting / Updating Seed Data
 
 - All Mongo scripts inside `docker/mongo-init` run only when the container initializes an empty volume.
-- `docker/mongo-init/seed-users.js` inserts/updates the canonical `test-user` document plus sample controller/spawn objects that power `/api/user/world-*` endpoints. The newer HTTP routes (code/memory/console) lazily create their own per-user documents once you hit them.
+- `docker/mongo-init/seed-users.js` inserts/updates the canonical `test-user` record plus sample controller/spawn objects (`rooms.objects`) and a short credit history in `users.money` so `/api/user/money-history` has data. The newer HTTP routes (code/memory/console) lazily create their own per-user documents once you hit them.
 - When schemas or seed files change, do a clean reset so everyone picks up the new baseline:
   ```powershell
   docker compose down -v      # stops containers and removes mongo-data / redis-data volumes

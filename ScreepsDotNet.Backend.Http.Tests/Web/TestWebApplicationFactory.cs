@@ -26,6 +26,7 @@ public sealed class TestWebApplicationFactory : WebApplicationFactory<Program>
             services.RemoveAll<IUserCodeRepository>();
             services.RemoveAll<IUserMemoryRepository>();
             services.RemoveAll<IUserConsoleRepository>();
+            services.RemoveAll<IUserMoneyRepository>();
             services.RemoveAll<ITokenService>();
 
             services.AddSingleton<IStorageAdapter, FakeStorageAdapter>();
@@ -36,6 +37,7 @@ public sealed class TestWebApplicationFactory : WebApplicationFactory<Program>
             services.AddSingleton<IUserCodeRepository, FakeUserCodeRepository>();
             services.AddSingleton<IUserMemoryRepository, FakeUserMemoryRepository>();
             services.AddSingleton<IUserConsoleRepository, FakeUserConsoleRepository>();
+            services.AddSingleton<IUserMoneyRepository, FakeUserMoneyRepository>();
             services.AddSingleton<ITokenService, FakeTokenService>();
             services.Configure<AuthOptions>(options =>
             {
@@ -336,7 +338,7 @@ internal sealed class FakeUserMemoryRepository : IUserMemoryRepository
     private readonly Dictionary<int, string?> _segments = new();
 
     public Task<IDictionary<string, object?>> GetMemoryAsync(string userId, CancellationToken cancellationToken = default)
-        => Task.FromResult<IDictionary<string, object?>>(CloneDictionary(_memory));
+        => Task.FromResult(CloneDictionary(_memory));
 
     public Task UpdateMemoryAsync(string userId, string? path, JsonElement value, CancellationToken cancellationToken = default)
     {
@@ -383,23 +385,24 @@ internal sealed class FakeUserMemoryRepository : IUserMemoryRepository
 
     private static void ApplyPathUpdate(IDictionary<string, object?> root, IReadOnlyList<string> segments, int index, JsonElement value)
     {
-        var key = segments[index];
-        if (index == segments.Count - 1)
-        {
-            if (value.ValueKind == JsonValueKind.Undefined)
-                root.Remove(key);
-            else
-                root[key] = ConvertJson(value);
-            return;
-        }
+        while (true) {
+            var key = segments[index];
+            if (index == segments.Count - 1) {
+                if (value.ValueKind == JsonValueKind.Undefined)
+                    root.Remove(key);
+                else
+                    root[key] = ConvertJson(value);
+                return;
+            }
 
-        if (!root.TryGetValue(key, out var child) || child is not IDictionary<string, object?> childDict)
-        {
-            childDict = new Dictionary<string, object?>(StringComparer.Ordinal);
-            root[key] = childDict;
-        }
+            if (!root.TryGetValue(key, out var child) || child is not IDictionary<string, object?> childDict) {
+                childDict = new Dictionary<string, object?>(StringComparer.Ordinal);
+                root[key] = childDict;
+            }
 
-        ApplyPathUpdate(childDict, segments, index + 1, value);
+            root = childDict;
+            index += 1;
+        }
     }
 
     private static object? ConvertJson(JsonElement element)
@@ -412,7 +415,6 @@ internal sealed class FakeUserMemoryRepository : IUserMemoryRepository
             JsonValueKind.Number => element.GetDouble(),
             JsonValueKind.True => true,
             JsonValueKind.False => false,
-            JsonValueKind.Null => null,
             _ => null
         };
 
@@ -425,12 +427,7 @@ internal sealed class FakeUserMemoryRepository : IUserMemoryRepository
     }
 
     private static IList<object?> ConvertArray(JsonElement element)
-    {
-        var list = new List<object?>();
-        foreach (var item in element.EnumerateArray())
-            list.Add(ConvertJson(item));
-        return list;
-    }
+        => element.EnumerateArray().Select(ConvertJson).ToList();
 
     private static IDictionary<string, object?> CloneDictionary(IDictionary<string, object?> source)
     {
@@ -451,23 +448,46 @@ internal sealed class FakeUserMemoryRepository : IUserMemoryRepository
     private static IList<object?> CloneList(IList<object?> source)
     {
         var list = new List<object?>(source.Count);
-        foreach (var item in source)
-            list.Add(CloneValue(item));
+        list.AddRange(source.Select(CloneValue));
         return list;
     }
 }
 
 internal sealed class FakeUserConsoleRepository : IUserConsoleRepository
 {
-    private readonly List<(string Expression, bool Hidden)> _entries = new();
-
-    public IReadOnlyList<(string Expression, bool Hidden)> Entries => _entries;
+    private readonly List<(string Expression, bool Hidden)> _entries = [];
 
     public Task EnqueueExpressionAsync(string userId, string expression, bool hidden, CancellationToken cancellationToken = default)
     {
         _entries.Add((expression, hidden));
         return Task.CompletedTask;
     }
+}
+
+internal sealed class FakeUserMoneyRepository : IUserMoneyRepository
+{
+    private const string DateFieldName = "date";
+    private const string ChangeFieldName = "change";
+    private const string BalanceFieldName = "balance";
+    private const string TypeFieldName = "type";
+    private const string DescriptionFieldName = "description";
+    private const string MarketSellTypeValue = "market.sell";
+    private const string SoldEnergyDescription = "Sold energy";
+
+    private readonly IReadOnlyList<IReadOnlyDictionary<string, object?>> _entries =
+    [
+        new Dictionary<string, object?>(StringComparer.Ordinal)
+        {
+            [DateFieldName] = DateTime.UtcNow,
+            [ChangeFieldName] = 5000,
+            [BalanceFieldName] = 15000,
+            [TypeFieldName] = MarketSellTypeValue,
+            [DescriptionFieldName] = SoldEnergyDescription
+        }
+    ];
+
+    public Task<MoneyHistoryPage> GetHistoryAsync(string userId, int page, int pageSize, CancellationToken cancellationToken = default)
+        => Task.FromResult(new MoneyHistoryPage(page, false, _entries));
 }
 
 sealed file class FakeTokenService : ITokenService

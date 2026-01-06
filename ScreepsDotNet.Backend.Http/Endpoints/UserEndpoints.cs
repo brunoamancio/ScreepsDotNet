@@ -35,6 +35,7 @@ internal static class UserEndpoints
     private const string InvalidStatsIntervalMessage = "invalid params";
     private const string NoCodeMessage = "no code";
     private const string InvalidMemorySegmentMessage = "invalid segment ID";
+    private const string InvalidPageMessage = "invalid page";
     private const string MemorySizeExceededMessage = "memory size is too large";
     private const string MemoryPathErrorMessage = "Incorrect memory path";
     private const string MemorySegmentLengthExceededMessage = "length limit exceeded";
@@ -81,6 +82,7 @@ internal static class UserEndpoints
     private const int MaxMemorySegmentSizeBytes = 100 * 1024;
     private const int MaxCodePayloadBytes = 5 * 1024 * 1024;
     private const int MaxBranchNameLength = 30;
+    private const int MoneyHistoryPageSize = 20;
 
     private const string MemorySettingsKey = "settings";
     private const string MemoryRoomsKey = "rooms";
@@ -116,7 +118,7 @@ internal static class UserEndpoints
         MapProtectedOverview(app);
         MapProtectedTutorialDone(app);
         MapProtectedPost(app, ApiRoutes.User.Email, EmailEndpointName);
-        MapProtectedGet(app, ApiRoutes.User.MoneyHistory, MoneyHistoryEndpointName);
+        MapProtectedMoneyHistory(app);
         MapProtectedPost(app, ApiRoutes.User.SetSteamVisible, SetSteamVisibleEndpointName);
 
         MapPublicFind(app);
@@ -471,6 +473,32 @@ internal static class UserEndpoints
                     })
            .RequireTokenAuthentication()
            .WithName(TutorialDoneEndpointName);
+    }
+
+    private static void MapProtectedMoneyHistory(WebApplication app)
+    {
+        app.MapGet(ApiRoutes.User.MoneyHistory,
+                   async ([FromQuery] int? page,
+                          ICurrentUserAccessor userAccessor,
+                          IUserMoneyRepository moneyRepository,
+                          CancellationToken cancellationToken) =>
+                   {
+                       var user = RequireUser(userAccessor);
+                       var pageNumber = page ?? 0;
+                       if (pageNumber < 0)
+                           return Results.BadRequest(new ErrorResponse(InvalidPageMessage));
+
+                       var history = await moneyRepository.GetHistoryAsync(user.Id, pageNumber, MoneyHistoryPageSize, cancellationToken).ConfigureAwait(false);
+
+                       return Results.Ok(new Dictionary<string, object?>
+                       {
+                           [UserResponseFields.Page] = history.Page,
+                           [UserResponseFields.List] = history.Entries,
+                           [UserResponseFields.HasMore] = history.HasMore
+                       });
+                   })
+           .RequireTokenAuthentication()
+           .WithName(MoneyHistoryEndpointName);
     }
 
     private static void MapProtectedCode(WebApplication app)

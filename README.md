@@ -53,6 +53,7 @@ Modern .NET rewrite of the Screeps private server backend. The solution contains
 - User data (profile, notify prefs, branches, memory, console queue) lives in Mongo collections:
   - `users` – canonical player documents (`seed-users.js` keeps `test-user` up-to-date).
   - `users.code`, `users.memory`, `users.console` – lazily created by the new repositories when the HTTP endpoints mutate state.
+  - `users.money` – rolling credit transactions surfaced via `/api/user/money-history`.
   - `rooms.objects` – source of controller/spawn information for `/api/user/world-*` endpoints.
 - Redis is reserved for token storage and other future Screeps subsystems; the `docker compose` file already wires the container, but current endpoints do not rely on it yet.
 

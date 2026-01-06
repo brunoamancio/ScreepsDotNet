@@ -33,4 +33,6 @@ public static class UserResponseFields
     public const string Interval = "interval";
     public const string ActiveUsers = "activeUsers";
     public const string RoomsControlled = "roomsControlled";
+    public const string Page = "page";
+    public const string HasMore = "hasMore";
 }

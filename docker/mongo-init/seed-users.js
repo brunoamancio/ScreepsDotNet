@@ -71,3 +71,23 @@ db['rooms.objects'].updateOne(
     },
     { upsert: true }
 );
+
+db['users.money'].deleteMany({ user: 'test-user' });
+db['users.money'].insertMany([
+    {
+        user: 'test-user',
+        type: 'market.sell',
+        change: 5000,
+        balance: 15000,
+        description: 'Sold energy on the market',
+        date: new Date()
+    },
+    {
+        user: 'test-user',
+        type: 'market.buy',
+        change: -2000,
+        balance: 10000,
+        description: 'Purchased minerals',
+        date: new Date(Date.now() - 3600 * 1000)
+    }
+]);
