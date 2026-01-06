@@ -266,6 +266,13 @@ public class UserEndpointTests : IClassFixture<TestWebApplicationFactory>
     public async Task UserDeleteBranch_WithToken_ReturnsTimestamp()
     {
         var token = await AuthenticateAsync();
+
+        var cloneRequest = new HttpRequestMessage(HttpMethod.Post, ApiRoutes.User.CloneBranch);
+        cloneRequest.Headers.TryAddWithoutValidation(AuthHeaderNames.Token, token);
+        cloneRequest.Content = JsonContent.Create(new { branch = "default", newName = "old-branch" });
+        var cloneResponse = await _client.SendAsync(cloneRequest);
+        cloneResponse.EnsureSuccessStatusCode();
+
         var request = new HttpRequestMessage(HttpMethod.Post, ApiRoutes.User.DeleteBranch);
         request.Headers.TryAddWithoutValidation(AuthHeaderNames.Token, token);
         request.Content = JsonContent.Create(new { branch = "old-branch" });

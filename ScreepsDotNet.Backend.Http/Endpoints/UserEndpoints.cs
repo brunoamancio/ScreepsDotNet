@@ -41,6 +41,7 @@ internal static class UserEndpoints
     private const string ExpressionTooLargeMessage = "expression size is too large";
     private const string MissingModulesMessage = "modules are required.";
     private const string CodePayloadTooLargeMessage = "code length exceeds 5 MB limit";
+    private const string BranchOperationFailedMessage = "branch operation failed";
 
     private const string DefaultWorldStartRoom = "W5N5";
 
@@ -192,16 +193,26 @@ internal static class UserEndpoints
     private static void MapProtectedUpdateCode(WebApplication app)
     {
         app.MapPost(ApiRoutes.User.Code,
-                    ([FromBody] UserCodeUpdateRequest request,
-                     ICurrentUserAccessor userAccessor) =>
+                    async ([FromBody] UserCodeUpdateRequest request,
+                           ICurrentUserAccessor userAccessor,
+                           IUserCodeRepository repository,
+                           CancellationToken cancellationToken) =>
                     {
-                        RequireUser(userAccessor);
+                        var user = RequireUser(userAccessor);
                         if (request.Modules is null || request.Modules.Count == 0)
                             return Results.BadRequest(new ErrorResponse(MissingModulesMessage));
 
                         var payloadSize = Encoding.UTF8.GetByteCount(JsonSerializer.Serialize(request.Modules));
                         if (payloadSize > MaxCodePayloadBytes)
                             return Results.BadRequest(new ErrorResponse(CodePayloadTooLargeMessage));
+
+                        var branchIdentifier = ResolveBranchIdentifier(request.Branch);
+                        if (!IsAllowedBranchIdentifier(branchIdentifier))
+                            return Results.BadRequest(new ErrorResponse(InvalidStatsIntervalMessage));
+
+                        var updated = await repository.UpdateBranchModulesAsync(user.Id, branchIdentifier, request.Modules, cancellationToken).ConfigureAwait(false);
+                        if (!updated)
+                            return Results.BadRequest(new ErrorResponse(BranchOperationFailedMessage));
 
                         return Results.Ok(CreateTimestampResponse());
                     })
@@ -212,12 +223,18 @@ internal static class UserEndpoints
     private static void MapProtectedSetActiveBranch(WebApplication app)
     {
         app.MapPost(ApiRoutes.User.SetActiveBranch,
-                    ([FromBody] SetActiveBranchRequest request,
-                     ICurrentUserAccessor userAccessor) =>
+                    async ([FromBody] SetActiveBranchRequest request,
+                           ICurrentUserAccessor userAccessor,
+                           IUserCodeRepository repository,
+                           CancellationToken cancellationToken) =>
                     {
-                        RequireUser(userAccessor);
-                        if (!IsValidActiveName(request.ActiveName) || string.IsNullOrWhiteSpace(request.Branch))
+                        var user = RequireUser(userAccessor);
+                        if (!IsValidActiveName(request.ActiveName) || !IsValidBranchName(request.Branch))
                             return Results.BadRequest(new ErrorResponse(InvalidStatsIntervalMessage));
+
+                        var success = await repository.SetActiveBranchAsync(user.Id, request.Branch!, request.ActiveName!, cancellationToken).ConfigureAwait(false);
+                        if (!success)
+                            return Results.BadRequest(new ErrorResponse(BranchOperationFailedMessage));
 
                         return Results.Ok(CreateTimestampResponse());
                     })
@@ -228,12 +245,25 @@ internal static class UserEndpoints
     private static void MapProtectedCloneBranch(WebApplication app)
     {
         app.MapPost(ApiRoutes.User.CloneBranch,
-                    ([FromBody] CloneBranchRequest request,
-                     ICurrentUserAccessor userAccessor) =>
+                    async ([FromBody] CloneBranchRequest request,
+                           ICurrentUserAccessor userAccessor,
+                           IUserCodeRepository repository,
+                           CancellationToken cancellationToken) =>
                     {
-                        RequireUser(userAccessor);
+                        var user = RequireUser(userAccessor);
                         if (!IsValidBranchName(request.NewName))
                             return Results.BadRequest(new ErrorResponse(InvalidStatsIntervalMessage));
+
+                        if (!string.IsNullOrWhiteSpace(request.Branch) && !IsValidBranchName(request.Branch))
+                            return Results.BadRequest(new ErrorResponse(InvalidStatsIntervalMessage));
+
+                        var success = await repository.CloneBranchAsync(user.Id,
+                                                                        string.IsNullOrWhiteSpace(request.Branch) ? null : request.Branch,
+                                                                        request.NewName!,
+                                                                        request.DefaultModules,
+                                                                        cancellationToken).ConfigureAwait(false);
+                        if (!success)
+                            return Results.BadRequest(new ErrorResponse(BranchOperationFailedMessage));
 
                         return Results.Ok(CreateTimestampResponse());
                     })
@@ -244,12 +274,18 @@ internal static class UserEndpoints
     private static void MapProtectedDeleteBranch(WebApplication app)
     {
         app.MapPost(ApiRoutes.User.DeleteBranch,
-                    ([FromBody] DeleteBranchRequest request,
-                     ICurrentUserAccessor userAccessor) =>
+                    async ([FromBody] DeleteBranchRequest request,
+                           ICurrentUserAccessor userAccessor,
+                           IUserCodeRepository repository,
+                           CancellationToken cancellationToken) =>
                     {
-                        RequireUser(userAccessor);
+                        var user = RequireUser(userAccessor);
                         if (!IsValidBranchName(request.Branch))
                             return Results.BadRequest(new ErrorResponse(InvalidStatsIntervalMessage));
+
+                        var success = await repository.DeleteBranchAsync(user.Id, request.Branch!, cancellationToken).ConfigureAwait(false);
+                        if (!success)
+                            return Results.BadRequest(new ErrorResponse(BranchOperationFailedMessage));
 
                         return Results.Ok(CreateTimestampResponse());
                     })
@@ -288,11 +324,15 @@ internal static class UserEndpoints
     private static void MapProtectedMemory(WebApplication app)
     {
         app.MapGet(ApiRoutes.User.Memory,
-                   ([FromQuery] string? path,
-                    ICurrentUserAccessor userAccessor) =>
+                   async ([FromQuery] string? path,
+                          ICurrentUserAccessor userAccessor,
+                          IUserMemoryRepository memoryRepository,
+                          CancellationToken cancellationToken) =>
                    {
-                       RequireUser(userAccessor);
-                       var value = ResolveMemoryPath(path);
+                       var user = RequireUser(userAccessor);
+                       var memory = await memoryRepository.GetMemoryAsync(user.Id, cancellationToken).ConfigureAwait(false);
+                       var effectiveMemory = EnsureEffectiveMemory(memory);
+                       var value = ResolveMemoryPath(effectiveMemory, path);
                        if (value is null)
                            return Results.Ok(new Dictionary<string, object?> { [UserResponseFields.Data] = MemoryPathErrorMessage });
 
@@ -305,15 +345,20 @@ internal static class UserEndpoints
            .WithName(GetMemoryEndpointName);
 
         app.MapPost(ApiRoutes.User.Memory,
-                    ([FromBody] MemoryUpdateRequest request,
-                     ICurrentUserAccessor userAccessor) =>
+                    async ([FromBody] MemoryUpdateRequest request,
+                           ICurrentUserAccessor userAccessor,
+                           IUserMemoryRepository memoryRepository,
+                           CancellationToken cancellationToken) =>
                     {
-                        RequireUser(userAccessor);
+                        var user = RequireUser(userAccessor);
                         var json = request.Value.ValueKind == JsonValueKind.Undefined ? "null" : request.Value.GetRawText();
                         if (Encoding.UTF8.GetByteCount(json) > MaxMemoryBytes)
                             return Results.BadRequest(new ErrorResponse(MemorySizeExceededMessage));
 
-                        return Results.Ok(CreateEmptyResponse());
+                        var path = string.IsNullOrWhiteSpace(request.Path) ? null : request.Path;
+                        await memoryRepository.UpdateMemoryAsync(user.Id, path, request.Value, cancellationToken).ConfigureAwait(false);
+
+                        return Results.Ok(CreateTimestampResponse());
                     })
            .RequireTokenAuthentication()
            .WithName(PostMemoryEndpointName);
@@ -322,26 +367,31 @@ internal static class UserEndpoints
     private static void MapProtectedMemorySegments(WebApplication app)
     {
         app.MapGet(ApiRoutes.User.MemorySegment,
-                   ([FromQuery(Name = "segment")] int? segment,
-                    ICurrentUserAccessor userAccessor) =>
+                   async ([FromQuery(Name = "segment")] int? segment,
+                          ICurrentUserAccessor userAccessor,
+                          IUserMemoryRepository memoryRepository,
+                          CancellationToken cancellationToken) =>
                    {
-                       RequireUser(userAccessor);
+                       var user = RequireUser(userAccessor);
                        if (!IsValidMemorySegment(segment))
                            return Results.BadRequest(new ErrorResponse(InvalidMemorySegmentMessage));
 
+                       var data = await memoryRepository.GetMemorySegmentAsync(user.Id, segment!.Value, cancellationToken).ConfigureAwait(false);
                        return Results.Ok(new Dictionary<string, object?>
                        {
-                           [UserResponseFields.Data] = string.Empty
+                           [UserResponseFields.Data] = data ?? string.Empty
                        });
                    })
            .RequireTokenAuthentication()
            .WithName(GetMemorySegmentEndpointName);
 
         app.MapPost(ApiRoutes.User.MemorySegment,
-                    ([FromBody] MemorySegmentRequest request,
-                     ICurrentUserAccessor userAccessor) =>
+                    async ([FromBody] MemorySegmentRequest request,
+                           ICurrentUserAccessor userAccessor,
+                           IUserMemoryRepository memoryRepository,
+                           CancellationToken cancellationToken) =>
                     {
-                        RequireUser(userAccessor);
+                        var user = RequireUser(userAccessor);
                         if (!IsValidMemorySegment(request.Segment))
                             return Results.BadRequest(new ErrorResponse(InvalidMemorySegmentMessage));
 
@@ -349,7 +399,9 @@ internal static class UserEndpoints
                         if (length > MaxMemorySegmentSizeBytes)
                             return Results.BadRequest(new ErrorResponse(MemorySegmentLengthExceededMessage));
 
-                        return Results.Ok(CreateEmptyResponse());
+                        await memoryRepository.SetMemorySegmentAsync(user.Id, request.Segment, request.Data, cancellationToken).ConfigureAwait(false);
+
+                        return Results.Ok(CreateTimestampResponse());
                     })
            .RequireTokenAuthentication()
            .WithName(PostMemorySegmentEndpointName);
@@ -358,15 +410,18 @@ internal static class UserEndpoints
     private static void MapProtectedConsole(WebApplication app)
     {
         app.MapPost(ApiRoutes.User.Console,
-                    ([FromBody] ConsoleExpressionRequest request,
-                     ICurrentUserAccessor userAccessor) =>
+                    async ([FromBody] ConsoleExpressionRequest request,
+                           ICurrentUserAccessor userAccessor,
+                           IUserConsoleRepository consoleRepository,
+                           CancellationToken cancellationToken) =>
                     {
-                        RequireUser(userAccessor);
+                        var user = RequireUser(userAccessor);
                         var expression = request.Expression ?? string.Empty;
                         var length = Encoding.UTF8.GetByteCount(expression);
                         if (length > MaxConsoleExpressionBytes)
                             return Results.BadRequest(new ErrorResponse(ExpressionTooLargeMessage));
 
+                        await consoleRepository.EnqueueExpressionAsync(user.Id, expression, hidden: false, cancellationToken).ConfigureAwait(false);
                         return Results.Ok(CreateEmptyResponse());
                     })
            .RequireTokenAuthentication()
@@ -550,6 +605,18 @@ internal static class UserEndpoints
         => string.Equals(activeName, UserResponseFields.ActiveWorld, StringComparison.OrdinalIgnoreCase) ||
            string.Equals(activeName, UserResponseFields.ActiveSim, StringComparison.OrdinalIgnoreCase);
 
+    private static IReadOnlyDictionary<string, object?> EnsureEffectiveMemory(IDictionary<string, object?> memory)
+        => memory.Count == 0
+            ? DefaultMemory
+            : memory as IReadOnlyDictionary<string, object?> ?? new Dictionary<string, object?>(memory, StringComparer.Ordinal);
+
+    private static string ResolveBranchIdentifier(string? branch)
+        => string.IsNullOrWhiteSpace(branch) ? ActiveWorldIdentifier : branch.Trim();
+
+    private static bool IsAllowedBranchIdentifier(string branchIdentifier)
+        => string.Equals(branchIdentifier, ActiveWorldIdentifier, StringComparison.OrdinalIgnoreCase) ||
+           IsValidBranchName(branchIdentifier);
+
     private static Dictionary<string, object?> CreateNotifyPreferencesDictionary(object? notifyPrefs)
     {
         switch (notifyPrefs) {
@@ -608,18 +675,26 @@ internal static class UserEndpoints
         return MemoryConstants.GzipPrefix + Convert.ToBase64String(buffer.ToArray());
     }
 
-    private static object? ResolveMemoryPath(string? path)
+    private static object? ResolveMemoryPath(IReadOnlyDictionary<string, object?> root, string? path)
     {
         if (string.IsNullOrWhiteSpace(path))
-            return DefaultMemory;
+            return root;
 
         var segments = path.Split('.', StringSplitOptions.RemoveEmptyEntries);
-        object? current = DefaultMemory;
+        object? current = root;
         foreach (var segment in segments)
         {
             if (current is IReadOnlyDictionary<string, object?> dictionary)
             {
                 if (!dictionary.TryGetValue(segment, out current))
+                    return null;
+
+                continue;
+            }
+
+            if (current is IDictionary<string, object?> mutableDictionary)
+            {
+                if (!mutableDictionary.TryGetValue(segment, out current))
                     return null;
 
                 continue;

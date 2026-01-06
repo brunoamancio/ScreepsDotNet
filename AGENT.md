@@ -15,6 +15,7 @@
 
 - `/health` – ASP.NET health checks with custom JSON output (Mongo/Redis probe).
 - `/api/server/info` – reads metadata from Mongo `serverData` (seeded automatically).
+- `/api/user/*` (branches, code, memory, console, notify prefs, badge SVG) – wired to Mongo/Redis repositories (`MongoUserCodeRepository`, `MongoUserMemoryRepository`, `MongoUserConsoleRepository`) with the same semantics as the legacy Screeps backend.
 - Core abstractions defined for server info, users, rooms, CLI sessions, storage status, and engine ticks.
 - Mongo repositories implemented for server info, users, and owned rooms; ready for future endpoints.
 
