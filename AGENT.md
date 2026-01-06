@@ -84,15 +84,24 @@
   - `Rendering/Helpers/BadgeSampleFactory.cs` – builds consistent badge payloads (numeric + custom samples) and exposes the `BadgeSample`/`BadgePayload` types.
   - `Rendering/Helpers/BadgeGalleryMarkdownBuilder.cs` – generates the markdown table stored in `docs/badges/BadgeGallery.md`.
   Reuse these helpers instead of re-serializing badges or duplicating file-system logic in new tests.
-- Storage projects now centralize Mongo/BSON plumbing:
-  - `Extensions/ModuleDictionaryExtensions.cs` – converts user-code module maps to mutable dictionaries / BSON documents.
-  - `Extensions/BsonDocumentExtensions.cs` – shared helpers for string/number/datetime accessors; use these instead of ad-hoc `TryGetValue` blocks in repositories.
+- Mongo access now goes through typed POCOs under `ScreepsDotNet.Storage.MongoRedis.Repositories.Documents`. When you add a new collection:
+  1. Create a document type with `[BsonElement]` attributes (and `[BsonIgnoreExtraElements]` when needed).
+  2. Point the repository at `IMongoCollection<TDocument>`; do **not** fall back to `BsonDocument`.
+  3. Extend the integration harness seeders so tests have representative data.
+- `Extensions/DictionaryPathExtensions.cs` and `Extensions/JsonElementExtensions.cs` provide the only conversion helpers we need (for user memory path mutations). Reuse them instead of reintroducing BSON utilities.
+- User integration tests (`ScreepsDotNet.Backend.Http.Tests/Integration`) seed Mongo via `IntegrationTestHarness`. If you add an endpoint or collection, update the harness so every scenario has deterministic data and extend `UserEndpointsIntegrationTests` accordingly.
 - User API smoke tests live in `ScreepsDotNet.Backend.Http/UserEndpoints.http`. Always update this file (and `ScreepsDotNet/README.md`) whenever you add/rename an endpoint so new agents can exercise the API immediately.
 
 ## Pending / Next Steps
 
-1. Scaffold CLI host (`ScreepsDotNet.Backend.Cli`) when backend surfaces are stable.
-2. Replace in-memory server-info provider once storage-backed provider is fully vetted.
+1. **Market Endpoint Parity**
+   - Inventory the Node backend routes under `/api/game/market/*` (orders, history, stats) and map each one to the equivalent .NET controller/route.
+   - Design Mongo POCOs for `market.orders`, `market.stats`, and any supporting collections; document the schemas in this guide.
+   - Extend `IntegrationTestHarness` to seed representative market documents (buy/sell orders, credits history) and add integration tests that hit the new routes with both success/error scenarios.
+   - Mirror the legacy validation rules (order limits, visibility, resource types) and capture them in unit tests so regressions are obvious.
+   - Update the HTTP scratch files (`UserEndpoints.http` or a new `MarketEndpoints.http`) so manual smoke tests stay trivial.
+2. Scaffold CLI host (`ScreepsDotNet.Backend.Cli`) when backend surfaces are stable.
+3. Replace in-memory server-info provider once storage-backed provider is fully vetted.
 
 ## Tips for Agents
 

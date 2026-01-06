@@ -1,6 +1,8 @@
 namespace ScreepsDotNet.Backend.Http.Tests.Integration;
 
+using System;
 using System.Collections.Generic;
+using System.Globalization;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using ScreepsDotNet.Backend.Core.Constants;
@@ -11,7 +13,11 @@ using Testcontainers.Redis;
 public sealed class IntegrationTestHarness : IAsyncLifetime
 {
     private const string UsersCollectionName = "users";
+    private const string RoomsCollectionName = "rooms";
     private const string RoomsObjectsCollectionName = "rooms.objects";
+    private const string UserMoneyCollectionName = "users.money";
+    private const string UserConsoleCollectionName = "users.console";
+    private const string UserMemoryCollectionName = "users.memory";
     private const string ControllerTypeValue = "controller";
     private const string SpawnTypeValue = "spawn";
     private const string MongoNamespaceNotFoundCode = "NamespaceNotFound";
@@ -44,9 +50,13 @@ public sealed class IntegrationTestHarness : IAsyncLifetime
 
         var mongoConnectionString = _mongoContainer.GetConnectionString();
         _mongoClient = new MongoClient(mongoConnectionString);
-        Database = _mongoClient.GetDatabase(IntegrationTestValues.DatabaseName);
-        Factory = new IntegrationWebApplicationFactory(mongoConnectionString, IntegrationTestValues.DatabaseName, _redisContainer.GetConnectionString(),
-                                                       IntegrationTestValues.UserId, IntegrationTestValues.AuthTicket,IntegrationTestValues.SteamId);
+        Database = _mongoClient.GetDatabase(IntegrationTestValues.Database.Name);
+        Factory = new IntegrationWebApplicationFactory(mongoConnectionString,
+                                                       IntegrationTestValues.Database.Name,
+                                                       _redisContainer.GetConnectionString(),
+                                                       IntegrationTestValues.User.Id,
+                                                       IntegrationTestValues.Auth.Ticket,
+                                                       IntegrationTestValues.Auth.SteamId);
         InitializedAtUtc = DateTime.UtcNow;
         await ResetStateAsync();
     }
@@ -57,10 +67,17 @@ public sealed class IntegrationTestHarness : IAsyncLifetime
             return;
 
         await DropCollectionIfExistsAsync(UsersCollectionName);
+        await DropCollectionIfExistsAsync(RoomsCollectionName);
         await DropCollectionIfExistsAsync(RoomsObjectsCollectionName);
+        await DropCollectionIfExistsAsync(UserMoneyCollectionName);
+        await DropCollectionIfExistsAsync(UserConsoleCollectionName);
+        await DropCollectionIfExistsAsync(UserMemoryCollectionName);
 
         await SeedUsersAsync();
         await SeedRoomsAsync();
+        await SeedRoomObjectsAsync();
+        await SeedMoneyHistoryAsync();
+        await SeedUserMemoryAsync();
     }
 
     private async Task DropCollectionIfExistsAsync(string name)
@@ -80,9 +97,9 @@ public sealed class IntegrationTestHarness : IAsyncLifetime
         var users = Database.GetCollection<UserDocument>(UsersCollectionName);
         var document = new UserDocument
         {
-            Id = IntegrationTestValues.UserId,
-            Username = IntegrationTestValues.Username,
-            UsernameLower = IntegrationTestValues.Username.ToLowerInvariant(),
+            Id = IntegrationTestValues.User.Id,
+            Username = IntegrationTestValues.User.Username,
+            UsernameLower = IntegrationTestValues.User.Username.ToLowerInvariant(),
             Cpu = DefaultCpu,
             Active = ActiveFlagValue,
             Badge = new Dictionary<string, object?>(StringComparer.Ordinal)
@@ -99,7 +116,7 @@ public sealed class IntegrationTestHarness : IAsyncLifetime
         return users.InsertOneAsync(document);
     }
 
-    private Task SeedRoomsAsync()
+    private Task SeedRoomObjectsAsync()
     {
         var rooms = Database.GetCollection<RoomObjectDocument>(RoomsObjectsCollectionName);
         var documents = new[]
@@ -107,21 +124,81 @@ public sealed class IntegrationTestHarness : IAsyncLifetime
             new RoomObjectDocument
             {
                 Id = ObjectId.GenerateNewId(),
-                UserId = IntegrationTestValues.UserId,
+                UserId = IntegrationTestValues.User.Id,
                 Type = ControllerTypeValue,
-                Room = IntegrationTestValues.StartRoom,
+                Room = IntegrationTestValues.World.StartRoom,
                 Level = ControllerLevel
             },
             new RoomObjectDocument
             {
                 Id = ObjectId.GenerateNewId(),
-                UserId = IntegrationTestValues.UserId,
+                UserId = IntegrationTestValues.User.Id,
                 Type = SpawnTypeValue,
-                Room = IntegrationTestValues.StartRoom
+                Room = IntegrationTestValues.World.StartRoom
             }
         };
 
         return rooms.InsertManyAsync(documents);
+    }
+
+    private Task SeedMoneyHistoryAsync()
+    {
+        var money = Database.GetCollection<UserMoneyEntryDocument>(UserMoneyCollectionName);
+        var document = new UserMoneyEntryDocument
+        {
+            Id = ObjectId.GenerateNewId(),
+            UserId = IntegrationTestValues.User.Id,
+            Date = DateTime.UtcNow.AddMinutes(-5),
+            ExtraElements = new Dictionary<string, object?>(StringComparer.Ordinal)
+            {
+                ["change"] = IntegrationTestValues.Money.Change,
+                ["balance"] = IntegrationTestValues.Money.Balance,
+                ["type"] = IntegrationTestValues.Money.Type,
+                ["description"] = IntegrationTestValues.Money.Description
+            }
+        };
+
+        return money.InsertOneAsync(document);
+    }
+
+    private Task SeedUserMemoryAsync()
+    {
+        var memory = Database.GetCollection<UserMemoryDocument>(UserMemoryCollectionName);
+        var document = new UserMemoryDocument
+        {
+            UserId = IntegrationTestValues.User.Id,
+            Memory = new Dictionary<string, object?>(StringComparer.Ordinal)
+            {
+                ["settings"] = new Dictionary<string, object?>(StringComparer.Ordinal)
+                {
+                    ["logLevel"] = "info"
+                }
+            },
+            Segments = new Dictionary<string, string?>(StringComparer.Ordinal)
+            {
+                [IntegrationTestValues.Memory.SegmentId.ToString(CultureInfo.InvariantCulture)] = IntegrationTestValues.Memory.SegmentValue
+            }
+        };
+
+        return memory.InsertOneAsync(document);
+    }
+
+    private Task SeedRoomsAsync()
+    {
+        var rooms = Database.GetCollection<RoomDocument>(RoomsCollectionName);
+        var document = new RoomDocument
+        {
+            Id = ObjectId.GenerateNewId(),
+            Name = IntegrationTestValues.World.StartRoom,
+            Owner = IntegrationTestValues.User.Username,
+            Controller = new RoomControllerDocument
+            {
+                Level = ControllerLevel
+            },
+            EnergyAvailable = 500
+        };
+
+        return rooms.InsertOneAsync(document);
     }
 
     public async Task DisposeAsync()

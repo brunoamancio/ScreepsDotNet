@@ -55,8 +55,14 @@ Modern .NET rewrite of the Screeps private server backend. The solution contains
   - `users` – canonical player documents (`seed-users.js` keeps `test-user` up-to-date).
   - `users.code`, `users.memory`, `users.console` – lazily created by the new repositories when the HTTP endpoints mutate state.
   - `users.money` – rolling credit transactions surfaced via `/api/user/money-history`.
-  - `rooms.objects` – source of controller/spawn information for `/api/user/world-*` endpoints.
+- `rooms.objects` – source of controller/spawn information for `/api/user/world-*` endpoints.
 - Redis is reserved for token storage and other future Screeps subsystems; the `docker compose` file already wires the container, but current endpoints do not rely on it yet.
+
+### Repository Conventions
+
+- Every Mongo collection has a matching POCO under `ScreepsDotNet.Storage.MongoRedis.Repositories.Documents`. Repositories always take a typed `IMongoCollection<TDocument>` so LINQ queries translate cleanly—please don’t reintroduce `BsonDocument` projections.
+- When you add a new collection/field, update the corresponding document type **and** the integration harness (`ScreepsDotNet.Backend.Http.Tests/Integration/IntegrationTestHarness.cs`) so the disposable Mongo instance contains representative data.
+- Integration tests in `UserEndpointsIntegrationTests` should cover every storage-backed endpoint you touch; seed data + assertions keep us aligned with the legacy backend.
 
 ### Resetting Data
 
