@@ -2,6 +2,7 @@ using MongoDB.Bson;
 using MongoDB.Driver;
 using ScreepsDotNet.Backend.Core.Repositories;
 using ScreepsDotNet.Backend.Core.Models;
+using ScreepsDotNet.Storage.MongoRedis.Extensions;
 using ScreepsDotNet.Storage.MongoRedis.Providers;
 
 namespace ScreepsDotNet.Storage.MongoRedis.Repositories;
@@ -47,24 +48,24 @@ public sealed class MongoUserRepository : IUserRepository
             return null;
 
         return new UserProfile(
-            GetString(document, IdField) ?? userId,
-            GetString(document, UsernameField),
-            GetString(document, EmailField),
-            GetBoolean(document, EmailDirtyField),
+            document.GetStringOrNull(IdField) ?? userId,
+            document.GetStringOrNull(UsernameField),
+            document.GetStringOrNull(EmailField),
+            document.GetBooleanOrDefault(EmailDirtyField),
             HasPassword(document),
-            GetDouble(document, CpuField),
-            ConvertToDotNet(document.GetValue(BadgeField, BsonNull.Value)),
-            GetDateTime(document, LastRespawnField),
-            ConvertToDotNet(document.GetValue(NotifyPrefsField, BsonNull.Value)),
-            ConvertToDotNet(document.GetValue(GclField, BsonNull.Value)),
-            GetDateTime(document, LastChargeField),
-            GetBoolean(document, BlockedField),
-            ConvertToDotNet(document.GetValue(CustomBadgeField, BsonNull.Value)),
-            GetDouble(document, PowerField),
-            GetDouble(document, MoneyField) / 1000d,
+            document.GetDoubleOrDefault(CpuField),
+            document.ToDotNet(BadgeField, BsonNull.Value),
+            document.GetDateTimeOrNull(LastRespawnField),
+            document.ToDotNet(NotifyPrefsField, BsonNull.Value),
+            document.ToDotNet(GclField, BsonNull.Value),
+            document.GetDateTimeOrNull(LastChargeField),
+            document.GetBooleanOrDefault(BlockedField),
+            document.ToDotNet(CustomBadgeField, BsonNull.Value),
+            document.GetDoubleOrDefault(PowerField),
+            document.GetDoubleOrDefault(MoneyField) / 1000d,
             BuildSteamProfile(document.GetValue(SteamField, BsonNull.Value)),
-            GetDouble(document, PowerExperimentationsField),
-            GetDouble(document, PowerExperimentationTimeField));
+            document.GetDoubleOrDefault(PowerExperimentationsField),
+            document.GetDoubleOrDefault(PowerExperimentationTimeField));
     }
 
     public async Task<int> GetActiveUsersCountAsync(CancellationToken cancellationToken = default)
@@ -78,31 +79,6 @@ public sealed class MongoUserRepository : IUserRepository
         return (int)count;
     }
 
-    private static string? GetString(BsonDocument document, string fieldName)
-        => document.TryGetValue(fieldName, out var value) && value.IsString ? value.AsString : null;
-
-    private static bool GetBoolean(BsonDocument document, string fieldName)
-        => document.TryGetValue(fieldName, out var value) && value.IsBoolean && value.AsBoolean;
-
-    private static double GetDouble(BsonDocument document, string fieldName)
-    {
-        if (!document.TryGetValue(fieldName, out var value) || value.IsBsonNull)
-            return 0;
-
-        return value.IsNumeric ? value.ToDouble() : 0;
-    }
-
-    private static DateTime? GetDateTime(BsonDocument document, string fieldName)
-    {
-        if (!document.TryGetValue(fieldName, out var value) || value.IsBsonNull)
-            return null;
-
-        if (value.BsonType == BsonType.DateTime)
-            return value.ToUniversalTime();
-
-        return null;
-    }
-
     private static bool HasPassword(BsonDocument document)
         => document.TryGetValue(PasswordField, out var value) && value.IsString && !string.IsNullOrWhiteSpace(value.AsString);
 
@@ -114,8 +90,8 @@ public sealed class MongoUserRepository : IUserRepository
         if (value is not BsonDocument steamDoc)
             return null;
 
-        return new UserSteamProfile(GetString(steamDoc, SteamIdField), GetString(steamDoc, SteamDisplayNameField),
-                                    ConvertToDotNet(steamDoc.GetValue(SteamOwnershipField, BsonNull.Value)),
+        return new UserSteamProfile(steamDoc.GetStringOrNull(SteamIdField), steamDoc.GetStringOrNull(SteamDisplayNameField),
+                                    steamDoc.GetValue(SteamOwnershipField, BsonNull.Value).ToDotNet(),
                                     steamDoc.TryGetValue(SteamProfileHiddenField, out var hidden) && hidden.IsBoolean ? hidden.AsBoolean : null);
     }
     public async Task<UserPublicProfile?> FindPublicProfileAsync(string? username, string? userId, CancellationToken cancellationToken = default)
@@ -130,10 +106,10 @@ public sealed class MongoUserRepository : IUserRepository
 
         var steamId = ExtractPublicSteamId(document);
 
-        return new UserPublicProfile(GetString(document, IdField) ?? string.Empty, GetString(document, UsernameField),
-                                     ConvertToDotNet(document.GetValue(BadgeField, BsonNull.Value)),
-                                     ConvertToDotNet(document.GetValue(GclField, BsonNull.Value)),
-                                     GetDouble(document, PowerField),
+        return new UserPublicProfile(document.GetStringOrNull(IdField) ?? string.Empty, document.GetStringOrNull(UsernameField),
+            document.ToDotNet(BadgeField, BsonNull.Value),
+            document.ToDotNet(GclField, BsonNull.Value),
+                                     document.GetDoubleOrDefault(PowerField),
                                      steamId);
     }
 

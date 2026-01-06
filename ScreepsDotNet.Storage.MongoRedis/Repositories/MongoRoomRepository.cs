@@ -2,6 +2,7 @@ using MongoDB.Bson;
 using MongoDB.Driver;
 using ScreepsDotNet.Backend.Core.Models;
 using ScreepsDotNet.Backend.Core.Repositories;
+using ScreepsDotNet.Storage.MongoRedis.Extensions;
 using ScreepsDotNet.Storage.MongoRedis.Providers;
 
 namespace ScreepsDotNet.Storage.MongoRedis.Repositories;
@@ -27,13 +28,8 @@ public sealed class MongoRoomRepository : IRoomRepository
 
         return documents.Select(document =>
                                 {
-                                    var name = document.TryGetValue(RoomNameField, out var nameValue)
-                                        ? nameValue.AsString
-                                        : UnknownRoomName;
-
-                                    string? owner = null;
-                                    if (document.TryGetValue(OwnerField, out var ownerValue) && ownerValue.IsString)
-                                        owner = ownerValue.AsString;
+                                    var name = document.GetStringOrNull(RoomNameField) ?? UnknownRoomName;
+                                    var owner = document.GetStringOrNull(OwnerField);
 
                                     var controllerLevel = 0;
                                     if (document.TryGetValue(ControllerField, out var controllerValue) &&
@@ -44,7 +40,7 @@ public sealed class MongoRoomRepository : IRoomRepository
                                         controllerLevel = levelValue.ToInt32();
                                     }
 
-                                    var energy = document.TryGetValue(EnergyAvailableField, out var energyValue) && energyValue.IsNumeric ? energyValue.ToInt32() : 0;
+                                    var energy = document.GetInt32OrDefault(EnergyAvailableField);
                                     return new RoomSummary(name, owner, controllerLevel, energy);
                                 })
                           .ToList();
