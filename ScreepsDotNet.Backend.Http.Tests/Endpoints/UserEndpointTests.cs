@@ -169,6 +169,7 @@ public class UserEndpointTests : IClassFixture<TestWebApplicationFactory>
     public async Task UserOverview_WithValidInterval_ReturnsDefaultPayload()
     {
         var token = await AuthenticateAsync();
+        _userWorldRepository.ControllerRooms = SampleRooms;
         var request = new HttpRequestMessage(HttpMethod.Get, ApiRoutes.User.Overview + "?interval=8&statName=energyHarvested");
         request.Headers.TryAddWithoutValidation(AuthHeaderNames.Token, token);
 
@@ -177,9 +178,10 @@ public class UserEndpointTests : IClassFixture<TestWebApplicationFactory>
         response.EnsureSuccessStatusCode();
         using var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
         var root = payload.RootElement;
-        Assert.Empty(root.GetProperty(UserResponseFields.Rooms).EnumerateArray());
-        Assert.True(root.GetProperty(UserResponseFields.Stats).ValueKind == JsonValueKind.Object);
-        Assert.True(root.GetProperty(UserResponseFields.Totals).ValueKind == JsonValueKind.Object);
+        var rooms = root.GetProperty(UserResponseFields.Rooms).EnumerateArray().Select(element => element.GetString()).ToList();
+        Assert.Equal(SampleRooms, rooms);
+        Assert.Equal(JsonValueKind.Object, root.GetProperty(UserResponseFields.Stats).ValueKind);
+        Assert.Equal(JsonValueKind.Object, root.GetProperty(UserResponseFields.Totals).ValueKind);
         Assert.Empty(root.GetProperty(UserResponseFields.GameTimes).EnumerateArray());
         Assert.Equal(JsonValueKind.Null, root.GetProperty(UserResponseFields.StatsMax).ValueKind);
     }

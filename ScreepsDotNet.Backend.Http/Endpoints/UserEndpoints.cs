@@ -431,21 +431,26 @@ internal static class UserEndpoints
     private static void MapProtectedOverview(WebApplication app)
     {
         app.MapGet(ApiRoutes.User.Overview,
-                   (ICurrentUserAccessor userAccessor,
-                    [FromQuery] int? interval,
-                    [FromQuery] string? statName) =>
+                   async (ICurrentUserAccessor userAccessor,
+                          [FromQuery] int? interval,
+                          [FromQuery] string? statName,
+                          IUserWorldRepository userWorldRepository,
+                          CancellationToken cancellationToken) =>
                    {
-                       RequireUser(userAccessor);
+                       var user = RequireUser(userAccessor);
                        var intervalValue = interval ?? AllowedStatsIntervals[0];
                        if (!IsValidStatsInterval(intervalValue))
                            return Results.BadRequest(new ErrorResponse(InvalidStatsIntervalMessage));
 
                        // Accept parameter to keep parity with Node backend even if unused for now.
-                       var _ = string.IsNullOrWhiteSpace(statName) ? DefaultOverviewStatName : statName;
+                       _ = string.IsNullOrWhiteSpace(statName) ? DefaultOverviewStatName : statName;
+
+                       var controllerRooms = await userWorldRepository.GetControllerRoomsAsync(user.Id, cancellationToken).ConfigureAwait(false);
+                       var roomsPayload = controllerRooms.Count > 0 ? controllerRooms : [];
 
                        return Results.Ok(new Dictionary<string, object?>
                        {
-                           [UserResponseFields.Rooms] = Array.Empty<string>(),
+                           [UserResponseFields.Rooms] = roomsPayload,
                            [UserResponseFields.Stats] = new Dictionary<string, object?>(),
                            [UserResponseFields.StatsMax] = null,
                            [UserResponseFields.Totals] = new Dictionary<string, object?>(),
