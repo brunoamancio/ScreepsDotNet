@@ -2,6 +2,7 @@ using MongoDB.Bson;
 using MongoDB.Driver;
 using ScreepsDotNet.Backend.Core.Models;
 using ScreepsDotNet.Backend.Core.Repositories;
+using ScreepsDotNet.Storage.MongoRedis.Extensions;
 using ScreepsDotNet.Storage.MongoRedis.Providers;
 
 namespace ScreepsDotNet.Storage.MongoRedis.Repositories;
@@ -26,15 +27,17 @@ public sealed class MongoUserWorldRepository : IUserWorldRepository
                                                        Builders<BsonDocument>.Filter.Eq(TypeField, ControllerType));
 
         var rooms = await _collection.Find(filter)
-                                     .Project(document => document.GetValue(RoomField, BsonNull.Value).AsString)
+                                     .Project(document => document.GetStringOrNull(RoomField))
                                      .ToListAsync(cancellationToken)
                                      .ConfigureAwait(false);
 
-        if (rooms.Count == 0)
+        var filteredRooms = rooms.Where(room => !string.IsNullOrEmpty(room)).Select(room => room!).ToList();
+
+        if (filteredRooms.Count == 0)
             return null;
 
-        var index = Random.Shared.Next(rooms.Count);
-        return rooms[index];
+        var index = Random.Shared.Next(filteredRooms.Count);
+        return filteredRooms[index];
     }
 
     public async Task<UserWorldStatus> GetWorldStatusAsync(string userId, CancellationToken cancellationToken = default)
@@ -46,8 +49,8 @@ public sealed class MongoUserWorldRepository : IUserWorldRepository
 
         var typeFilter = Builders<BsonDocument>.Filter.In(TypeField, [SpawnType, ControllerType]);
         var documents = await _collection.Find(Builders<BsonDocument>.Filter.And(userFilter, typeFilter))
-                                         .Project(document => new RoomObject(document.GetValue(TypeField, BsonNull.Value).AsString,
-                                                                             document.GetValue(RoomField, BsonNull.Value).AsString))
+                                         .Project(document => new RoomObject(document.GetStringOrNull(TypeField) ?? string.Empty,
+                                                                             document.GetStringOrNull(RoomField) ?? string.Empty))
                                          .ToListAsync(cancellationToken)
                                          .ConfigureAwait(false);
 
@@ -72,10 +75,10 @@ public sealed class MongoUserWorldRepository : IUserWorldRepository
 
         var sort = Builders<BsonDocument>.Sort.Descending(LevelField);
         var rooms = await _collection.Find(filter).Sort(sort)
-                                     .Project(document => document.GetValue(RoomField, BsonNull.Value).AsString)
+                                     .Project(document => document.GetStringOrNull(RoomField))
                                      .ToListAsync(cancellationToken)
                                      .ConfigureAwait(false);
 
-        return rooms;
+        return rooms.Where(room => !string.IsNullOrEmpty(room)).Select(room => room!).ToList();
     }
 }
