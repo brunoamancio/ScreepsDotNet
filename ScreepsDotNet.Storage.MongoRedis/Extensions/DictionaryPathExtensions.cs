@@ -11,11 +11,9 @@ internal static class DictionaryPathExtensions
             throw new ArgumentException("Segments cannot be empty.", nameof(segments));
 
         var current = root;
-        for (var i = 0; i < segments.Count - 1; i++)
-        {
+        for (var i = 0; i < segments.Count - 1; i++) {
             var segment = segments[i];
-            if (!current.TryGetValue(segment, out var child) || child is not IDictionary<string, object?> childDictionary)
-            {
+            if (!current.TryGetValue(segment, out var child) || child is not IDictionary<string, object?> childDictionary) {
                 childDictionary = new Dictionary<string, object?>(StringComparer.Ordinal);
                 current[segment] = childDictionary;
             }
@@ -40,14 +38,12 @@ internal static class DictionaryPathExtensions
         if (!current.TryGetValue(key, out var child))
             return;
 
-        if (index == segments.Count - 1)
-        {
+        if (index == segments.Count - 1) {
             current.Remove(key);
             return;
         }
 
-        if (child is IDictionary<string, object?> childDictionary)
-        {
+        if (child is IDictionary<string, object?> childDictionary) {
             Remove(childDictionary, segments, index + 1);
             if (childDictionary.Count == 0)
                 current.Remove(key);

@@ -29,8 +29,7 @@ internal sealed class BadgeSvgGenerator : IBadgeSvgGenerator
         BadgePathResult pathResult;
         double rotation = 0;
 
-        if (descriptor.NumericType is { } type)
-        {
+        if (descriptor.NumericType is { } type) {
             if (!PathDefinitions.TryGetValue(type, out var definition))
                 return EmptySvg;
 
@@ -62,14 +61,12 @@ internal sealed class BadgeSvgGenerator : IBadgeSvgGenerator
         builder.Append("<path d=\"").Append(paths.Path1).Append("\" fill=\"").Append(color2)
                .Append("\" clip-path=\"url(#").Append(ClipId).Append(")\"/>");
 
-        if (!string.IsNullOrWhiteSpace(paths.Path2))
-        {
+        if (!string.IsNullOrWhiteSpace(paths.Path2)) {
             builder.Append("<path d=\"").Append(paths.Path2).Append("\" fill=\"").Append(color3)
                    .Append("\" clip-path=\"url(#").Append(ClipId).Append(")\"/>");
         }
 
-        if (includeBorder)
-        {
+        if (includeBorder) {
             builder.Append("<circle cx=\"50\" cy=\"50\" r=\"").Append(ToString(BorderCircleRadius))
                    .Append("\" fill=\"transparent\" stroke=\"#000\" stroke-width=\"5\"></circle>");
         }
@@ -87,12 +84,10 @@ internal sealed class BadgeSvgGenerator : IBadgeSvgGenerator
         JsonDocument? document = null;
         JsonElement root;
 
-        try
-        {
+        try {
             if (data is JsonElement element)
                 root = element;
-            else
-            {
+            else {
                 var json = JsonSerializer.Serialize(data);
                 document = JsonDocument.Parse(json);
                 root = document.RootElement;
@@ -112,22 +107,19 @@ internal sealed class BadgeSvgGenerator : IBadgeSvgGenerator
                 : 0;
             var flip = root.TryGetProperty("flip", out var flipElement) && flipElement.ValueKind == JsonValueKind.True;
 
-            if (!root.TryGetProperty("type", out var typeElement))
-            {
+            if (!root.TryGetProperty("type", out var typeElement)) {
                 descriptor = new BadgeDescriptor(color1, color2, color3, param, null, null, null, flip);
                 return true;
             }
 
-            if (typeElement.ValueKind == JsonValueKind.Number && typeElement.TryGetInt32(out var numericType))
-            {
+            if (typeElement.ValueKind == JsonValueKind.Number && typeElement.TryGetInt32(out var numericType)) {
                 descriptor = new BadgeDescriptor(color1, color2, color3, param, numericType, null, null, flip);
                 return true;
             }
 
             if (typeElement.ValueKind == JsonValueKind.Object &&
                 typeElement.TryGetProperty("path1", out var path1Element) &&
-                path1Element.ValueKind == JsonValueKind.String)
-            {
+                path1Element.ValueKind == JsonValueKind.String) {
                 var path2 = typeElement.TryGetProperty("path2", out var path2Element) && path2Element.ValueKind == JsonValueKind.String
                     ? path2Element.GetString()
                     : null;
@@ -138,12 +130,10 @@ internal sealed class BadgeSvgGenerator : IBadgeSvgGenerator
 
             return false;
         }
-        catch
-        {
+        catch {
             return false;
         }
-        finally
-        {
+        finally {
             document?.Dispose();
         }
     }
@@ -172,28 +162,22 @@ internal sealed class BadgeSvgGenerator : IBadgeSvgGenerator
         double r1, g1, b1;
         if (double.IsNaN(h) || double.IsInfinity(h))
             r1 = g1 = b1 = 0;
-        else if (hPrime >= 0 && hPrime < 1)
-        {
+        else if (hPrime is >= 0 and < 1) {
             r1 = c; g1 = x; b1 = 0;
         }
-        else if (hPrime >= 1 && hPrime < 2)
-        {
+        else if (hPrime is >= 1 and < 2) {
             r1 = x; g1 = c; b1 = 0;
         }
-        else if (hPrime >= 2 && hPrime < 3)
-        {
+        else if (hPrime is >= 2 and < 3) {
             r1 = 0; g1 = c; b1 = x;
         }
-        else if (hPrime >= 3 && hPrime < 4)
-        {
+        else if (hPrime is >= 3 and < 4) {
             r1 = 0; g1 = x; b1 = c;
         }
-        else if (hPrime >= 4 && hPrime < 5)
-        {
+        else if (hPrime is >= 4 and < 5) {
             r1 = x; g1 = 0; b1 = c;
         }
-        else
-        {
+        else {
             r1 = c; g1 = 0; b1 = x;
         }
 
@@ -387,8 +371,7 @@ internal sealed class BadgeSvgGenerator : IBadgeSvgGenerator
         var x = 50 - (50 * Math.Cos(Math.PI / 4));
         var y = 50 - (50 * Math.Sin(Math.PI / 4));
 
-        if (param > 0)
-        {
+        if (param > 0) {
             a1 += param * 25 / 100;
             a2 += param * 25 / 100;
         }
@@ -461,8 +444,7 @@ internal sealed class BadgeSvgGenerator : IBadgeSvgGenerator
         var builder1 = new StringBuilder();
         var builder2 = new StringBuilder();
 
-        for (var i = 0; i < 3; i++)
-        {
+        for (var i = 0; i < 3; i++) {
             var angle1 = (i * Math.PI * 2 / 3) + (a / 2) - (Math.PI / 2);
             var angle2 = (i * Math.PI * 2 / 3) - (a / 2) - (Math.PI / 2);
 
@@ -472,8 +454,7 @@ internal sealed class BadgeSvgGenerator : IBadgeSvgGenerator
             builder1.Append($"                               A {ToString(d)} {ToString(d)} 0 0 1 {ToString(50 + (d * Math.Cos(angle1)))} {ToString(50 + (d * Math.Sin(angle1)))} Z");
         }
 
-        for (var i = 0; i < 3; i++)
-        {
+        for (var i = 0; i < 3; i++) {
             var angle1 = (i * Math.PI * 2 / 3) + (a / 2) + (Math.PI / 2);
             var angle2 = (i * Math.PI * 2 / 3) - (a / 2) + (Math.PI / 2);
 
@@ -510,8 +491,7 @@ internal sealed class BadgeSvgGenerator : IBadgeSvgGenerator
         var builder1 = new StringBuilder();
         var builder2 = new StringBuilder();
 
-        for (var i = 0; i < 3; i++)
-        {
+        for (var i = 0; i < 3; i++) {
             var angle1 = (Math.PI * 2 / 3 * i) + (a / 2) - (Math.PI / 2);
             var angle2 = (Math.PI * 2 / 3 * i) - (a / 2) - (Math.PI / 2);
             var mid = (angle1 + angle2) / 2;
@@ -568,10 +548,8 @@ internal sealed class BadgeSvgGenerator : IBadgeSvgGenerator
 
         var path1 = $"M {ToString(50 - w)} {ToString(50 - w)} H {ToString(50 + w)} V {ToString(50 + w)} H {ToString(50 - w)} Z";
         var builder = new StringBuilder();
-        for (var i = -4; i < 4; i++)
-        {
-            for (var j = -4; j < 4; j++)
-            {
+        for (var i = -4; i < 4; i++) {
+            for (var j = -4; j < 4; j++) {
                 var a = (i + j) % 2;
                 builder.Append($"M {ToString(50 - w - (w * 2 * i))} {ToString(50 - w - (w * 2 * (j + a)))} h {ToString(-w * 2)} v {ToString(w * 2)} h {ToString(w * 2)} Z");
             }

@@ -24,8 +24,7 @@ public sealed class MongoUserCodeRepository(IMongoDatabaseProvider databaseProvi
                                         .ToListAsync(cancellationToken)
                                         .ConfigureAwait(false);
 
-        if (branches.All(document => !string.Equals(ResolveBranchName(document), DefaultBranchName, StringComparison.Ordinal)))
-        {
+        if (branches.All(document => !string.Equals(ResolveBranchName(document), DefaultBranchName, StringComparison.Ordinal))) {
             await CreateDefaultBranchAsync(userId, cancellationToken).ConfigureAwait(false);
             branches = await _collection.Find(filter).ToListAsync(cancellationToken).ConfigureAwait(false);
         }
@@ -103,8 +102,7 @@ public sealed class MongoUserCodeRepository(IMongoDatabaseProvider databaseProvi
             return false;
 
         IReadOnlyDictionary<string, string>? modules = null;
-        if (!string.IsNullOrWhiteSpace(sourceBranch))
-        {
+        if (!string.IsNullOrWhiteSpace(sourceBranch)) {
             var source = await GetBranchAsync(userId, sourceBranch, cancellationToken).ConfigureAwait(false);
             modules = source?.Modules;
         }
@@ -147,8 +145,7 @@ public sealed class MongoUserCodeRepository(IMongoDatabaseProvider databaseProvi
         if (string.IsNullOrWhiteSpace(branchIdentifier))
             return Builders<UserCodeDocument>.Filter.And(userFilter, Builders<UserCodeDocument>.Filter.Eq(document => document.Branch, DefaultBranchName));
 
-        if (branchIdentifier.StartsWith(ActivePrefix, StringComparison.Ordinal))
-        {
+        if (branchIdentifier.StartsWith(ActivePrefix, StringComparison.Ordinal)) {
             if (branchIdentifier.Equals(ActiveWorldIdentifier, StringComparison.OrdinalIgnoreCase))
                 return Builders<UserCodeDocument>.Filter.And(userFilter, Builders<UserCodeDocument>.Filter.Eq(document => document.ActiveWorld, true));
 

@@ -1,4 +1,4 @@
-namespace ScreepsDotNet.Backend.Core.Models;
+﻿namespace ScreepsDotNet.Backend.Core.Models;
 
 using System.Collections.Generic;
 

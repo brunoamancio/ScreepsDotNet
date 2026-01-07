@@ -19,8 +19,7 @@ public sealed class MongoRoomRepository(IMongoDatabaseProvider databaseProvider)
                                          .ToListAsync(cancellationToken)
                                          .ConfigureAwait(false);
 
-        return documents.Select(document =>
-        {
+        return documents.Select(document => {
             var controllerLevel = document.Controller?.Level ?? 0;
             var energy = document.EnergyAvailable ?? 0;
             return new RoomSummary(document.Name ?? UnknownRoomName,

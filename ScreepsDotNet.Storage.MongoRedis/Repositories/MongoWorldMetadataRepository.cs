@@ -1,4 +1,4 @@
-namespace ScreepsDotNet.Storage.MongoRedis.Repositories;
+﻿namespace ScreepsDotNet.Storage.MongoRedis.Repositories;
 
 using System.Globalization;
 using System.Linq;
@@ -88,8 +88,7 @@ public sealed class MongoWorldMetadataRepository(IMongoDatabaseProvider database
 
     private static int FindVerticalDirectionIndex(string roomName)
     {
-        for (var i = 1; i < roomName.Length; i++)
-        {
+        for (var i = 1; i < roomName.Length; i++) {
             var c = char.ToUpperInvariant(roomName[i]);
             if (c is 'N' or 'S')
                 return i;

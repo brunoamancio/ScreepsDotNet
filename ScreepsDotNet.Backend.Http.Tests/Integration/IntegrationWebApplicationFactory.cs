@@ -22,8 +22,7 @@ internal sealed class IntegrationWebApplicationFactory(string mongoConnectionStr
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment(IntegrationEnvironmentName);
-        builder.ConfigureAppConfiguration((_, configBuilder) =>
-        {
+        builder.ConfigureAppConfiguration((_, configBuilder) => {
             var settings = new Dictionary<string, string?>
             {
                 [MongoConnectionStringKey] = mongoConnectionString,

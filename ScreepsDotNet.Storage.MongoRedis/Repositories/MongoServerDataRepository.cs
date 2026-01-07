@@ -53,7 +53,8 @@ public sealed class MongoServerDataRepository(IMongoDatabaseProvider databasePro
         {
             WelcomeText = data.WelcomeText,
             CustomObjectTypes = new Dictionary<string, object>(data.CustomObjectTypes, StringComparer.Ordinal),
-            HistoryChunkSize = data.HistoryChunkSize, SocketUpdateThrottle = data.SocketUpdateThrottle,
+            HistoryChunkSize = data.HistoryChunkSize,
+            SocketUpdateThrottle = data.SocketUpdateThrottle,
             Renderer = new ServerRendererDocument
             {
                 Resources = new Dictionary<string, object>(data.Renderer.Resources, StringComparer.Ordinal),

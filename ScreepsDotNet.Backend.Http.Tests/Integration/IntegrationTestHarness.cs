@@ -1,4 +1,4 @@
-namespace ScreepsDotNet.Backend.Http.Tests.Integration;
+﻿namespace ScreepsDotNet.Backend.Http.Tests.Integration;
 
 using System;
 using System.Collections.Generic;
@@ -95,12 +95,10 @@ public sealed class IntegrationTestHarness : IAsyncLifetime
 
     private async Task DropCollectionIfExistsAsync(string name)
     {
-        try
-        {
+        try {
             await Database.DropCollectionAsync(name);
         }
-        catch (MongoCommandException ex) when (ex.CodeName == MongoNamespaceNotFoundCode)
-        {
+        catch (MongoCommandException ex) when (ex.CodeName == MongoNamespaceNotFoundCode) {
             // collection did not exist
         }
     }

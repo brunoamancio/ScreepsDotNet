@@ -11,8 +11,7 @@ public static class HealthCheckOptionsFactory
     public static HealthCheckOptions Create()
         => new()
         {
-            ResponseWriter = async (context, report) =>
-            {
+            ResponseWriter = async (context, report) => {
                 context.Response.ContentType = ContentTypes.Json;
 
                 var results = report.Entries.ToDictionary(

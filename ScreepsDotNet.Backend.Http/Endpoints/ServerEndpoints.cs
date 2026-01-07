@@ -10,8 +10,7 @@ internal static class ServerEndpoints
     public static void Map(WebApplication app)
     {
         app.MapGet(ApiRoutes.Server.Info,
-                   async (IServerDataRepository repository, CancellationToken cancellationToken) =>
-                   {
+                   async (IServerDataRepository repository, CancellationToken cancellationToken) => {
                        var data = await repository.GetServerDataAsync(cancellationToken).ConfigureAwait(false);
                        return Results.Ok(data);
                    })

@@ -26,6 +26,6 @@ public class VersionEndpointTests(TestWebApplicationFactory factory) : IClassFix
         Assert.Equal(VersionTestValues.WelcomeText, serverData.GetProperty(ServerDataResponseFields.WelcomeText).GetString());
         Assert.Equal(VersionTestValues.HistoryChunkSize, serverData.GetProperty(ServerDataResponseFields.HistoryChunkSize).GetInt32());
         Assert.Equal(VersionTestValues.SocketUpdateThrottle, serverData.GetProperty(ServerDataResponseFields.SocketUpdateThrottle).GetInt32());
-        Assert.True(serverData.GetProperty(ServerDataResponseFields.CustomObjectTypes).EnumerateObject().MoveNext() == false);
+        Assert.False(serverData.GetProperty(ServerDataResponseFields.CustomObjectTypes).EnumerateObject().MoveNext());
     }
 }

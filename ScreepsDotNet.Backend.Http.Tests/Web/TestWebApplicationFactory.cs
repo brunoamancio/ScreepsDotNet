@@ -1,4 +1,4 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
@@ -17,8 +17,7 @@ public sealed class TestWebApplicationFactory : WebApplicationFactory<Program>
 {
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
-        builder.ConfigureServices(services =>
-        {
+        builder.ConfigureServices(services => {
             services.RemoveAll<IStorageAdapter>();
             services.RemoveAll<IVersionInfoProvider>();
             services.RemoveAll<IServerDataRepository>();
@@ -33,6 +32,8 @@ public sealed class TestWebApplicationFactory : WebApplicationFactory<Program>
             services.RemoveAll<IMarketStatsRepository>();
             services.RemoveAll<IRoomStatusRepository>();
             services.RemoveAll<IRoomTerrainRepository>();
+            services.RemoveAll<IWorldStatsRepository>();
+            services.RemoveAll<IWorldMetadataRepository>();
             services.RemoveAll<IUserRespawnService>();
             services.RemoveAll<ITokenService>();
 
@@ -50,21 +51,22 @@ public sealed class TestWebApplicationFactory : WebApplicationFactory<Program>
             services.AddSingleton<IMarketStatsRepository, FakeMarketStatsRepository>();
             services.AddSingleton<IRoomStatusRepository, FakeRoomStatusRepository>();
             services.AddSingleton<IRoomTerrainRepository, FakeRoomTerrainRepository>();
+            services.AddSingleton<IWorldStatsRepository, FakeWorldStatsRepository>();
+            services.AddSingleton<IWorldMetadataRepository, FakeWorldMetadataRepository>();
             services.AddSingleton<IUserRespawnService, FakeUserRespawnService>();
             services.AddSingleton<ITokenService, FakeTokenService>();
-            services.Configure<AuthOptions>(options =>
-            {
+            services.Configure<AuthOptions>(options => {
                 options.UseNativeAuth = false;
                 options.TokenTtlSeconds = 60;
-                options.Tickets = new List<AuthTicketOptions>
-                {
+                options.Tickets =
+                [
                     new()
                     {
                         Ticket = AuthTestValues.Ticket,
                         UserId = AuthTestValues.UserId,
                         SteamId = AuthTestValues.SteamId
                     }
-                };
+                ];
             });
         });
     }
@@ -295,8 +297,7 @@ internal sealed class FakeUserCodeRepository : IUserCodeRepository
         if (target is null)
             return Task.FromResult(false);
 
-        for (var i = 0; i < _branches.Count; i++)
-        {
+        for (var i = 0; i < _branches.Count; i++) {
             var branch = _branches[i];
             var isTarget = string.Equals(branch.Branch, target.Branch, StringComparison.OrdinalIgnoreCase);
             var activeWorld = slot == ActiveSlot.World ? isTarget : branch.ActiveWorld;
@@ -326,17 +327,17 @@ internal sealed class FakeUserCodeRepository : IUserCodeRepository
             return Task.FromResult(false);
 
         IReadOnlyDictionary<string, string> modules;
-        if (!string.IsNullOrWhiteSpace(sourceBranch))
-        {
+        if (!string.IsNullOrWhiteSpace(sourceBranch)) {
             var source = ResolveBranch(sourceBranch);
             if (source is null)
                 return Task.FromResult(false);
             modules = CloneModules(source.Modules);
         }
-        else if (defaultModules is not null && defaultModules.Count > 0)
-            modules = CloneModules(defaultModules);
-        else
-            modules = new Dictionary<string, string>(StringComparer.Ordinal) { [DefaultModuleName] = HelloWorldScript };
+        else {
+            modules = defaultModules is not null && defaultModules.Count > 0
+                ? CloneModules(defaultModules)
+                : new Dictionary<string, string>(StringComparer.Ordinal) { [DefaultModuleName] = HelloWorldScript };
+        }
 
         _branches.Add(new UserCodeBranch(newBranchName, modules, DateTime.UtcNow, false, false));
         return Task.FromResult(true);
@@ -381,14 +382,12 @@ internal sealed class FakeUserCodeRepository : IUserCodeRepository
 
     private static bool TryResolveActiveSlot(string activeName, out ActiveSlot slot)
     {
-        if (string.Equals(activeName, ActiveWorldSlotName, StringComparison.OrdinalIgnoreCase))
-        {
+        if (string.Equals(activeName, ActiveWorldSlotName, StringComparison.OrdinalIgnoreCase)) {
             slot = ActiveSlot.World;
             return true;
         }
 
-        if (string.Equals(activeName, ActiveSimSlotName, StringComparison.OrdinalIgnoreCase))
-        {
+        if (string.Equals(activeName, ActiveSimSlotName, StringComparison.OrdinalIgnoreCase)) {
             slot = ActiveSlot.Simulation;
             return true;
         }
@@ -417,22 +416,20 @@ internal sealed class FakeUserMemoryRepository : IUserMemoryRepository
         }
     };
 
-    private readonly Dictionary<int, string?> _segments = new();
+    private readonly Dictionary<int, string?> _segments = [];
 
     public Task<IDictionary<string, object?>> GetMemoryAsync(string userId, CancellationToken cancellationToken = default)
         => Task.FromResult(CloneDictionary(_memory));
 
     public Task UpdateMemoryAsync(string userId, string? path, JsonElement value, CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(path))
-        {
-            if (value.ValueKind == JsonValueKind.Object)
-            {
+        if (string.IsNullOrWhiteSpace(path)) {
+            if (value.ValueKind == JsonValueKind.Object) {
                 _memory.Clear();
                 foreach (var property in value.EnumerateObject())
                     _memory[property.Name] = ConvertJson(property.Value);
             }
-            else if (value.ValueKind == JsonValueKind.Null || value.ValueKind == JsonValueKind.Undefined)
+            else if (value.ValueKind is JsonValueKind.Null or JsonValueKind.Undefined)
                 _memory.Clear();
             else
                 _memory["value"] = ConvertJson(value);
@@ -633,6 +630,56 @@ sealed file class FakeRoomTerrainRepository : IRoomTerrainRepository
             : Entries.Where(entry => requested.Contains(entry.RoomName)).ToList();
         return Task.FromResult<IReadOnlyList<RoomTerrainData>>(result);
     }
+}
+
+sealed file class FakeWorldStatsRepository : IWorldStatsRepository
+{
+    private const string RoomName = "W1N1";
+    private const int GameTime = 12345;
+
+    public Task<MapStatsResult> GetMapStatsAsync(MapStatsRequest request, CancellationToken cancellationToken = default)
+    {
+        var stats = new Dictionary<string, MapStatsRoom>(StringComparer.OrdinalIgnoreCase)
+        {
+            [RoomName] = new(RoomName,
+                             "normal",
+                             false,
+                             false,
+                             null,
+                             new RoomOwnershipInfo(AuthTestValues.UserId, 3),
+                             new RoomSignInfo(AuthTestValues.UserId, "hello", 100),
+                             true,
+                             new RoomMineralInfo("H", 2))
+        };
+
+        var users = new Dictionary<string, MapStatsUser>(StringComparer.OrdinalIgnoreCase)
+        {
+            [AuthTestValues.UserId] = new(AuthTestValues.UserId, AuthTestValues.Username, null)
+        };
+
+        return Task.FromResult(new MapStatsResult(GameTime,
+                                                  stats,
+                                                  new Dictionary<string, object?>(),
+                                                  users));
+    }
+}
+
+sealed file class FakeWorldMetadataRepository : IWorldMetadataRepository
+{
+    public int Time { get; set; } = 999;
+
+    public int Tick { get; set; } = 500;
+
+    public WorldSize Size { get; set; } = new(10, 10);
+
+    public Task<int> GetGameTimeAsync(CancellationToken cancellationToken = default)
+        => Task.FromResult(Time);
+
+    public Task<int> GetTickDurationAsync(CancellationToken cancellationToken = default)
+        => Task.FromResult(Tick);
+
+    public Task<WorldSize> GetWorldSizeAsync(CancellationToken cancellationToken = default)
+        => Task.FromResult(Size);
 }
 internal sealed class FakeUserRespawnService : IUserRespawnService
 {

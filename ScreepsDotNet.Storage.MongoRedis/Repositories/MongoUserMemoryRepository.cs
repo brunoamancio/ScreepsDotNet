@@ -24,14 +24,11 @@ public sealed class MongoUserMemoryRepository(IMongoDatabaseProvider databasePro
         var document = await FindDocumentAsync(userId, cancellationToken).ConfigureAwait(false) ?? new UserMemoryDocument { UserId = userId };
         document.Memory ??= new Dictionary<string, object?>(StringComparer.Ordinal);
 
-        if (string.IsNullOrWhiteSpace(path))
-        {
+        if (string.IsNullOrWhiteSpace(path)) {
             document.Memory.Clear();
-            if (value.ValueKind != JsonValueKind.Undefined)
-            {
+            if (value.ValueKind != JsonValueKind.Undefined) {
                 var payload = value.ToObjectValue();
-                if (payload is IDictionary<string, object?> dictionary)
-                {
+                if (payload is IDictionary<string, object?> dictionary) {
                     foreach (var kvp in dictionary)
                         document.Memory[kvp.Key] = kvp.Value;
                 }
@@ -39,8 +36,7 @@ public sealed class MongoUserMemoryRepository(IMongoDatabaseProvider databasePro
                     document.Memory["value"] = payload;
             }
         }
-        else
-        {
+        else {
             var segments = path.Split('.', StringSplitOptions.RemoveEmptyEntries);
             if (segments.Length == 0)
                 return;

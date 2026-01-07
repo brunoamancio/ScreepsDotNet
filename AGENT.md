@@ -17,6 +17,8 @@
 - `/api/server/info` – reads metadata from Mongo `serverData` (seeded automatically).
 - `/api/user/*` (branches, code, memory, console, notify prefs, badge SVG, respawn) – wired to Mongo/Redis repositories (`MongoUserCodeRepository`, `MongoUserMemoryRepository`, `MongoUserConsoleRepository`, `MongoUserRespawnService`, `MongoUserWorldRepository`) with the same semantics as the legacy Screeps backend.
 - `/api/user/badge`, `/api/user/email`, `/api/user/set-steam-visible` – newly implemented profile management endpoints writing to the `users` collection with the same validation rules as the Node server.
+- `/api/game/market/*` – parity routes for `orders-index`, `orders`, `my-orders`, and `stats` backed by typed repositories and DTO factories that scale prices (thousandths → credits) and enforce query validation.
+- `/api/game/*` world endpoints – `map-stats`, `room-status`, `room-terrain`, `rooms`, `world-size`, `time`, `tick` implemented with Mongo-backed repositories, DTO factories, deterministic seeds (docker + Testcontainers), and HTTP scratch files for quick smoke testing.
 - Core abstractions defined for server info, users, rooms, CLI sessions, storage status, and engine ticks.
 - Mongo repositories implemented for server info, users, and owned rooms; ready for future endpoints.
 - Integration tests spin up disposable Mongo + Redis containers via Testcontainers to validate real storage behavior.
@@ -43,11 +45,12 @@
    ```
    - Unit tests swap repositories with fakes (fast, hermetic).
    - Integration tests (also under `ScreepsDotNet.Backend.Http.Tests`) spin up Mongo + Redis containers via Testcontainers; keep Docker Desktop running.
-5. **Keep the repo lint-clean:** run `dotnet format style --severity error --diagnostics IDE0005,IDE0011,IDE0007` (or equivalent Rider/Roslyn analysis) during development, then `dotnet format --verify-no-changes` before wrapping up a task. Fix unused `using`s, redundant braces, `var` style issues, and any reported IDE warnings so we don’t leave style violations for the next person.
-5. **Manual smoke tests:**  
+5. **Keep the repo lint-clean:** run `dotnet format style --severity error --diagnostics IDE0005,IDE0011,IDE0007` (or equivalent Rider/Roslyn analysis) during development. `dotnet format --verify-no-changes` currently fails with upstream `CHARSET` warnings on untouched files, so capture the failure output in your report instead of trying to re-encode the entire repo. Fix unused `using`s, redundant braces, `var` style issues, and any reported IDE warnings in the files you touch so we don’t leave style violations for the next person.
+6. **Manual smoke tests:**  
    - `GET http://localhost:5210/health`
    - `GET http://localhost:5210/api/server/info`
-6. **Build:** ensure no running `dotnet run` locks DLLs before invoking `dotnet build`.
+   - `ScreepsDotNet.Backend.Http/MarketEndpoints.http` + `WorldEndpoints.http` contain ready-to-send requests for every market/world route once the backend is running.
+7. **Build:** ensure no running `dotnet run` locks DLLs before invoking `dotnet build`.
 
 ### Resetting / Updating Seed Data
 
@@ -96,19 +99,17 @@
 
 ## Pending / Next Steps
 
-1. **Market Endpoint Parity**
-   - See `docs/specs/MarketWorldEndpoints.md` for the detailed scope. It captures every `/api/game/market/*` and `/api/game/*` route we still owe, plus the Mongo schemas and test expectations.
-   - Implement the Mongo POCOs (`MarketOrderDocument`, `MarketStatsDocument`, terrain/status extensions) and repository contracts described there.
-   - Extend `IntegrationTestHarness` and docker seed scripts with representative `market.orders`, `market.stats`, `rooms`, `rooms.objects`, and `rooms.terrain` data.
-   - Mirror the legacy validation rules (order limits, resource filters, stat-name validation) with unit + integration tests.
-   - Update HTTP scratch files (create `MarketEndpoints.http` / `WorldEndpoints.http`) so manual smoke tests stay trivial.
-2. Scaffold CLI host (`ScreepsDotNet.Backend.Cli`) when backend surfaces are stable.
-3. Replace in-memory server-info provider once storage-backed provider is fully vetted.
+1. **CLI Host Scaffolding**
+   - Bring `ScreepsDotNet.Backend.Cli` online now that the HTTP surface (users + market + world) is stable. Reuse the existing repositories so we can manage storage, run regression smoke tests, and script future write-heavy flows.
+2. **Write-heavy `/api/game/*` routes**
+   - Implement spawn placement, construction/flag intents, notify toggles, and invader management per the remainder of `docs/specs/MarketWorldEndpoints.md`. These depend on the room/world repositories we just added—extend docker + Testcontainers seeds before adding the endpoints/tests.
+3. **Server info provider parity**
+   - Replace the remaining in-memory providers (e.g., `VersionInfoProvider` caching) with storage-backed equivalents so `/api/version` and `/api/server/info` always reflect Mongo state, then remove duplicated configuration blocks.
 
 ## Market & World API Spec Snapshot
 
-- `docs/specs/MarketWorldEndpoints.md` is now the canonical reference for legacy behavior, Mongo schemas, .NET repository contracts, and the integration test matrix required before we call parity done.
-- Scope priorities (in order): market orders/index/stats, world read APIs (`map-stats`, `room-status`, `room-terrain`, `rooms`, `world-size`, `time`, `tick`), then remaining write-heavy endpoints (spawn placement, flags, intents) once the read-model is stable.
+- `docs/specs/MarketWorldEndpoints.md` remains the canonical reference for legacy behavior, Mongo schemas, .NET repository contracts, and the integration test matrix. The read-model sections (market + world) are now implemented; treat the remaining chapters as the backlog for write-heavy routes.
+- Scope priorities (in order): CLI tooling + regression scaffolding, then the remaining write-heavy endpoints (spawn placement, flags, intents) once we have deterministic seeds/tests for those mutations.
 
 ## Tips for Agents
 

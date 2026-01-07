@@ -1,0 +1,48 @@
+@host = http://localhost:5210
+@token = {{token}}
+
+### Authenticate (update token variable manually)
+POST {{host}}/api/auth/steam-ticket
+Content-Type: application/json
+
+{
+  "ticket": "integration-ticket",
+  "useNativeAuth": false
+}
+
+### Map stats (requires token)
+POST {{host}}/api/game/map-stats
+Content-Type: application/json
+X-Token: {{token}}
+
+{
+  "rooms": ["W1N1", "W2N2"],
+  "statName": "owners1"
+}
+
+### Room status (requires token)
+GET {{host}}/api/game/room-status?room=W1N1
+X-Token: {{token}}
+
+### Room terrain (decoded)
+GET {{host}}/api/game/room-terrain?room=W1N1
+
+### Room terrain (encoded)
+GET {{host}}/api/game/room-terrain?room=W1N1&encoded=1
+
+### Bulk rooms terrain
+POST {{host}}/api/game/rooms
+Content-Type: application/json
+
+{
+  "rooms": ["W1N1", "W2N2"]
+}
+
+### World size
+GET {{host}}/api/game/world-size
+
+### World time
+GET {{host}}/api/game/time
+
+### World tick
+GET {{host}}/api/game/tick

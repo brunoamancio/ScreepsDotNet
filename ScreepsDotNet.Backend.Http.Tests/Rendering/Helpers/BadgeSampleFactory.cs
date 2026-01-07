@@ -15,8 +15,7 @@ internal static class BadgeSampleFactory
     {
         var samples = new List<BadgeSample>(maxType);
 
-        for (var type = 1; type <= maxType; type++)
-        {
+        for (var type = 1; type <= maxType; type++) {
             var payload = new BadgePayload
             {
                 color1 = type % 30,

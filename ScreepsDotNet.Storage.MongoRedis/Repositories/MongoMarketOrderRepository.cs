@@ -24,8 +24,7 @@ public sealed class MongoMarketOrderRepository(IMongoDatabaseProvider databasePr
 
         return documents.Where(doc => !string.IsNullOrWhiteSpace(doc.ResourceType))
                         .GroupBy(doc => doc.ResourceType!, StringComparer.OrdinalIgnoreCase)
-                        .Select(group =>
-                        {
+                        .Select(group => {
                             var buying = group.Count(doc => string.Equals(doc.Type, "buy", StringComparison.OrdinalIgnoreCase));
                             var selling = group.Count(doc => string.Equals(doc.Type, "sell", StringComparison.OrdinalIgnoreCase));
                             return new MarketOrderSummary(group.Key, group.Count(), buying, selling);

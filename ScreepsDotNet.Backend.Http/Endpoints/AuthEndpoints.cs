@@ -21,11 +21,10 @@ internal static class AuthEndpoints
         app.MapPost(ApiRoutes.AuthSteamTicket, HandleSteamTicketAsync)
            .WithName(SteamTicketEndpointName);
 
-        app.MapGet(ApiRoutes.AuthMe, (ICurrentUserAccessor userAccessor) =>
-           {
-               var profile = userAccessor.CurrentUser ?? throw new InvalidOperationException("User context is not available.");
-               return Results.Ok(AuthMeResponse.From(profile));
-           })
+        app.MapGet(ApiRoutes.AuthMe, (ICurrentUserAccessor userAccessor) => {
+            var profile = userAccessor.CurrentUser ?? throw new InvalidOperationException("User context is not available.");
+            return Results.Ok(AuthMeResponse.From(profile));
+        })
            .RequireTokenAuthentication()
            .WithName(AuthMeEndpointName);
     }

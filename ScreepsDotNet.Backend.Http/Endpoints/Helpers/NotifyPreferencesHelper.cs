@@ -32,8 +32,7 @@ internal static class NotifyPreferencesHelper
     private static Dictionary<string, object?> CopyFromDictionary(IDictionary source)
     {
         var result = new Dictionary<string, object?>(StringComparer.Ordinal);
-        foreach (DictionaryEntry entry in source)
-        {
+        foreach (DictionaryEntry entry in source) {
             if (entry.Key is string key)
                 result[key] = entry.Value;
         }

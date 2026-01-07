@@ -1,4 +1,4 @@
-namespace ScreepsDotNet.Storage.MongoRedis.Repositories;
+﻿namespace ScreepsDotNet.Storage.MongoRedis.Repositories;
 
 using System.Collections.Generic;
 using System.Linq;
@@ -22,8 +22,7 @@ public sealed class MongoWorldStatsRepository(IMongoDatabaseProvider databasePro
 
     public async Task<MapStatsResult> GetMapStatsAsync(MapStatsRequest request, CancellationToken cancellationToken = default)
     {
-        if (request.Rooms.Count == 0)
-        {
+        if (request.Rooms.Count == 0) {
             return new MapStatsResult(await metadataRepository.GetGameTimeAsync(cancellationToken).ConfigureAwait(false),
                                       new Dictionary<string, MapStatsRoom>(StringComparer.OrdinalIgnoreCase),
                                       new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase),
@@ -37,8 +36,7 @@ public sealed class MongoWorldStatsRepository(IMongoDatabaseProvider databasePro
 
         var gameTime = await metadataRepository.GetGameTimeAsync(cancellationToken).ConfigureAwait(false);
         var stats = await LoadBaseRoomStatsAsync(requestedRooms, cancellationToken).ConfigureAwait(false);
-        if (stats.Count == 0)
-        {
+        if (stats.Count == 0) {
             return new MapStatsResult(gameTime,
                                       new Dictionary<string, MapStatsRoom>(),
                                       new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase),
@@ -86,8 +84,7 @@ public sealed class MongoWorldStatsRepository(IMongoDatabaseProvider databasePro
                                                   .ToListAsync(cancellationToken)
                                                   .ConfigureAwait(false);
 
-        foreach (var obj in objects)
-        {
+        foreach (var obj in objects) {
             if (obj.Room is null || !builders.TryGetValue(obj.Room, out var builder))
                 continue;
 
@@ -102,19 +99,16 @@ public sealed class MongoWorldStatsRepository(IMongoDatabaseProvider databasePro
 
     private static void ApplyController(MapStatsRoomBuilder builder, RoomObjectDocument document, ISet<string> userIds, int gameTime)
     {
-        if (!string.IsNullOrWhiteSpace(document.UserId))
-        {
+        if (!string.IsNullOrWhiteSpace(document.UserId)) {
             builder.Ownership = new RoomOwnershipInfo(document.UserId!, document.Level ?? 0);
             userIds.Add(document.UserId!);
         }
-        else if (!string.IsNullOrWhiteSpace(document.Reservation?.UserId))
-        {
+        else if (!string.IsNullOrWhiteSpace(document.Reservation?.UserId)) {
             builder.Ownership = new RoomOwnershipInfo(document.Reservation.UserId!, 0);
             userIds.Add(document.Reservation.UserId!);
         }
 
-        if (document.Sign is not null && !string.IsNullOrWhiteSpace(document.Sign.UserId))
-        {
+        if (document.Sign is not null && !string.IsNullOrWhiteSpace(document.Sign.UserId)) {
             builder.Sign = new RoomSignInfo(document.Sign.UserId!, document.Sign.Text, document.Sign.Time);
             userIds.Add(document.Sign.UserId!);
         }
@@ -150,13 +144,11 @@ public sealed class MongoWorldStatsRepository(IMongoDatabaseProvider databasePro
 
         var filter = Builders<UserDocument>.Filter.In(user => user.Id, userIds);
         var documents = await _usersCollection.Find(filter)
-                                              .Project(user => new MapStatsUser(user.Id ?? string.Empty,
-                                                                                user.Username ?? string.Empty,
-                                                                                user.Badge))
                                               .ToListAsync(cancellationToken)
                                               .ConfigureAwait(false);
 
         return documents.Where(user => !string.IsNullOrWhiteSpace(user.Id))
+                        .Select(user => new MapStatsUser(user.Id!, user.Username ?? string.Empty, user.Badge))
                         .ToDictionary(user => user.Id, user => user, StringComparer.OrdinalIgnoreCase);
     }
 

@@ -1,4 +1,4 @@
-namespace ScreepsDotNet.Backend.Http.Endpoints.Helpers;
+﻿namespace ScreepsDotNet.Backend.Http.Endpoints.Helpers;
 
 using System.Collections.Generic;
 using System.Text.Json;
@@ -24,28 +24,18 @@ internal static partial class UserBadgeUpdateFactory
             return false;
 
         var typeElement = payload.Type;
-        if (typeElement.ValueKind == JsonValueKind.Undefined || typeElement.ValueKind == JsonValueKind.Null)
+        if (typeElement.ValueKind is JsonValueKind.Undefined or JsonValueKind.Null)
             return false;
 
-        object? typeValue;
-        switch (typeElement.ValueKind) {
-            case JsonValueKind.Number: {
-                if (!typeElement.TryGetInt32(out var typeInt) || typeInt is < 1 or > 24)
-                    return false;
+        var typeValue = typeElement.ValueKind switch
+        {
+            JsonValueKind.Number when typeElement.TryGetInt32(out var typeInt) && typeInt is >= 1 and <= 24 => typeInt,
+            JsonValueKind.Object when TryCreateCustomBadge(typeElement, user.CustomBadge, out var badgeObject) => badgeObject,
+            _ => null
+        };
 
-                typeValue = typeInt;
-                break;
-            }
-            case JsonValueKind.Object: {
-                var candidate = ConvertJsonElementToDotNet(typeElement);
-                if (!IsCustomBadgeCandidateValid(candidate, user.CustomBadge))
-                    return false;
-
-                typeValue = candidate!;
-                break;
-            }
-            default: return false;
-        }
+        if (typeValue is null)
+            return false;
 
         badgeUpdate = new UserBadgeUpdate(typeValue, payload.Color1!, payload.Color2!, payload.Color3!, payload.Param.Value, payload.Flip ?? false);
         errorMessage = null;
@@ -55,12 +45,13 @@ internal static partial class UserBadgeUpdateFactory
     private static bool IsValidBadgeColor(string? color)
         => !string.IsNullOrWhiteSpace(color) && BadgeColorRegex.IsMatch(color);
 
-    private static bool IsCustomBadgeCandidateValid(object? candidate, object? customBadge)
+    private static bool TryCreateCustomBadge(JsonElement element, object? customBadge, out object? badge)
     {
-        if (candidate is null || customBadge is null)
+        badge = ConvertJsonElementToDotNet(element);
+        if (badge is null || customBadge is null)
             return false;
 
-        var candidateJson = JsonSerializer.Serialize(candidate);
+        var candidateJson = JsonSerializer.Serialize(badge);
         var customBadgeJson = JsonSerializer.Serialize(customBadge);
         return string.Equals(candidateJson, customBadgeJson, StringComparison.Ordinal);
     }

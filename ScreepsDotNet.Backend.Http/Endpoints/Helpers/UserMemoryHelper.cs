@@ -16,8 +16,7 @@ internal static class UserMemoryHelper
     {
         using var buffer = new MemoryStream();
         using (var gzip = new GZipStream(buffer, CompressionLevel.SmallestSize, leaveOpen: true))
-        using (var writer = new StreamWriter(gzip, Encoding.UTF8))
-        {
+        using (var writer = new StreamWriter(gzip, Encoding.UTF8)) {
             var json = JsonSerializer.Serialize(value);
             writer.Write(json);
         }
@@ -32,10 +31,8 @@ internal static class UserMemoryHelper
 
         var segments = path.Split('.', StringSplitOptions.RemoveEmptyEntries);
         object? current = root;
-        foreach (var segment in segments)
-        {
-            switch (current)
-            {
+        foreach (var segment in segments) {
+            switch (current) {
                 case IReadOnlyDictionary<string, object?> dictionary when dictionary.TryGetValue(segment, out current):
                 case IDictionary<string, object?> mutableDictionary when mutableDictionary.TryGetValue(segment, out current):
                     continue;

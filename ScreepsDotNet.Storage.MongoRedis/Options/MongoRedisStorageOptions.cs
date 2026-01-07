@@ -1,4 +1,4 @@
-namespace ScreepsDotNet.Storage.MongoRedis.Options;
+﻿namespace ScreepsDotNet.Storage.MongoRedis.Options;
 
 public sealed class MongoRedisStorageOptions
 {

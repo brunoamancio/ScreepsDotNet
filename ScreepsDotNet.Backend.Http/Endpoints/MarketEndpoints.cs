@@ -14,9 +14,9 @@ internal static class MarketEndpoints
     private const string OrdersEndpointName = "GetMarketOrders";
     private const string MyOrdersEndpointName = "GetMarketMyOrders";
     private const string StatsEndpointName = "GetMarketStats";
-    private const string ResourceTypeQueryName = "resourceType";
     private const string InvalidParamsMessage = "invalid params";
     private const string MissingUserContextMessage = "User context is not available.";
+    private const string ResourceTypeQueryName = "resourceType";
 
     public static void Map(WebApplication app)
     {
@@ -29,8 +29,7 @@ internal static class MarketEndpoints
     private static void MapOrdersIndex(WebApplication app)
     {
         app.MapGet(ApiRoutes.Game.Market.OrdersIndex,
-                   async (IMarketOrderRepository repository, CancellationToken cancellationToken) =>
-                   {
+                   async (IMarketOrderRepository repository, CancellationToken cancellationToken) => {
                        var summaries = await repository.GetActiveOrderIndexAsync(cancellationToken).ConfigureAwait(false);
                        var payload = MarketResponseFactory.CreateSummaryList(summaries);
                        return Results.Ok(payload);
@@ -44,15 +43,14 @@ internal static class MarketEndpoints
         app.MapGet(ApiRoutes.Game.Market.Orders,
                    async ([FromQuery(Name = ResourceTypeQueryName)] string? resourceType,
                           IMarketOrderRepository repository,
-                          CancellationToken cancellationToken) =>
-                   {
-                       if (!IsValidResourceType(resourceType))
-                           return Results.BadRequest(new ErrorResponse(InvalidParamsMessage));
+                          CancellationToken cancellationToken) => {
+                              if (!IsValidResourceType(resourceType))
+                                  return Results.BadRequest(new ErrorResponse(InvalidParamsMessage));
 
-                       var orders = await repository.GetActiveOrdersByResourceAsync(resourceType!, cancellationToken).ConfigureAwait(false);
-                       var payload = MarketResponseFactory.CreateOrderList(orders);
-                       return Results.Ok(payload);
-                   })
+                              var orders = await repository.GetActiveOrdersByResourceAsync(resourceType!, cancellationToken).ConfigureAwait(false);
+                              var payload = MarketResponseFactory.CreateOrderList(orders);
+                              return Results.Ok(payload);
+                          })
            .RequireTokenAuthentication()
            .WithName(OrdersEndpointName);
     }
@@ -62,13 +60,12 @@ internal static class MarketEndpoints
         app.MapGet(ApiRoutes.Game.Market.MyOrders,
                    async (ICurrentUserAccessor userAccessor,
                           IMarketOrderRepository repository,
-                          CancellationToken cancellationToken) =>
-                   {
-                       var user = UserEndpointGuards.RequireUser(userAccessor, MissingUserContextMessage);
-                       var orders = await repository.GetOrdersByUserAsync(user.Id, cancellationToken).ConfigureAwait(false);
-                       var payload = MarketResponseFactory.CreateOrderList(orders);
-                       return Results.Ok(payload);
-                   })
+                          CancellationToken cancellationToken) => {
+                              var user = UserEndpointGuards.RequireUser(userAccessor, MissingUserContextMessage);
+                              var orders = await repository.GetOrdersByUserAsync(user.Id, cancellationToken).ConfigureAwait(false);
+                              var payload = MarketResponseFactory.CreateOrderList(orders);
+                              return Results.Ok(payload);
+                          })
            .RequireTokenAuthentication()
            .WithName(MyOrdersEndpointName);
     }
@@ -78,15 +75,14 @@ internal static class MarketEndpoints
         app.MapGet(ApiRoutes.Game.Market.Stats,
                    async ([FromQuery(Name = ResourceTypeQueryName)] string? resourceType,
                           IMarketStatsRepository repository,
-                          CancellationToken cancellationToken) =>
-                   {
-                       if (!IsValidResourceType(resourceType))
-                           return Results.BadRequest(new ErrorResponse(InvalidParamsMessage));
+                          CancellationToken cancellationToken) => {
+                              if (!IsValidResourceType(resourceType))
+                                  return Results.BadRequest(new ErrorResponse(InvalidParamsMessage));
 
-                       var stats = await repository.GetStatsAsync(resourceType!, cancellationToken).ConfigureAwait(false);
-                       var payload = MarketResponseFactory.CreateStats(stats);
-                       return Results.Ok(payload);
-                   })
+                              var stats = await repository.GetStatsAsync(resourceType!, cancellationToken).ConfigureAwait(false);
+                              var payload = MarketResponseFactory.CreateStats(stats);
+                              return Results.Ok(payload);
+                          })
            .RequireTokenAuthentication()
            .WithName(StatsEndpointName);
     }

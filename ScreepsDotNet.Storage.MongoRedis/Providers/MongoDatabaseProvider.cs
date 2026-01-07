@@ -20,8 +20,7 @@ public sealed class MongoDatabaseProvider : IMongoDatabaseProvider
     public MongoDatabaseProvider(IOptions<MongoRedisStorageOptions> options)
     {
         Settings = options.Value;
-        _databaseFactory = new Lazy<IMongoDatabase>(() =>
-        {
+        _databaseFactory = new Lazy<IMongoDatabase>(() => {
             var client = new MongoClient(Settings.MongoConnectionString);
             return client.GetDatabase(Settings.MongoDatabase);
         });

@@ -1,4 +1,4 @@
-namespace ScreepsDotNet.Backend.Http.Tests.Integration;
+﻿namespace ScreepsDotNet.Backend.Http.Tests.Integration;
 
 internal static class IntegrationTestValues
 {

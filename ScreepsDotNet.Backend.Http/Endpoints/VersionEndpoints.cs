@@ -9,11 +9,10 @@ internal static class VersionEndpoints
 
     public static void Map(WebApplication app)
     {
-        app.MapGet(ApiRoutes.Version, async (IVersionInfoProvider provider, CancellationToken cancellationToken) =>
-                   {
-                       var payload = await provider.GetAsync(cancellationToken).ConfigureAwait(false);
-                       return Results.Ok(payload);
-                   })
+        app.MapGet(ApiRoutes.Version, async (IVersionInfoProvider provider, CancellationToken cancellationToken) => {
+            var payload = await provider.GetAsync(cancellationToken).ConfigureAwait(false);
+            return Results.Ok(payload);
+        })
            .WithName(VersionEndpointName);
     }
 }
