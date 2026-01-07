@@ -31,6 +31,12 @@ public sealed class RoomDocument
     [BsonElement("energyAvailable")]
     public int? EnergyAvailable { get; set; }
 
+    [BsonElement("nextNpcMarketOrder")]
+    public long? NextNpcMarketOrder { get; set; }
+
+    [BsonElement("powerBankTime")]
+    public long? PowerBankTime { get; set; }
+
     [BsonIgnore]
     public string? Name
     {

@@ -334,13 +334,9 @@ internal sealed class FakeUserCodeRepository : IUserCodeRepository
             modules = CloneModules(source.Modules);
         }
         else if (defaultModules is not null && defaultModules.Count > 0)
-        {
             modules = CloneModules(defaultModules);
-        }
         else
-        {
             modules = new Dictionary<string, string>(StringComparer.Ordinal) { [DefaultModuleName] = HelloWorldScript };
-        }
 
         _branches.Add(new UserCodeBranch(newBranchName, modules, DateTime.UtcNow, false, false));
         return Task.FromResult(true);
@@ -437,13 +433,9 @@ internal sealed class FakeUserMemoryRepository : IUserMemoryRepository
                     _memory[property.Name] = ConvertJson(property.Value);
             }
             else if (value.ValueKind == JsonValueKind.Null || value.ValueKind == JsonValueKind.Undefined)
-            {
                 _memory.Clear();
-            }
             else
-            {
                 _memory["value"] = ConvertJson(value);
-            }
 
             return Task.CompletedTask;
         }

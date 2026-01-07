@@ -1,5 +1,5 @@
-using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using System.Text.Json;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using ScreepsDotNet.Backend.Http.Constants;
 
 namespace ScreepsDotNet.Backend.Http.Health;

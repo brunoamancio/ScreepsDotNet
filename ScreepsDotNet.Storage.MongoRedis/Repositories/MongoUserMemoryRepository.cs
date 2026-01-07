@@ -39,9 +39,7 @@ public sealed class MongoUserMemoryRepository : IUserMemoryRepository
                         document.Memory[kvp.Key] = kvp.Value;
                 }
                 else
-                {
                     document.Memory["value"] = payload;
-                }
             }
         }
         else
@@ -51,13 +49,9 @@ public sealed class MongoUserMemoryRepository : IUserMemoryRepository
                 return;
 
             if (value.ValueKind == JsonValueKind.Undefined)
-            {
                 document.Memory.RemoveValueAtPath(segments);
-            }
             else
-            {
                 document.Memory.SetValueAtPath(segments, value.ToObjectValue());
-            }
         }
 
         await _collection.ReplaceOneAsync(doc => doc.UserId == userId,

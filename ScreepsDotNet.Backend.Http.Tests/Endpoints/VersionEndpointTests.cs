@@ -1,15 +1,12 @@
+using System.Text.Json;
 using ScreepsDotNet.Backend.Http.Routing;
 using ScreepsDotNet.Backend.Http.Tests.Web;
-using System.Text.Json;
 
 namespace ScreepsDotNet.Backend.Http.Tests.Endpoints;
 
-public class VersionEndpointTests : IClassFixture<TestWebApplicationFactory>
+public class VersionEndpointTests(TestWebApplicationFactory factory) : IClassFixture<TestWebApplicationFactory>
 {
-    private readonly HttpClient _client;
-
-    public VersionEndpointTests(TestWebApplicationFactory factory)
-        => _client = factory.CreateClient();
+    private readonly HttpClient _client = factory.CreateClient();
 
     [Fact]
     public async Task Version_ReturnsExpectedShape()

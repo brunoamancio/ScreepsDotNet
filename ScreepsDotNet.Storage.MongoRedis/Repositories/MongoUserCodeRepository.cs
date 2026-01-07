@@ -64,7 +64,7 @@ public sealed class MongoUserCodeRepository : IUserCodeRepository
 
     public async Task<bool> SetActiveBranchAsync(string userId, string branchName, string activeName, CancellationToken cancellationToken = default)
     {
-        string? targetField = activeName.Equals("activeWorld", StringComparison.OrdinalIgnoreCase)
+        var targetField = activeName.Equals("activeWorld", StringComparison.OrdinalIgnoreCase)
             ? nameof(UserCodeDocument.ActiveWorld)
             : activeName.Equals("activeSim", StringComparison.OrdinalIgnoreCase)
                 ? nameof(UserCodeDocument.ActiveSim)

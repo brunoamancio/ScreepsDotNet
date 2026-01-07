@@ -1,7 +1,7 @@
+using System.Text.Json;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using ScreepsDotNet.Backend.Http.Health;
 using ScreepsDotNet.Backend.Http.Tests.Web;
-using System.Text.Json;
 
 namespace ScreepsDotNet.Backend.Http.Tests.Endpoints;
 
