@@ -11,6 +11,7 @@ using ScreepsDotNet.Storage.MongoRedis.Adapters;
 using ScreepsDotNet.Storage.MongoRedis.Options;
 using ScreepsDotNet.Storage.MongoRedis.Providers;
 using ScreepsDotNet.Storage.MongoRedis.Repositories;
+using ScreepsDotNet.Storage.MongoRedis.Seeding;
 using ScreepsDotNet.Storage.MongoRedis.Services;
 
 var builder = Host.CreateApplicationBuilder(args);
@@ -70,6 +71,7 @@ builder.Services.AddSingleton<IWorldStatsRepository, MongoWorldStatsRepository>(
 builder.Services.AddSingleton<IWorldMetadataRepository, MongoWorldMetadataRepository>();
 builder.Services.AddSingleton<IUserRespawnService, MongoUserRespawnService>();
 builder.Services.AddSingleton<IVersionInfoProvider, VersionInfoProvider>();
+builder.Services.AddSingleton<ISeedDataService, SeedDataService>();
 
 builder.Services.AddSingleton<ICliApplication, CliApplication>();
 }
