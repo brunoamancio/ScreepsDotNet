@@ -9,8 +9,11 @@
 - `ScreepsDotNet.Backend.Cli/` – .NET console host running on Spectre.Console.Cli; configuration comes from CLI arguments/environment (no appsettings dependency). The root command accepts the legacy `--db`, `--connection-string`, `--cli_host`, etc., switches. Current commands:
   - `version [--json]`
   - `storage status [--json]`
-  - `storage reseed` (placeholder; still instructs to run `docker compose down -v && docker compose up -d`)
+  - `storage reseed [--force]` (calls the shared Mongo reseeder; `--force` required for non-default DBs)
   - `user show (--user-id <id> | --username <name>) [--json]`
+  - `user console --user-id <id> --expression "<code>" [--hidden]`
+  - `user memory get --user-id <id> [--segment <0-99>] [--json]`
+  - `user memory set --user-id <id> (--value <json> [--path <path>] | --segment <0-99> --data <text>)`
   - `world dump --room <name> [--decoded] [--json]`
 - `ScreepsDotNet.Storage.MongoRedis/` – MongoDB/Redis infrastructure (adapter + repositories) used by the HTTP host.
   - `.editorconfig`, `.globalconfig`, `.gitattributes`, `Directory.Build.props` – shared tooling settings.

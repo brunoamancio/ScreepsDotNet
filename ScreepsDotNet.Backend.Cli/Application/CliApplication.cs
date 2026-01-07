@@ -40,6 +40,12 @@ internal sealed class CliApplication(IServiceProvider serviceProvider, ILogger<C
             {
                 branch.SetDescription("User operations.");
                 branch.AddCommand<UserShowCommand>("show").WithDescription("Display a user's profile.");
+                branch.AddCommand<UserConsoleExecCommand>("console").WithDescription("Queue a console expression for a user.");
+                branch.AddBranch("memory", memory =>
+                {
+                    memory.AddCommand<UserMemoryGetCommand>("get").WithDescription("Inspect user memory.");
+                    memory.AddCommand<UserMemorySetCommand>("set").WithDescription("Update user memory or segments.");
+                });
             });
 
             config.AddBranch("world", branch =>

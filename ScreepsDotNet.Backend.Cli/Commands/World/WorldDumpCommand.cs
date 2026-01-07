@@ -2,7 +2,6 @@
 
 using System.Linq;
 using System.Text.Json;
-using ScreepsDotNet.Backend.Core.Models;
 using ScreepsDotNet.Backend.Core.Repositories;
 using Spectre.Console;
 using Spectre.Console.Cli;
@@ -56,9 +55,8 @@ internal sealed class WorldDumpCommand(IRoomTerrainRepository terrainRepository)
                 var tiles = DecodeTerrain(entry.Terrain);
                 AnsiConsole.MarkupLine($"Tiles: {tiles.Count}");
             }
-            else {
+            else
                 AnsiConsole.MarkupLine(entry.Terrain ?? "(empty)");
-            }
             AnsiConsole.WriteLine();
         }
 
