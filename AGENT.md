@@ -43,6 +43,7 @@
    ```
    - Unit tests swap repositories with fakes (fast, hermetic).
    - Integration tests (also under `ScreepsDotNet.Backend.Http.Tests`) spin up Mongo + Redis containers via Testcontainers; keep Docker Desktop running.
+5. **Keep the repo lint-clean:** run `dotnet format style --severity error --diagnostics IDE0005,IDE0011,IDE0007` (or equivalent Rider/Roslyn analysis) during development, then `dotnet format --verify-no-changes` before wrapping up a task. Fix unused `using`s, redundant braces, `var` style issues, and any reported IDE warnings so we don’t leave style violations for the next person.
 5. **Manual smoke tests:**  
    - `GET http://localhost:5210/health`
    - `GET http://localhost:5210/api/server/info`
