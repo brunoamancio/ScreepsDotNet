@@ -4,9 +4,10 @@
 
 - `ScreepsNodeJs/` – original Node.js Screeps server (git repo moved inside); untouched except for reference.
 - `ScreepsDotNet/` – new .NET solution containing:
-  - `ScreepsDotNet.Backend.Core/` – cross-cutting contracts (configuration, models, repositories, services).
-  - `ScreepsDotNet.Backend.Http/` – ASP.NET Core Web API host (currently health + server info endpoints).
-  - `ScreepsDotNet.Storage.MongoRedis/` – MongoDB/Redis infrastructure (adapter + repositories) used by the HTTP host.
+- `ScreepsDotNet.Backend.Core/` – cross-cutting contracts (configuration, models, repositories, services).
+- `ScreepsDotNet.Backend.Http/` – ASP.NET Core Web API host (currently health + server info endpoints).
+- `ScreepsDotNet.Backend.Cli/` – .NET console host with shared DI wiring; configuration comes from CLI arguments/environment (no appsettings dependency) and future commands will call the same repositories/services outside HTTP.
+- `ScreepsDotNet.Storage.MongoRedis/` – MongoDB/Redis infrastructure (adapter + repositories) used by the HTTP host.
   - `.editorconfig`, `.globalconfig`, `.gitattributes`, `Directory.Build.props` – shared tooling settings.
   - `docker/` – supporting assets (Mongo init scripts, etc.).
   - `docker-compose.yml` – spins up MongoDB + Redis for local dev.
@@ -99,8 +100,8 @@
 
 ## Pending / Next Steps
 
-1. **CLI Host Scaffolding**
-   - Bring `ScreepsDotNet.Backend.Cli` online now that the HTTP surface (users + market + world) is stable. Reuse the existing repositories so we can manage storage, run regression smoke tests, and script future write-heavy flows.
+1. **CLI Command Framework & Utilities**
+   - Build out `ScreepsDotNet.Backend.Cli` beyond the new host scaffold: add a command framework plus verbs for reseeding storage, inspecting users, dumping world metadata, and scripting regression workflows.
 2. **Write-heavy `/api/game/*` routes**
    - Implement spawn placement, construction/flag intents, notify toggles, and invader management per the remainder of `docs/specs/MarketWorldEndpoints.md`. These depend on the room/world repositories we just added—extend docker + Testcontainers seeds before adding the endpoints/tests.
 3. **Server info provider parity**
