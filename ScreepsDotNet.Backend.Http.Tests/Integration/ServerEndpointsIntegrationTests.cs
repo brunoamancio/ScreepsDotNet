@@ -1,6 +1,7 @@
 namespace ScreepsDotNet.Backend.Http.Tests.Integration;
 
 using System.Text.Json;
+using ScreepsDotNet.Backend.Core.Seeding;
 using ScreepsDotNet.Backend.Http.Routing;
 
 [Collection(IntegrationTestSuiteDefinition.Name)]
@@ -20,9 +21,9 @@ public sealed class ServerEndpointsIntegrationTests(IntegrationTestHarness harne
         response.EnsureSuccessStatusCode();
         using var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
         var root = payload.RootElement;
-        Assert.Equal(IntegrationTestValues.ServerData.WelcomeText, root.GetProperty(ServerDataResponseFields.WelcomeText).GetString());
-        Assert.Equal(IntegrationTestValues.ServerData.HistoryChunkSize, root.GetProperty(ServerDataResponseFields.HistoryChunkSize).GetInt32());
-        Assert.Equal(IntegrationTestValues.ServerData.SocketUpdateThrottle, root.GetProperty(ServerDataResponseFields.SocketUpdateThrottle).GetInt32());
+        Assert.Equal(SeedDataDefaults.ServerData.WelcomeText, root.GetProperty(ServerDataResponseFields.WelcomeText).GetString());
+        Assert.Equal(SeedDataDefaults.ServerData.HistoryChunkSize, root.GetProperty(ServerDataResponseFields.HistoryChunkSize).GetInt32());
+        Assert.Equal(SeedDataDefaults.ServerData.SocketUpdateThrottle, root.GetProperty(ServerDataResponseFields.SocketUpdateThrottle).GetInt32());
     }
 
     [Fact]
@@ -33,7 +34,7 @@ public sealed class ServerEndpointsIntegrationTests(IntegrationTestHarness harne
         response.EnsureSuccessStatusCode();
         using var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
         var serverData = payload.RootElement.GetProperty(VersionResponseFields.ServerData);
-        Assert.Equal(IntegrationTestValues.ServerData.WelcomeText, serverData.GetProperty(ServerDataResponseFields.WelcomeText).GetString());
-        Assert.Equal(IntegrationTestValues.ServerData.HistoryChunkSize, serverData.GetProperty(ServerDataResponseFields.HistoryChunkSize).GetInt32());
+        Assert.Equal(SeedDataDefaults.ServerData.WelcomeText, serverData.GetProperty(ServerDataResponseFields.WelcomeText).GetString());
+        Assert.Equal(SeedDataDefaults.ServerData.HistoryChunkSize, serverData.GetProperty(ServerDataResponseFields.HistoryChunkSize).GetInt32());
     }
 }

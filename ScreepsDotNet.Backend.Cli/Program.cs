@@ -66,9 +66,10 @@ static void ConfigureServices(HostApplicationBuilder builder)
     builder.Services.AddSingleton<IMarketStatsRepository, MongoMarketStatsRepository>();
     builder.Services.AddSingleton<IRoomStatusRepository, MongoRoomStatusRepository>();
     builder.Services.AddSingleton<IRoomTerrainRepository, MongoRoomTerrainRepository>();
-    builder.Services.AddSingleton<IWorldStatsRepository, MongoWorldStatsRepository>();
-    builder.Services.AddSingleton<IWorldMetadataRepository, MongoWorldMetadataRepository>();
-    builder.Services.AddSingleton<IUserRespawnService, MongoUserRespawnService>();
+builder.Services.AddSingleton<IWorldStatsRepository, MongoWorldStatsRepository>();
+builder.Services.AddSingleton<IWorldMetadataRepository, MongoWorldMetadataRepository>();
+builder.Services.AddSingleton<IUserRespawnService, MongoUserRespawnService>();
+builder.Services.AddSingleton<IVersionInfoProvider, VersionInfoProvider>();
 
-    builder.Services.AddSingleton<ICliApplication, CliApplication>();
+builder.Services.AddSingleton<ICliApplication, CliApplication>();
 }

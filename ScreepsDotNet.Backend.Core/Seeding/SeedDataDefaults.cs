@@ -1,25 +1,28 @@
-﻿namespace ScreepsDotNet.Backend.Http.Tests.Integration;
+namespace ScreepsDotNet.Backend.Core.Seeding;
 
-internal static class IntegrationTestValues
+using System;
+using System.Collections.Generic;
+
+public static class SeedDataDefaults
 {
-    internal static class Database
+    public static class Database
     {
         public const string Name = "screeps_integration";
     }
 
-    internal static class User
+    public static class User
     {
         public const string Id = "integration-user";
         public const string Username = "IntegrationUser";
     }
 
-    internal static class Auth
+    public static class Auth
     {
         public const string Ticket = "integration-ticket";
         public const string SteamId = "integration-steam";
     }
 
-    internal static class World
+    public static class World
     {
         public const string StartRoom = "W20N20";
         public const string SecondaryRoom = "W21N21";
@@ -32,7 +35,7 @@ internal static class IntegrationTestValues
         public const int TickDuration = 650;
     }
 
-    internal static class Money
+    public static class Money
     {
         public const string Description = "Sold energy";
         public const int Change = 5000;
@@ -40,18 +43,18 @@ internal static class IntegrationTestValues
         public const string Type = "market.sell";
     }
 
-    internal static class Console
+    public static class Console
     {
         public const string Expression = "console.log('integration test');";
     }
 
-    internal static class Memory
+    public static class Memory
     {
         public const int SegmentId = 5;
         public const string SegmentValue = "integration-segment";
     }
 
-    internal static class ServerData
+    public static class ServerData
     {
         public const string WelcomeText = "<h4>Integration Harness</h4>";
         public const int HistoryChunkSize = 42;

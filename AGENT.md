@@ -6,7 +6,12 @@
 - `ScreepsDotNet/` – new .NET solution containing:
 - `ScreepsDotNet.Backend.Core/` – cross-cutting contracts (configuration, models, repositories, services).
 - `ScreepsDotNet.Backend.Http/` – ASP.NET Core Web API host (currently health + server info endpoints).
-- `ScreepsDotNet.Backend.Cli/` – .NET console host running on Spectre.Console.Cli; configuration comes from CLI arguments/environment (no appsettings dependency). The root command already accepts the legacy `--db`, `--connection-string`, `--cli_host`, etc., switches so future subcommands can honor those settings.
+- `ScreepsDotNet.Backend.Cli/` – .NET console host running on Spectre.Console.Cli; configuration comes from CLI arguments/environment (no appsettings dependency). The root command accepts the legacy `--db`, `--connection-string`, `--cli_host`, etc., switches. Current commands:
+  - `version [--json]`
+  - `storage status [--json]`
+  - `storage reseed` (placeholder; still instructs to run `docker compose down -v && docker compose up -d`)
+  - `user show (--user-id <id> | --username <name>) [--json]`
+  - `world dump --room <name> [--decoded] [--json]`
 - `ScreepsDotNet.Storage.MongoRedis/` – MongoDB/Redis infrastructure (adapter + repositories) used by the HTTP host.
   - `.editorconfig`, `.globalconfig`, `.gitattributes`, `Directory.Build.props` – shared tooling settings.
   - `docker/` – supporting assets (Mongo init scripts, etc.).
@@ -56,7 +61,7 @@
 ### Resetting / Updating Seed Data
 
 - All Mongo scripts inside `docker/mongo-init` run only when the container initializes an empty volume.
-- `docker/mongo-init/seed-server-data.js` keeps the canonical server metadata document (`server.data` collection) in sync with the legacy backend defaults (`welcomeText`, socket throttles, renderer metadata).
+- `docker/mongo-init/seed-server-data.js` keeps the canonical server metadata document (`server.data` collection) in sync with the legacy backend defaults (`welcomeText`, socket throttles, renderer metadata). For .NET-side tooling/tests, the shared constants live in `ScreepsDotNet.Backend.Core/Seeding/SeedDataDefaults.cs`—reuse that class whenever you need deterministic seed values so the CLI and integration harness stay aligned.
 - `docker/mongo-init/seed-users.js` inserts/updates the canonical `test-user` record plus sample controller/spawn objects (`rooms.objects`) and a short credit history in `users.money` so `/api/user/money-history` has data. The newer HTTP routes (code/memory/console) lazily create their own per-user documents once you hit them.
 - When schemas or seed files change, do a clean reset so everyone picks up the new baseline:
   ```powershell

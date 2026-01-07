@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Linq;
 using System.Net.Http.Json;
 using System.Text.Json;
+using ScreepsDotNet.Backend.Core.Seeding;
 using ScreepsDotNet.Backend.Http.Routing;
 
 [Collection(IntegrationTestSuiteDefinition.Name)]
@@ -61,7 +62,7 @@ public sealed class MarketEndpointsIntegrationTests(IntegrationTestHarness harne
         using var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
         var orders = payload.RootElement.GetProperty("list").EnumerateArray().ToList();
         Assert.Single(orders);
-        Assert.Equal(IntegrationTestValues.User.Id, orders.First().GetProperty("user").GetString());
+        Assert.Equal(SeedDataDefaults.User.Id, orders.First().GetProperty("user").GetString());
     }
 
     [Fact]
@@ -86,7 +87,7 @@ public sealed class MarketEndpointsIntegrationTests(IntegrationTestHarness harne
     {
         var response = await _client.PostAsJsonAsync(ApiRoutes.AuthSteamTicket, new
         {
-            ticket = IntegrationTestValues.Auth.Ticket,
+            ticket = SeedDataDefaults.Auth.Ticket,
             useNativeAuth = false
         });
 

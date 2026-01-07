@@ -6,6 +6,7 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using MongoDB.Driver;
+using ScreepsDotNet.Backend.Core.Seeding;
 using ScreepsDotNet.Backend.Http.Routing;
 using ScreepsDotNet.Storage.MongoRedis.Repositories.Documents;
 
@@ -36,11 +37,11 @@ public sealed class UserEndpointsIntegrationTests(IntegrationTestHarness harness
         Assert.True(payload.RootElement.TryGetProperty(UserResponseFields.Timestamp, out _));
 
         var roomsCollection = harness.Database.GetCollection<RoomObjectDocument>(RoomsObjectsCollectionName);
-        var remainingRooms = await roomsCollection.CountDocumentsAsync(room => room.UserId == IntegrationTestValues.User.Id);
+        var remainingRooms = await roomsCollection.CountDocumentsAsync(room => room.UserId == SeedDataDefaults.User.Id);
         Assert.Equal(0, remainingRooms);
 
         var usersCollection = harness.Database.GetCollection<UserDocument>(UsersCollectionName);
-        var user = await usersCollection.Find(u => u.Id == IntegrationTestValues.User.Id)
+        var user = await usersCollection.Find(u => u.Id == SeedDataDefaults.User.Id)
                                         .FirstOrDefaultAsync();
 
         Assert.NotNull(user);
@@ -61,8 +62,8 @@ public sealed class UserEndpointsIntegrationTests(IntegrationTestHarness harness
         var list = payload.RootElement.GetProperty(UserResponseFields.List).EnumerateArray().ToList();
         Assert.NotEmpty(list);
         var first = list.First();
-        Assert.Equal(IntegrationTestValues.Money.Description, first.GetProperty("description").GetString());
-        Assert.Equal(IntegrationTestValues.Money.Type, first.GetProperty("type").GetString());
+        Assert.Equal(SeedDataDefaults.Money.Description, first.GetProperty("description").GetString());
+        Assert.Equal(SeedDataDefaults.Money.Type, first.GetProperty("type").GetString());
     }
 
     [Fact]
@@ -71,7 +72,7 @@ public sealed class UserEndpointsIntegrationTests(IntegrationTestHarness harness
         var token = await AuthenticateAsync();
         var request = new HttpRequestMessage(HttpMethod.Post, ApiRoutes.User.Console);
         request.Headers.TryAddWithoutValidation(AuthHeaderNames.Token, token);
-        var expression = IntegrationTestValues.Console.Expression;
+        var expression = SeedDataDefaults.Console.Expression;
         request.Content = JsonContent.Create(new { expression });
 
         var response = await _client.SendAsync(request);
@@ -79,7 +80,7 @@ public sealed class UserEndpointsIntegrationTests(IntegrationTestHarness harness
         response.EnsureSuccessStatusCode();
 
         var consoleCollection = harness.Database.GetCollection<UserConsoleEntryDocument>(UserConsoleCollectionName);
-        var entry = await consoleCollection.Find(doc => doc.UserId == IntegrationTestValues.User.Id)
+        var entry = await consoleCollection.Find(doc => doc.UserId == SeedDataDefaults.User.Id)
                                            .SortByDescending(doc => doc.CreatedAt)
                                            .FirstOrDefaultAsync();
         Assert.NotNull(entry);
@@ -90,14 +91,14 @@ public sealed class UserEndpointsIntegrationTests(IntegrationTestHarness harness
     public async Task UserMemorySegment_WithToken_ReturnsSeededValue()
     {
         var token = await AuthenticateAsync();
-        var request = new HttpRequestMessage(HttpMethod.Get, $"{ApiRoutes.User.MemorySegment}?segment={IntegrationTestValues.Memory.SegmentId}");
+        var request = new HttpRequestMessage(HttpMethod.Get, $"{ApiRoutes.User.MemorySegment}?segment={SeedDataDefaults.Memory.SegmentId}");
         request.Headers.TryAddWithoutValidation(AuthHeaderNames.Token, token);
 
         var response = await _client.SendAsync(request);
 
         response.EnsureSuccessStatusCode();
         using var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
-        Assert.Equal(IntegrationTestValues.Memory.SegmentValue, payload.RootElement.GetProperty(UserResponseFields.Data).GetString());
+        Assert.Equal(SeedDataDefaults.Memory.SegmentValue, payload.RootElement.GetProperty(UserResponseFields.Data).GetString());
     }
 
     [Fact]
@@ -109,7 +110,7 @@ public sealed class UserEndpointsIntegrationTests(IntegrationTestHarness harness
         const string updatedValue = "updated-segment";
         request.Content = JsonContent.Create(new
         {
-            segment = IntegrationTestValues.Memory.SegmentId,
+            segment = SeedDataDefaults.Memory.SegmentId,
             data = updatedValue
         });
 
@@ -118,10 +119,10 @@ public sealed class UserEndpointsIntegrationTests(IntegrationTestHarness harness
         response.EnsureSuccessStatusCode();
 
         var memoryCollection = harness.Database.GetCollection<UserMemoryDocument>(UserMemoryCollectionName);
-        var document = await memoryCollection.Find(doc => doc.UserId == IntegrationTestValues.User.Id)
+        var document = await memoryCollection.Find(doc => doc.UserId == SeedDataDefaults.User.Id)
                                              .FirstOrDefaultAsync();
         Assert.NotNull(document);
-        var key = IntegrationTestValues.Memory.SegmentId.ToString(CultureInfo.InvariantCulture);
+        var key = SeedDataDefaults.Memory.SegmentId.ToString(CultureInfo.InvariantCulture);
         Assert.True(document!.Segments.TryGetValue(key, out var data));
         Assert.Equal(updatedValue, data);
     }
@@ -156,7 +157,7 @@ public sealed class UserEndpointsIntegrationTests(IntegrationTestHarness harness
     {
         var response = await _client.PostAsJsonAsync(ApiRoutes.AuthSteamTicket, new
         {
-            ticket = IntegrationTestValues.Auth.Ticket,
+            ticket = SeedDataDefaults.Auth.Ticket,
             useNativeAuth = true
         });
 
@@ -167,7 +168,7 @@ public sealed class UserEndpointsIntegrationTests(IntegrationTestHarness harness
     {
         var response = await _client.PostAsJsonAsync(ApiRoutes.AuthSteamTicket, new
         {
-            ticket = IntegrationTestValues.Auth.Ticket,
+            ticket = SeedDataDefaults.Auth.Ticket,
             useNativeAuth = false
         });
 

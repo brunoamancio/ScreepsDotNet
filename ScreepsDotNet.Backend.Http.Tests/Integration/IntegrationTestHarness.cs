@@ -6,6 +6,7 @@ using System.Globalization;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using ScreepsDotNet.Backend.Core.Constants;
+using ScreepsDotNet.Backend.Core.Seeding;
 using ScreepsDotNet.Storage.MongoRedis.Repositories.Documents;
 using Testcontainers.MongoDb;
 using Testcontainers.Redis;
@@ -53,13 +54,13 @@ public sealed class IntegrationTestHarness : IAsyncLifetime
 
         var mongoConnectionString = _mongoContainer.GetConnectionString();
         _mongoClient = new MongoClient(mongoConnectionString);
-        Database = _mongoClient.GetDatabase(IntegrationTestValues.Database.Name);
+        Database = _mongoClient.GetDatabase(SeedDataDefaults.Database.Name);
         Factory = new IntegrationWebApplicationFactory(mongoConnectionString,
-                                                       IntegrationTestValues.Database.Name,
+                                                       SeedDataDefaults.Database.Name,
                                                        _redisContainer.GetConnectionString(),
-                                                       IntegrationTestValues.User.Id,
-                                                       IntegrationTestValues.Auth.Ticket,
-                                                       IntegrationTestValues.Auth.SteamId);
+                                                       SeedDataDefaults.User.Id,
+                                                       SeedDataDefaults.Auth.Ticket,
+                                                       SeedDataDefaults.Auth.SteamId);
         InitializedAtUtc = DateTime.UtcNow;
         await ResetStateAsync();
     }
@@ -108,9 +109,9 @@ public sealed class IntegrationTestHarness : IAsyncLifetime
         var users = Database.GetCollection<UserDocument>(UsersCollectionName);
         var document = new UserDocument
         {
-            Id = IntegrationTestValues.User.Id,
-            Username = IntegrationTestValues.User.Username,
-            UsernameLower = IntegrationTestValues.User.Username.ToLowerInvariant(),
+            Id = SeedDataDefaults.User.Id,
+            Username = SeedDataDefaults.User.Username,
+            UsernameLower = SeedDataDefaults.User.Username.ToLowerInvariant(),
             Cpu = DefaultCpu,
             Active = ActiveFlagValue,
             Badge = new Dictionary<string, object?>(StringComparer.Ordinal)
@@ -135,39 +136,39 @@ public sealed class IntegrationTestHarness : IAsyncLifetime
             new RoomObjectDocument
             {
                 Id = ObjectId.GenerateNewId(),
-                UserId = IntegrationTestValues.User.Id,
+                UserId = SeedDataDefaults.User.Id,
                 Type = RoomObjectType.Controller.ToDocumentValue(),
-                Room = IntegrationTestValues.World.StartRoom,
+                Room = SeedDataDefaults.World.StartRoom,
                 Level = ControllerLevel,
-                SafeMode = IntegrationTestValues.World.SafeModeExpiry,
+                SafeMode = SeedDataDefaults.World.SafeModeExpiry,
                 Sign = new RoomSignDocument
                 {
-                    UserId = IntegrationTestValues.User.Id,
-                    Text = IntegrationTestValues.World.ControllerSign,
-                    Time = IntegrationTestValues.World.GameTime
+                    UserId = SeedDataDefaults.User.Id,
+                    Text = SeedDataDefaults.World.ControllerSign,
+                    Time = SeedDataDefaults.World.GameTime
                 }
             },
             new RoomObjectDocument
             {
                 Id = ObjectId.GenerateNewId(),
-                UserId = IntegrationTestValues.User.Id,
+                UserId = SeedDataDefaults.User.Id,
                 Type = RoomObjectType.Spawn.ToDocumentValue(),
-                Room = IntegrationTestValues.World.StartRoom
+                Room = SeedDataDefaults.World.StartRoom
             },
             new RoomObjectDocument
             {
                 Id = ObjectId.GenerateNewId(),
                 Type = "mineral",
-                Room = IntegrationTestValues.World.StartRoom,
-                MineralType = IntegrationTestValues.World.MineralType,
-                Density = IntegrationTestValues.World.MineralDensity
+                Room = SeedDataDefaults.World.StartRoom,
+                MineralType = SeedDataDefaults.World.MineralType,
+                Density = SeedDataDefaults.World.MineralDensity
             },
             new RoomObjectDocument
             {
                 Id = ObjectId.GenerateNewId(),
-                UserId = IntegrationTestValues.World.InvaderUser,
+                UserId = SeedDataDefaults.World.InvaderUser,
                 Type = "invaderCore",
-                Room = IntegrationTestValues.World.SecondaryRoom,
+                Room = SeedDataDefaults.World.SecondaryRoom,
                 Level = 2
             }
         };
@@ -181,14 +182,14 @@ public sealed class IntegrationTestHarness : IAsyncLifetime
         var document = new UserMoneyEntryDocument
         {
             Id = ObjectId.GenerateNewId(),
-            UserId = IntegrationTestValues.User.Id,
+            UserId = SeedDataDefaults.User.Id,
             Date = DateTime.UtcNow.AddMinutes(-5),
             ExtraElements = new Dictionary<string, object?>(StringComparer.Ordinal)
             {
-                ["change"] = IntegrationTestValues.Money.Change,
-                ["balance"] = IntegrationTestValues.Money.Balance,
-                ["type"] = IntegrationTestValues.Money.Type,
-                ["description"] = IntegrationTestValues.Money.Description
+                ["change"] = SeedDataDefaults.Money.Change,
+                ["balance"] = SeedDataDefaults.Money.Balance,
+                ["type"] = SeedDataDefaults.Money.Type,
+                ["description"] = SeedDataDefaults.Money.Description
             }
         };
 
@@ -200,7 +201,7 @@ public sealed class IntegrationTestHarness : IAsyncLifetime
         var memory = Database.GetCollection<UserMemoryDocument>(UserMemoryCollectionName);
         var document = new UserMemoryDocument
         {
-            UserId = IntegrationTestValues.User.Id,
+            UserId = SeedDataDefaults.User.Id,
             Memory = new Dictionary<string, object?>(StringComparer.Ordinal)
             {
                 ["settings"] = new Dictionary<string, object?>(StringComparer.Ordinal)
@@ -210,7 +211,7 @@ public sealed class IntegrationTestHarness : IAsyncLifetime
             },
             Segments = new Dictionary<string, string?>(StringComparer.Ordinal)
             {
-                [IntegrationTestValues.Memory.SegmentId.ToString(CultureInfo.InvariantCulture)] = IntegrationTestValues.Memory.SegmentValue
+                [SeedDataDefaults.Memory.SegmentId.ToString(CultureInfo.InvariantCulture)] = SeedDataDefaults.Memory.SegmentValue
             }
         };
 
@@ -222,11 +223,11 @@ public sealed class IntegrationTestHarness : IAsyncLifetime
         var rooms = Database.GetCollection<RoomDocument>(RoomsCollectionName);
         var startRoom = new RoomDocument
         {
-            Id = IntegrationTestValues.World.StartRoom,
+            Id = SeedDataDefaults.World.StartRoom,
             Status = "normal",
             Novice = false,
             RespawnArea = false,
-            Owner = IntegrationTestValues.User.Username,
+            Owner = SeedDataDefaults.User.Username,
             Controller = new RoomControllerDocument
             {
                 Level = ControllerLevel
@@ -236,7 +237,7 @@ public sealed class IntegrationTestHarness : IAsyncLifetime
 
         var secondaryRoom = new RoomDocument
         {
-            Id = IntegrationTestValues.World.SecondaryRoom,
+            Id = SeedDataDefaults.World.SecondaryRoom,
             Status = "out of borders",
             Novice = false,
             RespawnArea = false,
@@ -268,14 +269,14 @@ public sealed class IntegrationTestHarness : IAsyncLifetime
             new RoomTerrainDocument
             {
                 Id = ObjectId.GenerateNewId(),
-                Room = IntegrationTestValues.World.StartRoom,
+                Room = SeedDataDefaults.World.StartRoom,
                 Type = "terrain",
                 Terrain = new string('0', 2500)
             },
             new RoomTerrainDocument
             {
                 Id = ObjectId.GenerateNewId(),
-                Room = IntegrationTestValues.World.SecondaryRoom,
+                Room = SeedDataDefaults.World.SecondaryRoom,
                 Type = "terrain",
                 Terrain = new string('1', 2500)
             }
@@ -289,14 +290,14 @@ public sealed class IntegrationTestHarness : IAsyncLifetime
         var collection = Database.GetCollection<ServerDataDocument>(ServerDataCollectionName);
         var document = new ServerDataDocument
         {
-            WelcomeText = IntegrationTestValues.ServerData.WelcomeText,
-            CustomObjectTypes = IntegrationTestValues.ServerData.CreateCustomObjectTypes(),
-            HistoryChunkSize = IntegrationTestValues.ServerData.HistoryChunkSize,
-            SocketUpdateThrottle = IntegrationTestValues.ServerData.SocketUpdateThrottle,
+            WelcomeText = SeedDataDefaults.ServerData.WelcomeText,
+            CustomObjectTypes = SeedDataDefaults.ServerData.CreateCustomObjectTypes(),
+            HistoryChunkSize = SeedDataDefaults.ServerData.HistoryChunkSize,
+            SocketUpdateThrottle = SeedDataDefaults.ServerData.SocketUpdateThrottle,
             Renderer = new ServerRendererDocument
             {
-                Resources = IntegrationTestValues.ServerData.CreateRendererResources(),
-                Metadata = IntegrationTestValues.ServerData.CreateRendererMetadata()
+                Resources = SeedDataDefaults.ServerData.CreateRendererResources(),
+                Metadata = SeedDataDefaults.ServerData.CreateRendererMetadata()
             }
         };
 
@@ -314,9 +315,9 @@ public sealed class IntegrationTestHarness : IAsyncLifetime
             {
                 Id = ObjectId.GenerateNewId(),
                 Active = true,
-                UserId = IntegrationTestValues.User.Id,
+                UserId = SeedDataDefaults.User.Id,
                 Type = "sell",
-                RoomName = IntegrationTestValues.World.StartRoom,
+                RoomName = SeedDataDefaults.World.StartRoom,
                 ResourceType = "energy",
                 Price = 5000,
                 Amount = 1000,
@@ -381,8 +382,8 @@ public sealed class IntegrationTestHarness : IAsyncLifetime
         var document = new WorldInfoDocument
         {
             Id = WorldInfoDocument.DefaultId,
-            GameTime = IntegrationTestValues.World.GameTime,
-            TickDuration = IntegrationTestValues.World.TickDuration
+            GameTime = SeedDataDefaults.World.GameTime,
+            TickDuration = SeedDataDefaults.World.TickDuration
         };
 
         return collection.ReplaceOneAsync(info => info.Id == document.Id,
