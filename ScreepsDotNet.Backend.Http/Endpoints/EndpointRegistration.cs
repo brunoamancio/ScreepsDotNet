@@ -8,5 +8,7 @@ internal static class EndpointRegistration
         AuthEndpoints.Map(app);
         ServerEndpoints.Map(app);
         UserEndpoints.Map(app);
+        MarketEndpoints.Map(app);
+        WorldEndpoints.Map(app);
     }
 }

@@ -24,7 +24,6 @@ internal static class UserEndpoints
     private const string BorderEnabledValue = "1";
     private const string BorderEnabledAlternateValue = "true";
     private const string UserIdQueryName = "id";
-    private const string NotImplementedError = "NotImplemented";
     private const string MissingUserContextMessage = "User context is not available.";
     private const string MissingUsernameMessage = "username is required.";
     private const string MissingUserIdentifierMessage = "username or id must be provided.";
@@ -179,12 +178,12 @@ internal static class UserEndpoints
     }
 
     private static void MapProtectedGet(WebApplication app, string route, string name)
-        => app.MapGet(route, () => NotImplemented(route))
+        => app.MapGet(route, () => EndpointStubResults.NotImplemented(route))
               .RequireTokenAuthentication()
               .WithName(name);
 
     private static void MapProtectedPost(WebApplication app, string route, string name)
-        => app.MapPost(route, () => NotImplemented(route))
+        => app.MapPost(route, () => EndpointStubResults.NotImplemented(route))
               .RequireTokenAuthentication()
               .WithName(name);
 
@@ -703,8 +702,6 @@ internal static class UserEndpoints
            .WithName(StatsEndpointName);
    }
 
-    private static IResult NotImplemented(string route)
-        => Results.Json(new { error = NotImplementedError, route }, statusCode: StatusCodes.Status501NotImplemented);
 
     private static void MapProtectedRespawnProhibitedRooms(WebApplication app)
     {

@@ -8,6 +8,31 @@ public static class ApiRoutes
 
     public const string AuthMe = "/api/auth/me";
 
+    public static class Game
+    {
+        private const string Base = "/api/game";
+
+        public static class Market
+        {
+            private const string MarketBase = $"{Base}/market";
+            public const string OrdersIndex = $"{MarketBase}/orders-index";
+            public const string Orders = $"{MarketBase}/orders";
+            public const string MyOrders = $"{MarketBase}/my-orders";
+            public const string Stats = $"{MarketBase}/stats";
+        }
+
+        public static class World
+        {
+            public const string MapStats = $"{Base}/map-stats";
+            public const string RoomStatus = $"{Base}/room-status";
+            public const string RoomTerrain = $"{Base}/room-terrain";
+            public const string Rooms = $"{Base}/rooms";
+            public const string WorldSize = $"{Base}/world-size";
+            public const string Time = $"{Base}/time";
+            public const string Tick = $"{Base}/tick";
+        }
+    }
+
     public static class Server
     {
         public const string Info = "/api/server/info";
