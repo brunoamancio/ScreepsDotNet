@@ -8,12 +8,9 @@ using ScreepsDotNet.Backend.Core.Repositories;
 using ScreepsDotNet.Storage.MongoRedis.Providers;
 using ScreepsDotNet.Storage.MongoRedis.Repositories.Documents;
 
-public sealed class MongoRoomStatusRepository : IRoomStatusRepository
+public sealed class MongoRoomStatusRepository(IMongoDatabaseProvider databaseProvider) : IRoomStatusRepository
 {
-    private readonly IMongoCollection<RoomDocument> _collection;
-
-    public MongoRoomStatusRepository(IMongoDatabaseProvider databaseProvider)
-        => _collection = databaseProvider.GetCollection<RoomDocument>(databaseProvider.Settings.RoomsCollection);
+    private readonly IMongoCollection<RoomDocument> _collection = databaseProvider.GetCollection<RoomDocument>(databaseProvider.Settings.RoomsCollection);
 
     public async Task<RoomStatusInfo?> GetRoomStatusAsync(string roomName, CancellationToken cancellationToken = default)
     {

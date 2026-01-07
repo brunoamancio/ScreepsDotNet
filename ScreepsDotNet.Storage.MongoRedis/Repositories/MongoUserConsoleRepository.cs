@@ -5,12 +5,9 @@ using ScreepsDotNet.Storage.MongoRedis.Repositories.Documents;
 
 namespace ScreepsDotNet.Storage.MongoRedis.Repositories;
 
-public sealed class MongoUserConsoleRepository : IUserConsoleRepository
+public sealed class MongoUserConsoleRepository(IMongoDatabaseProvider databaseProvider) : IUserConsoleRepository
 {
-    private readonly IMongoCollection<UserConsoleEntryDocument> _collection;
-
-    public MongoUserConsoleRepository(IMongoDatabaseProvider databaseProvider)
-        => _collection = databaseProvider.GetCollection<UserConsoleEntryDocument>(databaseProvider.Settings.UserConsoleCollection);
+    private readonly IMongoCollection<UserConsoleEntryDocument> _collection = databaseProvider.GetCollection<UserConsoleEntryDocument>(databaseProvider.Settings.UserConsoleCollection);
 
     public Task EnqueueExpressionAsync(string userId, string expression, bool hidden, CancellationToken cancellationToken = default)
     {

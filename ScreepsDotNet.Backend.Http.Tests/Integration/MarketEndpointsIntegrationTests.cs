@@ -7,18 +7,11 @@ using System.Text.Json;
 using ScreepsDotNet.Backend.Http.Routing;
 
 [Collection(IntegrationTestSuiteDefinition.Name)]
-public sealed class MarketEndpointsIntegrationTests : IAsyncLifetime
+public sealed class MarketEndpointsIntegrationTests(IntegrationTestHarness harness) : IAsyncLifetime
 {
-    private readonly IntegrationTestHarness _harness;
-    private readonly HttpClient _client;
+    private readonly HttpClient _client = harness.Factory.CreateClient();
 
-    public MarketEndpointsIntegrationTests(IntegrationTestHarness harness)
-    {
-        _harness = harness;
-        _client = harness.Factory.CreateClient();
-    }
-
-    public Task InitializeAsync() => _harness.ResetStateAsync();
+    public Task InitializeAsync() => harness.ResetStateAsync();
 
     public Task DisposeAsync() => Task.CompletedTask;
 

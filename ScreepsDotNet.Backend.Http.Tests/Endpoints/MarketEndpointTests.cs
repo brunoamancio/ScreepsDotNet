@@ -6,14 +6,11 @@ using ScreepsDotNet.Backend.Http.Tests.Web;
 
 namespace ScreepsDotNet.Backend.Http.Tests.Endpoints;
 
-public sealed class MarketEndpointTests : IClassFixture<TestWebApplicationFactory>
+public sealed class MarketEndpointTests(TestWebApplicationFactory factory) : IClassFixture<TestWebApplicationFactory>
 {
     private const string ResourceTypeQuery = "?resourceType=energy";
 
-    private readonly HttpClient _client;
-
-    public MarketEndpointTests(TestWebApplicationFactory factory)
-        => _client = factory.CreateClient();
+    private readonly HttpClient _client = factory.CreateClient();
 
     [Fact]
     public async Task OrdersIndex_WithToken_ReturnsSummaries()

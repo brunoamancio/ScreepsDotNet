@@ -8,16 +8,9 @@ using ScreepsDotNet.Storage.MongoRedis.Repositories.Documents;
 
 namespace ScreepsDotNet.Storage.MongoRedis.Repositories;
 
-public sealed class MongoServerDataRepository : IServerDataRepository
+public sealed class MongoServerDataRepository(IMongoDatabaseProvider databaseProvider, IOptions<ServerDataOptions> defaults) : IServerDataRepository
 {
-    private readonly IMongoCollection<ServerDataDocument> _collection;
-    private readonly IOptions<ServerDataOptions> _defaults;
-
-    public MongoServerDataRepository(IMongoDatabaseProvider databaseProvider, IOptions<ServerDataOptions> defaults)
-    {
-        _collection = databaseProvider.GetCollection<ServerDataDocument>(databaseProvider.Settings.ServerDataCollection);
-        _defaults = defaults;
-    }
+    private readonly IMongoCollection<ServerDataDocument> _collection = databaseProvider.GetCollection<ServerDataDocument>(databaseProvider.Settings.ServerDataCollection);
 
     public async Task<ServerData> GetServerDataAsync(CancellationToken cancellationToken = default)
     {
@@ -38,7 +31,7 @@ public sealed class MongoServerDataRepository : IServerDataRepository
 
     private ServerData BuildFallback()
     {
-        var options = _defaults.Value;
+        var options = defaults.Value;
         return new ServerData(options.WelcomeText,
                               new Dictionary<string, object>(options.CustomObjectTypes, StringComparer.Ordinal),
                               options.HistoryChunkSize, options.SocketUpdateThrottle,

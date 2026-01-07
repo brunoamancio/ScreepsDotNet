@@ -8,14 +8,11 @@ using ScreepsDotNet.Backend.Core.Repositories;
 using ScreepsDotNet.Storage.MongoRedis.Providers;
 using ScreepsDotNet.Storage.MongoRedis.Repositories.Documents;
 
-public sealed class MongoMarketOrderRepository : IMarketOrderRepository
+public sealed class MongoMarketOrderRepository(IMongoDatabaseProvider databaseProvider) : IMarketOrderRepository
 {
     private const decimal PriceScale = 1000m;
 
-    private readonly IMongoCollection<MarketOrderDocument> _collection;
-
-    public MongoMarketOrderRepository(IMongoDatabaseProvider databaseProvider)
-        => _collection = databaseProvider.GetCollection<MarketOrderDocument>(databaseProvider.Settings.MarketOrdersCollection);
+    private readonly IMongoCollection<MarketOrderDocument> _collection = databaseProvider.GetCollection<MarketOrderDocument>(databaseProvider.Settings.MarketOrdersCollection);
 
     public async Task<IReadOnlyList<MarketOrderSummary>> GetActiveOrderIndexAsync(CancellationToken cancellationToken = default)
     {

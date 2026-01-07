@@ -6,7 +6,7 @@ using ScreepsDotNet.Storage.MongoRedis.Repositories.Documents;
 
 namespace ScreepsDotNet.Storage.MongoRedis.Repositories;
 
-public sealed class MongoUserCodeRepository : IUserCodeRepository
+public sealed class MongoUserCodeRepository(IMongoDatabaseProvider databaseProvider) : IUserCodeRepository
 {
     private const string DefaultBranchName = "default";
     private const string DefaultModuleName = "main";
@@ -15,10 +15,7 @@ public sealed class MongoUserCodeRepository : IUserCodeRepository
     private const string ActiveSimIdentifier = "$activeSim";
     private const int MaxBranchCount = 30;
 
-    private readonly IMongoCollection<UserCodeDocument> _collection;
-
-    public MongoUserCodeRepository(IMongoDatabaseProvider databaseProvider)
-        => _collection = databaseProvider.GetCollection<UserCodeDocument>(databaseProvider.Settings.UserCodeCollection);
+    private readonly IMongoCollection<UserCodeDocument> _collection = databaseProvider.GetCollection<UserCodeDocument>(databaseProvider.Settings.UserCodeCollection);
 
     public async Task<IReadOnlyCollection<UserCodeBranch>> GetBranchesAsync(string userId, CancellationToken cancellationToken = default)
     {

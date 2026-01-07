@@ -8,12 +8,9 @@ using ScreepsDotNet.Backend.Core.Repositories;
 using ScreepsDotNet.Storage.MongoRedis.Providers;
 using ScreepsDotNet.Storage.MongoRedis.Repositories.Documents;
 
-public sealed class MongoRoomTerrainRepository : IRoomTerrainRepository
+public sealed class MongoRoomTerrainRepository(IMongoDatabaseProvider databaseProvider) : IRoomTerrainRepository
 {
-    private readonly IMongoCollection<RoomTerrainDocument> _collection;
-
-    public MongoRoomTerrainRepository(IMongoDatabaseProvider databaseProvider)
-        => _collection = databaseProvider.GetCollection<RoomTerrainDocument>(databaseProvider.Settings.RoomTerrainCollection);
+    private readonly IMongoCollection<RoomTerrainDocument> _collection = databaseProvider.GetCollection<RoomTerrainDocument>(databaseProvider.Settings.RoomTerrainCollection);
 
     public async Task<IReadOnlyList<RoomTerrainData>> GetTerrainEntriesAsync(IEnumerable<string> roomNames, CancellationToken cancellationToken = default)
     {

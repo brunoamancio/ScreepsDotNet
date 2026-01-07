@@ -6,14 +6,11 @@ using ScreepsDotNet.Storage.MongoRedis.Repositories.Documents;
 
 namespace ScreepsDotNet.Storage.MongoRedis.Repositories;
 
-public sealed class MongoRoomRepository : IRoomRepository
+public sealed class MongoRoomRepository(IMongoDatabaseProvider databaseProvider) : IRoomRepository
 {
     private const string UnknownRoomName = "Unknown";
 
-    private readonly IMongoCollection<RoomDocument> _collection;
-
-    public MongoRoomRepository(IMongoDatabaseProvider databaseProvider)
-        => _collection = databaseProvider.GetCollection<RoomDocument>(databaseProvider.Settings.RoomsCollection);
+    private readonly IMongoCollection<RoomDocument> _collection = databaseProvider.GetCollection<RoomDocument>(databaseProvider.Settings.RoomsCollection);
 
     public async Task<IReadOnlyCollection<RoomSummary>> GetOwnedRoomsAsync(CancellationToken cancellationToken = default)
     {

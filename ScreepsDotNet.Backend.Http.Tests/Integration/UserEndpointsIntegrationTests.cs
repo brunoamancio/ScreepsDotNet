@@ -10,22 +10,15 @@ using ScreepsDotNet.Backend.Http.Routing;
 using ScreepsDotNet.Storage.MongoRedis.Repositories.Documents;
 
 [Collection(IntegrationTestSuiteDefinition.Name)]
-public sealed class UserEndpointsIntegrationTests : IAsyncLifetime
+public sealed class UserEndpointsIntegrationTests(IntegrationTestHarness harness) : IAsyncLifetime
 {
-    private readonly IntegrationTestHarness _harness;
-    private readonly HttpClient _client;
+    private readonly HttpClient _client = harness.Factory.CreateClient();
     private const string RoomsObjectsCollectionName = "rooms.objects";
     private const string UsersCollectionName = "users";
     private const string UserConsoleCollectionName = "users.console";
     private const string UserMemoryCollectionName = "users.memory";
 
-    public UserEndpointsIntegrationTests(IntegrationTestHarness harness)
-    {
-        _harness = harness;
-        _client = harness.Factory.CreateClient();
-    }
-
-    public Task InitializeAsync() => _harness.ResetStateAsync();
+    public Task InitializeAsync() => harness.ResetStateAsync();
 
     public Task DisposeAsync() => Task.CompletedTask;
 
@@ -42,16 +35,16 @@ public sealed class UserEndpointsIntegrationTests : IAsyncLifetime
         using var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
         Assert.True(payload.RootElement.TryGetProperty(UserResponseFields.Timestamp, out _));
 
-        var roomsCollection = _harness.Database.GetCollection<RoomObjectDocument>(RoomsObjectsCollectionName);
+        var roomsCollection = harness.Database.GetCollection<RoomObjectDocument>(RoomsObjectsCollectionName);
         var remainingRooms = await roomsCollection.CountDocumentsAsync(room => room.UserId == IntegrationTestValues.User.Id);
         Assert.Equal(0, remainingRooms);
 
-        var usersCollection = _harness.Database.GetCollection<UserDocument>(UsersCollectionName);
+        var usersCollection = harness.Database.GetCollection<UserDocument>(UsersCollectionName);
         var user = await usersCollection.Find(u => u.Id == IntegrationTestValues.User.Id)
                                         .FirstOrDefaultAsync();
 
         Assert.NotNull(user);
-        Assert.True(user!.LastRespawnDate >= _harness.InitializedAtUtc.AddMinutes(-1));
+        Assert.True(user!.LastRespawnDate >= harness.InitializedAtUtc.AddMinutes(-1));
     }
 
     [Fact]
@@ -85,7 +78,7 @@ public sealed class UserEndpointsIntegrationTests : IAsyncLifetime
 
         response.EnsureSuccessStatusCode();
 
-        var consoleCollection = _harness.Database.GetCollection<UserConsoleEntryDocument>(UserConsoleCollectionName);
+        var consoleCollection = harness.Database.GetCollection<UserConsoleEntryDocument>(UserConsoleCollectionName);
         var entry = await consoleCollection.Find(doc => doc.UserId == IntegrationTestValues.User.Id)
                                            .SortByDescending(doc => doc.CreatedAt)
                                            .FirstOrDefaultAsync();
@@ -124,7 +117,7 @@ public sealed class UserEndpointsIntegrationTests : IAsyncLifetime
 
         response.EnsureSuccessStatusCode();
 
-        var memoryCollection = _harness.Database.GetCollection<UserMemoryDocument>(UserMemoryCollectionName);
+        var memoryCollection = harness.Database.GetCollection<UserMemoryDocument>(UserMemoryCollectionName);
         var document = await memoryCollection.Find(doc => doc.UserId == IntegrationTestValues.User.Id)
                                              .FirstOrDefaultAsync();
         Assert.NotNull(document);

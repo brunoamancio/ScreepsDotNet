@@ -4,7 +4,8 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Configuration;
 
-internal sealed class IntegrationWebApplicationFactory : WebApplicationFactory<Program>
+internal sealed class IntegrationWebApplicationFactory(string mongoConnectionString, string mongoDatabase, string redisConnectionString, string userId, string ticket, string steamId)
+    : WebApplicationFactory<Program>
 {
     private const string IntegrationEnvironmentName = "Integration";
     private const string StorageSection = "Storage:MongoRedis";
@@ -18,23 +19,6 @@ internal sealed class IntegrationWebApplicationFactory : WebApplicationFactory<P
     private const string TicketUserIdKey = TicketsSection + ":UserId";
     private const string TicketSteamIdKey = TicketsSection + ":SteamId";
 
-    private readonly string _mongoConnectionString;
-    private readonly string _mongoDatabase;
-    private readonly string _redisConnectionString;
-    private readonly string _userId;
-    private readonly string _ticket;
-    private readonly string _steamId;
-
-    public IntegrationWebApplicationFactory(string mongoConnectionString, string mongoDatabase, string redisConnectionString, string userId, string ticket, string steamId)
-    {
-        _mongoConnectionString = mongoConnectionString;
-        _mongoDatabase = mongoDatabase;
-        _redisConnectionString = redisConnectionString;
-        _userId = userId;
-        _ticket = ticket;
-        _steamId = steamId;
-    }
-
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment(IntegrationEnvironmentName);
@@ -42,13 +26,13 @@ internal sealed class IntegrationWebApplicationFactory : WebApplicationFactory<P
         {
             var settings = new Dictionary<string, string?>
             {
-                [MongoConnectionStringKey] = _mongoConnectionString,
-                [MongoDatabaseKey] = _mongoDatabase,
-                [RedisConnectionStringKey] = _redisConnectionString,
+                [MongoConnectionStringKey] = mongoConnectionString,
+                [MongoDatabaseKey] = mongoDatabase,
+                [RedisConnectionStringKey] = redisConnectionString,
                 [UseNativeAuthKey] = "false",
-                [TicketKey] = _ticket,
-                [TicketUserIdKey] = _userId,
-                [TicketSteamIdKey] = _steamId
+                [TicketKey] = ticket,
+                [TicketUserIdKey] = userId,
+                [TicketSteamIdKey] = steamId
             };
             configBuilder.AddInMemoryCollection(settings);
         });

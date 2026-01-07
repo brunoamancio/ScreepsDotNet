@@ -8,23 +8,16 @@ using StackExchange.Redis;
 
 namespace ScreepsDotNet.Storage.MongoRedis.Services;
 
-public sealed class RedisTokenService : ITokenService
+public sealed class RedisTokenService(IRedisConnectionProvider connectionProvider, IOptions<AuthOptions> options, ILogger<RedisTokenService> logger)
+    : ITokenService
 {
     private const string TokenKeyPrefix = "auth_";
     private const int TokenBytesLength = 20;
     private const string MissingUserIdMessage = "User identifier must be provided.";
     private const string ResolveTokenErrorMessage = "Unable to resolve auth token.";
 
-    private readonly IConnectionMultiplexer _connection;
-    private readonly TimeSpan _tokenTtl;
-    private readonly ILogger<RedisTokenService> _logger;
-
-    public RedisTokenService(IRedisConnectionProvider connectionProvider, IOptions<AuthOptions> options, ILogger<RedisTokenService> logger)
-    {
-        _connection = connectionProvider.GetConnection();
-        _tokenTtl = TimeSpan.FromSeconds(Math.Max(1, options.Value.TokenTtlSeconds));
-        _logger = logger;
-    }
+    private readonly IConnectionMultiplexer _connection = connectionProvider.GetConnection();
+    private readonly TimeSpan _tokenTtl = TimeSpan.FromSeconds(Math.Max(1, options.Value.TokenTtlSeconds));
 
     public async Task<string> IssueTokenAsync(string userId, CancellationToken cancellationToken = default)
     {
@@ -52,7 +45,7 @@ public sealed class RedisTokenService : ITokenService
             return redisValue;
         }
         catch (RedisException ex) {
-            _logger.LogError(ex, ResolveTokenErrorMessage);
+            logger.LogError(ex, ResolveTokenErrorMessage);
             return null;
         }
     }

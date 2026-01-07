@@ -35,6 +35,8 @@ builder.Services.AddSingleton<IMarketOrderRepository, MongoMarketOrderRepository
 builder.Services.AddSingleton<IMarketStatsRepository, MongoMarketStatsRepository>();
 builder.Services.AddSingleton<IRoomStatusRepository, MongoRoomStatusRepository>();
 builder.Services.AddSingleton<IRoomTerrainRepository, MongoRoomTerrainRepository>();
+builder.Services.AddSingleton<IWorldStatsRepository, MongoWorldStatsRepository>();
+builder.Services.AddSingleton<IWorldMetadataRepository, MongoWorldMetadataRepository>();
 builder.Services.AddSingleton<IUserRespawnService, MongoUserRespawnService>();
 builder.Services.AddSingleton<IBadgeSvgGenerator, BadgeSvgGenerator>();
 builder.Services.AddSingleton<IVersionInfoProvider, VersionInfoProvider>();
@@ -51,4 +53,3 @@ app.UseHttpsRedirection();
 app.MapHealthChecks(HealthCheckOptionsFactory.HealthEndpoint, HealthCheckOptionsFactory.Create());
 app.MapBackendEndpoints();
 app.Run();
-

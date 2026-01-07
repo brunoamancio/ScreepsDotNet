@@ -16,14 +16,13 @@ public sealed class IntegrationTestHarness : IAsyncLifetime
     private const string RoomsCollectionName = "rooms";
     private const string RoomsObjectsCollectionName = "rooms.objects";
     private const string RoomsTerrainCollectionName = "rooms.terrain";
+    private const string WorldInfoCollectionName = "world.info";
     private const string ServerDataCollectionName = "server.data";
     private const string UserMoneyCollectionName = "users.money";
     private const string UserConsoleCollectionName = "users.console";
     private const string UserMemoryCollectionName = "users.memory";
     private const string MarketOrdersCollectionName = "market.orders";
     private const string MarketStatsCollectionName = "market.stats";
-    private const string ControllerTypeValue = "controller";
-    private const string SpawnTypeValue = "spawn";
     private const string MongoNamespaceNotFoundCode = "NamespaceNotFound";
     private const string MongoImage = "mongo:7.0";
     private const string RedisImage = "redis:7.2";
@@ -80,6 +79,7 @@ public sealed class IntegrationTestHarness : IAsyncLifetime
         await DropCollectionIfExistsAsync(UserMemoryCollectionName);
         await DropCollectionIfExistsAsync(MarketOrdersCollectionName);
         await DropCollectionIfExistsAsync(MarketStatsCollectionName);
+        await DropCollectionIfExistsAsync(WorldInfoCollectionName);
 
         await SeedUsersAsync();
         await SeedRoomsAsync();
@@ -90,6 +90,7 @@ public sealed class IntegrationTestHarness : IAsyncLifetime
         await SeedUserMemoryAsync();
         await SeedMarketOrdersAsync();
         await SeedMarketStatsAsync();
+        await SeedWorldInfoAsync();
     }
 
     private async Task DropCollectionIfExistsAsync(string name)
@@ -137,16 +138,39 @@ public sealed class IntegrationTestHarness : IAsyncLifetime
             {
                 Id = ObjectId.GenerateNewId(),
                 UserId = IntegrationTestValues.User.Id,
-                Type = ControllerTypeValue,
+                Type = RoomObjectType.Controller.ToDocumentValue(),
                 Room = IntegrationTestValues.World.StartRoom,
-                Level = ControllerLevel
+                Level = ControllerLevel,
+                SafeMode = IntegrationTestValues.World.SafeModeExpiry,
+                Sign = new RoomSignDocument
+                {
+                    UserId = IntegrationTestValues.User.Id,
+                    Text = IntegrationTestValues.World.ControllerSign,
+                    Time = IntegrationTestValues.World.GameTime
+                }
             },
             new RoomObjectDocument
             {
                 Id = ObjectId.GenerateNewId(),
                 UserId = IntegrationTestValues.User.Id,
-                Type = SpawnTypeValue,
+                Type = RoomObjectType.Spawn.ToDocumentValue(),
                 Room = IntegrationTestValues.World.StartRoom
+            },
+            new RoomObjectDocument
+            {
+                Id = ObjectId.GenerateNewId(),
+                Type = "mineral",
+                Room = IntegrationTestValues.World.StartRoom,
+                MineralType = IntegrationTestValues.World.MineralType,
+                Density = IntegrationTestValues.World.MineralDensity
+            },
+            new RoomObjectDocument
+            {
+                Id = ObjectId.GenerateNewId(),
+                UserId = IntegrationTestValues.World.InvaderUser,
+                Type = "invaderCore",
+                Room = IntegrationTestValues.World.SecondaryRoom,
+                Level = 2
             }
         };
 
@@ -198,7 +222,7 @@ public sealed class IntegrationTestHarness : IAsyncLifetime
     private Task SeedRoomsAsync()
     {
         var rooms = Database.GetCollection<RoomDocument>(RoomsCollectionName);
-        var document = new RoomDocument
+        var startRoom = new RoomDocument
         {
             Id = IntegrationTestValues.World.StartRoom,
             Status = "normal",
@@ -212,23 +236,54 @@ public sealed class IntegrationTestHarness : IAsyncLifetime
             EnergyAvailable = 500
         };
 
-        return rooms.ReplaceOneAsync(room => room.Id == document.Id,
-                                      document,
-                                      new ReplaceOptions { IsUpsert = true });
+        var secondaryRoom = new RoomDocument
+        {
+            Id = IntegrationTestValues.World.SecondaryRoom,
+            Status = "out of borders",
+            Novice = false,
+            RespawnArea = false,
+            Owner = null,
+            Controller = new RoomControllerDocument
+            {
+                Level = 0
+            },
+            EnergyAvailable = 0
+        };
+
+        return rooms.BulkWriteAsync([
+            new ReplaceOneModel<RoomDocument>(Builders<RoomDocument>.Filter.Eq(room => room.Id, startRoom.Id), startRoom)
+            {
+                IsUpsert = true
+            },
+            new ReplaceOneModel<RoomDocument>(Builders<RoomDocument>.Filter.Eq(room => room.Id, secondaryRoom.Id), secondaryRoom)
+            {
+                IsUpsert = true
+            }
+        ]);
     }
 
     private Task SeedRoomTerrainAsync()
     {
         var terrains = Database.GetCollection<RoomTerrainDocument>(RoomsTerrainCollectionName);
-        var document = new RoomTerrainDocument
+        var documents = new[]
         {
-            Id = ObjectId.GenerateNewId(),
-            Room = IntegrationTestValues.World.StartRoom,
-            Type = "terrain",
-            Terrain = new string('0', 2500)
+            new RoomTerrainDocument
+            {
+                Id = ObjectId.GenerateNewId(),
+                Room = IntegrationTestValues.World.StartRoom,
+                Type = "terrain",
+                Terrain = new string('0', 2500)
+            },
+            new RoomTerrainDocument
+            {
+                Id = ObjectId.GenerateNewId(),
+                Room = IntegrationTestValues.World.SecondaryRoom,
+                Type = "terrain",
+                Terrain = new string('1', 2500)
+            }
         };
 
-        return terrains.InsertOneAsync(document);
+        return terrains.InsertManyAsync(documents);
     }
 
     private Task SeedServerDataAsync()
@@ -320,6 +375,21 @@ public sealed class IntegrationTestHarness : IAsyncLifetime
         };
 
         return collection.InsertManyAsync(entries);
+    }
+
+    private Task SeedWorldInfoAsync()
+    {
+        var collection = Database.GetCollection<WorldInfoDocument>(WorldInfoCollectionName);
+        var document = new WorldInfoDocument
+        {
+            Id = WorldInfoDocument.DefaultId,
+            GameTime = IntegrationTestValues.World.GameTime,
+            TickDuration = IntegrationTestValues.World.TickDuration
+        };
+
+        return collection.ReplaceOneAsync(info => info.Id == document.Id,
+                                          document,
+                                          new ReplaceOptions { IsUpsert = true });
     }
 
     public async Task DisposeAsync()

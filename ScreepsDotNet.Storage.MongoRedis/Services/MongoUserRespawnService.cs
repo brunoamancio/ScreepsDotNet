@@ -7,26 +7,18 @@ using ScreepsDotNet.Backend.Core.Repositories;
 using ScreepsDotNet.Backend.Core.Services;
 using ScreepsDotNet.Storage.MongoRedis.Providers;
 
-public sealed class MongoUserRespawnService : IUserRespawnService
+public sealed class MongoUserRespawnService(IMongoDatabaseProvider databaseProvider, IUserWorldRepository userWorldRepository) : IUserRespawnService
 {
     private const string UserField = "user";
     private const string IdField = "_id";
     private const string LastRespawnField = "lastRespawnDate";
 
-    private readonly IMongoCollection<BsonDocument> _roomsObjectsCollection;
-    private readonly IMongoCollection<BsonDocument> _usersCollection;
-    private readonly IUserWorldRepository _userWorldRepository;
-
-    public MongoUserRespawnService(IMongoDatabaseProvider databaseProvider, IUserWorldRepository userWorldRepository)
-    {
-        _userWorldRepository = userWorldRepository;
-        _roomsObjectsCollection = databaseProvider.GetCollection<BsonDocument>(databaseProvider.Settings.RoomObjectsCollection);
-        _usersCollection = databaseProvider.GetCollection<BsonDocument>(databaseProvider.Settings.UsersCollection);
-    }
+    private readonly IMongoCollection<BsonDocument> _roomsObjectsCollection = databaseProvider.GetCollection<BsonDocument>(databaseProvider.Settings.RoomObjectsCollection);
+    private readonly IMongoCollection<BsonDocument> _usersCollection = databaseProvider.GetCollection<BsonDocument>(databaseProvider.Settings.UsersCollection);
 
     public async Task<UserRespawnResult> RespawnAsync(string userId, CancellationToken cancellationToken = default)
     {
-        var status = await _userWorldRepository.GetWorldStatusAsync(userId, cancellationToken).ConfigureAwait(false);
+        var status = await userWorldRepository.GetWorldStatusAsync(userId, cancellationToken).ConfigureAwait(false);
         if (status is not UserWorldStatus.Normal and not UserWorldStatus.Lost)
             return UserRespawnResult.InvalidStatus;
 

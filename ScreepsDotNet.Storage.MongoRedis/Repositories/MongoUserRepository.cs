@@ -7,12 +7,9 @@ using ScreepsDotNet.Storage.MongoRedis.Repositories.Documents;
 
 namespace ScreepsDotNet.Storage.MongoRedis.Repositories;
 
-public sealed class MongoUserRepository : IUserRepository
+public sealed class MongoUserRepository(IMongoDatabaseProvider databaseProvider) : IUserRepository
 {
-    private readonly IMongoCollection<UserDocument> _collection;
-
-    public MongoUserRepository(IMongoDatabaseProvider databaseProvider)
-        => _collection = databaseProvider.GetCollection<UserDocument>(databaseProvider.Settings.UsersCollection);
+    private readonly IMongoCollection<UserDocument> _collection = databaseProvider.GetCollection<UserDocument>(databaseProvider.Settings.UsersCollection);
 
     public async Task<UserProfile?> GetProfileAsync(string userId, CancellationToken cancellationToken = default)
     {

@@ -5,12 +5,9 @@ using ScreepsDotNet.Backend.Http.Tests.Web;
 
 namespace ScreepsDotNet.Backend.Http.Tests.Endpoints;
 
-public class HealthEndpointTests : IClassFixture<TestWebApplicationFactory>
+public class HealthEndpointTests(TestWebApplicationFactory factory) : IClassFixture<TestWebApplicationFactory>
 {
-    private readonly HttpClient _client;
-
-    public HealthEndpointTests(TestWebApplicationFactory factory)
-        => _client = factory.CreateClient();
+    private readonly HttpClient _client = factory.CreateClient();
 
     [Fact]
     public async Task Health_ReturnsHealthyPayload()

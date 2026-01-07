@@ -7,12 +7,9 @@ using ScreepsDotNet.Storage.MongoRedis.Repositories.Documents;
 
 namespace ScreepsDotNet.Storage.MongoRedis.Repositories;
 
-public sealed class MongoUserMemoryRepository : IUserMemoryRepository
+public sealed class MongoUserMemoryRepository(IMongoDatabaseProvider databaseProvider) : IUserMemoryRepository
 {
-    private readonly IMongoCollection<UserMemoryDocument> _collection;
-
-    public MongoUserMemoryRepository(IMongoDatabaseProvider databaseProvider)
-        => _collection = databaseProvider.GetCollection<UserMemoryDocument>(databaseProvider.Settings.UserMemoryCollection);
+    private readonly IMongoCollection<UserMemoryDocument> _collection = databaseProvider.GetCollection<UserMemoryDocument>(databaseProvider.Settings.UserMemoryCollection);
 
     public async Task<IDictionary<string, object?>> GetMemoryAsync(string userId, CancellationToken cancellationToken = default)
     {

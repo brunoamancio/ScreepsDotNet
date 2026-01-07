@@ -4,12 +4,9 @@ using System.Text.Json;
 using ScreepsDotNet.Backend.Http.Routing;
 using ScreepsDotNet.Backend.Http.Tests.Web;
 
-public class ServerEndpointTests : IClassFixture<TestWebApplicationFactory>
+public class ServerEndpointTests(TestWebApplicationFactory factory) : IClassFixture<TestWebApplicationFactory>
 {
-    private readonly HttpClient _client;
-
-    public ServerEndpointTests(TestWebApplicationFactory factory)
-        => _client = factory.CreateClient();
+    private readonly HttpClient _client = factory.CreateClient();
 
     [Fact]
     public async Task ServerInfo_ReturnsConfiguredServerData()

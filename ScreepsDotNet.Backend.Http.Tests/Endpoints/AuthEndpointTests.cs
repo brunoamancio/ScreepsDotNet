@@ -6,14 +6,11 @@ using ScreepsDotNet.Backend.Http.Tests.Web;
 
 namespace ScreepsDotNet.Backend.Http.Tests.Endpoints;
 
-public class AuthEndpointTests : IClassFixture<TestWebApplicationFactory>
+public class AuthEndpointTests(TestWebApplicationFactory factory) : IClassFixture<TestWebApplicationFactory>
 {
     private const string InvalidTokenValue = "invalid";
 
-    private readonly HttpClient _client;
-
-    public AuthEndpointTests(TestWebApplicationFactory factory)
-        => _client = factory.CreateClient();
+    private readonly HttpClient _client = factory.CreateClient();
 
     [Fact]
     public async Task SteamTicket_ReturnsTokenAndSteamId()

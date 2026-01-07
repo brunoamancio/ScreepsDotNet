@@ -1,0 +1,186 @@
+namespace ScreepsDotNet.Storage.MongoRedis.Repositories;
+
+using System.Collections.Generic;
+using System.Linq;
+using MongoDB.Driver;
+using ScreepsDotNet.Backend.Core.Constants;
+using ScreepsDotNet.Backend.Core.Models;
+using ScreepsDotNet.Backend.Core.Repositories;
+using ScreepsDotNet.Storage.MongoRedis.Providers;
+using ScreepsDotNet.Storage.MongoRedis.Repositories.Documents;
+
+public sealed class MongoWorldStatsRepository(IMongoDatabaseProvider databaseProvider, IWorldMetadataRepository metadataRepository) : IWorldStatsRepository
+{
+    private static readonly string ControllerType = RoomObjectType.Controller.ToDocumentValue();
+    private static readonly string InvaderCoreType = RoomObjectType.InvaderCore.ToDocumentValue();
+    private static readonly string MineralType = RoomObjectType.Mineral.ToDocumentValue();
+    private static readonly string[] ObjectTypes = [ControllerType, InvaderCoreType, MineralType];
+
+    private readonly IMongoCollection<RoomDocument> _roomsCollection = databaseProvider.GetCollection<RoomDocument>(databaseProvider.Settings.RoomsCollection);
+    private readonly IMongoCollection<RoomObjectDocument> _roomObjectsCollection = databaseProvider.GetCollection<RoomObjectDocument>(databaseProvider.Settings.RoomObjectsCollection);
+    private readonly IMongoCollection<UserDocument> _usersCollection = databaseProvider.GetCollection<UserDocument>(databaseProvider.Settings.UsersCollection);
+
+    public async Task<MapStatsResult> GetMapStatsAsync(MapStatsRequest request, CancellationToken cancellationToken = default)
+    {
+        if (request.Rooms.Count == 0)
+        {
+            return new MapStatsResult(await metadataRepository.GetGameTimeAsync(cancellationToken).ConfigureAwait(false),
+                                      new Dictionary<string, MapStatsRoom>(StringComparer.OrdinalIgnoreCase),
+                                      new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase),
+                                      new Dictionary<string, MapStatsUser>(StringComparer.OrdinalIgnoreCase));
+        }
+
+        var requestedRooms = request.Rooms.Where(name => !string.IsNullOrWhiteSpace(name))
+                                          .Select(name => name!.Trim())
+                                          .Distinct(StringComparer.OrdinalIgnoreCase)
+                                          .ToList();
+
+        var gameTime = await metadataRepository.GetGameTimeAsync(cancellationToken).ConfigureAwait(false);
+        var stats = await LoadBaseRoomStatsAsync(requestedRooms, cancellationToken).ConfigureAwait(false);
+        if (stats.Count == 0)
+        {
+            return new MapStatsResult(gameTime,
+                                      new Dictionary<string, MapStatsRoom>(),
+                                      new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase),
+                                      new Dictionary<string, MapStatsUser>(StringComparer.OrdinalIgnoreCase));
+        }
+
+        var builders = stats.ToDictionary(entry => entry.RoomName,
+                                          entry => new MapStatsRoomBuilder(entry),
+                                          StringComparer.OrdinalIgnoreCase);
+
+        var userIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        await PopulateRoomObjectsAsync(requestedRooms, builders, userIds, gameTime, cancellationToken).ConfigureAwait(false);
+
+        var users = await LoadUsersAsync(userIds, cancellationToken).ConfigureAwait(false);
+
+        var finalRooms = builders.Values.ToDictionary(builder => builder.RoomName,
+                                                      builder => builder.Build(),
+                                                      StringComparer.OrdinalIgnoreCase);
+
+        return new MapStatsResult(gameTime,
+                                  finalRooms,
+                                  new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase),
+                                  users);
+    }
+
+    private async Task<IReadOnlyList<MapStatsRoom>> LoadBaseRoomStatsAsync(IReadOnlyCollection<string> roomNames, CancellationToken cancellationToken)
+    {
+        var filter = Builders<RoomDocument>.Filter.In(room => room.Id, roomNames);
+        var documents = await _roomsCollection.Find(filter)
+                                              .ToListAsync(cancellationToken)
+                                              .ConfigureAwait(false);
+
+        return documents.Select(document => new MapStatsRoom(document.Id, document.Status, document.Novice, document.RespawnArea, document.OpenTime, null, null, false, null))
+                        .ToList();
+    }
+
+    private async Task PopulateRoomObjectsAsync(IReadOnlyCollection<string> roomNames, IDictionary<string, MapStatsRoomBuilder> builders,
+                                                ISet<string> userIds, int gameTime, CancellationToken cancellationToken)
+    {
+        var filter = Builders<RoomObjectDocument>.Filter.And(
+            Builders<RoomObjectDocument>.Filter.In(obj => obj.Room, roomNames),
+            Builders<RoomObjectDocument>.Filter.In(obj => obj.Type, ObjectTypes));
+
+        var objects = await _roomObjectsCollection.Find(filter)
+                                                  .ToListAsync(cancellationToken)
+                                                  .ConfigureAwait(false);
+
+        foreach (var obj in objects)
+        {
+            if (obj.Room is null || !builders.TryGetValue(obj.Room, out var builder))
+                continue;
+
+            if (string.Equals(obj.Type, ControllerType, StringComparison.Ordinal))
+                ApplyController(builder, obj, userIds, gameTime);
+            else if (string.Equals(obj.Type, InvaderCoreType, StringComparison.Ordinal))
+                ApplyInvaderCore(builder, obj, userIds);
+            else if (string.Equals(obj.Type, MineralType, StringComparison.Ordinal))
+                ApplyMineral(builder, obj);
+        }
+    }
+
+    private static void ApplyController(MapStatsRoomBuilder builder, RoomObjectDocument document, ISet<string> userIds, int gameTime)
+    {
+        if (!string.IsNullOrWhiteSpace(document.UserId))
+        {
+            builder.Ownership = new RoomOwnershipInfo(document.UserId!, document.Level ?? 0);
+            userIds.Add(document.UserId!);
+        }
+        else if (!string.IsNullOrWhiteSpace(document.Reservation?.UserId))
+        {
+            builder.Ownership = new RoomOwnershipInfo(document.Reservation.UserId!, 0);
+            userIds.Add(document.Reservation.UserId!);
+        }
+
+        if (document.Sign is not null && !string.IsNullOrWhiteSpace(document.Sign.UserId))
+        {
+            builder.Sign = new RoomSignInfo(document.Sign.UserId!, document.Sign.Text, document.Sign.Time);
+            userIds.Add(document.Sign.UserId!);
+        }
+
+        builder.IsSafeMode = document.SafeMode.HasValue && document.SafeMode > gameTime;
+    }
+
+    private static void ApplyInvaderCore(MapStatsRoomBuilder builder, RoomObjectDocument document, ISet<string> userIds)
+    {
+        if (string.IsNullOrWhiteSpace(document.UserId))
+            return;
+
+        var level = document.Level ?? 0;
+        if (level <= 0)
+            return;
+
+        builder.Ownership = new RoomOwnershipInfo(document.UserId!, level);
+        userIds.Add(document.UserId!);
+    }
+
+    private static void ApplyMineral(MapStatsRoomBuilder builder, RoomObjectDocument document)
+    {
+        if (string.IsNullOrWhiteSpace(document.MineralType))
+            return;
+
+        builder.PrimaryMineral = new RoomMineralInfo(document.MineralType!, document.Density);
+    }
+
+    private async Task<IReadOnlyDictionary<string, MapStatsUser>> LoadUsersAsync(ISet<string> userIds, CancellationToken cancellationToken)
+    {
+        if (userIds.Count == 0)
+            return new Dictionary<string, MapStatsUser>(StringComparer.OrdinalIgnoreCase);
+
+        var filter = Builders<UserDocument>.Filter.In(user => user.Id, userIds);
+        var documents = await _usersCollection.Find(filter)
+                                              .Project(user => new MapStatsUser(user.Id ?? string.Empty,
+                                                                                user.Username ?? string.Empty,
+                                                                                user.Badge))
+                                              .ToListAsync(cancellationToken)
+                                              .ConfigureAwait(false);
+
+        return documents.Where(user => !string.IsNullOrWhiteSpace(user.Id))
+                        .ToDictionary(user => user.Id, user => user, StringComparer.OrdinalIgnoreCase);
+    }
+
+    private sealed class MapStatsRoomBuilder(MapStatsRoom source)
+    {
+        public string RoomName { get; } = source.RoomName;
+
+        public string? Status { get; } = source.Status;
+
+        public bool? IsNoviceArea { get; } = source.IsNoviceArea;
+
+        public bool? IsRespawnArea { get; } = source.IsRespawnArea;
+
+        public long? OpenTime { get; } = source.OpenTime;
+
+        public RoomOwnershipInfo? Ownership { get; set; }
+
+        public RoomSignInfo? Sign { get; set; }
+
+        public bool IsSafeMode { get; set; }
+
+        public RoomMineralInfo? PrimaryMineral { get; set; }
+
+        public MapStatsRoom Build()
+            => new(RoomName, Status, IsNoviceArea, IsRespawnArea, OpenTime, Ownership, Sign, IsSafeMode, PrimaryMineral);
+    }
+}

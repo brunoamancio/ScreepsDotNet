@@ -22,6 +22,14 @@ internal static class IntegrationTestValues
     internal static class World
     {
         public const string StartRoom = "W20N20";
+        public const string SecondaryRoom = "W21N21";
+        public const string InvaderUser = "Invader";
+        public const string MineralType = "H";
+        public const int MineralDensity = 3;
+        public const int SafeModeExpiry = 200000;
+        public const string ControllerSign = "Integration FTW";
+        public const int GameTime = 123456;
+        public const int TickDuration = 650;
     }
 
     internal static class Money

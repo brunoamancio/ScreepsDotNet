@@ -8,21 +8,14 @@ using StackExchange.Redis;
 
 namespace ScreepsDotNet.Storage.MongoRedis.Adapters;
 
-public sealed class MongoRedisStorageAdapter : IStorageAdapter
+public sealed class MongoRedisStorageAdapter(IMongoDatabaseProvider databaseProvider, IRedisConnectionProvider redisConnectionProvider, ILogger<MongoRedisStorageAdapter> logger)
+    : IStorageAdapter
 {
     private const string MongoPingErrorMessage = "MongoDB ping failed";
     private const string RedisPingErrorMessage = "Redis ping failed";
 
-    private readonly ILogger<MongoRedisStorageAdapter> _logger;
-    private readonly IMongoDatabase _database;
-    private readonly IConnectionMultiplexer _redis;
-
-    public MongoRedisStorageAdapter(IMongoDatabaseProvider databaseProvider, IRedisConnectionProvider redisConnectionProvider, ILogger<MongoRedisStorageAdapter> logger)
-    {
-        _logger = logger;
-        _database = databaseProvider.GetDatabase();
-        _redis = redisConnectionProvider.GetConnection();
-    }
+    private readonly IMongoDatabase _database = databaseProvider.GetDatabase();
+    private readonly IConnectionMultiplexer _redis = redisConnectionProvider.GetConnection();
 
     public async Task<StorageStatus> GetStatusAsync(CancellationToken cancellationToken = default)
     {
@@ -48,7 +41,7 @@ public sealed class MongoRedisStorageAdapter : IStorageAdapter
             return true;
         }
         catch (Exception ex) {
-            _logger.LogError(ex, MongoPingErrorMessage);
+            logger.LogError(ex, MongoPingErrorMessage);
             return false;
         }
     }
@@ -61,7 +54,7 @@ public sealed class MongoRedisStorageAdapter : IStorageAdapter
             return true;
         }
         catch (Exception ex) {
-            _logger.LogError(ex, RedisPingErrorMessage);
+            logger.LogError(ex, RedisPingErrorMessage);
             return false;
         }
     }

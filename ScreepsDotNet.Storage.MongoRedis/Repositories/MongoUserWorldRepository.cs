@@ -1,4 +1,5 @@
 using MongoDB.Driver;
+using ScreepsDotNet.Backend.Core.Constants;
 using ScreepsDotNet.Backend.Core.Models;
 using ScreepsDotNet.Backend.Core.Repositories;
 using ScreepsDotNet.Storage.MongoRedis.Providers;
@@ -6,15 +7,12 @@ using ScreepsDotNet.Storage.MongoRedis.Repositories.Documents;
 
 namespace ScreepsDotNet.Storage.MongoRedis.Repositories;
 
-public sealed class MongoUserWorldRepository : IUserWorldRepository
+public sealed class MongoUserWorldRepository(IMongoDatabaseProvider databaseProvider) : IUserWorldRepository
 {
-    private const string ControllerType = "controller";
-    private const string SpawnType = "spawn";
+    private static readonly string ControllerType = RoomObjectType.Controller.ToDocumentValue();
+    private static readonly string SpawnType = RoomObjectType.Spawn.ToDocumentValue();
 
-    private readonly IMongoCollection<RoomObjectDocument> _collection;
-
-    public MongoUserWorldRepository(IMongoDatabaseProvider databaseProvider)
-        => _collection = databaseProvider.GetCollection<RoomObjectDocument>(databaseProvider.Settings.RoomObjectsCollection);
+    private readonly IMongoCollection<RoomObjectDocument> _collection = databaseProvider.GetCollection<RoomObjectDocument>(databaseProvider.Settings.RoomObjectsCollection);
 
     public async Task<string?> GetRandomControllerRoomAsync(string userId, CancellationToken cancellationToken = default)
     {

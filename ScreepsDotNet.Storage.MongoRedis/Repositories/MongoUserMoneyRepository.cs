@@ -6,12 +6,9 @@ using ScreepsDotNet.Storage.MongoRedis.Repositories.Documents;
 
 namespace ScreepsDotNet.Storage.MongoRedis.Repositories;
 
-public sealed class MongoUserMoneyRepository : IUserMoneyRepository
+public sealed class MongoUserMoneyRepository(IMongoDatabaseProvider databaseProvider) : IUserMoneyRepository
 {
-    private readonly IMongoCollection<UserMoneyEntryDocument> _collection;
-
-    public MongoUserMoneyRepository(IMongoDatabaseProvider databaseProvider)
-        => _collection = databaseProvider.GetCollection<UserMoneyEntryDocument>(databaseProvider.Settings.UserMoneyCollection);
+    private readonly IMongoCollection<UserMoneyEntryDocument> _collection = databaseProvider.GetCollection<UserMoneyEntryDocument>(databaseProvider.Settings.UserMoneyCollection);
 
     public async Task<MoneyHistoryPage> GetHistoryAsync(string userId, int page, int pageSize, CancellationToken cancellationToken = default)
     {

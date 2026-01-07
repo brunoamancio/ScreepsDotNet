@@ -30,5 +30,7 @@ public sealed class MongoRedisStorageOptions
 
     public string MarketStatsCollection { get; init; } = "market.stats";
 
+    public string WorldInfoCollection { get; init; } = "world.info";
+
     public string RedisConnectionString { get; init; } = "localhost:6379";
 }
