@@ -1,1 +1,3 @@
-public partial class Program;
+namespace ScreepsDotNet.Backend.Http;
+
+public abstract partial class Program;

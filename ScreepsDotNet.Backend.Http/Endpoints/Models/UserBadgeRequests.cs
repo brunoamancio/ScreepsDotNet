@@ -6,11 +6,11 @@ using System.Text.Json.Serialization;
 internal sealed record UserBadgeUpdateRequest([property: JsonPropertyName("badge")] UserBadgePayload? Badge);
 
 internal sealed record UserBadgePayload([property: JsonPropertyName("type")] JsonElement Type,
-                                        [property: JsonPropertyName("param")] double? Param,
-                                        [property: JsonPropertyName("color1")] string? Color1,
-                                        [property: JsonPropertyName("color2")] string? Color2,
-                                        [property: JsonPropertyName("color3")] string? Color3,
-                                        [property: JsonPropertyName("flip")] bool? Flip);
+                                                 [property: JsonPropertyName("param")] double? Param,
+                                                 [property: JsonPropertyName("color1")] string? Color1,
+                                                 [property: JsonPropertyName("color2")] string? Color2,
+                                                 [property: JsonPropertyName("color3")] string? Color3,
+                                                 [property: JsonPropertyName("flip")] bool? Flip);
 
 internal sealed record EmailUpdateRequest([property: JsonPropertyName("email")] string? Email);
 

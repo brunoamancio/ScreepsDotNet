@@ -6,7 +6,7 @@
 - `ScreepsDotNet/` – new .NET solution containing:
 - `ScreepsDotNet.Backend.Core/` – cross-cutting contracts (configuration, models, repositories, services).
 - `ScreepsDotNet.Backend.Http/` – ASP.NET Core Web API host (currently health + server info endpoints).
-- `ScreepsDotNet.Backend.Cli/` – .NET console host with shared DI wiring; configuration comes from CLI arguments/environment (no appsettings dependency) and future commands will call the same repositories/services outside HTTP.
+- `ScreepsDotNet.Backend.Cli/` – .NET console host running on Spectre.Console.Cli; configuration comes from CLI arguments/environment (no appsettings dependency). The root command already accepts the legacy `--db`, `--connection-string`, `--cli_host`, etc., switches so future subcommands can honor those settings.
 - `ScreepsDotNet.Storage.MongoRedis/` – MongoDB/Redis infrastructure (adapter + repositories) used by the HTTP host.
   - `.editorconfig`, `.globalconfig`, `.gitattributes`, `Directory.Build.props` – shared tooling settings.
   - `docker/` – supporting assets (Mongo init scripts, etc.).
