@@ -1,5 +1,4 @@
-﻿using System;
-using Microsoft.Extensions.Configuration;
+﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -50,8 +49,6 @@ static void ConfigureLogging(HostApplicationBuilder builder)
 static void ConfigureServices(HostApplicationBuilder builder)
 {
     builder.Services.Configure<ConsoleLifetimeOptions>(options => options.SuppressStatusMessages = true);
-    builder.Services.Configure<ServerDataOptions>(builder.Configuration.GetSection(ServerDataOptions.SectionName));
-    builder.Services.Configure<VersionInfoOptions>(builder.Configuration.GetSection(VersionInfoOptions.SectionName));
     builder.Services.Configure<MongoRedisStorageOptions>(builder.Configuration.GetSection(MongoRedisStorageOptions.SectionName));
     builder.Services.Configure<BotManifestOptions>(options =>
     {
@@ -77,6 +74,7 @@ static void ConfigureServices(HostApplicationBuilder builder)
     builder.Services.AddSingleton<IRoomTerrainRepository, MongoRoomTerrainRepository>();
     builder.Services.AddSingleton<IWorldStatsRepository, MongoWorldStatsRepository>();
     builder.Services.AddSingleton<IWorldMetadataRepository, MongoWorldMetadataRepository>();
+    builder.Services.AddSingleton<IVersionMetadataRepository, MongoVersionMetadataRepository>();
     builder.Services.AddSingleton<IUserRespawnService, MongoUserRespawnService>();
     builder.Services.AddSingleton<IMapControlService, MongoMapControlService>();
     builder.Services.AddSingleton<IBotDefinitionProvider, FileSystemBotDefinitionProvider>();

@@ -1,14 +1,13 @@
-using Microsoft.Extensions.Options;
 using MongoDB.Driver;
-using ScreepsDotNet.Backend.Core.Configuration;
 using ScreepsDotNet.Backend.Core.Models;
 using ScreepsDotNet.Backend.Core.Repositories;
+using ScreepsDotNet.Backend.Core.Seeding;
 using ScreepsDotNet.Storage.MongoRedis.Providers;
 using ScreepsDotNet.Storage.MongoRedis.Repositories.Documents;
 
 namespace ScreepsDotNet.Storage.MongoRedis.Repositories;
 
-public sealed class MongoServerDataRepository(IMongoDatabaseProvider databaseProvider, IOptions<ServerDataOptions> defaults) : IServerDataRepository
+public sealed class MongoServerDataRepository(IMongoDatabaseProvider databaseProvider) : IServerDataRepository
 {
     private readonly IMongoCollection<ServerDataDocument> _collection = databaseProvider.GetCollection<ServerDataDocument>(databaseProvider.Settings.ServerDataCollection);
 
@@ -29,15 +28,13 @@ public sealed class MongoServerDataRepository(IMongoDatabaseProvider databasePro
 
     }
 
-    private ServerData BuildFallback()
-    {
-        var options = defaults.Value;
-        return new ServerData(options.WelcomeText,
-                              new Dictionary<string, object>(options.CustomObjectTypes, StringComparer.Ordinal),
-                              options.HistoryChunkSize, options.SocketUpdateThrottle,
-                              new RendererData(new Dictionary<string, object>(options.Renderer.Resources, StringComparer.Ordinal),
-                                               new Dictionary<string, object>(options.Renderer.Metadata, StringComparer.Ordinal)));
-    }
+    private static ServerData BuildFallback()
+        => new(SeedDataDefaults.ServerData.WelcomeText,
+               new Dictionary<string, object>(SeedDataDefaults.ServerData.CreateCustomObjectTypes(), StringComparer.Ordinal),
+               SeedDataDefaults.ServerData.HistoryChunkSize,
+               SeedDataDefaults.ServerData.SocketUpdateThrottle,
+               new RendererData(new Dictionary<string, object>(SeedDataDefaults.ServerData.CreateRendererResources(), StringComparer.Ordinal),
+                                new Dictionary<string, object>(SeedDataDefaults.ServerData.CreateRendererMetadata(), StringComparer.Ordinal)));
 
     private static ServerData ToModel(ServerDataDocument document)
     {

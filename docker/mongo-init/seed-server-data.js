@@ -14,3 +14,12 @@ collection.insertOne({
     metadata: {}
   }
 });
+
+const versionCollection = database.getCollection('server.version');
+versionCollection.deleteMany({ _id: 'version-info' });
+versionCollection.insertOne({
+  _id: 'version-info',
+  protocol: 14,
+  useNativeAuth: false,
+  packageVersion: '0.0.1-dev'
+});

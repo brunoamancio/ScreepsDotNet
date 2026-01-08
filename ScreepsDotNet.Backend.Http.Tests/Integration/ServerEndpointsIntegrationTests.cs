@@ -33,7 +33,10 @@ public sealed class ServerEndpointsIntegrationTests(IntegrationTestHarness harne
 
         response.EnsureSuccessStatusCode();
         using var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
-        var serverData = payload.RootElement.GetProperty(VersionResponseFields.ServerData);
+        var root = payload.RootElement;
+        Assert.Equal(SeedDataDefaults.Version.Protocol, root.GetProperty(VersionResponseFields.Protocol).GetInt32());
+        Assert.Equal(SeedDataDefaults.Version.UseNativeAuth, root.GetProperty(VersionResponseFields.UseNativeAuth).GetBoolean());
+        var serverData = root.GetProperty(VersionResponseFields.ServerData);
         Assert.Equal(SeedDataDefaults.ServerData.WelcomeText, serverData.GetProperty(ServerDataResponseFields.WelcomeText).GetString());
         Assert.Equal(SeedDataDefaults.ServerData.HistoryChunkSize, serverData.GetProperty(ServerDataResponseFields.HistoryChunkSize).GetInt32());
     }

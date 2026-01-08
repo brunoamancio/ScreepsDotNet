@@ -17,6 +17,7 @@ public sealed class SeedDataService : ISeedDataService
     private const string RoomsTerrainCollectionName = "rooms.terrain";
     private const string WorldInfoCollectionName = "world.info";
     private const string ServerDataCollectionName = "server.data";
+    private const string VersionInfoCollectionName = "server.version";
     private const string UserMoneyCollectionName = "users.money";
     private const string UserConsoleCollectionName = "users.console";
     private const string UserMemoryCollectionName = "users.memory";
@@ -48,6 +49,7 @@ public sealed class SeedDataService : ISeedDataService
             RoomsObjectsCollectionName,
             RoomsTerrainCollectionName,
             ServerDataCollectionName,
+            VersionInfoCollectionName,
             UserMoneyCollectionName,
             UserConsoleCollectionName,
             UserMemoryCollectionName,
@@ -63,6 +65,7 @@ public sealed class SeedDataService : ISeedDataService
         await SeedRoomsAsync(database, cancellationToken).ConfigureAwait(false);
         await SeedRoomTerrainAsync(database, cancellationToken).ConfigureAwait(false);
         await SeedServerDataAsync(database, cancellationToken).ConfigureAwait(false);
+        await SeedVersionInfoAsync(database, cancellationToken).ConfigureAwait(false);
         await SeedRoomObjectsAsync(database, cancellationToken).ConfigureAwait(false);
         await SeedMoneyHistoryAsync(database, cancellationToken).ConfigureAwait(false);
         await SeedUserMemoryAsync(database, cancellationToken).ConfigureAwait(false);
@@ -279,6 +282,22 @@ public sealed class SeedDataService : ISeedDataService
         };
 
         return collection.ReplaceOneAsync(doc => doc.Id == ServerDataDocument.DefaultId,
+                                          document,
+                                          new ReplaceOptions { IsUpsert = true },
+                                          cancellationToken);
+    }
+
+    private static Task SeedVersionInfoAsync(IMongoDatabase database, CancellationToken cancellationToken)
+    {
+        var collection = database.GetCollection<VersionMetadataDocument>(VersionInfoCollectionName);
+        var document = new VersionMetadataDocument
+        {
+            Protocol = SeedDataDefaults.Version.Protocol,
+            UseNativeAuth = SeedDataDefaults.Version.UseNativeAuth,
+            PackageVersion = SeedDataDefaults.Version.PackageVersion
+        };
+
+        return collection.ReplaceOneAsync(doc => doc.Id == VersionMetadataDocument.DefaultId,
                                           document,
                                           new ReplaceOptions { IsUpsert = true },
                                           cancellationToken);

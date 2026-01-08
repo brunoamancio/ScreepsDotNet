@@ -1,9 +1,9 @@
 namespace ScreepsDotNet.Backend.Cli.Tests.Integration;
 
+using System.Threading.Tasks;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using MongoDB.Driver;
-using ScreepsDotNet.Backend.Cli.Commands.System;
 using ScreepsDotNet.Backend.Core.Seeding;
 using ScreepsDotNet.Backend.Core.Services;
 using ScreepsDotNet.Storage.MongoRedis.Options;

@@ -16,8 +16,6 @@ using ScreepsDotNet.Storage.MongoRedis.Services;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddOpenApi();
-builder.Services.Configure<ServerDataOptions>(builder.Configuration.GetSection(ServerDataOptions.SectionName));
-builder.Services.Configure<VersionInfoOptions>(builder.Configuration.GetSection(VersionInfoOptions.SectionName));
 builder.Services.Configure<MongoRedisStorageOptions>(builder.Configuration.GetSection(MongoRedisStorageOptions.SectionName));
 builder.Services.Configure<AuthOptions>(builder.Configuration.GetSection(AuthOptions.SectionName));
 builder.Services.AddSingleton<IStorageAdapter, MongoRedisStorageAdapter>();
@@ -37,6 +35,7 @@ builder.Services.AddSingleton<IRoomStatusRepository, MongoRoomStatusRepository>(
 builder.Services.AddSingleton<IRoomTerrainRepository, MongoRoomTerrainRepository>();
 builder.Services.AddSingleton<IWorldStatsRepository, MongoWorldStatsRepository>();
 builder.Services.AddSingleton<IWorldMetadataRepository, MongoWorldMetadataRepository>();
+builder.Services.AddSingleton<IVersionMetadataRepository, MongoVersionMetadataRepository>();
 builder.Services.AddSingleton<IUserRespawnService, MongoUserRespawnService>();
 builder.Services.AddSingleton<IBadgeSvgGenerator, BadgeSvgGenerator>();
 builder.Services.AddSingleton<IVersionInfoProvider, VersionInfoProvider>();

@@ -93,8 +93,8 @@
 ## Configuration
 
 - `appsettings.json` & `appsettings.Development.json`:
-  - `VersionInfo` and `ServerData` configure `/api/version` responses.
   - `Storage:MongoRedis` connection strings + collection names.
+- Server metadata + version info now live in Mongo (`server.data` + `server.version`). Update `docker/mongo-init/seed-server-data.js` and `SeedDataDefaults` before changing these defaults so HTTP + CLI surfaces stay in sync.
 - `docker-compose.yml` uses volumes `mongo-data` / `redis-data`. Run `docker compose down -v` to reseed.
 
 ## Coding Standards

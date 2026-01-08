@@ -78,4 +78,11 @@ public static class SeedDataDefaults
                 ["build"] = "integration"
             };
     }
+
+    public static class Version
+    {
+        public const int Protocol = 14;
+        public const bool UseNativeAuth = false;
+        public const string PackageVersion = "0.0.1-dev";
+    }
 }

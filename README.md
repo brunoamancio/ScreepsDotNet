@@ -143,7 +143,7 @@ dotnet run --project ScreepsDotNet.Backend.Cli -- map generate --room W10N5 --so
   - `users.code`, `users.memory`, `users.console` – lazily created by the new repositories when the HTTP endpoints mutate state.
   - `users.money` – rolling credit transactions surfaced via `/api/user/money-history`.
   - `rooms.objects` – source of controller/spawn information for `/api/user/world-*` endpoints.
-- Server metadata (`server.data` collection) powers both `/api/server/info` and the `serverData` portion of `/api/version`. If you tweak the welcome text or renderer metadata, update `seed-server-data.js` so everyone shares the same defaults.
+- Server metadata (`server.data`) and version metadata (`server.version`) power `/api/server/info` and the `protocol/useNativeAuth/packageVersion` fields returned by `/api/version`. Adjust `seed-server-data.js` (and `SeedDataDefaults`) if you need to change these defaults.
 - Redis is reserved for token storage and other future Screeps subsystems; the `docker compose` file already wires the container, but current endpoints do not rely on it yet.
 
 ### Repository Conventions

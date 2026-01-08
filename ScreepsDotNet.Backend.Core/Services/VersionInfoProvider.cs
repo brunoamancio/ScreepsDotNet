@@ -1,19 +1,19 @@
-using Microsoft.Extensions.Options;
-using ScreepsDotNet.Backend.Core.Configuration;
 using ScreepsDotNet.Backend.Core.Models;
 using ScreepsDotNet.Backend.Core.Repositories;
 
 namespace ScreepsDotNet.Backend.Core.Services;
 
-public sealed class VersionInfoProvider(IUserRepository userRepository, IServerDataRepository serverDataRepository, IOptions<VersionInfoOptions> versionOptions)
+public sealed class VersionInfoProvider(IUserRepository userRepository,
+                                        IServerDataRepository serverDataRepository,
+                                        IVersionMetadataRepository versionMetadataRepository)
     : IVersionInfoProvider
 {
     public async Task<VersionInfo> GetAsync(CancellationToken cancellationToken = default)
     {
+        var metadata = await versionMetadataRepository.GetAsync(cancellationToken).ConfigureAwait(false);
         var users = await userRepository.GetActiveUsersCountAsync(cancellationToken).ConfigureAwait(false);
         var serverData = await serverDataRepository.GetServerDataAsync(cancellationToken).ConfigureAwait(false);
-        var version = versionOptions.Value;
 
-        return new VersionInfo(version.ProtocolVersion, version.UseNativeAuth, users, serverData, version.PackageVersion);
+        return new VersionInfo(metadata.ProtocolVersion, metadata.UseNativeAuth, users, serverData, metadata.PackageVersion);
     }
 }
