@@ -1,6 +1,7 @@
 namespace ScreepsDotNet.Backend.Cli.Tests.Integration;
 
 using MongoDB.Driver;
+using ScreepsDotNet.Backend.Core.Constants;
 using ScreepsDotNet.Backend.Cli.Commands.Map;
 using ScreepsDotNet.Storage.MongoRedis.Repositories.Documents;
 using Spectre.Console.Cli;
@@ -46,7 +47,7 @@ public sealed class MapCommandsIntegrationTests(MongoMapIntegrationFixture fixtu
         var sources = await roomObjects.Find(document => document.Room == roomName && document.Type == "source")
                                        .CountDocumentsAsync();
         Assert.Equal(3, sources);
-        var controllerExists = await roomObjects.Find(document => document.Room == roomName && document.Type == "controller")
+        var controllerExists = await roomObjects.Find(document => document.Room == roomName && document.Type == StructureType.Controller.ToDocumentValue())
                                                 .AnyAsync();
         Assert.True(controllerExists);
     }

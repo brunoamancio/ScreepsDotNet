@@ -3,6 +3,7 @@ namespace ScreepsDotNet.Backend.Cli.Tests.Integration;
 using Microsoft.Extensions.Logging.Abstractions;
 using MongoDB.Bson;
 using MongoDB.Driver;
+using ScreepsDotNet.Backend.Core.Constants;
 using ScreepsDotNet.Backend.Cli.Commands.Bot;
 using ScreepsDotNet.Backend.Cli.Commands.Map;
 using ScreepsDotNet.Backend.Core.Models.Bots;
@@ -44,7 +45,7 @@ public sealed class BotCommandsIntegrationTests(MongoMapIntegrationFixture fixtu
         Assert.Equal("alpha", user!.Bot);
 
         var roomObjects = _fixture.Database.GetCollection<BsonDocument>("rooms.objects");
-        var spawnExists = await roomObjects.Find(doc => doc["room"] == roomName && doc["type"] == "spawn" && doc["user"] == user.Id)
+        var spawnExists = await roomObjects.Find(doc => doc["room"] == roomName && doc["type"] == StructureType.Spawn.ToDocumentValue() && doc["user"] == user.Id)
                                            .AnyAsync();
         Assert.True(spawnExists);
     }

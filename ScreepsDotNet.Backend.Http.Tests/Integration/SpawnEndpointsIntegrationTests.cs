@@ -1,11 +1,11 @@
 ﻿namespace ScreepsDotNet.Backend.Http.Tests.Integration;
 
 using System.Net;
-using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
 using MongoDB.Bson;
 using MongoDB.Driver;
+using ScreepsDotNet.Backend.Core.Constants;
 using ScreepsDotNet.Backend.Core.Models;
 using ScreepsDotNet.Backend.Core.Seeding;
 using ScreepsDotNet.Backend.Http.Routing;
@@ -19,14 +19,29 @@ public sealed class SpawnEndpointsIntegrationTests(IntegrationTestHarness harnes
 
     public Task DisposeAsync() => Task.CompletedTask;
 
+    private async Task<string> LoginAsync()
+    {
+        var request = new { ticket = SeedDataDefaults.Auth.Ticket };
+        var response = await _client.PostAsJsonAsync(ApiRoutes.AuthSteamTicket, request);
+        response.EnsureSuccessStatusCode();
+        var content = await response.Content.ReadFromJsonAsync<JsonElement>();
+        return content.GetProperty("token").GetString()!;
+    }
+
     [Fact]
     public async Task PlaceSpawn_Success()
     {
         // Arrange
+        var token = await LoginAsync();
         var room = "W1N1";
         await PrepareRoomWithNeutralControllerAsync(room);
+
+        // Ensure user is not already playing by clearing their objects
+        var objectsCollection = harness.Database.GetCollection<BsonDocument>("rooms.objects");
+        await objectsCollection.DeleteManyAsync(Builders<BsonDocument>.Filter.Eq("user", SeedDataDefaults.User.Id));
+
         var request = new PlaceSpawnRequest(room, 25, 25, "MySpawn");
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", SeedDataDefaults.Auth.Ticket);
+        _client.DefaultRequestHeaders.Add("X-Token", token);
 
         // Act
         var response = await _client.PostAsJsonAsync(ApiRoutes.Game.World.PlaceSpawn, request);
@@ -37,12 +52,10 @@ public sealed class SpawnEndpointsIntegrationTests(IntegrationTestHarness harnes
         Assert.Equal(1, content.GetProperty("ok").GetInt32());
 
         // Verify database state
-        var objectsCollection = harness.Database.GetCollection<BsonDocument>("rooms.objects");
-
         // Spawn exists
         var spawn = await objectsCollection.Find(Builders<BsonDocument>.Filter.And(
             Builders<BsonDocument>.Filter.Eq("room", room),
-            Builders<BsonDocument>.Filter.Eq("type", "spawn")
+            Builders<BsonDocument>.Filter.Eq("type", StructureType.Spawn.ToDocumentValue())
         )).FirstOrDefaultAsync();
         Assert.NotNull(spawn);
         Assert.Equal(SeedDataDefaults.User.Id, spawn["user"].AsString);
@@ -69,9 +82,10 @@ public sealed class SpawnEndpointsIntegrationTests(IntegrationTestHarness harnes
     public async Task PlaceSpawn_AlreadyPlaying_ReturnsError()
     {
         // Arrange
-        // SeedDataDefaults.User already has objects in SeedDataDefaults.World.StartRoom
+        var token = await LoginAsync();
+        // SeedDataDefaults.User already has objects in SeedDataDefaults.World.StartRoom (seeded by SeedDataService)
         var request = new PlaceSpawnRequest("W1N1", 25, 25, "MySpawn");
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", SeedDataDefaults.Auth.Ticket);
+        _client.DefaultRequestHeaders.Add("X-Token", token);
 
         // Act
         var response = await _client.PostAsJsonAsync(ApiRoutes.Game.World.PlaceSpawn, request);
@@ -86,9 +100,7 @@ public sealed class SpawnEndpointsIntegrationTests(IntegrationTestHarness harnes
     public async Task PlaceSpawn_Occupied_ReturnsError()
     {
         // Arrange
-        var userId = "new-user";
-        var ticket = "new-ticket";
-        await CreateUserAsync(userId, ticket);
+        var token = await LoginAsync();
 
         var room = "W2N2";
         await PrepareRoomWithNeutralControllerAsync(room);
@@ -103,8 +115,11 @@ public sealed class SpawnEndpointsIntegrationTests(IntegrationTestHarness harnes
             ["y"] = 25
         });
 
+        // Ensure user is not already playing
+        await objectsCollection.DeleteManyAsync(Builders<BsonDocument>.Filter.Eq("user", SeedDataDefaults.User.Id));
+
         var request = new PlaceSpawnRequest(room, 25, 25, "MySpawn");
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", ticket);
+        _client.DefaultRequestHeaders.Add("X-Token", token);
 
         // Act
         var response = await _client.PostAsJsonAsync(ApiRoutes.Game.World.PlaceSpawn, request);
@@ -156,13 +171,14 @@ public sealed class SpawnEndpointsIntegrationTests(IntegrationTestHarness harnes
     public async Task PlaceSpawn_Cleanup_ConvertsToRuins()
     {
         // Arrange
+        var token = await LoginAsync();
         var room = "W3N3";
         await PrepareRoomWithNeutralControllerAsync(room);
 
         var objectsCollection = harness.Database.GetCollection<BsonDocument>("rooms.objects");
         await objectsCollection.InsertOneAsync(new BsonDocument
         {
-            ["type"] = "extension",
+            ["type"] = StructureType.Extension.ToDocumentValue(),
             ["room"] = room,
             ["x"] = 20,
             ["y"] = 20,
@@ -172,13 +188,12 @@ public sealed class SpawnEndpointsIntegrationTests(IntegrationTestHarness harnes
         });
 
         // Use a new user to avoid "already playing"
-        var ticket = SeedDataDefaults.Auth.Ticket; // Reusing ticket but I need the UserId in the token to match
         // Actually, the CurrentUserAccessor in integration tests likely returns the seeded user ID.
         // Let's clear the seeded user's objects instead.
         await objectsCollection.DeleteManyAsync(Builders<BsonDocument>.Filter.Eq("user", SeedDataDefaults.User.Id));
 
         var request = new PlaceSpawnRequest(room, 25, 25, "MySpawn");
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", ticket);
+        _client.DefaultRequestHeaders.Add("X-Token", token);
 
         // Act
         var response = await _client.PostAsJsonAsync(ApiRoutes.Game.World.PlaceSpawn, request);
@@ -190,10 +205,10 @@ public sealed class SpawnEndpointsIntegrationTests(IntegrationTestHarness harnes
         var ruin = await objectsCollection.Find(Builders<BsonDocument>.Filter.Eq("type", "ruin")).FirstOrDefaultAsync();
         Assert.NotNull(ruin);
         Assert.Equal("other-user", ruin["user"].AsString);
-        Assert.Equal("extension", ruin["structure"]["type"].AsString);
+        Assert.Equal(StructureType.Extension.ToDocumentValue(), ruin["structure"]["type"].AsString);
 
         // Verify extension is gone
-        var extension = await objectsCollection.Find(Builders<BsonDocument>.Filter.Eq("type", "extension")).FirstOrDefaultAsync();
+        var extension = await objectsCollection.Find(Builders<BsonDocument>.Filter.Eq("type", StructureType.Extension.ToDocumentValue())).FirstOrDefaultAsync();
         Assert.Null(extension);
     }
 }

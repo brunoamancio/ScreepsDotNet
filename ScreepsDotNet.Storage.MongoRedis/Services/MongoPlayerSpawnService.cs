@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using MongoDB.Bson;
 using MongoDB.Driver;
+using ScreepsDotNet.Backend.Core.Constants;
 using ScreepsDotNet.Backend.Core.Models;
 using ScreepsDotNet.Backend.Core.Repositories;
 using ScreepsDotNet.Backend.Core.Services;
@@ -22,7 +23,11 @@ public sealed class MongoPlayerSpawnService(IMongoDatabaseProvider databaseProvi
     private const int DefaultSafeModeDuration = 20_000;
     private const int DefaultInvaderGoal = 1_000_000;
 
-    private static readonly string[] CleanupObjectTypes = ["creep", "constructionSite"];
+    private static readonly string[] CleanupObjectTypes =
+    [
+        StructureType.Creep.ToDocumentValue(),
+        StructureType.ConstructionSite.ToDocumentValue()
+    ];
 
     private readonly IMongoCollection<UserDocument> _usersCollection = databaseProvider.GetCollection<UserDocument>(databaseProvider.Settings.UsersCollection);
     private readonly IMongoCollection<BsonDocument> _roomsCollection = databaseProvider.GetCollection<BsonDocument>(databaseProvider.Settings.RoomsCollection);
@@ -60,7 +65,7 @@ public sealed class MongoPlayerSpawnService(IMongoDatabaseProvider databaseProvi
         // Validate room and controller
         var controllerFilter = Builders<BsonDocument>.Filter.And(
             Builders<BsonDocument>.Filter.Eq("room", request.Room),
-            Builders<BsonDocument>.Filter.Eq("type", "controller"));
+            Builders<BsonDocument>.Filter.Eq("type", StructureType.Controller.ToDocumentValue()));
         var controller = await _roomObjectsCollection.Find(controllerFilter).FirstOrDefaultAsync(cancellationToken).ConfigureAwait(false);
 
         if (controller == null)
@@ -105,7 +110,7 @@ public sealed class MongoPlayerSpawnService(IMongoDatabaseProvider databaseProvi
         await _roomObjectsCollection.UpdateManyAsync(
             Builders<BsonDocument>.Filter.And(
                 Builders<BsonDocument>.Filter.Eq("room", request.Room),
-                Builders<BsonDocument>.Filter.Eq("type", "source")),
+                Builders<BsonDocument>.Filter.Eq("type", StructureType.Source.ToDocumentValue())),
             Builders<BsonDocument>.Update.Set("invaderHarvested", 0),
             cancellationToken: cancellationToken).ConfigureAwait(false);
 
@@ -154,12 +159,12 @@ public sealed class MongoPlayerSpawnService(IMongoDatabaseProvider databaseProvi
         var ruins = new List<BsonDocument>();
         foreach (var s in structures)
         {
-            if (s["type"].AsString == "controller") continue;
+            if (s["type"].AsString == StructureType.Controller.ToDocumentValue()) continue;
 
             ruins.Add(new BsonDocument
             {
                 ["_id"] = ObjectId.GenerateNewId(),
-                ["type"] = "ruin",
+                ["type"] = StructureType.Ruin.ToDocumentValue(),
                 ["user"] = s["user"],
                 ["room"] = s["room"],
                 ["x"] = s["x"],
@@ -189,7 +194,7 @@ public sealed class MongoPlayerSpawnService(IMongoDatabaseProvider databaseProvi
         var spawnDoc = new BsonDocument
         {
             ["_id"] = ObjectId.GenerateNewId(),
-            ["type"] = "spawn",
+            ["type"] = StructureType.Spawn.ToDocumentValue(),
             ["room"] = request.Room,
             ["x"] = request.X,
             ["y"] = request.Y,

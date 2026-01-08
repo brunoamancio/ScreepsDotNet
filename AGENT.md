@@ -32,7 +32,7 @@
 - `/api/user/*` (branches, code, memory, console, notify prefs, badge SVG, respawn) – wired to Mongo/Redis repositories (`MongoUserCodeRepository`, `MongoUserMemoryRepository`, `MongoUserConsoleRepository`, `MongoUserRespawnService`, `MongoUserWorldRepository`) with the same semantics as the legacy Screeps backend.
 - `/api/user/badge`, `/api/user/email`, `/api/user/set-steam-visible` – newly implemented profile management endpoints writing to the `users` collection with the same validation rules as the Node server.
 - `/api/game/market/*` – parity routes for `orders-index`, `orders`, `my-orders`, and `stats` backed by typed repositories and DTO factories that scale prices (thousandths → credits) and enforce query validation.
-- `/api/game/*` world endpoints – `map-stats`, `room-status`, `room-terrain`, `rooms`, `world-size`, `time`, `tick` implemented with Mongo-backed repositories, DTO factories, deterministic seeds (docker + Testcontainers), and HTTP scratch files for quick smoke testing.
+- `/api/game/*` world endpoints – `map-stats`, `room-status`, `room-terrain`, `rooms`, `world-size`, `time`, `tick`, and `place-spawn` implemented with Mongo-backed repositories, DTO factories, deterministic seeds (docker + Testcontainers), and HTTP scratch files for quick smoke testing.
 - Core abstractions defined for server info, users, rooms, CLI sessions, storage status, and engine ticks.
 - Mongo repositories implemented for server info, users, and owned rooms; ready for future endpoints.
 - Integration tests spin up disposable Mongo + Redis containers via Testcontainers to validate real storage behavior.
@@ -40,7 +40,7 @@
 ## Local Development Workflow
 
 1. **Dependencies:** .NET 10 SDK, Docker Desktop (for Mongo/Redis), PowerShell.
-2. **Start infrastructure (also seeds Mongo/Redis):**  
+2. **Start infrastructure (also seeds Mongo/Redis):**
    ```powershell
    cd ScreepsDotNet
    docker compose up -d
@@ -49,18 +49,18 @@
    - Every `docker compose up` seeds:
   - `docker/mongo-init/seed-server-data.js` – `/api/server/info` + `/api/version.serverData` fixture data.
   - `docker/mongo-init/seed-users.js` – canonical `test-user` profile, owned rooms, sample notify prefs, etc., for exercising `/api/user/*` routes.
-3. **Run backend:**  
+3. **Run backend:**
    ```powershell
    dotnet run --project ScreepsDotNet.Backend.Http/ScreepsDotNet.Backend.Http.csproj
    ```
-4. **Run automated tests:**  
+4. **Run automated tests:**
    ```powershell
    dotnet test
    ```
    - Unit tests swap repositories with fakes (fast, hermetic).
    - Integration tests (also under `ScreepsDotNet.Backend.Http.Tests`) spin up Mongo + Redis containers via Testcontainers; keep Docker Desktop running.
 5. **Keep the repo lint-clean:** run `dotnet format style --severity error --diagnostics IDE0005,IDE0011,IDE0007` (or equivalent Rider/Roslyn analysis) during development. `dotnet format --verify-no-changes` currently fails with upstream `CHARSET` warnings on untouched files, so capture the failure output in your report instead of trying to re-encode the entire repo. Fix unused `using`s, redundant braces, `var` style issues, and any reported IDE warnings in the files you touch so we don’t leave style violations for the next person.
-6. **Manual smoke tests:**  
+6. **Manual smoke tests:**
    - `GET http://localhost:5210/health`
    - `GET http://localhost:5210/api/server/info`
    - `ScreepsDotNet.Backend.Http/MarketEndpoints.http` + `WorldEndpoints.http` contain ready-to-send requests for every market/world route once the backend is running.

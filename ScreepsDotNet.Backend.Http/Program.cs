@@ -38,6 +38,7 @@ builder.Services.AddSingleton<IWorldMetadataRepository, MongoWorldMetadataReposi
 builder.Services.AddSingleton<IVersionMetadataRepository, MongoVersionMetadataRepository>();
 builder.Services.AddSingleton<IUserRespawnService, MongoUserRespawnService>();
 builder.Services.AddSingleton<IPlayerSpawnService, MongoPlayerSpawnService>();
+builder.Services.AddSingleton<IConstructionService, MongoConstructionService>();
 builder.Services.AddSingleton<IBadgeSvgGenerator, BadgeSvgGenerator>();
 builder.Services.AddSingleton<IVersionInfoProvider, VersionInfoProvider>();
 builder.Services.AddSingleton<ITokenService, RedisTokenService>();

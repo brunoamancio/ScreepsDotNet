@@ -7,13 +7,16 @@ using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using MongoDB.Bson;
 using MongoDB.Driver;
+using ScreepsDotNet.Backend.Core.Constants;
 using ScreepsDotNet.Backend.Core.Models.Bots;
 using ScreepsDotNet.Backend.Core.Repositories;
 using ScreepsDotNet.Backend.Core.Services;
 using ScreepsDotNet.Storage.MongoRedis.Providers;
 using ScreepsDotNet.Storage.MongoRedis.Repositories.Documents;
 
-public sealed class MongoBotControlService : IBotControlService
+public sealed class MongoBotControlService(IMongoDatabaseProvider databaseProvider, IBotDefinitionProvider botDefinitionProvider, IUserMemoryRepository userMemoryRepository,
+                                           IUserRespawnService userRespawnService, IWorldMetadataRepository worldMetadata, ILogger<MongoBotControlService> logger)
+    : IBotControlService
 {
     private const int DefaultCpuLimit = 100;
     private const int DefaultSafeModeDuration = 20_000;
@@ -22,47 +25,20 @@ public sealed class MongoBotControlService : IBotControlService
     private const int SpawnEnergyStart = 300;
     private const int SpawnHits = 5_000;
 
-    private readonly IBotDefinitionProvider _botDefinitionProvider;
-    private readonly IUserMemoryRepository _userMemoryRepository;
-    private readonly IUserRespawnService _userRespawnService;
-    private readonly IWorldMetadataRepository _worldMetadata;
-    private readonly ILogger<MongoBotControlService> _logger;
-    private readonly IMongoCollection<UserDocument> _usersCollection;
-    private readonly IMongoCollection<UserCodeDocument> _userCodeCollection;
-    private readonly IMongoCollection<UserMemoryDocument> _userMemoryCollection;
-    private readonly IMongoCollection<BsonDocument> _roomsCollection;
-    private readonly IMongoCollection<BsonDocument> _roomObjectsCollection;
-    private readonly IMongoCollection<RoomTerrainDocument> _roomTerrainCollection;
+    private readonly IMongoCollection<UserDocument> _usersCollection = databaseProvider.GetCollection<UserDocument>(databaseProvider.Settings.UsersCollection);
+    private readonly IMongoCollection<UserCodeDocument> _userCodeCollection = databaseProvider.GetCollection<UserCodeDocument>(databaseProvider.Settings.UserCodeCollection);
+    private readonly IMongoCollection<UserMemoryDocument> _userMemoryCollection = databaseProvider.GetCollection<UserMemoryDocument>(databaseProvider.Settings.UserMemoryCollection);
+    private readonly IMongoCollection<BsonDocument> _roomsCollection = databaseProvider.GetCollection<BsonDocument>(databaseProvider.Settings.RoomsCollection);
+    private readonly IMongoCollection<BsonDocument> _roomObjectsCollection = databaseProvider.GetCollection<BsonDocument>(databaseProvider.Settings.RoomObjectsCollection);
+    private readonly IMongoCollection<RoomTerrainDocument> _roomTerrainCollection = databaseProvider.GetCollection<RoomTerrainDocument>(databaseProvider.Settings.RoomTerrainCollection);
     private readonly Random _random = new();
-
-    public MongoBotControlService(
-        IMongoDatabaseProvider databaseProvider,
-        IBotDefinitionProvider botDefinitionProvider,
-        IUserMemoryRepository userMemoryRepository,
-        IUserRespawnService userRespawnService,
-        IWorldMetadataRepository worldMetadata,
-        ILogger<MongoBotControlService> logger)
-    {
-        _botDefinitionProvider = botDefinitionProvider;
-        _userMemoryRepository = userMemoryRepository;
-        _userRespawnService = userRespawnService;
-        _worldMetadata = worldMetadata;
-        _logger = logger;
-
-        _usersCollection = databaseProvider.GetCollection<UserDocument>(databaseProvider.Settings.UsersCollection);
-        _userCodeCollection = databaseProvider.GetCollection<UserCodeDocument>(databaseProvider.Settings.UserCodeCollection);
-        _userMemoryCollection = databaseProvider.GetCollection<UserMemoryDocument>(databaseProvider.Settings.UserMemoryCollection);
-        _roomsCollection = databaseProvider.GetCollection<BsonDocument>(databaseProvider.Settings.RoomsCollection);
-        _roomObjectsCollection = databaseProvider.GetCollection<BsonDocument>(databaseProvider.Settings.RoomObjectsCollection);
-        _roomTerrainCollection = databaseProvider.GetCollection<RoomTerrainDocument>(databaseProvider.Settings.RoomTerrainCollection);
-    }
 
     public async Task<BotSpawnResult> SpawnAsync(string botName, string roomName, BotSpawnOptions options, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(botName);
         ArgumentException.ThrowIfNullOrWhiteSpace(roomName);
 
-        var definition = await _botDefinitionProvider.FindDefinitionAsync(botName, cancellationToken).ConfigureAwait(false)
+        var definition = await botDefinitionProvider.FindDefinitionAsync(botName, cancellationToken).ConfigureAwait(false)
                          ?? throw new InvalidOperationException($"Bot '{botName}' is not defined in mods.json.");
 
         if (definition.Modules.Count == 0)
@@ -70,7 +46,7 @@ public sealed class MongoBotControlService : IBotControlService
 
         var controllerFilter = Builders<BsonDocument>.Filter.And(
             Builders<BsonDocument>.Filter.Eq("room", roomName),
-            Builders<BsonDocument>.Filter.Eq("type", "controller"));
+            Builders<BsonDocument>.Filter.Eq("type", StructureType.Controller.ToDocumentValue()));
 
         var controller = await _roomObjectsCollection.Find(controllerFilter)
                                                      .FirstOrDefaultAsync(cancellationToken)
@@ -121,7 +97,7 @@ public sealed class MongoBotControlService : IBotControlService
         await _userCodeCollection.InsertOneAsync(codeDocument, cancellationToken: cancellationToken).ConfigureAwait(false);
 
         using (var memoryPayload = JsonDocument.Parse("{}"))
-            await _userMemoryRepository.UpdateMemoryAsync(userId, null, memoryPayload.RootElement, cancellationToken).ConfigureAwait(false);
+            await userMemoryRepository.UpdateMemoryAsync(userId, null, memoryPayload.RootElement, cancellationToken).ConfigureAwait(false);
 
         var roomTerrain = await _roomTerrainCollection.Find(document => document.Room == roomName)
                                                       .FirstOrDefaultAsync(cancellationToken)
@@ -135,7 +111,7 @@ public sealed class MongoBotControlService : IBotControlService
         var (spawnX, spawnY) = ResolveSpawnPosition(roomTerrain.Terrain, roomObjects, options);
         await InsertSpawnAsync(roomName, userId, spawnX, spawnY, cancellationToken).ConfigureAwait(false);
 
-        var gameTime = await _worldMetadata.GetGameTimeAsync(cancellationToken).ConfigureAwait(false);
+        var gameTime = await worldMetadata.GetGameTimeAsync(cancellationToken).ConfigureAwait(false);
         var safeModeExpiry = gameTime + DefaultSafeModeDuration;
         var controllerUpdate = Builders<BsonDocument>.Update
                                                      .Set("user", userId)
@@ -159,13 +135,13 @@ public sealed class MongoBotControlService : IBotControlService
                                               cancellationToken)
                               .ConfigureAwait(false);
 
-        _logger.LogInformation("Spawned bot {Username} ({Bot}) in {Room}.", username, botName, roomName);
+        logger.LogInformation("Spawned bot {Username} ({Bot}) in {Room}.", username, botName, roomName);
         return new BotSpawnResult(userId, username, roomName, spawnX, spawnY);
     }
 
     public async Task<int> ReloadAsync(string botName, CancellationToken cancellationToken = default)
     {
-        var definition = await _botDefinitionProvider.FindDefinitionAsync(botName, cancellationToken).ConfigureAwait(false)
+        var definition = await botDefinitionProvider.FindDefinitionAsync(botName, cancellationToken).ConfigureAwait(false)
                          ?? throw new InvalidOperationException($"Bot '{botName}' is not defined.");
 
         var users = await _usersCollection.Find(user => user.Bot == botName)
@@ -199,7 +175,7 @@ public sealed class MongoBotControlService : IBotControlService
             await _userCodeCollection.DeleteManyAsync(filter, cancellationToken).ConfigureAwait(false);
         }
 
-        _logger.LogInformation("Reloaded bot AI '{Bot}' for {Count} users.", botName, users.Count);
+        logger.LogInformation("Reloaded bot AI '{Bot}' for {Count} users.", botName, users.Count);
         return users.Count;
     }
 
@@ -216,12 +192,12 @@ public sealed class MongoBotControlService : IBotControlService
         if (string.IsNullOrWhiteSpace(user.Bot))
             throw new InvalidOperationException($"User '{username}' is not a bot account.");
 
-        await _userRespawnService.RespawnAsync(user.Id, cancellationToken).ConfigureAwait(false);
+        await userRespawnService.RespawnAsync(user.Id, cancellationToken).ConfigureAwait(false);
         await _usersCollection.DeleteOneAsync(document => document.Id == user.Id, cancellationToken).ConfigureAwait(false);
         await _userCodeCollection.DeleteManyAsync(document => document.UserId == user.Id, cancellationToken).ConfigureAwait(false);
         await _userMemoryCollection.DeleteOneAsync(document => document.UserId == user.Id, cancellationToken).ConfigureAwait(false);
 
-        _logger.LogInformation("Removed bot user {Username}.", username);
+        logger.LogInformation("Removed bot user {Username}.", username);
         return true;
     }
 
@@ -304,7 +280,7 @@ public sealed class MongoBotControlService : IBotControlService
         var spawnDoc = new BsonDocument
         {
             ["_id"] = ObjectId.GenerateNewId(),
-            ["type"] = "spawn",
+            ["type"] = StructureType.Spawn.ToDocumentValue(),
             ["room"] = roomName,
             ["x"] = x,
             ["y"] = y,

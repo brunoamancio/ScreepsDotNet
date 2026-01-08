@@ -1,0 +1,40 @@
+﻿### Authentication
+# Obtain a session token using the seeded dev ticket
+# @name Login
+POST {{host}}/api/auth/steam-ticket
+Content-Type: application/json
+
+{
+    "ticket": "integration-ticket",
+    "useNativeAuth": false
+}
+
+> {% client.global.set("auth_token", response.body.token); %}
+
+### Place Spawn
+# Places the first spawn for the user in a neutral room.
+# Requires a neutral controller and no other objects at the target position.
+POST {{host}}/api/game/place-spawn
+X-Token: {{auth_token}}
+Content-Type: application/json
+
+{
+    "room": "W1N1",
+    "x": 25,
+    "y": 25,
+    "name": "Spawn1"
+}
+
+### Create Construction Site
+# Places a construction site in an owned/reserved room.
+# Respects RCL limits and position validation rules.
+POST {{host}}/api/game/create-construction
+X-Token: {{auth_token}}
+Content-Type: application/json
+
+{
+    "room": "W1N1",
+    "x": 26,
+    "y": 25,
+    "structureType": "extension"
+}

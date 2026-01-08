@@ -5,15 +5,15 @@ using System.Collections.Generic;
 using System.Linq;
 using MongoDB.Bson;
 using MongoDB.Driver;
+using ScreepsDotNet.Backend.Core.Constants;
 using ScreepsDotNet.Backend.Core.Models.Strongholds;
 using ScreepsDotNet.Backend.Core.Repositories;
 using ScreepsDotNet.Backend.Core.Services;
 using ScreepsDotNet.Storage.MongoRedis.Providers;
 using ScreepsDotNet.Storage.MongoRedis.Repositories.Documents;
 
-public sealed class MongoStrongholdControlService(IMongoDatabaseProvider databaseProvider,
-                                                  IStrongholdTemplateProvider templateProvider,
-                                                  IWorldMetadataRepository worldMetadataRepository) : IStrongholdControlService
+public sealed class MongoStrongholdControlService(IMongoDatabaseProvider databaseProvider, IStrongholdTemplateProvider templateProvider, IWorldMetadataRepository worldMetadataRepository)
+    : IStrongholdControlService
 {
     private const string DefaultInvaderUserId = "2";
     private const int MaxAttempts = 200;
@@ -71,23 +71,18 @@ public sealed class MongoStrongholdControlService(IMongoDatabaseProvider databas
             var x = originX + blueprint.OffsetX;
             var y = originY + blueprint.OffsetY;
 
-            switch (blueprint.Type)
-            {
-                case "invaderCore":
-                    structures.Add(BuildInvaderCoreDocument(roomName,
-                                                            x,
-                                                            y,
-                                                            userId,
-                                                            template.Name,
-                                                            blueprint,
-                                                            depositType,
-                                                            deployTime,
-                                                            strongholdId));
-                    break;
-                case "rampart":
-                    structures.Add(BuildRampartDocument(roomName, x, y, userId, strongholdId, deployTime));
-                    break;
-            }
+            if (blueprint.Type == StructureType.InvaderCore) {
+                structures.Add(BuildInvaderCoreDocument(roomName,
+                                                        x,
+                                                        y,
+                                                        userId,
+                                                        template.Name,
+                                                        blueprint,
+                                                        depositType,
+                                                        deployTime,
+                                                        strongholdId));
+            } else if (blueprint.Type == StructureType.Rampart)
+                structures.Add(BuildRampartDocument(roomName, x, y, userId, strongholdId, deployTime));
         }
 
         if (structures.Count == 0)
@@ -114,7 +109,7 @@ public sealed class MongoStrongholdControlService(IMongoDatabaseProvider databas
     {
         var filter = Builders<BsonDocument>.Filter.And(
             Builders<BsonDocument>.Filter.Eq("room", roomName),
-            Builders<BsonDocument>.Filter.Eq("type", "invaderCore"));
+            Builders<BsonDocument>.Filter.Eq("type", StructureType.InvaderCore.ToDocumentValue()));
 
         var core = await _roomObjectsCollection.Find(filter)
                                                .FirstOrDefaultAsync(cancellationToken)
@@ -180,7 +175,7 @@ public sealed class MongoStrongholdControlService(IMongoDatabaseProvider databas
         var document = new BsonDocument
         {
             ["_id"] = ObjectId.GenerateNewId(),
-            ["type"] = "invaderCore",
+            ["type"] = StructureType.InvaderCore.ToDocumentValue(),
             ["room"] = roomName,
             ["x"] = x,
             ["y"] = y,
@@ -206,7 +201,7 @@ public sealed class MongoStrongholdControlService(IMongoDatabaseProvider databas
         => new()
         {
             ["_id"] = ObjectId.GenerateNewId(),
-            ["type"] = "rampart",
+            ["type"] = StructureType.Rampart.ToDocumentValue(),
             ["room"] = roomName,
             ["x"] = x,
             ["y"] = y,
@@ -232,7 +227,7 @@ public sealed class MongoStrongholdControlService(IMongoDatabaseProvider databas
     private static BsonDocument? FindController(IEnumerable<BsonDocument> objects)
         => objects.FirstOrDefault(doc => doc.TryGetValue("type", out var typeValue)
                                          && typeValue.IsString
-                                         && string.Equals(typeValue.AsString, "controller", StringComparison.Ordinal));
+                                         && string.Equals(typeValue.AsString, StructureType.Controller.ToDocumentValue(), StringComparison.Ordinal));
 
     private static void EnsureRoomIsAvailable(BsonDocument? controller, string intendedUserId)
     {

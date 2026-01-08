@@ -162,7 +162,7 @@ public sealed partial class MongoMapControlService(IMongoDatabaseProvider databa
             {
                 Id = ObjectId.GenerateNewId(),
                 Room = options.RoomName,
-                Type = "source",
+                Type = StructureType.Source.ToDocumentValue(),
                 X = x,
                 Y = y
             });

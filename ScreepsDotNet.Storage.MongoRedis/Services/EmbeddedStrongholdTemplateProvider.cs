@@ -3,6 +3,7 @@ namespace ScreepsDotNet.Storage.MongoRedis.Services;
 using System.Collections.Concurrent;
 using System.Reflection;
 using System.Text.Json;
+using ScreepsDotNet.Backend.Core.Constants;
 using ScreepsDotNet.Backend.Core.Models.Strongholds;
 using ScreepsDotNet.Backend.Core.Services;
 
@@ -48,7 +49,7 @@ public sealed class EmbeddedStrongholdTemplateProvider : IStrongholdTemplateProv
 
             var templateMap = new ConcurrentDictionary<string, StrongholdTemplate>(StringComparer.OrdinalIgnoreCase);
             foreach (var entry in document.Templates) {
-                var structures = entry.Value.Structures.Select(structure => new StrongholdStructureBlueprint(structure.Type,
+                var structures = entry.Value.Structures.Select(structure => new StrongholdStructureBlueprint(structure.Type.ToStructureType(),
                                                                                                              structure.Dx,
                                                                                                              structure.Dy,
                                                                                                              structure.Level,
