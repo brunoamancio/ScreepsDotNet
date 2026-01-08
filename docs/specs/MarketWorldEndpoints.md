@@ -6,7 +6,7 @@ This document captures the requirements for bringing the ScreepsDotNet backend t
 2. the Mongo collections/fields we must expose through typed POCO documents, and
 3. the integration coverage we expect before considering the feature done.
 
-The scope below intentionally focuses on the read/management APIs that are consumed by the official client (`/api/game/*`). Write-heavy mutation endpoints (e.g., `add-object-intent`) will be tackled in a later milestone after the storage contracts have been hardened.
+The scope below covers both the read/management APIs that are consumed by the official client (`/api/game/*`) **and** the legacy write-heavy routes (spawn placement, construction intents, flags, invaders, notify toggles, manual intents). Use it as the canonical reference when touching any `/api/game/*` surface so Mongo schemas, validation rules, and integration tests stay aligned with backend-local.
 
 ---
 
@@ -26,7 +26,7 @@ The scope below intentionally focuses on the read/management APIs that are consu
 | World  | `GET /api/game/time`                          | Public. Equivalent to `common.getGametime()`, response `{ time }`.                                                                                  |
 | World  | `GET /api/game/tick`                          | Public. Uses in-memory rolling min of last 30 tick durations. For parity we can proxy the node semantics via metrics captured from storage later.   |
 
-Out of scope (documented for future): spawn placement, construction intents, flag CRUD, invader management, notify toggles. These routes depend on complex intent mutation logic and will be scheduled after read-model parity.
+Remaining backlog (documented for future): power-creep management, HTTP admin overrides beyond what exists today, and any shards/custom intent types that the legacy config enables. These depend on additional storage + orchestration work and are tracked separately.
 
 ---
 

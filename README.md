@@ -43,10 +43,11 @@ Modern .NET rewrite of the Screeps private server backend. The solution contains
 4. **Use the `.http` helpers for smoke testing:**
    - `ScreepsDotNet.Backend.Http/UserEndpoints.http` contains ready-made requests for memory, code, branches, console, badge SVG, etc. Update the `@ScreepsDotNet_User_Token` variable with the token from the previous step and execute the requests directly from JetBrains Rider / VS Code (REST Client) / HTTPie.
    - `ScreepsDotNet.Backend.Http/CoreEndpoints.http` provides `/health`, `/api/version`, and `/api/server/info` requests.
-   - `ScreepsDotNet.Backend.Http/BotEndpoints.http` exercises the `/api/game/bot/*` routes (list/spawn/reload/remove).
-   - `ScreepsDotNet.Backend.Http/StrongholdEndpoints.http` covers `/api/game/stronghold/*` (templates/spawn/expand) for quick smoke testing.
-   - `ScreepsDotNet.Backend.Http/SystemEndpoints.http` hits `/api/game/system/*` (status, pause/resume, tick get/set, server message) for admin verification.
-   - `ScreepsDotNet.Backend.Http/MapEndpoints.http` manages `/api/game/map/*` (generate, open/close, remove, assets update, terrain refresh).
+- `ScreepsDotNet.Backend.Http/BotEndpoints.http` exercises the `/api/game/bot/*` routes (list/spawn/reload/remove).
+- `ScreepsDotNet.Backend.Http/StrongholdEndpoints.http` covers `/api/game/stronghold/*` (templates/spawn/expand) for quick smoke testing.
+- `ScreepsDotNet.Backend.Http/SystemEndpoints.http` hits `/api/game/system/*` (status, pause/resume, tick get/set, server message) for admin verification.
+- `ScreepsDotNet.Backend.Http/MapEndpoints.http` manages `/api/game/map/*` (generate, open/close, remove, assets update, terrain refresh).
+- `ScreepsDotNet.Backend.Http/IntentEndpoints.http` queues `/api/game/add-object-intent` and `/api/game/add-global-intent` payloads so you can verify manual intents without writing custom tooling.
 
 5. **Run automated tests (unit + integration):**
    ```powershell
@@ -176,3 +177,9 @@ If you add new endpoints or storage requirements, update:
 1. `docker/mongo-init/seed-users.js` (and document the change here).
 2. The `.http` files so there is always a runnable example.
 3. `AGENT.md` so automation agents know how to refresh their environment.
+
+## Intent endpoints
+
+- `/api/game/add-object-intent` and `/api/game/add-global-intent` now write to `rooms.intents` / `users.intents` via the new `MongoIntentService`. Payloads are sanitized against the legacy schema (string/number/boolean converters, body part filters, price scaling), and activating safe mode enforces the same gametime/safeMode guard that Node uses.
+- Integration coverage lives in `ScreepsDotNet.Backend.Http.Tests/Integration/IntentEndpointsIntegrationTests` so every intent mutation is validated against a disposable Mongo + Redis stack.
+- Use `IntentEndpoints.http` for quick smoke tests (authentication snippet included).

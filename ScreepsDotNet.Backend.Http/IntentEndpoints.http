@@ -1,0 +1,42 @@
+﻿### Authentication
+# Request a token using the seeded integration ticket.
+# @name Login
+POST {{host}}/api/auth/steam-ticket
+Content-Type: application/json
+
+{
+    "ticket": "integration-ticket",
+    "useNativeAuth": false
+}
+
+> {% client.global.set("auth_token", response.body.token); %}
+
+### Add Object Intent
+# Sends a manual object intent (mirrors /api/game/add-object-intent from the legacy backend).
+POST {{host}}/api/game/add-object-intent
+X-Token: {{auth_token}}
+Content-Type: application/json
+
+{
+    "room": "W1N1",
+    "_id": "controller-id",
+    "name": "move",
+    "intent": {
+        "id": "controller-id",
+        "direction": 3
+    }
+}
+
+### Add Global Intent
+# Queues a global intent such as notify, createOrder, etc.
+POST {{host}}/api/game/add-global-intent
+X-Token: {{auth_token}}
+Content-Type: application/json
+
+{
+    "name": "notify",
+    "intent": {
+        "message": "Hello from HTTP scratch file",
+        "groupInterval": 10
+    }
+}

@@ -14,6 +14,7 @@ internal static class EndpointRegistration
         ConstructionEndpoints.Map(app);
         FlagEndpoints.Map(app);
         InvaderEndpoints.Map(app);
+        IntentEndpoints.Map(app);
         BotEndpoints.Map(app);
         StrongholdEndpoints.Map(app);
         SystemEndpoints.Map(app);

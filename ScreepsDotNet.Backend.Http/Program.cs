@@ -48,6 +48,7 @@ builder.Services.AddSingleton<IPlayerSpawnService, MongoPlayerSpawnService>();
 builder.Services.AddSingleton<IConstructionService, MongoConstructionService>();
 builder.Services.AddSingleton<IFlagService, MongoFlagService>();
 builder.Services.AddSingleton<IInvaderService, MongoInvaderService>();
+builder.Services.AddSingleton<IIntentService, MongoIntentService>();
 builder.Services.AddSingleton<IStrongholdTemplateProvider, EmbeddedStrongholdTemplateProvider>();
 builder.Services.AddSingleton<IStrongholdControlService, MongoStrongholdControlService>();
 builder.Services.AddSingleton<IBotDefinitionProvider, FileSystemBotDefinitionProvider>();

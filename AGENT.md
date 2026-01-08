@@ -35,6 +35,7 @@
 - `/api/user/badge`, `/api/user/email`, `/api/user/set-steam-visible`, `/api/user/notify-prefs` – implemented profile management and preference endpoints writing to the `users` collection with the same validation rules and parity logic as the Node server.
 - `/api/game/market/*` – parity routes for `orders-index`, `orders`, `my-orders`, and `stats` backed by typed repositories and DTO factories that scale prices (thousandths → credits) and enforce query validation.
 - `/api/game/*` world endpoints – `map-stats`, `room-status`, `room-terrain`, `rooms`, `world-size`, `time`, `tick`, `place-spawn`, `create-flag`, `change-flag-color`, `remove-flag`, `create-invader`, and `remove-invader` implemented with Mongo-backed repositories, DTO factories, deterministic seeds (docker + Testcontainers), and HTTP scratch files for quick smoke testing.
+- `/api/game/add-object-intent` + `/api/game/add-global-intent` – new intent endpoints backed by `MongoIntentService`, reusing the legacy sanitization rules (string/number/boolean transforms, price scaling, body-part filtering) and enforcing the safe-mode guard before storing data in `rooms.intents` / `users.intents`.
 - `/api/game/bot/*`, `/api/game/stronghold/*`, `/api/game/system/*`, and `/api/game/map/*` – admin routes for bot AI management, stronghold templates/spawn/expand, system controls (pause/resume, tick duration, broadcast), and map generation/open/close/remove tasks reusing the shared Mongo/Redis services from the CLI.
 - Core abstractions defined for server info, users, rooms, CLI sessions, storage status, and engine ticks.
 - Mongo repositories implemented for server info, users, and owned rooms; ready for future endpoints.
@@ -71,6 +72,7 @@
    - `ScreepsDotNet.Backend.Http/StrongholdEndpoints.http` covers `/api/game/stronghold/*` (templates/spawn/expand).
    - `ScreepsDotNet.Backend.Http/SystemEndpoints.http` covers `/api/game/system/*` (status, pause/resume, tick duration, server messages).
    - `ScreepsDotNet.Backend.Http/MapEndpoints.http` covers `/api/game/map/*` (generate/open/close/remove/assets/terrain refresh).
+   - `ScreepsDotNet.Backend.Http/IntentEndpoints.http` sends `/api/game/add-object-intent` + `/api/game/add-global-intent` payloads so you can verify manual intents end-to-end.
    - CLI quick checks (run from `ScreepsDotNet`):
      - `dotnet run --project ScreepsDotNet.Backend.Cli -- version --json`
      - `dotnet run --project ScreepsDotNet.Backend.Cli -- storage status --json`
@@ -128,15 +130,15 @@
 
 ## Pending / Next Steps
 
-1. **Write-heavy `/api/game/*` routes**
-   - Implement spawn placement, construction/flag intents, notify toggles, and invader management per the remainder of `docs/specs/MarketWorldEndpoints.md`. These depend on deterministic Mongo/Redis seeds—extend docker + Testcontainers harnesses first. ✓
+1. **HTTP admin parity / CLI safeguards**
+   - Mirror the CLI-only maintenance flows (system reset with `--confirm`, tick overrides, broadcast helpers) behind authenticated HTTP routes so automation doesn’t need shell access. Reuse the existing `ISystemControlService` and keep the confirmation semantics consistent between CLI + HTTP.
 2. **Server info provider parity**
    - Replace the remaining in-memory providers (e.g., `VersionInfoProvider` caching) with storage-backed equivalents so `/api/version` and `/api/server/info` always reflect Mongo state, then remove duplicated configuration blocks.
 
 ## Market & World API Spec Snapshot
 
-- `docs/specs/MarketWorldEndpoints.md` remains the canonical reference for legacy behavior, Mongo schemas, .NET repository contracts, and the integration test matrix. The read-model sections (market + world) are now implemented; treat the remaining chapters as the backlog for write-heavy routes.
-- Scope priorities (in order): CLI tooling + regression scaffolding, then the remaining write-heavy endpoints (spawn placement, flags, intents) once we have deterministic seeds/tests for those mutations.
+- `docs/specs/MarketWorldEndpoints.md` remains the canonical reference for legacy behavior, Mongo schemas, .NET repository contracts, and the integration test matrix. It now documents both the read-model endpoints and the manual intent routes (`add-object-intent`, `add-global-intent`, spawn/flag/invader helpers) so future tweaks stay consistent with backend-local.
+- Scope priorities (in order): CLI/HTTP admin parity + regression scaffolding, then any remaining legacy routes (power creeps, shard-specific behaviors) once deterministic seeds/tests exist for those mutations.
 
 ## Tips for Agents
 

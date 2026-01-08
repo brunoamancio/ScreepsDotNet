@@ -77,6 +77,12 @@ public static class ApiRoutes
             public const string TickSet = $"{SystemBase}/tick-set";
             public const string Message = $"{SystemBase}/message";
         }
+
+        public static class Intent
+        {
+            public const string AddObject = $"{Base}/add-object-intent";
+            public const string AddGlobal = $"{Base}/add-global-intent";
+        }
     }
 
     public static class Server

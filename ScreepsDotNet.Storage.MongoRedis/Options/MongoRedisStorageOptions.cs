@@ -16,6 +16,10 @@ public sealed class MongoRedisStorageOptions
 
     public string RoomTerrainCollection { get; init; } = "rooms.terrain";
 
+    public string RoomsIntentsCollection { get; init; } = "rooms.intents";
+
+    public string UsersIntentsCollection { get; init; } = "users.intents";
+
     public string UserCodeCollection { get; init; } = "users.code";
 
     public string UserMemoryCollection { get; init; } = "users.memory";
