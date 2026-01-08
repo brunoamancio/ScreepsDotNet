@@ -1,4 +1,4 @@
-namespace ScreepsDotNet.Backend.Core.Models.Map;
+﻿namespace ScreepsDotNet.Backend.Core.Models.Map;
 
 /// <summary>
 /// High-level presets that control how procedural room terrain is generated for CLI map commands.

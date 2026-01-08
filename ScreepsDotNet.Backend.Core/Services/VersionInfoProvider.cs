@@ -1,4 +1,4 @@
-using ScreepsDotNet.Backend.Core.Models;
+﻿using ScreepsDotNet.Backend.Core.Models;
 using ScreepsDotNet.Backend.Core.Repositories;
 
 namespace ScreepsDotNet.Backend.Core.Services;

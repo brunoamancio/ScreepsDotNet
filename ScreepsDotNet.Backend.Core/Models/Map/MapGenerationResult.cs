@@ -1,4 +1,4 @@
-namespace ScreepsDotNet.Backend.Core.Models.Map;
+﻿namespace ScreepsDotNet.Backend.Core.Models.Map;
 
 /// <summary>
 /// Summary returned after generating a room via the CLI.

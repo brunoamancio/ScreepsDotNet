@@ -1,4 +1,4 @@
-namespace ScreepsDotNet.Backend.Core.Models.Map;
+﻿namespace ScreepsDotNet.Backend.Core.Models.Map;
 
 /// <summary>
 /// Parameters accepted by the CLI map generator.

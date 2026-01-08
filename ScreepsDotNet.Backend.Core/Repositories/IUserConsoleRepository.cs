@@ -1,4 +1,4 @@
-namespace ScreepsDotNet.Backend.Core.Repositories;
+﻿namespace ScreepsDotNet.Backend.Core.Repositories;
 
 public interface IUserConsoleRepository
 {

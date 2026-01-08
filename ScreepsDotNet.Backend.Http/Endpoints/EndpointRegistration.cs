@@ -1,4 +1,4 @@
-namespace ScreepsDotNet.Backend.Http.Endpoints;
+﻿namespace ScreepsDotNet.Backend.Http.Endpoints;
 
 internal static class EndpointRegistration
 {

@@ -1,4 +1,4 @@
-namespace ScreepsDotNet.Storage.MongoRedis.Services;
+﻿namespace ScreepsDotNet.Storage.MongoRedis.Services;
 
 using MongoDB.Bson;
 using MongoDB.Driver;

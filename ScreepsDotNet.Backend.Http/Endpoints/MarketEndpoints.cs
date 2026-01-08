@@ -1,4 +1,4 @@
-namespace ScreepsDotNet.Backend.Http.Endpoints;
+﻿namespace ScreepsDotNet.Backend.Http.Endpoints;
 
 using Microsoft.AspNetCore.Mvc;
 using ScreepsDotNet.Backend.Core.Context;
@@ -15,8 +15,8 @@ internal static class MarketEndpoints
     private const string MyOrdersEndpointName = "GetMarketMyOrders";
     private const string StatsEndpointName = "GetMarketStats";
     private const string InvalidParamsMessage = "invalid params";
-    private const string MissingUserContextMessage = "User context is not available.";
     private const string ResourceTypeQueryName = "resourceType";
+    private const string MissingUserContextMessage = "User context is not available.";
 
     public static void Map(WebApplication app)
     {

@@ -1,4 +1,4 @@
-namespace ScreepsDotNet.Backend.Http.Tests.TestSupport;
+﻿namespace ScreepsDotNet.Backend.Http.Tests.TestSupport;
 
 internal static class RepositoryPathHelper
 {

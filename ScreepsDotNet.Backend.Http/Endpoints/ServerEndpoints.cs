@@ -1,4 +1,4 @@
-namespace ScreepsDotNet.Backend.Http.Endpoints;
+﻿namespace ScreepsDotNet.Backend.Http.Endpoints;
 
 using ScreepsDotNet.Backend.Core.Repositories;
 using ScreepsDotNet.Backend.Http.Routing;

@@ -1,4 +1,4 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 using MongoDB.Driver;
 using ScreepsDotNet.Backend.Core.Repositories;
 using ScreepsDotNet.Storage.MongoRedis.Extensions;
@@ -28,10 +28,8 @@ public sealed class MongoUserMemoryRepository(IMongoDatabaseProvider databasePro
             document.Memory.Clear();
             if (value.ValueKind != JsonValueKind.Undefined) {
                 var payload = value.ToObjectValue();
-                if (payload is IDictionary<string, object?> dictionary) {
-                    foreach (var kvp in dictionary)
-                        document.Memory[kvp.Key] = kvp.Value;
-                }
+                if (payload is IDictionary<string, object?> dictionary)
+                    foreach (var kvp in dictionary) document.Memory[kvp.Key] = kvp.Value;
                 else
                     document.Memory["value"] = payload;
             }

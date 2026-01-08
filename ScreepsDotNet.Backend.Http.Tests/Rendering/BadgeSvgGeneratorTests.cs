@@ -1,4 +1,4 @@
-using ScreepsDotNet.Backend.Http.Rendering;
+﻿using ScreepsDotNet.Backend.Http.Rendering;
 using ScreepsDotNet.Backend.Http.Tests.Rendering.Helpers;
 using ScreepsDotNet.Backend.Http.Tests.TestSupport;
 

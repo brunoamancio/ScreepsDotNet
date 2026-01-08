@@ -1,4 +1,4 @@
-namespace ScreepsDotNet.Backend.Core.Engine;
+﻿namespace ScreepsDotNet.Backend.Core.Engine;
 
 /// <summary>
 /// Summary data returned once the engine finishes processing a tick.

@@ -1,4 +1,4 @@
-namespace ScreepsDotNet.Backend.Cli.Tests.Commands;
+﻿namespace ScreepsDotNet.Backend.Cli.Tests.Commands;
 
 using ScreepsDotNet.Backend.Cli.Commands.Stronghold;
 using ScreepsDotNet.Backend.Core.Models.Strongholds;

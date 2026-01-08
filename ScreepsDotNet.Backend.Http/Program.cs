@@ -20,8 +20,7 @@ builder.Services.AddOpenApi();
 builder.Services.Configure<MongoRedisStorageOptions>(builder.Configuration.GetSection(MongoRedisStorageOptions.SectionName));
 builder.Services.Configure<AuthOptions>(builder.Configuration.GetSection(AuthOptions.SectionName));
 builder.Services.Configure<BotManifestOptions>(builder.Configuration.GetSection(nameof(BotManifestOptions)));
-builder.Services.PostConfigure<BotManifestOptions>(options =>
-{
+builder.Services.PostConfigure<BotManifestOptions>(options => {
     options.ManifestFile ??= builder.Configuration["modfile"]
                              ?? builder.Configuration["MODFILE"]
                              ?? Environment.GetEnvironmentVariable("MODFILE");

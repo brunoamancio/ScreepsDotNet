@@ -1,4 +1,4 @@
-namespace ScreepsDotNet.Backend.Cli.Commands.Map;
+﻿namespace ScreepsDotNet.Backend.Cli.Commands.Map;
 
 using global::System.ComponentModel;
 using global::System.Globalization;

@@ -1,4 +1,4 @@
-namespace ScreepsDotNet.Backend.Http.Endpoints.Helpers;
+﻿namespace ScreepsDotNet.Backend.Http.Endpoints.Helpers;
 
 using System.Collections;
 using System.Collections.Generic;

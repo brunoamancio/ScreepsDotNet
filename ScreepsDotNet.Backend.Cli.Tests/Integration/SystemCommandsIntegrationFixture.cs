@@ -1,4 +1,4 @@
-namespace ScreepsDotNet.Backend.Cli.Tests.Integration;
+﻿namespace ScreepsDotNet.Backend.Cli.Tests.Integration;
 
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -25,7 +25,6 @@ public sealed class SystemCommandsIntegrationFixture : IAsyncLifetime
 
     private MongoClient? _mongoClient;
     private MongoRedisStorageOptions _options = null!;
-    private MongoDatabaseProvider _databaseProvider = null!;
     private RedisConnectionProvider _redisProvider = null!;
 
     public IMongoDatabase Database { get; private set; } = null!;
@@ -47,7 +46,6 @@ public sealed class SystemCommandsIntegrationFixture : IAsyncLifetime
         _mongoClient = new MongoClient(_options.MongoConnectionString);
         Database = _mongoClient.GetDatabase(_options.MongoDatabase);
 
-        _databaseProvider = new MongoDatabaseProvider(Options.Create(_options));
         _redisProvider = new RedisConnectionProvider(Options.Create(_options));
 
         await ResetStateAsync().ConfigureAwait(false);

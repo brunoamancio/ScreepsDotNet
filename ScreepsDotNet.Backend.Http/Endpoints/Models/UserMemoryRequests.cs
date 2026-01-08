@@ -1,4 +1,4 @@
-namespace ScreepsDotNet.Backend.Http.Endpoints.Models;
+﻿namespace ScreepsDotNet.Backend.Http.Endpoints.Models;
 
 using System.Collections.Generic;
 using System.Text.Json;

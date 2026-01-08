@@ -1,4 +1,4 @@
-namespace ScreepsDotNet.Storage.MongoRedis.Services;
+﻿namespace ScreepsDotNet.Storage.MongoRedis.Services;
 
 using System;
 using System.Collections.Generic;
@@ -62,7 +62,7 @@ public sealed class MongoStrongholdControlService(IMongoDatabaseProvider databas
 
         var deployDelay = options.DeployDelayTicks.GetValueOrDefault(DefaultDeployDelay);
         var gameTime = await worldMetadataRepository.GetGameTimeAsync(cancellationToken).ConfigureAwait(false);
-        var deployTime = (int)(gameTime + deployDelay);
+        var deployTime = gameTime + deployDelay;
         var strongholdId = $"{roomName}_{gameTime}";
         var depositType = depositTypes[_random.Next(depositTypes.Count)];
 
@@ -81,8 +81,8 @@ public sealed class MongoStrongholdControlService(IMongoDatabaseProvider databas
                                                         depositType,
                                                         deployTime,
                                                         strongholdId));
-            } else if (blueprint.Type == StructureType.Rampart)
-                structures.Add(BuildRampartDocument(roomName, x, y, userId, strongholdId, deployTime));
+            }
+            else if (blueprint.Type == StructureType.Rampart) structures.Add(BuildRampartDocument(roomName, x, y, userId, strongholdId, deployTime));
         }
 
         if (structures.Count == 0)
@@ -96,7 +96,7 @@ public sealed class MongoStrongholdControlService(IMongoDatabaseProvider databas
                                                .Set(doc => doc.UserId, userId)
                                                .Set(doc => doc.Level, 8)
                                                .Set(doc => doc.Progress, 0)
-                                               .Set(doc => doc.DowngradeTime, (long)deployTime)
+                                               .Set(doc => doc.DowngradeTime, deployTime)
                                                .Set(doc => doc.Effects, BuildInvulnerabilityEffect(deployTime));
 
             await _roomObjectsCollection.UpdateOneAsync(filter, update, cancellationToken: cancellationToken).ConfigureAwait(false);
@@ -120,7 +120,7 @@ public sealed class MongoStrongholdControlService(IMongoDatabaseProvider databas
         var level = core.Level ?? 1;
         var cooldown = ResolveExpandCooldown(level);
         var gameTime = await worldMetadataRepository.GetGameTimeAsync(cancellationToken).ConfigureAwait(false);
-        var update = Builders<RoomObjectDocument>.Update.Set(doc => doc.NextExpandTime, (int)(gameTime + cooldown));
+        var update = Builders<RoomObjectDocument>.Update.Set(doc => doc.NextExpandTime, gameTime + cooldown);
         await _roomObjectsCollection.UpdateOneAsync(filter, update, cancellationToken: cancellationToken).ConfigureAwait(false);
         return true;
     }

@@ -1,4 +1,4 @@
-namespace ScreepsDotNet.Backend.Cli.Commands.Bot;
+﻿namespace ScreepsDotNet.Backend.Cli.Commands.Bot;
 
 using global::System;
 using global::System.Globalization;

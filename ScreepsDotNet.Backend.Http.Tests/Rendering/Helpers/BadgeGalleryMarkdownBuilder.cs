@@ -1,4 +1,4 @@
-using System.Text;
+﻿using System.Text;
 using ScreepsDotNet.Backend.Http.Rendering;
 
 namespace ScreepsDotNet.Backend.Http.Tests.Rendering.Helpers;

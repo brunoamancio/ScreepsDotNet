@@ -51,7 +51,8 @@ public sealed class MongoFlagService(IMongoDatabaseProvider databaseProvider, IL
 
         try {
             await _flagsCollection.InsertOneAsync(document, cancellationToken: cancellationToken).ConfigureAwait(false);
-        } catch (MongoWriteException ex) when (ex.WriteError.Category == ServerErrorCategory.DuplicateKey) {
+        }
+        catch (MongoWriteException ex) when (ex.WriteError.Category == ServerErrorCategory.DuplicateKey) {
             // This shouldn't happen because we deleted it above, but just in case of race conditions.
             return new FlagResult(FlagResultStatus.InvalidParams, "Flag name already exists");
         }
@@ -71,7 +72,7 @@ public sealed class MongoFlagService(IMongoDatabaseProvider databaseProvider, IL
 
         var parts = flag.Data?.Split('|');
         if (parts is null || parts.Length < 2)
-             return new FlagResult(FlagResultStatus.InvalidParams, "Corrupt flag data");
+            return new FlagResult(FlagResultStatus.InvalidParams, "Corrupt flag data");
 
         var newData = $"{parts[0]}|{parts[1]}|{(int)color}|{(int)secondaryColor}";
         var update = Builders<RoomFlagDocument>.Update.Set(f => f.Data, newData);

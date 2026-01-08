@@ -37,11 +37,11 @@ internal sealed class FlagCreateCommand(IFlagService flagService, IUserRepositor
         [CommandOption("--color <COLOR>")]
         [Description("Primary color (Red, Purple, Blue, Cyan, Green, Yellow, Orange, Brown, Grey, White).")]
         [DefaultValue(Core.Constants.Color.White)]
-        public ScreepsDotNet.Backend.Core.Constants.Color Color { get; init; }
+        public Core.Constants.Color Color { get; init; }
 
         [CommandOption("--secondary-color <COLOR>")]
         [Description("Secondary color (defaults to primary color).")]
-        public ScreepsDotNet.Backend.Core.Constants.Color? SecondaryColor { get; init; }
+        public Core.Constants.Color? SecondaryColor { get; init; }
 
         public override ValidationResult Validate()
         {
@@ -67,11 +67,9 @@ internal sealed class FlagCreateCommand(IFlagService flagService, IUserRepositor
     public override async Task<int> ExecuteAsync(CommandContext context, Settings settings, CancellationToken cancellationToken)
     {
         var userId = settings.UserId;
-        if (string.IsNullOrWhiteSpace(userId))
-        {
+        if (string.IsNullOrWhiteSpace(userId)) {
             var profile = await userRepository.FindPublicProfileAsync(settings.Username, null, cancellationToken).ConfigureAwait(false);
-            if (profile is null)
-            {
+            if (profile is null) {
                 AnsiConsole.MarkupLine("[red]Error:[/] User not found.");
                 return 1;
             }
@@ -89,8 +87,7 @@ internal sealed class FlagCreateCommand(IFlagService flagService, IUserRepositor
 
         var result = await flagService.CreateFlagAsync(userId, request, cancellationToken).ConfigureAwait(false);
 
-        if (result.Status != FlagResultStatus.Success)
-        {
+        if (result.Status != FlagResultStatus.Success) {
             AnsiConsole.MarkupLine($"[red]Error:[/] {result.ErrorMessage ?? result.Status.ToString()}");
             return 1;
         }

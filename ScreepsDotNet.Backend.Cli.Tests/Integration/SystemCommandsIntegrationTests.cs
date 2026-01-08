@@ -1,4 +1,4 @@
-namespace ScreepsDotNet.Backend.Cli.Tests.Integration;
+﻿namespace ScreepsDotNet.Backend.Cli.Tests.Integration;
 
 using System;
 using System.Threading.Tasks;
@@ -10,7 +10,7 @@ using ScreepsDotNet.Storage.MongoRedis.Repositories.Documents;
 using ScreepsDotNet.Storage.MongoRedis.Seeding;
 using Spectre.Console.Cli;
 using StackExchange.Redis;
-using SystemControlConstants = ScreepsDotNet.Backend.Core.Constants.SystemControlConstants;
+using SystemControlConstants = Core.Constants.SystemControlConstants;
 
 public sealed class SystemCommandsIntegrationTests(SystemCommandsIntegrationFixture fixture) : IClassFixture<SystemCommandsIntegrationFixture>
 {

@@ -19,7 +19,6 @@ public sealed class MongoInvaderService(IMongoDatabaseProvider databaseProvider,
     : IInvaderService
 {
     private readonly IMongoCollection<RoomObjectDocument> _roomObjectsCollection = databaseProvider.GetCollection<RoomObjectDocument>(databaseProvider.Settings.RoomObjectsCollection);
-    private readonly IMongoCollection<RoomDocument> _roomsCollection = databaseProvider.GetCollection<RoomDocument>(databaseProvider.Settings.RoomsCollection);
     private readonly Random _random = new();
 
     private static readonly Dictionary<(InvaderSize, InvaderType), BodyPartType[]> BodyTemplates = new()

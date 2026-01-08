@@ -1,4 +1,4 @@
-using MongoDB.Driver;
+﻿using MongoDB.Driver;
 using ScreepsDotNet.Backend.Core.Constants;
 using ScreepsDotNet.Backend.Core.Models;
 using ScreepsDotNet.Backend.Core.Repositories;
@@ -92,15 +92,12 @@ public sealed class MongoUserRepository(IMongoDatabaseProvider databaseProvider)
                                     .FirstOrDefaultAsync(cancellationToken)
                                     .ConfigureAwait(false);
 
-        UpdateDefinition<UserDocument> update;
-        if (user?.Steam is null) {
-            update = Builders<UserDocument>.Update.Set(u => u.Steam, new UserSteamDocument
+        var update = user?.Steam is null
+            ? Builders<UserDocument>.Update.Set(u => u.Steam, new UserSteamDocument
             {
                 SteamProfileLinkHidden = !visible
-            });
-        } else
-            update = Builders<UserDocument>.Update.Set(u => u.Steam!.SteamProfileLinkHidden, !visible);
-
+            })
+            : Builders<UserDocument>.Update.Set(u => u.Steam!.SteamProfileLinkHidden, !visible);
         await _collection.UpdateOneAsync(u => u.Id == userId, update, cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 

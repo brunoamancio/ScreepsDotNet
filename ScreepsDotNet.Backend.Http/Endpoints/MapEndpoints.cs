@@ -1,4 +1,4 @@
-namespace ScreepsDotNet.Backend.Http.Endpoints;
+﻿namespace ScreepsDotNet.Backend.Http.Endpoints;
 
 using System;
 using System.Text.Json.Serialization;
@@ -37,17 +37,16 @@ internal static class MapEndpoints
                     async ([FromBody] MapGenerateRequest request,
                            IMapControlService mapControlService,
                            ICurrentUserAccessor accessor,
-                           CancellationToken cancellationToken) =>
-                    {
-                        if (accessor.CurrentUser?.Id is null)
-                            return Results.Unauthorized();
+                           CancellationToken cancellationToken) => {
+                               if (accessor.CurrentUser?.Id is null)
+                                   return Results.Unauthorized();
 
-                        if (!ValidateGenerationRequest(request, out var preset, out var error))
-                            return Results.BadRequest(new ErrorResponse(error ?? InvalidParamsMessage));
+                               if (!ValidateGenerationRequest(request, out var preset, out var error))
+                                   return Results.BadRequest(new ErrorResponse(error ?? InvalidParamsMessage));
 
-                        var includeController = request.NoController is not true;
-                        var includeKeeperLairs = request.KeeperLairs ?? false;
-                        var options = new MapRoomGenerationOptions(request.Room.Trim(),
+                               var includeController = request.NoController is not true;
+                               var includeKeeperLairs = request.KeeperLairs ?? false;
+                               var options = new MapRoomGenerationOptions(request.Room.Trim(),
                                                                    preset,
                                                                    request.Sources ?? 2,
                                                                    includeController,
@@ -55,16 +54,14 @@ internal static class MapEndpoints
                                                                    request.MineralType,
                                                                    request.Overwrite ?? false,
                                                                    request.Seed);
-                        try
-                        {
-                            var result = await mapControlService.GenerateRoomAsync(options, cancellationToken).ConfigureAwait(false);
-                            return Results.Ok(new MapGenerateResponse(result));
-                        }
-                        catch (InvalidOperationException ex)
-                        {
-                            return Results.BadRequest(new ErrorResponse(ex.Message));
-                        }
-                    })
+                               try {
+                                   var result = await mapControlService.GenerateRoomAsync(options, cancellationToken).ConfigureAwait(false);
+                                   return Results.Ok(new MapGenerateResponse(result));
+                               }
+                               catch (InvalidOperationException ex) {
+                                   return Results.BadRequest(new ErrorResponse(ex.Message));
+                               }
+                           })
            .RequireTokenAuthentication()
            .WithName(GenerateEndpointName);
     }
@@ -87,14 +84,13 @@ internal static class MapEndpoints
                     async ([FromBody] MapRoomRequest request,
                            IMapControlService mapControlService,
                            ICurrentUserAccessor accessor,
-                           CancellationToken cancellationToken) =>
-                    {
-                        return await HandleRoomToggleAsync(request,
-                                                           mapControlService.CloseRoomAsync,
-                                                           accessor,
-                                                           cancellationToken)
-                                       .ConfigureAwait(false);
-                    })
+                           CancellationToken cancellationToken) => {
+                               return await HandleRoomToggleAsync(request,
+                                                                  mapControlService.CloseRoomAsync,
+                                                                  accessor,
+                                                                  cancellationToken)
+                                              .ConfigureAwait(false);
+                           })
            .RequireTokenAuthentication()
            .WithName(CloseEndpointName);
     }
@@ -105,24 +101,21 @@ internal static class MapEndpoints
                     async ([FromBody] MapRemoveRequest request,
                            IMapControlService mapControlService,
                            ICurrentUserAccessor accessor,
-                           CancellationToken cancellationToken) =>
-                    {
-                        if (accessor.CurrentUser?.Id is null)
-                            return Results.Unauthorized();
+                           CancellationToken cancellationToken) => {
+                               if (accessor.CurrentUser?.Id is null)
+                                   return Results.Unauthorized();
 
-                        if (string.IsNullOrWhiteSpace(request.Room))
-                            return Results.BadRequest(new ErrorResponse("room is required"));
+                               if (string.IsNullOrWhiteSpace(request.Room))
+                                   return Results.BadRequest(new ErrorResponse("room is required"));
 
-                        try
-                        {
-                            await mapControlService.RemoveRoomAsync(request.Room.Trim(), request.PurgeObjects ?? false, cancellationToken).ConfigureAwait(false);
-                            return Results.Ok(new { ok = 1 });
-                        }
-                        catch (InvalidOperationException ex)
-                        {
-                            return Results.BadRequest(new ErrorResponse(ex.Message));
-                        }
-                    })
+                               try {
+                                   await mapControlService.RemoveRoomAsync(request.Room.Trim(), request.PurgeObjects ?? false, cancellationToken).ConfigureAwait(false);
+                                   return Results.Ok(new { ok = 1 });
+                               }
+                               catch (InvalidOperationException ex) {
+                                   return Results.BadRequest(new ErrorResponse(ex.Message));
+                               }
+                           })
            .RequireTokenAuthentication()
            .WithName(RemoveEndpointName);
     }
@@ -133,24 +126,21 @@ internal static class MapEndpoints
                     async ([FromBody] MapAssetsRequest request,
                            IMapControlService mapControlService,
                            ICurrentUserAccessor accessor,
-                           CancellationToken cancellationToken) =>
-                    {
-                        if (accessor.CurrentUser?.Id is null)
-                            return Results.Unauthorized();
+                           CancellationToken cancellationToken) => {
+                               if (accessor.CurrentUser?.Id is null)
+                                   return Results.Unauthorized();
 
-                        if (string.IsNullOrWhiteSpace(request.Room))
-                            return Results.BadRequest(new ErrorResponse("room is required"));
+                               if (string.IsNullOrWhiteSpace(request.Room))
+                                   return Results.BadRequest(new ErrorResponse("room is required"));
 
-                        try
-                        {
-                            await mapControlService.UpdateRoomAssetsAsync(request.Room.Trim(), request.Full ?? false, cancellationToken).ConfigureAwait(false);
-                            return Results.Ok(new { ok = 1 });
-                        }
-                        catch (InvalidOperationException ex)
-                        {
-                            return Results.BadRequest(new ErrorResponse(ex.Message));
-                        }
-                    })
+                               try {
+                                   await mapControlService.UpdateRoomAssetsAsync(request.Room.Trim(), request.Full ?? false, cancellationToken).ConfigureAwait(false);
+                                   return Results.Ok(new { ok = 1 });
+                               }
+                               catch (InvalidOperationException ex) {
+                                   return Results.BadRequest(new ErrorResponse(ex.Message));
+                               }
+                           })
            .RequireTokenAuthentication()
            .WithName(AssetsEndpointName);
     }
@@ -160,14 +150,13 @@ internal static class MapEndpoints
         app.MapPost(ApiRoutes.Game.Map.TerrainRefresh,
                     async (IMapControlService mapControlService,
                            ICurrentUserAccessor accessor,
-                           CancellationToken cancellationToken) =>
-                    {
-                        if (accessor.CurrentUser?.Id is null)
-                            return Results.Unauthorized();
+                           CancellationToken cancellationToken) => {
+                               if (accessor.CurrentUser?.Id is null)
+                                   return Results.Unauthorized();
 
-                        await mapControlService.RefreshTerrainCacheAsync(cancellationToken).ConfigureAwait(false);
-                        return Results.Ok(new { ok = 1 });
-                    })
+                               await mapControlService.RefreshTerrainCacheAsync(cancellationToken).ConfigureAwait(false);
+                               return Results.Ok(new { ok = 1 });
+                           })
            .RequireTokenAuthentication()
            .WithName(TerrainEndpointName);
     }
@@ -183,13 +172,11 @@ internal static class MapEndpoints
         if (string.IsNullOrWhiteSpace(request.Room))
             return Results.BadRequest(new ErrorResponse("room is required"));
 
-        try
-        {
+        try {
             await handler(request.Room.Trim(), cancellationToken).ConfigureAwait(false);
             return Results.Ok(new { ok = 1 });
         }
-        catch (InvalidOperationException ex)
-        {
+        catch (InvalidOperationException ex) {
             return Results.BadRequest(new ErrorResponse(ex.Message));
         }
     }
@@ -197,22 +184,19 @@ internal static class MapEndpoints
     private static bool ValidateGenerationRequest(MapGenerateRequest request, out MapTerrainPreset preset, out string? error)
     {
         preset = MapTerrainPreset.Mixed;
-        if (string.IsNullOrWhiteSpace(request.Room))
-        {
+        if (string.IsNullOrWhiteSpace(request.Room)) {
             error = "room is required";
             return false;
         }
 
         var sources = request.Sources ?? 2;
-        if (sources is < 1 or > 5)
-        {
+        if (sources is < 1 or > 5) {
             error = "sources must be between 1 and 5";
             return false;
         }
 
         var presetValue = string.IsNullOrWhiteSpace(request.Terrain) ? nameof(MapTerrainPreset.Mixed) : request.Terrain;
-        if (!Enum.TryParse(presetValue, ignoreCase: true, out preset))
-        {
+        if (!Enum.TryParse(presetValue, ignoreCase: true, out preset)) {
             error = "invalid terrain preset";
             return false;
         }

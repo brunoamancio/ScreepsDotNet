@@ -1,4 +1,4 @@
-namespace ScreepsDotNet.Backend.Core.Models;
+﻿namespace ScreepsDotNet.Backend.Core.Models;
 
 /// <summary>
 /// Represents health metadata for an underlying storage provider.

@@ -1,4 +1,4 @@
-namespace ScreepsDotNet.Backend.Core.Models.Bots;
+﻿namespace ScreepsDotNet.Backend.Core.Models.Bots;
 
 /// <summary>
 /// Describes an installable bot AI bundle.

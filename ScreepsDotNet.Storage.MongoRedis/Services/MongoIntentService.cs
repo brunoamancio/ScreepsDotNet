@@ -1,4 +1,4 @@
-namespace ScreepsDotNet.Storage.MongoRedis.Services;
+﻿namespace ScreepsDotNet.Storage.MongoRedis.Services;
 
 using System;
 using System.Collections.Generic;
@@ -123,11 +123,7 @@ public sealed class MongoIntentService : IIntentService
 
         var room = await _roomsCollection.Find(document => document.Id == normalizedRoom)
                                          .FirstOrDefaultAsync(cancellationToken)
-                                         .ConfigureAwait(false);
-
-        if (room is null)
-            throw new IntentValidationException("invalid room");
-
+                                         .ConfigureAwait(false) ?? throw new IntentValidationException("invalid room");
         var isOutOfBorders = string.Equals(room.Status, "out of borders", StringComparison.OrdinalIgnoreCase);
         var stillClosed = room.OpenTime.HasValue && room.OpenTime.Value > DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 
@@ -178,8 +174,7 @@ public sealed class MongoIntentService : IIntentService
 
     private static BsonValue SanitizeIntentValue(IntentDefinition definition, JsonElement payload, bool forceArray)
     {
-        if (forceArray || payload.ValueKind == JsonValueKind.Array)
-        {
+        if (forceArray || payload.ValueKind == JsonValueKind.Array) {
             var array = new BsonArray();
             var items = payload.ValueKind == JsonValueKind.Array ? payload.EnumerateArray() : EnumerateSingleton(payload);
             foreach (var item in items)
@@ -201,8 +196,7 @@ public sealed class MongoIntentService : IIntentService
             throw new IntentValidationException("intent must be an object");
 
         var document = new BsonDocument();
-        foreach (var field in definition.Fields)
-        {
+        foreach (var field in definition.Fields) {
             if (!payload.TryGetProperty(field.Key, out var property))
                 throw new IntentValidationException($"missing field '{field.Key}' for intent '{definition.Name}'");
 
@@ -253,8 +247,7 @@ public sealed class MongoIntentService : IIntentService
 
     private static int ConvertToInt(JsonElement element)
     {
-        if (element.ValueKind == JsonValueKind.Number)
-        {
+        if (element.ValueKind == JsonValueKind.Number) {
             if (element.TryGetInt32(out var intValue))
                 return intValue;
 
@@ -317,11 +310,10 @@ public sealed class MongoIntentService : IIntentService
     private static BsonArray ConvertToBodyPartArray(JsonElement element)
     {
         if (element.ValueKind != JsonValueKind.Array)
-            return new BsonArray();
+            return [];
 
         var result = new BsonArray();
-        foreach (var item in element.EnumerateArray())
-        {
+        foreach (var item in element.EnumerateArray()) {
             var part = ConvertToFlexibleString(item);
             if (BodyPartNames.Contains(part))
                 result.Add(part);

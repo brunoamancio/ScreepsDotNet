@@ -1,4 +1,4 @@
-namespace ScreepsDotNet.Backend.Core.Configuration;
+﻿namespace ScreepsDotNet.Backend.Core.Configuration;
 
 public sealed class AuthOptions
 {
@@ -8,7 +8,7 @@ public sealed class AuthOptions
 
     public int TokenTtlSeconds { get; set; } = 60;
 
-    public IList<AuthTicketOptions> Tickets { get; set; } = new List<AuthTicketOptions>();
+    public IList<AuthTicketOptions> Tickets { get; set; } = [];
 }
 
 public sealed class AuthTicketOptions

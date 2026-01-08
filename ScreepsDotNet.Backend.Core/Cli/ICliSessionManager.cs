@@ -1,4 +1,4 @@
-namespace ScreepsDotNet.Backend.Core.Cli;
+﻿namespace ScreepsDotNet.Backend.Core.Cli;
 
 /// <summary>
 /// Manages lifecycle and messaging for CLI sessions.

@@ -1,4 +1,4 @@
-namespace ScreepsDotNet.Backend.Cli.Tests.Integration;
+﻿namespace ScreepsDotNet.Backend.Cli.Tests.Integration;
 
 using MongoDB.Driver;
 using ScreepsDotNet.Backend.Cli.Commands.Map;

@@ -1,4 +1,4 @@
-using Microsoft.Extensions.Diagnostics.HealthChecks;
+﻿using Microsoft.Extensions.Diagnostics.HealthChecks;
 using ScreepsDotNet.Backend.Core.Storage;
 
 namespace ScreepsDotNet.Backend.Http.Health;

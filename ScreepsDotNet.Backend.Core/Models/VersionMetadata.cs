@@ -1,4 +1,4 @@
-namespace ScreepsDotNet.Backend.Core.Models;
+﻿namespace ScreepsDotNet.Backend.Core.Models;
 
 /// <summary>
 /// Represents the protocol/auth/package metadata exposed by /api/version.

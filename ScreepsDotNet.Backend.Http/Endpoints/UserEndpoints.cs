@@ -1,4 +1,4 @@
-namespace ScreepsDotNet.Backend.Http.Endpoints;
+﻿namespace ScreepsDotNet.Backend.Http.Endpoints;
 
 using System;
 using System.Collections.Generic;
@@ -39,10 +39,6 @@ internal static class UserEndpoints
     private const string BranchOperationFailedMessage = "branch operation failed";
     private const string InvalidRespawnStatusMessage = "invalid status";
     private const string EmailAlreadyExistsMessage = "email already exists";
-    private const string UsernameQueryName = "username";
-    private const string UserIdQueryName = "id";
-    private const string BorderQueryName = "border";
-
     private const string DefaultWorldStartRoom = "W5N5";
 
     private const string ActiveWorldIdentifier = "$activeWorld";
@@ -72,6 +68,9 @@ internal static class UserEndpoints
     private const string StatsEndpointName = "GetUserStats";
     private const string RoomsEndpointName = "GetUserRooms";
     private const string BadgeSvgEndpointName = "GetUserBadgeSvg";
+    private const string UsernameQueryName = "username";
+    private const string UserIdQueryName = "id";
+    private const string BorderQueryName = "border";
     private const string DefaultOverviewStatName = "energyHarvested";
     private static readonly int[] AllowedStatsIntervals = [8, 180, 1440];
     private static readonly int[] AllowedNotifyIntervals = [5, 10, 30, 60, 180, 360, 720, 1440, 4320];
@@ -693,7 +692,8 @@ internal static class UserEndpoints
                                {
                                    UserRespawnResult.InvalidStatus => Results.BadRequest(new ErrorResponse(InvalidRespawnStatusMessage)),
                                    UserRespawnResult.UserNotFound => Results.NotFound(new ErrorResponse(UserNotFoundMessage)),
-                                   _ => Results.Ok(UserResponseFactory.CreateTimestamp())
+                                   UserRespawnResult.Success => Results.Ok(UserResponseFactory.CreateTimestamp()),
+                                   _ => Results.BadRequest(new ErrorResponse("unknown error"))
                                };
                            })
            .RequireTokenAuthentication()

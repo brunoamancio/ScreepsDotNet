@@ -1,4 +1,4 @@
-namespace ScreepsDotNet.Backend.Core.Models.Bots;
+﻿namespace ScreepsDotNet.Backend.Core.Models.Bots;
 
 /// <summary>
 /// Summary returned after spawning a bot user into a room.

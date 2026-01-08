@@ -56,11 +56,9 @@ public sealed class MongoConstructionService(IMongoDatabaseProvider databaseProv
 
         // progressTotal calculation
         var progressTotal = GameConstants.ConstructionCost[request.StructureType];
-        if (request.StructureType == StructureType.Road)
-        {
+        if (request.StructureType == StructureType.Road) {
             var terrainDoc = await _roomTerrainCollection.Find(t => t.Room == request.Room).FirstOrDefaultAsync(cancellationToken).ConfigureAwait(false);
-            if (terrainDoc != null)
-            {
+            if (terrainDoc != null) {
                 var terrainValue = GetTerrainAt(terrainDoc.Terrain, request.X, request.Y);
                 if ((terrainValue & GameConstants.TerrainMaskSwamp) != 0)
                     progressTotal *= GameConstants.ConstructionCostRoadSwampRatio;
@@ -101,8 +99,7 @@ public sealed class MongoConstructionService(IMongoDatabaseProvider databaseProv
         if (terrainDoc == null)
             return new PlaceConstructionResult(PlaceConstructionResultStatus.InvalidRoom);
 
-        if (structureType == StructureType.Extractor)
-        {
+        if (structureType == StructureType.Extractor) {
             var mineral = await _roomObjectsCollection.Find(Builders<BsonDocument>.Filter.And(
                 Builders<BsonDocument>.Filter.Eq("room", room),
                 Builders<BsonDocument>.Filter.Eq("x", x),
@@ -127,8 +124,7 @@ public sealed class MongoConstructionService(IMongoDatabaseProvider databaseProv
             return new PlaceConstructionResult(PlaceConstructionResultStatus.InvalidLocation, ErrorMessage: "Position occupied");
 
         // Check blockers
-        if (structureType != StructureType.Rampart)
-        {
+        if (structureType != StructureType.Rampart) {
             var blocker = await _roomObjectsCollection.Find(Builders<BsonDocument>.Filter.And(
                 Builders<BsonDocument>.Filter.Eq("room", room),
                 Builders<BsonDocument>.Filter.Eq("x", x),
@@ -140,8 +136,7 @@ public sealed class MongoConstructionService(IMongoDatabaseProvider databaseProv
         }
 
         // Check wall terrain
-        if (structureType != StructureType.Road)
-        {
+        if (structureType != StructureType.Road) {
             if ((GetTerrainAt(terrainDoc.Terrain, x, y) & GameConstants.TerrainMaskWall) != 0)
                 return new PlaceConstructionResult(PlaceConstructionResultStatus.InvalidLocation, ErrorMessage: "Cannot build on wall");
         }
@@ -159,16 +154,14 @@ public sealed class MongoConstructionService(IMongoDatabaseProvider databaseProv
             return new PlaceConstructionResult(PlaceConstructionResultStatus.InvalidLocation, ErrorMessage: "Too near exit");
 
         // Border check for non-road/container
-        if (structureType != StructureType.Road && structureType != StructureType.Container && (x == 1 || x == 48 || y == 1 || y == 48))
-        {
+        if (structureType != StructureType.Road && structureType != StructureType.Container && (x == 1 || x == 48 || y == 1 || y == 48)) {
             List<(int, int)> borderTiles = [];
             if (x == 1) borderTiles.AddRange([(0, y - 1), (0, y), (0, y + 1)]);
             if (x == 48) borderTiles.AddRange([(49, y - 1), (49, y), (49, y + 1)]);
             if (y == 1) borderTiles.AddRange([(x - 1, 0), (x, 0), (x + 1, 0)]);
             if (y == 48) borderTiles.AddRange([(x - 1, 49), (x, 49), (x + 1, 49)]);
 
-            foreach (var (bx, by) in borderTiles)
-            {
+            foreach (var (bx, by) in borderTiles) {
                 if ((GetTerrainAt(terrainDoc.Terrain, bx, by) & GameConstants.TerrainMaskWall) == 0)
                     return new PlaceConstructionResult(PlaceConstructionResultStatus.InvalidLocation, ErrorMessage: "Must be near wall at border");
             }

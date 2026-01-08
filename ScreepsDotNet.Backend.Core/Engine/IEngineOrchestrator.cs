@@ -1,4 +1,4 @@
-namespace ScreepsDotNet.Backend.Core.Engine;
+﻿namespace ScreepsDotNet.Backend.Core.Engine;
 
 /// <summary>
 /// Coordinates execution of the Screeps engine tick lifecycle.

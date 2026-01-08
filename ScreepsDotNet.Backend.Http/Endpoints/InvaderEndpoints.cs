@@ -25,26 +25,25 @@ internal static class InvaderEndpoints
                     async ([FromBody] CreateInvaderRequest request,
                            IInvaderService invaderService,
                            ICurrentUserAccessor userAccessor,
-                           CancellationToken cancellationToken) =>
-                    {
-                        var userId = userAccessor.CurrentUser?.Id;
-                        if (string.IsNullOrEmpty(userId))
-                            return Results.Unauthorized();
+                           CancellationToken cancellationToken) => {
+                               var userId = userAccessor.CurrentUser?.Id;
+                               if (string.IsNullOrEmpty(userId))
+                                   return Results.Unauthorized();
 
-                        var result = await invaderService.CreateInvaderAsync(userId, request, cancellationToken).ConfigureAwait(false);
+                               var result = await invaderService.CreateInvaderAsync(userId, request, cancellationToken).ConfigureAwait(false);
 
-                        return result.Status switch
-                        {
-                            CreateInvaderResultStatus.Success => Results.Ok(new { ok = 1, _id = result.Id }),
-                            CreateInvaderResultStatus.InvalidParams => Results.BadRequest(new ErrorResponse(result.ErrorMessage ?? "invalid params")),
-                            CreateInvaderResultStatus.TooManyInvaders => Results.BadRequest(new ErrorResponse("too many invaders exist")),
-                            CreateInvaderResultStatus.HostilesPresent => Results.BadRequest(new ErrorResponse("hostiles present")),
-                            CreateInvaderResultStatus.NotOwned => Results.BadRequest(new ErrorResponse("not owned")),
-                            CreateInvaderResultStatus.InvalidRoom => Results.BadRequest(new ErrorResponse(result.ErrorMessage ?? "invalid room")),
-                            CreateInvaderResultStatus.UserNotFound => Results.Unauthorized(),
-                            _ => Results.BadRequest(new ErrorResponse("unknown error"))
-                        };
-                    })
+                               return result.Status switch
+                               {
+                                   CreateInvaderResultStatus.Success => Results.Ok(new { ok = 1, _id = result.Id }),
+                                   CreateInvaderResultStatus.InvalidParams => Results.BadRequest(new ErrorResponse(result.ErrorMessage ?? "invalid params")),
+                                   CreateInvaderResultStatus.TooManyInvaders => Results.BadRequest(new ErrorResponse("too many invaders exist")),
+                                   CreateInvaderResultStatus.HostilesPresent => Results.BadRequest(new ErrorResponse("hostiles present")),
+                                   CreateInvaderResultStatus.NotOwned => Results.BadRequest(new ErrorResponse("not owned")),
+                                   CreateInvaderResultStatus.InvalidRoom => Results.BadRequest(new ErrorResponse(result.ErrorMessage ?? "invalid room")),
+                                   CreateInvaderResultStatus.UserNotFound => Results.Unauthorized(),
+                                   _ => Results.BadRequest(new ErrorResponse("unknown error"))
+                               };
+                           })
            .RequireTokenAuthentication()
            .WithName(CreateInvaderEndpointName);
     }
@@ -55,22 +54,21 @@ internal static class InvaderEndpoints
                     async ([FromBody] RemoveInvaderRequest request,
                            IInvaderService invaderService,
                            ICurrentUserAccessor userAccessor,
-                           CancellationToken cancellationToken) =>
-                    {
-                        var userId = userAccessor.CurrentUser?.Id;
-                        if (string.IsNullOrEmpty(userId))
-                            return Results.Unauthorized();
+                           CancellationToken cancellationToken) => {
+                               var userId = userAccessor.CurrentUser?.Id;
+                               if (string.IsNullOrEmpty(userId))
+                                   return Results.Unauthorized();
 
-                        var result = await invaderService.RemoveInvaderAsync(userId, request, cancellationToken).ConfigureAwait(false);
+                               var result = await invaderService.RemoveInvaderAsync(userId, request, cancellationToken).ConfigureAwait(false);
 
-                        return result.Status switch
-                        {
-                            RemoveInvaderResultStatus.Success => Results.Ok(new { ok = 1 }),
-                            RemoveInvaderResultStatus.InvalidObject => Results.BadRequest(new ErrorResponse("invalid object")),
-                            RemoveInvaderResultStatus.UserNotFound => Results.Unauthorized(),
-                            _ => Results.BadRequest(new ErrorResponse("unknown error"))
-                        };
-                    })
+                               return result.Status switch
+                               {
+                                   RemoveInvaderResultStatus.Success => Results.Ok(new { ok = 1 }),
+                                   RemoveInvaderResultStatus.InvalidObject => Results.BadRequest(new ErrorResponse("invalid object")),
+                                   RemoveInvaderResultStatus.UserNotFound => Results.Unauthorized(),
+                                   _ => Results.BadRequest(new ErrorResponse("unknown error"))
+                               };
+                           })
            .RequireTokenAuthentication()
            .WithName(RemoveInvaderEndpointName);
     }

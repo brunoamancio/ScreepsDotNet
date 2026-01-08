@@ -1,4 +1,4 @@
-namespace ScreepsDotNet.Backend.Core.Models;
+﻿namespace ScreepsDotNet.Backend.Core.Models;
 
 public sealed record ServerData(string WelcomeText, IReadOnlyDictionary<string, object> CustomObjectTypes,
                                 int HistoryChunkSize, int SocketUpdateThrottle, RendererData Renderer);

@@ -1,4 +1,4 @@
-namespace ScreepsDotNet.Backend.Http.Endpoints;
+﻿namespace ScreepsDotNet.Backend.Http.Endpoints;
 
 using System;
 using System.Collections.Generic;
@@ -33,14 +33,13 @@ internal static class StrongholdEndpoints
         app.MapGet(ApiRoutes.Game.Stronghold.Templates,
                    async (IStrongholdTemplateProvider templateProvider,
                           ICurrentUserAccessor userAccessor,
-                          CancellationToken cancellationToken) =>
-                   {
-                       if (userAccessor.CurrentUser?.Id is null)
-                           return Results.Unauthorized();
+                          CancellationToken cancellationToken) => {
+                              if (userAccessor.CurrentUser?.Id is null)
+                                  return Results.Unauthorized();
 
-                       var templates = await templateProvider.GetTemplatesAsync(cancellationToken).ConfigureAwait(false);
-                       var depositTypes = await templateProvider.GetDepositTypesAsync(cancellationToken).ConfigureAwait(false);
-                       var response = new StrongholdTemplatesResponse(
+                              var templates = await templateProvider.GetTemplatesAsync(cancellationToken).ConfigureAwait(false);
+                              var depositTypes = await templateProvider.GetDepositTypesAsync(cancellationToken).ConfigureAwait(false);
+                              var response = new StrongholdTemplatesResponse(
                            templates.Select(t => new StrongholdTemplateResponse(
                                                     t.Name,
                                                     t.Description,
@@ -53,8 +52,8 @@ internal static class StrongholdEndpoints
                                                                                     s.Behavior)).ToList()))
                                     .ToList(),
                            depositTypes);
-                       return Results.Ok(response);
-                   })
+                              return Results.Ok(response);
+                          })
            .RequireTokenAuthentication()
            .WithName(TemplatesEndpointName);
     }
@@ -65,29 +64,26 @@ internal static class StrongholdEndpoints
                     async ([FromBody] StrongholdSpawnRequest request,
                            IStrongholdControlService controlService,
                            ICurrentUserAccessor userAccessor,
-                           CancellationToken cancellationToken) =>
-                    {
-                        if (userAccessor.CurrentUser?.Id is null)
-                            return Results.Unauthorized();
+                           CancellationToken cancellationToken) => {
+                               if (userAccessor.CurrentUser?.Id is null)
+                                   return Results.Unauthorized();
 
-                        if (!ValidateSpawnRequest(request, out var validationError))
-                            return Results.BadRequest(new ErrorResponse(validationError ?? InvalidParamsMessage));
+                               if (!ValidateSpawnRequest(request, out var validationError))
+                                   return Results.BadRequest(new ErrorResponse(validationError ?? InvalidParamsMessage));
 
-                        var options = new StrongholdSpawnOptions(request.Template,
+                               var options = new StrongholdSpawnOptions(request.Template,
                                                                  request.X,
                                                                  request.Y,
                                                                  request.OwnerUserId,
                                                                  request.DeployDelayTicks);
-                        try
-                        {
-                            var result = await controlService.SpawnAsync(request.Room, options, cancellationToken).ConfigureAwait(false);
-                            return Results.Ok(new StrongholdSpawnResponse(result.RoomName, result.TemplateName, result.InvaderCoreId));
-                        }
-                        catch (InvalidOperationException ex)
-                        {
-                            return Results.BadRequest(new ErrorResponse(ex.Message));
-                        }
-                    })
+                               try {
+                                   var result = await controlService.SpawnAsync(request.Room, options, cancellationToken).ConfigureAwait(false);
+                                   return Results.Ok(new StrongholdSpawnResponse(result.RoomName, result.TemplateName, result.InvaderCoreId));
+                               }
+                               catch (InvalidOperationException ex) {
+                                   return Results.BadRequest(new ErrorResponse(ex.Message));
+                               }
+                           })
            .RequireTokenAuthentication()
            .WithName(SpawnEndpointName);
     }
@@ -98,51 +94,45 @@ internal static class StrongholdEndpoints
                     async ([FromBody] StrongholdExpandRequest request,
                            IStrongholdControlService controlService,
                            ICurrentUserAccessor userAccessor,
-                           CancellationToken cancellationToken) =>
-                    {
-                        if (userAccessor.CurrentUser?.Id is null)
-                            return Results.Unauthorized();
+                           CancellationToken cancellationToken) => {
+                               if (userAccessor.CurrentUser?.Id is null)
+                                   return Results.Unauthorized();
 
-                        if (string.IsNullOrWhiteSpace(request.Room))
-                            return Results.BadRequest(new ErrorResponse(InvalidParamsMessage));
+                               if (string.IsNullOrWhiteSpace(request.Room))
+                                   return Results.BadRequest(new ErrorResponse(InvalidParamsMessage));
 
-                        var expanded = await controlService.ExpandAsync(request.Room, cancellationToken).ConfigureAwait(false);
-                        return expanded
-                            ? Results.Ok(new { ok = 1 })
-                            : Results.BadRequest(new ErrorResponse(StrongholdNotFoundMessage));
-                    })
+                               var expanded = await controlService.ExpandAsync(request.Room, cancellationToken).ConfigureAwait(false);
+                               return expanded
+                                   ? Results.Ok(new { ok = 1 })
+                                   : Results.BadRequest(new ErrorResponse(StrongholdNotFoundMessage));
+                           })
            .RequireTokenAuthentication()
            .WithName(ExpandEndpointName);
     }
 
     private static bool ValidateSpawnRequest(StrongholdSpawnRequest request, out string? error)
     {
-        if (string.IsNullOrWhiteSpace(request.Room))
-        {
+        if (string.IsNullOrWhiteSpace(request.Room)) {
             error = "room is required";
             return false;
         }
 
-        if (request.X.HasValue ^ request.Y.HasValue)
-        {
+        if (request.X.HasValue ^ request.Y.HasValue) {
             error = "both coordinates must be provided";
             return false;
         }
 
-        if (request.X is < 0 or > 49)
-        {
+        if (request.X is < 0 or > 49) {
             error = "x must be between 0 and 49";
             return false;
         }
 
-        if (request.Y is < 0 or > 49)
-        {
+        if (request.Y is < 0 or > 49) {
             error = "y must be between 0 and 49";
             return false;
         }
 
-        if (request.DeployDelayTicks is < 0)
-        {
+        if (request.DeployDelayTicks is < 0) {
             error = "deploy delay must be non-negative";
             return false;
         }

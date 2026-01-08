@@ -1,4 +1,4 @@
-namespace ScreepsDotNet.Storage.MongoRedis.Services;
+﻿namespace ScreepsDotNet.Storage.MongoRedis.Services;
 
 using System.Collections.Concurrent;
 using System.Text.Json;
@@ -58,8 +58,7 @@ public sealed class FileSystemBotDefinitionProvider(IOptions<BotManifestOptions>
             }
 
             var definitions = new ConcurrentDictionary<string, BotDefinition>(StringComparer.OrdinalIgnoreCase);
-            Parallel.ForEach(manifest.Bots, botEntry =>
-            {
+            Parallel.ForEach(manifest.Bots, botEntry => {
                 var botName = botEntry.Key;
                 try {
                     var directory = Path.GetFullPath(Path.Combine(manifestDirectory, botEntry.Value));

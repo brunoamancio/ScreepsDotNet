@@ -1,4 +1,4 @@
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using ScreepsDotNet.Backend.Core.Models;
@@ -50,6 +50,7 @@ public sealed class MongoRedisStorageAdapter(IMongoDatabaseProvider databaseProv
     {
         try {
             var db = _redis.GetDatabase();
+            cancellationToken.ThrowIfCancellationRequested();
             await db.PingAsync();
             return true;
         }

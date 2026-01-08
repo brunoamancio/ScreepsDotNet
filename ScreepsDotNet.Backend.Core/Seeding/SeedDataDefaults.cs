@@ -1,4 +1,4 @@
-namespace ScreepsDotNet.Backend.Core.Seeding;
+﻿namespace ScreepsDotNet.Backend.Core.Seeding;
 
 using System;
 using System.Collections.Generic;

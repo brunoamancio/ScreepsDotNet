@@ -1,4 +1,4 @@
-namespace ScreepsDotNet.Backend.Cli.Commands.Stronghold;
+﻿namespace ScreepsDotNet.Backend.Cli.Commands.Stronghold;
 
 using global::System.ComponentModel;
 using global::System.Text.Json;

@@ -1,4 +1,4 @@
-namespace ScreepsDotNet.Storage.MongoRedis.Repositories.Documents;
+﻿namespace ScreepsDotNet.Storage.MongoRedis.Repositories.Documents;
 
 using MongoDB.Bson.Serialization.Attributes;
 

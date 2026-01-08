@@ -1,4 +1,4 @@
-using Microsoft.Extensions.Options;
+﻿using Microsoft.Extensions.Options;
 using ScreepsDotNet.Storage.MongoRedis.Options;
 using StackExchange.Redis;
 

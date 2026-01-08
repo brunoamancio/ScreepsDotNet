@@ -1,4 +1,4 @@
-namespace ScreepsDotNet.Backend.Http.Endpoints;
+﻿namespace ScreepsDotNet.Backend.Http.Endpoints;
 
 using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Mvc;
@@ -39,15 +39,14 @@ internal static class SystemEndpoints
         app.MapGet(ApiRoutes.Game.System.Status,
                    async (ISystemControlService controlService,
                           ICurrentUserAccessor accessor,
-                          CancellationToken cancellationToken) =>
-                   {
-                       if (accessor.CurrentUser?.Id is null)
-                           return Results.Unauthorized();
+                          CancellationToken cancellationToken) => {
+                              if (accessor.CurrentUser?.Id is null)
+                                  return Results.Unauthorized();
 
-                       var paused = await controlService.IsSimulationPausedAsync(cancellationToken).ConfigureAwait(false);
-                       var duration = await controlService.GetTickDurationAsync(cancellationToken).ConfigureAwait(false);
-                       return Results.Ok(new SystemStatusResponse(paused, duration));
-                   })
+                              var paused = await controlService.IsSimulationPausedAsync(cancellationToken).ConfigureAwait(false);
+                              var duration = await controlService.GetTickDurationAsync(cancellationToken).ConfigureAwait(false);
+                              return Results.Ok(new SystemStatusResponse(paused, duration));
+                          })
            .RequireTokenAuthentication()
            .WithName(StatusEndpointName);
     }
@@ -57,14 +56,13 @@ internal static class SystemEndpoints
         app.MapPost(ApiRoutes.Game.System.Pause,
                     async (ISystemControlService controlService,
                            ICurrentUserAccessor accessor,
-                           CancellationToken cancellationToken) =>
-                    {
-                        if (accessor.CurrentUser?.Id is null)
-                            return Results.Unauthorized();
+                           CancellationToken cancellationToken) => {
+                               if (accessor.CurrentUser?.Id is null)
+                                   return Results.Unauthorized();
 
-                        await controlService.PauseSimulationAsync(cancellationToken).ConfigureAwait(false);
-                        return Results.Ok(new { ok = 1 });
-                    })
+                               await controlService.PauseSimulationAsync(cancellationToken).ConfigureAwait(false);
+                               return Results.Ok(new { ok = 1 });
+                           })
            .RequireTokenAuthentication()
            .WithName(PauseEndpointName);
     }
@@ -74,14 +72,13 @@ internal static class SystemEndpoints
         app.MapPost(ApiRoutes.Game.System.Resume,
                     async (ISystemControlService controlService,
                            ICurrentUserAccessor accessor,
-                           CancellationToken cancellationToken) =>
-                    {
-                        if (accessor.CurrentUser?.Id is null)
-                            return Results.Unauthorized();
+                           CancellationToken cancellationToken) => {
+                               if (accessor.CurrentUser?.Id is null)
+                                   return Results.Unauthorized();
 
-                        await controlService.ResumeSimulationAsync(cancellationToken).ConfigureAwait(false);
-                        return Results.Ok(new { ok = 1 });
-                    })
+                               await controlService.ResumeSimulationAsync(cancellationToken).ConfigureAwait(false);
+                               return Results.Ok(new { ok = 1 });
+                           })
            .RequireTokenAuthentication()
            .WithName(ResumeEndpointName);
     }
@@ -91,14 +88,13 @@ internal static class SystemEndpoints
         app.MapGet(ApiRoutes.Game.System.Tick,
                    async (ISystemControlService controlService,
                           ICurrentUserAccessor accessor,
-                          CancellationToken cancellationToken) =>
-                   {
-                       if (accessor.CurrentUser?.Id is null)
-                           return Results.Unauthorized();
+                          CancellationToken cancellationToken) => {
+                              if (accessor.CurrentUser?.Id is null)
+                                  return Results.Unauthorized();
 
-                       var duration = await controlService.GetTickDurationAsync(cancellationToken).ConfigureAwait(false);
-                       return Results.Ok(new TickDurationResponse(duration));
-                   })
+                              var duration = await controlService.GetTickDurationAsync(cancellationToken).ConfigureAwait(false);
+                              return Results.Ok(new TickDurationResponse(duration));
+                          })
            .RequireTokenAuthentication()
            .WithName(TickGetEndpointName);
     }
@@ -109,17 +105,16 @@ internal static class SystemEndpoints
                     async ([FromBody] TickDurationRequest request,
                            ISystemControlService controlService,
                            ICurrentUserAccessor accessor,
-                           CancellationToken cancellationToken) =>
-                    {
-                        if (accessor.CurrentUser?.Id is null)
-                            return Results.Unauthorized();
+                           CancellationToken cancellationToken) => {
+                               if (accessor.CurrentUser?.Id is null)
+                                   return Results.Unauthorized();
 
-                        if (request.DurationMilliseconds <= 0)
-                            return Results.BadRequest(new ErrorResponse("duration must be positive"));
+                               if (request.DurationMilliseconds <= 0)
+                                   return Results.BadRequest(new ErrorResponse("duration must be positive"));
 
-                        await controlService.SetTickDurationAsync(request.DurationMilliseconds, cancellationToken).ConfigureAwait(false);
-                        return Results.Ok(new { ok = 1 });
-                    })
+                               await controlService.SetTickDurationAsync(request.DurationMilliseconds, cancellationToken).ConfigureAwait(false);
+                               return Results.Ok(new { ok = 1 });
+                           })
            .RequireTokenAuthentication()
            .WithName(TickSetEndpointName);
     }
@@ -130,24 +125,21 @@ internal static class SystemEndpoints
                     async ([FromBody] SystemMessageRequest request,
                            ISystemControlService controlService,
                            ICurrentUserAccessor accessor,
-                           CancellationToken cancellationToken) =>
-                    {
-                        if (accessor.CurrentUser?.Id is null)
-                            return Results.Unauthorized();
+                           CancellationToken cancellationToken) => {
+                               if (accessor.CurrentUser?.Id is null)
+                                   return Results.Unauthorized();
 
-                        if (string.IsNullOrWhiteSpace(request.Message))
-                            return Results.BadRequest(new ErrorResponse("message is required"));
+                               if (string.IsNullOrWhiteSpace(request.Message))
+                                   return Results.BadRequest(new ErrorResponse("message is required"));
 
-                        try
-                        {
-                            await controlService.PublishServerMessageAsync(request.Message, cancellationToken).ConfigureAwait(false);
-                            return Results.Ok(new { ok = 1 });
-                        }
-                        catch (ArgumentException ex)
-                        {
-                            return Results.BadRequest(new ErrorResponse(ex.Message));
-                        }
-                    })
+                               try {
+                                   await controlService.PublishServerMessageAsync(request.Message, cancellationToken).ConfigureAwait(false);
+                                   return Results.Ok(new { ok = 1 });
+                               }
+                               catch (ArgumentException ex) {
+                                   return Results.BadRequest(new ErrorResponse(ex.Message));
+                               }
+                           })
            .RequireTokenAuthentication()
            .WithName(MessageEndpointName);
     }
@@ -159,27 +151,26 @@ internal static class SystemEndpoints
                            ISeedDataService seedDataService,
                            IOptions<MongoRedisStorageOptions> storageOptions,
                            ICurrentUserAccessor accessor,
-                           CancellationToken cancellationToken) =>
-                    {
-                        if (accessor.CurrentUser?.Id is null)
-                            return Results.Unauthorized();
+                           CancellationToken cancellationToken) => {
+                               if (accessor.CurrentUser?.Id is null)
+                                   return Results.Unauthorized();
 
-                        if (!string.Equals(request.Confirm, ResetConfirmationToken, StringComparison.OrdinalIgnoreCase))
-                            return Results.BadRequest(new ErrorResponse($"confirmation required (set confirm to {ResetConfirmationToken})"));
+                               if (!string.Equals(request.Confirm, ResetConfirmationToken, StringComparison.OrdinalIgnoreCase))
+                                   return Results.BadRequest(new ErrorResponse($"confirmation required (set confirm to {ResetConfirmationToken})"));
 
-                        var options = storageOptions.Value;
-                        if (string.IsNullOrWhiteSpace(options.MongoConnectionString) || string.IsNullOrWhiteSpace(options.MongoDatabase))
-                            return Results.BadRequest(new ErrorResponse("storage configuration is incomplete"));
+                               var options = storageOptions.Value;
+                               if (string.IsNullOrWhiteSpace(options.MongoConnectionString) || string.IsNullOrWhiteSpace(options.MongoDatabase))
+                                   return Results.BadRequest(new ErrorResponse("storage configuration is incomplete"));
 
-                        var isDefaultDatabase = string.Equals(options.MongoDatabase,
+                               var isDefaultDatabase = string.Equals(options.MongoDatabase,
                                                               SeedDataDefaults.Database.Name,
                                                               StringComparison.OrdinalIgnoreCase);
-                        if (!isDefaultDatabase && !request.Force)
-                            return Results.BadRequest(new ErrorResponse($"refusing to reset database '{options.MongoDatabase}' without force=true"));
+                               if (!isDefaultDatabase && !request.Force)
+                                   return Results.BadRequest(new ErrorResponse($"refusing to reset database '{options.MongoDatabase}' without force=true"));
 
-                        await seedDataService.ReseedAsync(options.MongoConnectionString, options.MongoDatabase, cancellationToken).ConfigureAwait(false);
-                        return Results.Ok(new { ok = 1 });
-                    })
+                               await seedDataService.ReseedAsync(options.MongoConnectionString, options.MongoDatabase, cancellationToken).ConfigureAwait(false);
+                               return Results.Ok(new { ok = 1 });
+                           })
            .RequireTokenAuthentication()
            .WithName(ResetEndpointName);
     }

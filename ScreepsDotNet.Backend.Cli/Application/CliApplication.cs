@@ -29,8 +29,7 @@ internal sealed class CliApplication(IServiceProvider serviceProvider, ILogger<C
 
         var registrar = new CliTypeRegistrar(serviceProvider);
         var app = new CommandApp<RootCommand>(registrar);
-        app.Configure(config =>
-        {
+        app.Configure(config => {
             config.SetApplicationName("screeps-cli");
             config.PropagateExceptions();
             config.ValidateExamples();
@@ -38,8 +37,7 @@ internal sealed class CliApplication(IServiceProvider serviceProvider, ILogger<C
                   .WithDescription("Display server version information.")
                   .WithExample("version", "--json");
 
-            config.AddBranch("storage", branch =>
-            {
+            config.AddBranch("storage", branch => {
                 branch.SetDescription("Storage utilities.");
                 branch.AddCommand<StorageStatusCommand>("status")
                       .WithDescription("Check Mongo/Redis health.")
@@ -49,8 +47,7 @@ internal sealed class CliApplication(IServiceProvider serviceProvider, ILogger<C
                       .WithExample("storage", "reseed", "--force");
             });
 
-            config.AddBranch("user", branch =>
-            {
+            config.AddBranch("user", branch => {
                 branch.SetDescription("User operations.");
                 branch.AddCommand<UserShowCommand>("show")
                       .WithDescription("Display a user's profile.")
@@ -58,8 +55,7 @@ internal sealed class CliApplication(IServiceProvider serviceProvider, ILogger<C
                 branch.AddCommand<UserConsoleExecCommand>("console")
                       .WithDescription("Queue a console expression for a user.")
                       .WithExample("user", "console", "--user-id", "integration-user", "--expression", "console.log('hi');");
-                branch.AddBranch("memory", memory =>
-                {
+                branch.AddBranch("memory", memory => {
                     memory.AddCommand<UserMemoryGetCommand>("get")
                           .WithDescription("Inspect user memory.")
                           .WithExample("user", "memory", "get", "--user-id", "integration-user", "--path", "stats");
@@ -69,16 +65,14 @@ internal sealed class CliApplication(IServiceProvider serviceProvider, ILogger<C
                 });
             });
 
-            config.AddBranch("world", branch =>
-            {
+            config.AddBranch("world", branch => {
                 branch.SetDescription("World utilities.");
                 branch.AddCommand<WorldDumpCommand>("dump")
                       .WithDescription("Dump room terrain data.")
                       .WithExample("world", "dump", "--room", "W1N1", "--decoded", "--json");
             });
 
-            config.AddBranch("bots", branch =>
-            {
+            config.AddBranch("bots", branch => {
                 branch.SetDescription("NPC bot management.");
                 branch.AddCommand<BotListCommand>("list")
                       .WithDescription("List available bot AI bundles.")
@@ -94,8 +88,7 @@ internal sealed class CliApplication(IServiceProvider serviceProvider, ILogger<C
                       .WithExample("bots", "remove", "--username", "AlphaBot");
             });
 
-            config.AddBranch("system", branch =>
-            {
+            config.AddBranch("system", branch => {
                 branch.SetDescription("Runtime/system controls.");
                 branch.AddCommand<SystemStatusCommand>("status")
                       .WithDescription("Show pause/tick status.")
@@ -112,8 +105,7 @@ internal sealed class CliApplication(IServiceProvider serviceProvider, ILogger<C
                 branch.AddCommand<SystemResetCommand>("reset")
                       .WithDescription("Reset world data (reseeds Mongo).")
                       .WithExample("system", "reset", "--force");
-                branch.AddBranch("tick", tick =>
-                {
+                branch.AddBranch("tick", tick => {
                     tick.SetDescription("Tick duration utilities.");
                     tick.AddCommand<SystemTickGetCommand>("get")
                         .WithDescription("Show the current tick duration.")
@@ -124,8 +116,7 @@ internal sealed class CliApplication(IServiceProvider serviceProvider, ILogger<C
                 });
             });
 
-            config.AddBranch("map", branch =>
-            {
+            config.AddBranch("map", branch => {
                 branch.SetDescription("Map editing utilities.");
                 branch.AddCommand<MapGenerateCommand>("generate")
                       .WithDescription("Procedurally generate a room.")
@@ -139,15 +130,13 @@ internal sealed class CliApplication(IServiceProvider serviceProvider, ILogger<C
                 branch.AddCommand<MapRemoveCommand>("remove")
                       .WithDescription("Remove a room entry.")
                       .WithExample("map", "remove", "--room", "W10N5", "--purge-objects");
-                branch.AddBranch("assets", assets =>
-                {
+                branch.AddBranch("assets", assets => {
                     assets.SetDescription("Map asset helpers.");
                     assets.AddCommand<MapAssetsUpdateCommand>("update")
                           .WithDescription("Regenerate map assets (stubbed until renderer lands).")
                           .WithExample("map", "assets", "update", "--room", "W10N5", "--full");
                 });
-                branch.AddBranch("terrain", terrain =>
-                {
+                branch.AddBranch("terrain", terrain => {
                     terrain.SetDescription("Terrain cache helpers.");
                     terrain.AddCommand<MapTerrainRefreshCommand>("refresh")
                            .WithDescription("Refresh cached terrain metadata.")
@@ -155,8 +144,7 @@ internal sealed class CliApplication(IServiceProvider serviceProvider, ILogger<C
                 });
             });
 
-            config.AddBranch("strongholds", branch =>
-            {
+            config.AddBranch("strongholds", branch => {
                 branch.SetDescription("NPC stronghold controls.");
                 branch.AddCommand<StrongholdTemplatesCommand>("templates")
                       .WithDescription("List stronghold templates.")
@@ -169,8 +157,7 @@ internal sealed class CliApplication(IServiceProvider serviceProvider, ILogger<C
                       .WithExample("strongholds", "expand", "--room", "W5N3");
             });
 
-            config.AddBranch("flag", branch =>
-            {
+            config.AddBranch("flag", branch => {
                 branch.SetDescription("Flag management.");
                 branch.AddCommand<FlagCreateCommand>("create")
                       .WithDescription("Create a new flag.")
@@ -183,8 +170,7 @@ internal sealed class CliApplication(IServiceProvider serviceProvider, ILogger<C
                       .WithExample("flag", "remove", "--username", "test-user", "--room", "W1N1", "--name", "Flag1");
             });
 
-            config.AddBranch("invader", branch =>
-            {
+            config.AddBranch("invader", branch => {
                 branch.SetDescription("NPC invader management.");
                 branch.AddCommand<InvaderCreateCommand>("create")
                       .WithDescription("Create a new invader.")

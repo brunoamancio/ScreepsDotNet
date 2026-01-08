@@ -1,4 +1,4 @@
-namespace ScreepsDotNet.Backend.Core.Cli;
+﻿namespace ScreepsDotNet.Backend.Core.Cli;
 
 /// <summary>
 /// Represents a connected CLI session against the backend.

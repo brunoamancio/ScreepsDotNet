@@ -1,4 +1,4 @@
-namespace ScreepsDotNet.Storage.MongoRedis.Services;
+﻿namespace ScreepsDotNet.Storage.MongoRedis.Services;
 
 using System.Collections.Concurrent;
 using System.Reflection;

@@ -1,4 +1,4 @@
-namespace ScreepsDotNet.Backend.Cli.Tests.Integration;
+﻿namespace ScreepsDotNet.Backend.Cli.Tests.Integration;
 
 using Microsoft.Extensions.Logging.Abstractions;
 using MongoDB.Bson;
@@ -159,7 +159,7 @@ public sealed class BotCommandsIntegrationTests(MongoMapIntegrationFixture fixtu
         public Task<BotDefinition?> FindDefinitionAsync(string name, CancellationToken cancellationToken = default)
         {
             _definitions.TryGetValue(name, out var definition);
-            return Task.FromResult<BotDefinition?>(definition);
+            return Task.FromResult(definition);
         }
     }
 }

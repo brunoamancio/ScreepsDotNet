@@ -1,4 +1,4 @@
-namespace ScreepsDotNet.Backend.Http.Endpoints;
+﻿namespace ScreepsDotNet.Backend.Http.Endpoints;
 
 using System.Collections.Generic;
 using System.Linq;
@@ -37,16 +37,15 @@ internal static class PowerCreepEndpoints
         app.MapGet(ApiRoutes.Game.PowerCreeps.List,
                    async (ICurrentUserAccessor userAccessor,
                           IPowerCreepService powerCreepService,
-                          CancellationToken cancellationToken) =>
-                   {
-                       var userId = userAccessor.CurrentUser?.Id;
-                       if (string.IsNullOrEmpty(userId))
-                           return Results.Unauthorized();
+                          CancellationToken cancellationToken) => {
+                              var userId = userAccessor.CurrentUser?.Id;
+                              if (string.IsNullOrEmpty(userId))
+                                  return Results.Unauthorized();
 
-                       var creeps = await powerCreepService.GetListAsync(userId, cancellationToken).ConfigureAwait(false);
-                       var response = new PowerCreepListResponse(creeps.Select(PowerCreepResponse.FromModel).ToList());
-                       return Results.Ok(response);
-                   })
+                              var creeps = await powerCreepService.GetListAsync(userId, cancellationToken).ConfigureAwait(false);
+                              var response = new PowerCreepListResponse(creeps.Select(PowerCreepResponse.FromModel).ToList());
+                              return Results.Ok(response);
+                          })
            .RequireTokenAuthentication()
            .WithName(ListEndpointName);
     }
@@ -57,25 +56,22 @@ internal static class PowerCreepEndpoints
                     async ([FromBody] PowerCreepCreateRequest request,
                            ICurrentUserAccessor userAccessor,
                            IPowerCreepService powerCreepService,
-                           CancellationToken cancellationToken) =>
-                    {
-                        var userId = userAccessor.CurrentUser?.Id;
-                        if (string.IsNullOrEmpty(userId))
-                            return Results.Unauthorized();
+                           CancellationToken cancellationToken) => {
+                               var userId = userAccessor.CurrentUser?.Id;
+                               if (string.IsNullOrEmpty(userId))
+                                   return Results.Unauthorized();
 
-                        if (string.IsNullOrWhiteSpace(request.Name) || string.IsNullOrWhiteSpace(request.ClassName))
-                            return Results.BadRequest(new ErrorResponse("invalid params"));
+                               if (string.IsNullOrWhiteSpace(request.Name) || string.IsNullOrWhiteSpace(request.ClassName))
+                                   return Results.BadRequest(new ErrorResponse("invalid params"));
 
-                        try
-                        {
-                            var creep = await powerCreepService.CreateAsync(userId, request.Name, request.ClassName, cancellationToken).ConfigureAwait(false);
-                            return Results.Ok(new PowerCreepMutationResponse(PowerCreepResponse.FromModel(creep)));
-                        }
-                        catch (PowerCreepValidationException ex)
-                        {
-                            return Results.BadRequest(new ErrorResponse(ex.Message));
-                        }
-                    })
+                               try {
+                                   var creep = await powerCreepService.CreateAsync(userId, request.Name, request.ClassName, cancellationToken).ConfigureAwait(false);
+                                   return Results.Ok(new PowerCreepMutationResponse(PowerCreepResponse.FromModel(creep)));
+                               }
+                               catch (PowerCreepValidationException ex) {
+                                   return Results.BadRequest(new ErrorResponse(ex.Message));
+                               }
+                           })
            .RequireTokenAuthentication()
            .WithName(CreateEndpointName);
     }
@@ -86,25 +82,22 @@ internal static class PowerCreepEndpoints
                     async ([FromBody] PowerCreepIdRequest request,
                            ICurrentUserAccessor userAccessor,
                            IPowerCreepService powerCreepService,
-                           CancellationToken cancellationToken) =>
-                    {
-                        var userId = userAccessor.CurrentUser?.Id;
-                        if (string.IsNullOrEmpty(userId))
-                            return Results.Unauthorized();
+                           CancellationToken cancellationToken) => {
+                               var userId = userAccessor.CurrentUser?.Id;
+                               if (string.IsNullOrEmpty(userId))
+                                   return Results.Unauthorized();
 
-                        if (string.IsNullOrWhiteSpace(request.Id))
-                            return Results.BadRequest(new ErrorResponse("invalid params"));
+                               if (string.IsNullOrWhiteSpace(request.Id))
+                                   return Results.BadRequest(new ErrorResponse("invalid params"));
 
-                        try
-                        {
-                            await powerCreepService.DeleteAsync(userId, request.Id, cancellationToken).ConfigureAwait(false);
-                            return Results.Ok(new { ok = 1 });
-                        }
-                        catch (PowerCreepValidationException ex)
-                        {
-                            return Results.BadRequest(new ErrorResponse(ex.Message));
-                        }
-                    })
+                               try {
+                                   await powerCreepService.DeleteAsync(userId, request.Id, cancellationToken).ConfigureAwait(false);
+                                   return Results.Ok(new { ok = 1 });
+                               }
+                               catch (PowerCreepValidationException ex) {
+                                   return Results.BadRequest(new ErrorResponse(ex.Message));
+                               }
+                           })
            .RequireTokenAuthentication()
            .WithName(DeleteEndpointName);
     }
@@ -115,25 +108,22 @@ internal static class PowerCreepEndpoints
                     async ([FromBody] PowerCreepIdRequest request,
                            ICurrentUserAccessor userAccessor,
                            IPowerCreepService powerCreepService,
-                           CancellationToken cancellationToken) =>
-                    {
-                        var userId = userAccessor.CurrentUser?.Id;
-                        if (string.IsNullOrEmpty(userId))
-                            return Results.Unauthorized();
+                           CancellationToken cancellationToken) => {
+                               var userId = userAccessor.CurrentUser?.Id;
+                               if (string.IsNullOrEmpty(userId))
+                                   return Results.Unauthorized();
 
-                        if (string.IsNullOrWhiteSpace(request.Id))
-                            return Results.BadRequest(new ErrorResponse("invalid params"));
+                               if (string.IsNullOrWhiteSpace(request.Id))
+                                   return Results.BadRequest(new ErrorResponse("invalid params"));
 
-                        try
-                        {
-                            await powerCreepService.CancelDeleteAsync(userId, request.Id, cancellationToken).ConfigureAwait(false);
-                            return Results.Ok(new { ok = 1 });
-                        }
-                        catch (PowerCreepValidationException ex)
-                        {
-                            return Results.BadRequest(new ErrorResponse(ex.Message));
-                        }
-                    })
+                               try {
+                                   await powerCreepService.CancelDeleteAsync(userId, request.Id, cancellationToken).ConfigureAwait(false);
+                                   return Results.Ok(new { ok = 1 });
+                               }
+                               catch (PowerCreepValidationException ex) {
+                                   return Results.BadRequest(new ErrorResponse(ex.Message));
+                               }
+                           })
            .RequireTokenAuthentication()
            .WithName(CancelDeleteEndpointName);
     }
@@ -144,25 +134,22 @@ internal static class PowerCreepEndpoints
                     async ([FromBody] PowerCreepUpgradeRequest request,
                            ICurrentUserAccessor userAccessor,
                            IPowerCreepService powerCreepService,
-                           CancellationToken cancellationToken) =>
-                    {
-                        var userId = userAccessor.CurrentUser?.Id;
-                        if (string.IsNullOrEmpty(userId))
-                            return Results.Unauthorized();
+                           CancellationToken cancellationToken) => {
+                               var userId = userAccessor.CurrentUser?.Id;
+                               if (string.IsNullOrEmpty(userId))
+                                   return Results.Unauthorized();
 
-                        if (string.IsNullOrWhiteSpace(request.Id) || request.Powers is null)
-                            return Results.BadRequest(new ErrorResponse("invalid params"));
+                               if (string.IsNullOrWhiteSpace(request.Id) || request.Powers is null)
+                                   return Results.BadRequest(new ErrorResponse("invalid params"));
 
-                        try
-                        {
-                            await powerCreepService.UpgradeAsync(userId, request.Id, request.Powers, cancellationToken).ConfigureAwait(false);
-                            return Results.Ok(new { ok = 1 });
-                        }
-                        catch (PowerCreepValidationException ex)
-                        {
-                            return Results.BadRequest(new ErrorResponse(ex.Message));
-                        }
-                    })
+                               try {
+                                   await powerCreepService.UpgradeAsync(userId, request.Id, request.Powers, cancellationToken).ConfigureAwait(false);
+                                   return Results.Ok(new { ok = 1 });
+                               }
+                               catch (PowerCreepValidationException ex) {
+                                   return Results.BadRequest(new ErrorResponse(ex.Message));
+                               }
+                           })
            .RequireTokenAuthentication()
            .WithName(UpgradeEndpointName);
     }
@@ -173,25 +160,22 @@ internal static class PowerCreepEndpoints
                     async ([FromBody] PowerCreepRenameRequest request,
                            ICurrentUserAccessor userAccessor,
                            IPowerCreepService powerCreepService,
-                           CancellationToken cancellationToken) =>
-                    {
-                        var userId = userAccessor.CurrentUser?.Id;
-                        if (string.IsNullOrEmpty(userId))
-                            return Results.Unauthorized();
+                           CancellationToken cancellationToken) => {
+                               var userId = userAccessor.CurrentUser?.Id;
+                               if (string.IsNullOrEmpty(userId))
+                                   return Results.Unauthorized();
 
-                        if (string.IsNullOrWhiteSpace(request.Id) || string.IsNullOrWhiteSpace(request.Name))
-                            return Results.BadRequest(new ErrorResponse("invalid params"));
+                               if (string.IsNullOrWhiteSpace(request.Id) || string.IsNullOrWhiteSpace(request.Name))
+                                   return Results.BadRequest(new ErrorResponse("invalid params"));
 
-                        try
-                        {
-                            await powerCreepService.RenameAsync(userId, request.Id, request.Name, cancellationToken).ConfigureAwait(false);
-                            return Results.Ok(new { ok = 1 });
-                        }
-                        catch (PowerCreepValidationException ex)
-                        {
-                            return Results.BadRequest(new ErrorResponse(ex.Message));
-                        }
-                    })
+                               try {
+                                   await powerCreepService.RenameAsync(userId, request.Id, request.Name, cancellationToken).ConfigureAwait(false);
+                                   return Results.Ok(new { ok = 1 });
+                               }
+                               catch (PowerCreepValidationException ex) {
+                                   return Results.BadRequest(new ErrorResponse(ex.Message));
+                               }
+                           })
            .RequireTokenAuthentication()
            .WithName(RenameEndpointName);
     }
@@ -201,22 +185,19 @@ internal static class PowerCreepEndpoints
         app.MapPost(ApiRoutes.Game.PowerCreeps.Experimentation,
                     async (ICurrentUserAccessor userAccessor,
                            IPowerCreepService powerCreepService,
-                           CancellationToken cancellationToken) =>
-                    {
-                        var userId = userAccessor.CurrentUser?.Id;
-                        if (string.IsNullOrEmpty(userId))
-                            return Results.Unauthorized();
+                           CancellationToken cancellationToken) => {
+                               var userId = userAccessor.CurrentUser?.Id;
+                               if (string.IsNullOrEmpty(userId))
+                                   return Results.Unauthorized();
 
-                        try
-                        {
-                            await powerCreepService.RegisterExperimentationAsync(userId, cancellationToken).ConfigureAwait(false);
-                            return Results.Ok(new { ok = 1 });
-                        }
-                        catch (PowerCreepValidationException ex)
-                        {
-                            return Results.BadRequest(new ErrorResponse(ex.Message));
-                        }
-                    })
+                               try {
+                                   await powerCreepService.RegisterExperimentationAsync(userId, cancellationToken).ConfigureAwait(false);
+                                   return Results.Ok(new { ok = 1 });
+                               }
+                               catch (PowerCreepValidationException ex) {
+                                   return Results.BadRequest(new ErrorResponse(ex.Message));
+                               }
+                           })
            .RequireTokenAuthentication()
            .WithName(ExperimentationEndpointName);
     }

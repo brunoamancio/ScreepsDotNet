@@ -1,4 +1,4 @@
-namespace ScreepsDotNet.Backend.Http.Endpoints;
+﻿namespace ScreepsDotNet.Backend.Http.Endpoints;
 
 using System;
 using System.Collections.Generic;
@@ -31,13 +31,12 @@ internal static class BotEndpoints
     {
         app.MapGet(ApiRoutes.Game.Bot.List,
                    async (IBotDefinitionProvider definitionProvider,
-                          CancellationToken cancellationToken) =>
-                   {
-                       var definitions = await definitionProvider.GetDefinitionsAsync(cancellationToken).ConfigureAwait(false);
-                       var response = new BotListResponse(
+                          CancellationToken cancellationToken) => {
+                              var definitions = await definitionProvider.GetDefinitionsAsync(cancellationToken).ConfigureAwait(false);
+                              var response = new BotListResponse(
                            definitions.Select(def => new BotDefinitionResponse(def.Name, def.Description, def.Modules.Keys)).ToList());
-                       return Results.Ok(response);
-                   })
+                              return Results.Ok(response);
+                          })
            .RequireTokenAuthentication()
            .WithName(ListBotsEndpointName);
     }
@@ -48,32 +47,29 @@ internal static class BotEndpoints
                     async ([FromBody] BotSpawnRequest request,
                            IBotControlService botControlService,
                            ICurrentUserAccessor userAccessor,
-                           CancellationToken cancellationToken) =>
-                    {
-                        if (userAccessor.CurrentUser?.Id is null)
-                            return Results.Unauthorized();
+                           CancellationToken cancellationToken) => {
+                               if (userAccessor.CurrentUser?.Id is null)
+                                   return Results.Unauthorized();
 
-                        if (string.IsNullOrWhiteSpace(request.Bot) || string.IsNullOrWhiteSpace(request.Room))
-                            return Results.BadRequest(new ErrorResponse("invalid params"));
+                               if (string.IsNullOrWhiteSpace(request.Bot) || string.IsNullOrWhiteSpace(request.Room))
+                                   return Results.BadRequest(new ErrorResponse("invalid params"));
 
-                        try
-                        {
-                            var options = new BotSpawnOptions(request.Username, request.Cpu, request.GlobalControlLevel, request.SpawnX, request.SpawnY);
-                            var result = await botControlService.SpawnAsync(request.Bot, request.Room, options, cancellationToken).ConfigureAwait(false);
-                            return Results.Ok(new
-                            {
-                                ok = 1,
-                                userId = result.UserId,
-                                username = result.Username,
-                                room = result.RoomName,
-                                spawn = new { x = result.SpawnX, y = result.SpawnY }
-                            });
-                        }
-                        catch (InvalidOperationException ex)
-                        {
-                            return Results.BadRequest(new ErrorResponse(ex.Message));
-                        }
-                    })
+                               try {
+                                   var options = new BotSpawnOptions(request.Username, request.Cpu, request.GlobalControlLevel, request.SpawnX, request.SpawnY);
+                                   var result = await botControlService.SpawnAsync(request.Bot, request.Room, options, cancellationToken).ConfigureAwait(false);
+                                   return Results.Ok(new
+                                   {
+                                       ok = 1,
+                                       userId = result.UserId,
+                                       username = result.Username,
+                                       room = result.RoomName,
+                                       spawn = new { x = result.SpawnX, y = result.SpawnY }
+                                   });
+                               }
+                               catch (InvalidOperationException ex) {
+                                   return Results.BadRequest(new ErrorResponse(ex.Message));
+                               }
+                           })
            .RequireTokenAuthentication()
            .WithName(SpawnBotEndpointName);
     }
@@ -84,24 +80,21 @@ internal static class BotEndpoints
                     async ([FromBody] BotReloadRequest request,
                            IBotControlService botControlService,
                            ICurrentUserAccessor userAccessor,
-                           CancellationToken cancellationToken) =>
-                    {
-                        if (userAccessor.CurrentUser?.Id is null)
-                            return Results.Unauthorized();
+                           CancellationToken cancellationToken) => {
+                               if (userAccessor.CurrentUser?.Id is null)
+                                   return Results.Unauthorized();
 
-                        if (string.IsNullOrWhiteSpace(request.Bot))
-                            return Results.BadRequest(new ErrorResponse("invalid params"));
+                               if (string.IsNullOrWhiteSpace(request.Bot))
+                                   return Results.BadRequest(new ErrorResponse("invalid params"));
 
-                        try
-                        {
-                            var reloaded = await botControlService.ReloadAsync(request.Bot, cancellationToken).ConfigureAwait(false);
-                            return Results.Ok(new { ok = 1, usersReloaded = reloaded });
-                        }
-                        catch (InvalidOperationException ex)
-                        {
-                            return Results.BadRequest(new ErrorResponse(ex.Message));
-                        }
-                    })
+                               try {
+                                   var reloaded = await botControlService.ReloadAsync(request.Bot, cancellationToken).ConfigureAwait(false);
+                                   return Results.Ok(new { ok = 1, usersReloaded = reloaded });
+                               }
+                               catch (InvalidOperationException ex) {
+                                   return Results.BadRequest(new ErrorResponse(ex.Message));
+                               }
+                           })
            .RequireTokenAuthentication()
            .WithName(ReloadBotEndpointName);
     }
@@ -112,27 +105,24 @@ internal static class BotEndpoints
                     async ([FromBody] BotRemoveRequest request,
                            IBotControlService botControlService,
                            ICurrentUserAccessor userAccessor,
-                           CancellationToken cancellationToken) =>
-                    {
-                        if (userAccessor.CurrentUser?.Id is null)
-                            return Results.Unauthorized();
+                           CancellationToken cancellationToken) => {
+                               if (userAccessor.CurrentUser?.Id is null)
+                                   return Results.Unauthorized();
 
-                        if (string.IsNullOrWhiteSpace(request.Username))
-                            return Results.BadRequest(new ErrorResponse("invalid params"));
+                               if (string.IsNullOrWhiteSpace(request.Username))
+                                   return Results.BadRequest(new ErrorResponse("invalid params"));
 
-                        try
-                        {
-                            var removed = await botControlService.RemoveAsync(request.Username, cancellationToken).ConfigureAwait(false);
-                            if (!removed)
-                                return Results.BadRequest(new ErrorResponse("user not found"));
+                               try {
+                                   var removed = await botControlService.RemoveAsync(request.Username, cancellationToken).ConfigureAwait(false);
+                                   if (!removed)
+                                       return Results.BadRequest(new ErrorResponse("user not found"));
 
-                            return Results.Ok(new { ok = 1 });
-                        }
-                        catch (InvalidOperationException ex)
-                        {
-                            return Results.BadRequest(new ErrorResponse(ex.Message));
-                        }
-                    })
+                                   return Results.Ok(new { ok = 1 });
+                               }
+                               catch (InvalidOperationException ex) {
+                                   return Results.BadRequest(new ErrorResponse(ex.Message));
+                               }
+                           })
            .RequireTokenAuthentication()
            .WithName(RemoveBotEndpointName);
     }

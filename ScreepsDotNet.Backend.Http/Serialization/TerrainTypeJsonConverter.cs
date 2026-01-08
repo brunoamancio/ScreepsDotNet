@@ -28,7 +28,8 @@ internal sealed class TerrainTypeJsonConverter : JsonConverter<TerrainType>
         {
             TerrainType.Wall => "wall",
             TerrainType.Swamp => "swamp",
-            _ => "plain"
+            TerrainType.Plain => "plain",
+            _ => throw new JsonException($"Unsupported terrain type '{value}'.")
         };
 
         writer.WriteStringValue(encoded);

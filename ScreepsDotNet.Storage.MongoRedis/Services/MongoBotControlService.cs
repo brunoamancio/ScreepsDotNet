@@ -1,4 +1,4 @@
-namespace ScreepsDotNet.Storage.MongoRedis.Services;
+﻿namespace ScreepsDotNet.Storage.MongoRedis.Services;
 
 using System.Collections.Generic;
 using System.Globalization;
@@ -50,10 +50,7 @@ public sealed class MongoBotControlService(IMongoDatabaseProvider databaseProvid
 
         var controller = await _roomObjectsCollection.Find(controllerFilter)
                                                      .FirstOrDefaultAsync(cancellationToken)
-                                                     .ConfigureAwait(false);
-        if (controller is null)
-            throw new InvalidOperationException($"Room {roomName} does not contain a controller.");
-
+                                                     .ConfigureAwait(false) ?? throw new InvalidOperationException($"Room {roomName} does not contain a controller.");
         if (controller.UserId is not null)
             throw new InvalidOperationException($"Room {roomName} is already owned by {controller.UserId}.");
 
@@ -112,12 +109,12 @@ public sealed class MongoBotControlService(IMongoDatabaseProvider databaseProvid
         await InsertSpawnAsync(roomName, userId, spawnX, spawnY, cancellationToken).ConfigureAwait(false);
 
         var gameTime = await worldMetadata.GetGameTimeAsync(cancellationToken).ConfigureAwait(false);
-        var safeModeExpiry = (int)(gameTime + DefaultSafeModeDuration);
+        var safeModeExpiry = gameTime + DefaultSafeModeDuration;
         var controllerUpdate = Builders<RoomObjectDocument>.Update
                                                      .Set(doc => doc.UserId, userId)
                                                      .Set(doc => doc.Level, options.GlobalControlLevel ?? 1)
                                                      .Set(doc => doc.Progress, 0)
-                                                     .Set(doc => doc.DowngradeTime, (long)safeModeExpiry)
+                                                     .Set(doc => doc.DowngradeTime, safeModeExpiry)
                                                      .Set(doc => doc.SafeMode, safeModeExpiry);
 
         await _roomObjectsCollection.UpdateOneAsync(controllerFilter,

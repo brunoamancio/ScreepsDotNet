@@ -1,4 +1,4 @@
-namespace ScreepsDotNet.Backend.Core.Engine;
+﻿namespace ScreepsDotNet.Backend.Core.Engine;
 
 /// <summary>
 /// Provides high-level information about the tick being executed.

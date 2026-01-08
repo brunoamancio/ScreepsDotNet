@@ -1,4 +1,4 @@
-using ScreepsDotNet.Backend.Core.Constants;
+﻿using ScreepsDotNet.Backend.Core.Constants;
 
 namespace ScreepsDotNet.Backend.Core.Models.Strongholds;
 

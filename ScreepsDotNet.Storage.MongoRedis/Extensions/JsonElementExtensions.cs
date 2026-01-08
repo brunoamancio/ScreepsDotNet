@@ -1,4 +1,4 @@
-namespace ScreepsDotNet.Storage.MongoRedis.Extensions;
+﻿namespace ScreepsDotNet.Storage.MongoRedis.Extensions;
 
 using System;
 using System.Collections.Generic;

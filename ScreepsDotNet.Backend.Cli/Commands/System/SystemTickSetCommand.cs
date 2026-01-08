@@ -1,4 +1,4 @@
-using ScreepsDotNet.Backend.Core.Services;
+﻿using ScreepsDotNet.Backend.Core.Services;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
@@ -13,7 +13,7 @@ internal sealed class SystemTickSetCommand(ISystemControlService controlService)
 
         public override ValidationResult Validate()
         {
-            if (DurationMilliseconds is null || DurationMilliseconds <= 0)
+            if (DurationMilliseconds is null or <= 0)
                 return ValidationResult.Error("Specify --ms with a positive integer value.");
 
             return ValidationResult.Success();

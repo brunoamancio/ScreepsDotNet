@@ -1,4 +1,4 @@
-namespace ScreepsDotNet.Backend.Http.Tests.Integration;
+﻿namespace ScreepsDotNet.Backend.Http.Tests.Integration;
 
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -44,8 +44,7 @@ internal sealed class IntegrationWebApplicationFactory(string mongoConnectionStr
             };
             configBuilder.AddInMemoryCollection(settings);
         });
-        builder.ConfigureServices(services =>
-        {
+        builder.ConfigureServices(services => {
             services.RemoveAll<IBotDefinitionProvider>();
             services.AddSingleton<IBotDefinitionProvider, StaticBotDefinitionProvider>();
         });

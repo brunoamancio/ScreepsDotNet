@@ -39,9 +39,7 @@ static void ConfigureConfiguration(HostApplicationBuilder builder, string[] args
 static void ConfigureLogging(HostApplicationBuilder builder)
 {
     builder.Logging.ClearProviders();
-    builder.Logging.AddSimpleConsole(options => {
-        options.SingleLine = true;
-    });
+    builder.Logging.AddSimpleConsole(options => options.SingleLine = true);
     builder.Logging.AddFilter("Microsoft.Hosting.Lifetime", LogLevel.Warning);
     builder.Logging.AddFilter("Microsoft.Extensions.Hosting.Internal.Host", LogLevel.Warning);
 }
@@ -50,8 +48,7 @@ static void ConfigureServices(HostApplicationBuilder builder)
 {
     builder.Services.Configure<ConsoleLifetimeOptions>(options => options.SuppressStatusMessages = true);
     builder.Services.Configure<MongoRedisStorageOptions>(builder.Configuration.GetSection(MongoRedisStorageOptions.SectionName));
-    builder.Services.Configure<BotManifestOptions>(options =>
-    {
+    builder.Services.Configure<BotManifestOptions>(options => {
         options.ManifestFile = builder.Configuration["modfile"]
                                ?? builder.Configuration["MODFILE"]
                                ?? Environment.GetEnvironmentVariable("MODFILE");

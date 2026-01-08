@@ -7,9 +7,9 @@ using Spectre.Console.Cli;
 
 internal sealed class CliTypeRegistrar(IServiceProvider serviceProvider) : ITypeRegistrar
 {
-    private readonly Dictionary<Type, Type> _registrations = new();
-    private readonly Dictionary<Type, object> _instances = new();
-    private readonly Dictionary<Type, Func<object>> _lazyRegistrations = new();
+    private readonly Dictionary<Type, Type> _registrations = [];
+    private readonly Dictionary<Type, object> _instances = [];
+    private readonly Dictionary<Type, Func<object>> _lazyRegistrations = [];
 
     public ITypeResolver Build()
         => new CliTypeResolver(serviceProvider, _registrations, _instances, _lazyRegistrations);

@@ -1,4 +1,4 @@
-namespace ScreepsDotNet.Storage.MongoRedis.Services;
+﻿namespace ScreepsDotNet.Storage.MongoRedis.Services;
 
 using System.Security.Cryptography;
 using System.Text.RegularExpressions;
@@ -180,14 +180,14 @@ public sealed partial class MongoMapControlService(IMongoDatabaseProvider databa
         });
 
         if (options.IncludeKeeperLairs) {
-            foreach (var coordinate in KeeperLairCoordinates) {
+            foreach (var (x, y) in KeeperLairCoordinates) {
                 objects.Add(new RoomObjectDocument
                 {
                     Id = ObjectId.GenerateNewId(),
                     Room = options.RoomName,
                     Type = "keeperLair",
-                    X = coordinate.x,
-                    Y = coordinate.y
+                    X = x,
+                    Y = y
                 });
             }
         }
@@ -251,6 +251,8 @@ public sealed partial class MongoMapControlService(IMongoDatabaseProvider databa
                     mask |= 2;
                 if (random.NextDouble() < 0.03)
                     mask |= 1;
+                break;
+            default:
                 break;
         }
 

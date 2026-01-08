@@ -1,4 +1,4 @@
-namespace ScreepsDotNet.Backend.Core.Models.Strongholds;
+﻿namespace ScreepsDotNet.Backend.Core.Models.Strongholds;
 
 /// <summary>
 /// Parameters supported by the legacy stronghold spawn CLI command.

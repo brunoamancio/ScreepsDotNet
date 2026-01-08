@@ -1,4 +1,4 @@
-namespace ScreepsDotNet.Backend.Cli.Commands.Map;
+﻿namespace ScreepsDotNet.Backend.Cli.Commands.Map;
 
 using ScreepsDotNet.Backend.Core.Services;
 using Spectre.Console;

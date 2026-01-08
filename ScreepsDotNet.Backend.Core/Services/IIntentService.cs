@@ -1,4 +1,4 @@
-namespace ScreepsDotNet.Backend.Core.Services;
+﻿namespace ScreepsDotNet.Backend.Core.Services;
 
 using System.Text.Json;
 using System.Threading;

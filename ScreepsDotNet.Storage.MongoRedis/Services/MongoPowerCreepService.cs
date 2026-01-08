@@ -1,4 +1,4 @@
-namespace ScreepsDotNet.Storage.MongoRedis.Services;
+﻿namespace ScreepsDotNet.Storage.MongoRedis.Services;
 
 using System.Globalization;
 using System.Linq;
@@ -102,8 +102,7 @@ public sealed class MongoPowerCreepService : IPowerCreepService
                    ?? throw new PowerCreepValidationException("user not found");
         var now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 
-        if (user.PowerExperimentationTime.HasValue && user.PowerExperimentationTime.Value > now)
-        {
+        if (user.PowerExperimentationTime.HasValue && user.PowerExperimentationTime.Value > now) {
             await _powerCreeps.DeleteOneAsync(doc => doc.Id == id, cancellationToken).ConfigureAwait(false);
             await _roomObjects.DeleteOneAsync(doc => doc.Id == id, cancellationToken: cancellationToken).ConfigureAwait(false);
             return;
@@ -177,8 +176,7 @@ public sealed class MongoPowerCreepService : IPowerCreepService
         var creepPowers = creep.Powers?.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.Level, StringComparer.Ordinal)
                           ?? new Dictionary<string, int>(StringComparer.Ordinal);
 
-        foreach (var kvp in normalizedPowers)
-        {
+        foreach (var kvp in normalizedPowers) {
             if (!PowerConstants.PowerInfo.TryGetValue(kvp.Key, out var info))
                 throw new PowerCreepValidationException($"invalid power {kvp.Key}");
 
@@ -195,15 +193,13 @@ public sealed class MongoPowerCreepService : IPowerCreepService
                 throw new PowerCreepValidationException($"cannot downgrade power {kvp.Key}");
         }
 
-        foreach (var kvp in creepPowers)
-        {
+        foreach (var kvp in creepPowers) {
             var requestedLevel = normalizedPowers.TryGetValue(kvp.Key, out var value) ? value : 0;
             if (requestedLevel < kvp.Value)
                 throw new PowerCreepValidationException($"cannot downgrade power {kvp.Key}");
         }
 
-        foreach (var kvp in normalizedPowers)
-        {
+        foreach (var kvp in normalizedPowers) {
             if (kvp.Value == 0)
                 continue;
 
@@ -343,8 +339,7 @@ public sealed class MongoPowerCreepService : IPowerCreepService
         var recreated = PowerConstants.PowerInfo.ToDictionary(kvp => kvp.Key, _ => 0, StringComparer.Ordinal);
 
         var currentLevel = 0;
-        while (currentLevel < totalDesiredLevel)
-        {
+        while (currentLevel < totalDesiredLevel) {
             var nextPower = requested.Keys
                                      .Select(NormalizePowerKey)
                                      .FirstOrDefault(powerKey =>
@@ -366,8 +361,7 @@ public sealed class MongoPowerCreepService : IPowerCreepService
     private static Dictionary<string, PowerCreepPowerDocument> BuildPowerDocuments(IReadOnlyDictionary<string, int> requestedPowers)
     {
         var result = new Dictionary<string, PowerCreepPowerDocument>(StringComparer.Ordinal);
-        foreach (var kvp in requestedPowers)
-        {
+        foreach (var kvp in requestedPowers) {
             if (kvp.Value <= 0)
                 continue;
 

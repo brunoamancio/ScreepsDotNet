@@ -57,6 +57,7 @@ internal sealed class WorldDumpCommand(IRoomTerrainRepository terrainRepository)
             }
             else
                 AnsiConsole.MarkupLine(entry.Terrain ?? "(empty)");
+
             AnsiConsole.WriteLine();
         }
 

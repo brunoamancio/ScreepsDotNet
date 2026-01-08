@@ -1,4 +1,4 @@
-namespace ScreepsDotNet.Backend.Http.Tests.Endpoints;
+﻿namespace ScreepsDotNet.Backend.Http.Tests.Endpoints;
 
 using System.Text.Json;
 using ScreepsDotNet.Backend.Http.Routing;

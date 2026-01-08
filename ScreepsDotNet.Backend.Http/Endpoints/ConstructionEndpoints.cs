@@ -21,27 +21,26 @@ internal static class ConstructionEndpoints
                     async ([FromBody] PlaceConstructionRequest request,
                            IConstructionService constructionService,
                            ICurrentUserAccessor userAccessor,
-                           CancellationToken cancellationToken) =>
-                    {
-                        var userId = userAccessor.CurrentUser?.Id;
-                        if (string.IsNullOrEmpty(userId))
-                            return Results.Unauthorized();
+                           CancellationToken cancellationToken) => {
+                               var userId = userAccessor.CurrentUser?.Id;
+                               if (string.IsNullOrEmpty(userId))
+                                   return Results.Unauthorized();
 
-                        var result = await constructionService.CreateConstructionAsync(userId, request, cancellationToken).ConfigureAwait(false);
+                               var result = await constructionService.CreateConstructionAsync(userId, request, cancellationToken).ConfigureAwait(false);
 
-                        return result.Status switch
-                        {
-                            PlaceConstructionResultStatus.Success => Results.Ok(new { ok = 1, _id = result.Id }),
-                            PlaceConstructionResultStatus.InvalidParams => Results.BadRequest(new ErrorResponse(result.ErrorMessage ?? "invalid params")),
-                            PlaceConstructionResultStatus.InvalidLocation => Results.BadRequest(new ErrorResponse(result.ErrorMessage ?? "invalid location")),
-                            PlaceConstructionResultStatus.NotControllerOwner => Results.BadRequest(new ErrorResponse("not a controller owner")),
-                            PlaceConstructionResultStatus.RclNotEnough => Results.BadRequest(new ErrorResponse("RCL not enough")),
-                            PlaceConstructionResultStatus.TooMany => Results.BadRequest(new ErrorResponse("too many")),
-                            PlaceConstructionResultStatus.InvalidRoom => Results.BadRequest(new ErrorResponse(result.ErrorMessage ?? "invalid room")),
-                            PlaceConstructionResultStatus.UserNotFound => Results.Unauthorized(),
-                            _ => Results.BadRequest(new ErrorResponse("unknown error"))
-                        };
-                    })
+                               return result.Status switch
+                               {
+                                   PlaceConstructionResultStatus.Success => Results.Ok(new { ok = 1, _id = result.Id }),
+                                   PlaceConstructionResultStatus.InvalidParams => Results.BadRequest(new ErrorResponse(result.ErrorMessage ?? "invalid params")),
+                                   PlaceConstructionResultStatus.InvalidLocation => Results.BadRequest(new ErrorResponse(result.ErrorMessage ?? "invalid location")),
+                                   PlaceConstructionResultStatus.NotControllerOwner => Results.BadRequest(new ErrorResponse("not a controller owner")),
+                                   PlaceConstructionResultStatus.RclNotEnough => Results.BadRequest(new ErrorResponse("RCL not enough")),
+                                   PlaceConstructionResultStatus.TooMany => Results.BadRequest(new ErrorResponse("too many")),
+                                   PlaceConstructionResultStatus.InvalidRoom => Results.BadRequest(new ErrorResponse(result.ErrorMessage ?? "invalid room")),
+                                   PlaceConstructionResultStatus.UserNotFound => Results.Unauthorized(),
+                                   _ => Results.BadRequest(new ErrorResponse("unknown error"))
+                               };
+                           })
            .RequireTokenAuthentication()
            .WithName(CreateConstructionEndpointName);
     }

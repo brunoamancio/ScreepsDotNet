@@ -44,11 +44,9 @@ internal sealed class FlagRemoveCommand(IFlagService flagService, IUserRepositor
     public override async Task<int> ExecuteAsync(CommandContext context, Settings settings, CancellationToken cancellationToken)
     {
         var userId = settings.UserId;
-        if (string.IsNullOrWhiteSpace(userId))
-        {
+        if (string.IsNullOrWhiteSpace(userId)) {
             var profile = await userRepository.FindPublicProfileAsync(settings.Username, null, cancellationToken).ConfigureAwait(false);
-            if (profile is null)
-            {
+            if (profile is null) {
                 AnsiConsole.MarkupLine("[red]Error:[/] User not found.");
                 return 1;
             }
@@ -62,8 +60,7 @@ internal sealed class FlagRemoveCommand(IFlagService flagService, IUserRepositor
             cancellationToken
         );
 
-        if (result.Status != FlagResultStatus.Success)
-        {
+        if (result.Status != FlagResultStatus.Success) {
             AnsiConsole.MarkupLine($"[red]Error:[/] {result.ErrorMessage ?? result.Status.ToString()}");
             return 1;
         }

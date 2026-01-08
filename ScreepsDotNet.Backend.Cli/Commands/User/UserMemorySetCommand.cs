@@ -32,7 +32,7 @@ internal sealed class UserMemorySetCommand(IUserMemoryRepository memoryRepositor
                 return ValidationResult.Error("Specify --user-id.");
 
             if (Segment is int segment) {
-                if (segment < 0 || segment > 99)
+                if (segment is < 0 or > 99)
                     return ValidationResult.Error("Segment must be between 0 and 99.");
                 if (SegmentData is null)
                     return ValidationResult.Error("Specify --data when writing a segment.");

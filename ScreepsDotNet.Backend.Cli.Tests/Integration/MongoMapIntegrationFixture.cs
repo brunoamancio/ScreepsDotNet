@@ -1,4 +1,4 @@
-namespace ScreepsDotNet.Backend.Cli.Tests.Integration;
+﻿namespace ScreepsDotNet.Backend.Cli.Tests.Integration;
 
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;

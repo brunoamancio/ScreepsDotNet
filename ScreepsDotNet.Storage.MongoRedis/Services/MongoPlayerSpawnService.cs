@@ -157,8 +157,7 @@ public sealed class MongoPlayerSpawnService(IMongoDatabaseProvider databaseProvi
 
         var structures = await _roomObjectsCollection.Find(structuresFilter).ToListAsync(cancellationToken).ConfigureAwait(false);
         var ruins = new List<BsonDocument>();
-        foreach (var s in structures)
-        {
+        foreach (var s in structures) {
             if (s["type"].AsString == StructureType.Controller.ToDocumentValue()) continue;
 
             ruins.Add(new BsonDocument
@@ -215,6 +214,6 @@ public sealed class MongoPlayerSpawnService(IMongoDatabaseProvider databaseProvi
         if (string.IsNullOrEmpty(terrain)) return true;
         var index = (y * 50) + x;
         if (index < 0 || index >= terrain.Length) return true;
-        return (terrain[index] - '0' & 1) != 0;
+        return ((terrain[index] - '0') & 1) != 0;
     }
 }

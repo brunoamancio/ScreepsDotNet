@@ -1,4 +1,4 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using ScreepsDotNet.Backend.Http.Health;
 using ScreepsDotNet.Backend.Http.Tests.Web;

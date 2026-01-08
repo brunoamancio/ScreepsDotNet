@@ -1,4 +1,4 @@
-namespace ScreepsDotNet.Backend.Http.Routing;
+﻿namespace ScreepsDotNet.Backend.Http.Routing;
 
 public static class AuthResponseFields
 {

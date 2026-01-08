@@ -1,4 +1,4 @@
-namespace ScreepsDotNet.Backend.Cli.Commands.Stronghold;
+﻿namespace ScreepsDotNet.Backend.Cli.Commands.Stronghold;
 
 using global::System;
 using global::System.Globalization;

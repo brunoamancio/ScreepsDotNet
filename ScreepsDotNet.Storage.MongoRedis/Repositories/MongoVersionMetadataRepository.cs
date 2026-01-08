@@ -1,4 +1,4 @@
-namespace ScreepsDotNet.Storage.MongoRedis.Repositories;
+﻿namespace ScreepsDotNet.Storage.MongoRedis.Repositories;
 
 using Microsoft.Extensions.Logging;
 using MongoDB.Driver;

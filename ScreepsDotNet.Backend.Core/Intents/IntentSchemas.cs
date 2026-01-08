@@ -1,4 +1,4 @@
-namespace ScreepsDotNet.Backend.Core.Intents;
+﻿namespace ScreepsDotNet.Backend.Core.Intents;
 
 using System;
 using System.Collections.Generic;

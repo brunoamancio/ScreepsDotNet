@@ -149,24 +149,6 @@ public sealed class SpawnEndpointsIntegrationTests(IntegrationTestHarness harnes
         });
     }
 
-    private async Task CreateUserAsync(string userId, string ticket)
-    {
-        var usersCollection = harness.Database.GetCollection<BsonDocument>("users");
-        await usersCollection.InsertOneAsync(new BsonDocument
-        {
-            ["_id"] = userId,
-            ["username"] = userId,
-            ["cpu"] = 100,
-            ["active"] = 0
-        });
-
-        // We also need to make sure the token service recognizes this ticket.
-        // But the IntegrationWebApplicationFactory is configured with a single ticket.
-        // Wait, the RedisTokenService uses Redis.
-        // Maybe I should just use the existing user but clear their objects?
-        // Let's try that.
-    }
-
     [Fact]
     public async Task PlaceSpawn_Cleanup_ConvertsToRuins()
     {

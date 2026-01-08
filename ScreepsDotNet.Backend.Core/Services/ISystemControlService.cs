@@ -1,4 +1,4 @@
-namespace ScreepsDotNet.Backend.Core.Services;
+﻿namespace ScreepsDotNet.Backend.Core.Services;
 
 /// <summary>
 /// Provides low-level control over runtime simulation settings exposed via the legacy CLI.

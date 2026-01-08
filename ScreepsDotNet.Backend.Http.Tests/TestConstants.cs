@@ -1,4 +1,4 @@
-namespace ScreepsDotNet.Backend.Http.Tests;
+﻿namespace ScreepsDotNet.Backend.Http.Tests;
 
 internal static class VersionTestValues
 {

@@ -21,28 +21,27 @@ internal static class SpawnEndpoints
                     async ([FromBody] PlaceSpawnRequest request,
                            IPlayerSpawnService spawnService,
                            ICurrentUserAccessor userAccessor,
-                           CancellationToken cancellationToken) =>
-                    {
-                        var userId = userAccessor.CurrentUser?.Id;
-                        if (string.IsNullOrEmpty(userId))
-                            return Results.Unauthorized();
+                           CancellationToken cancellationToken) => {
+                               var userId = userAccessor.CurrentUser?.Id;
+                               if (string.IsNullOrEmpty(userId))
+                                   return Results.Unauthorized();
 
-                        var result = await spawnService.PlaceSpawnAsync(userId, request, cancellationToken).ConfigureAwait(false);
+                               var result = await spawnService.PlaceSpawnAsync(userId, request, cancellationToken).ConfigureAwait(false);
 
-                        return result.Status switch
-                        {
-                            PlaceSpawnResultStatus.Success => Results.Ok(new { ok = 1 }),
-                            PlaceSpawnResultStatus.InvalidParams => Results.BadRequest(new ErrorResponse(result.ErrorMessage ?? "invalid params")),
-                            PlaceSpawnResultStatus.Blocked => Results.BadRequest(new ErrorResponse("blocked")),
-                            PlaceSpawnResultStatus.NoCpu => Results.BadRequest(new ErrorResponse("no cpu")),
-                            PlaceSpawnResultStatus.TooSoonAfterLastRespawn => Results.BadRequest(new ErrorResponse("too soon after last respawn")),
-                            PlaceSpawnResultStatus.AlreadyPlaying => Results.BadRequest(new ErrorResponse("already playing")),
-                            PlaceSpawnResultStatus.InvalidRoom => Results.BadRequest(new ErrorResponse(result.ErrorMessage ?? "invalid room")),
-                            PlaceSpawnResultStatus.InvalidPosition => Results.BadRequest(new ErrorResponse(result.ErrorMessage ?? "invalid position")),
-                            PlaceSpawnResultStatus.UserNotFound => Results.Unauthorized(),
-                            _ => Results.BadRequest(new ErrorResponse("unknown error"))
-                        };
-                    })
+                               return result.Status switch
+                               {
+                                   PlaceSpawnResultStatus.Success => Results.Ok(new { ok = 1 }),
+                                   PlaceSpawnResultStatus.InvalidParams => Results.BadRequest(new ErrorResponse(result.ErrorMessage ?? "invalid params")),
+                                   PlaceSpawnResultStatus.Blocked => Results.BadRequest(new ErrorResponse("blocked")),
+                                   PlaceSpawnResultStatus.NoCpu => Results.BadRequest(new ErrorResponse("no cpu")),
+                                   PlaceSpawnResultStatus.TooSoonAfterLastRespawn => Results.BadRequest(new ErrorResponse("too soon after last respawn")),
+                                   PlaceSpawnResultStatus.AlreadyPlaying => Results.BadRequest(new ErrorResponse("already playing")),
+                                   PlaceSpawnResultStatus.InvalidRoom => Results.BadRequest(new ErrorResponse(result.ErrorMessage ?? "invalid room")),
+                                   PlaceSpawnResultStatus.InvalidPosition => Results.BadRequest(new ErrorResponse(result.ErrorMessage ?? "invalid position")),
+                                   PlaceSpawnResultStatus.UserNotFound => Results.Unauthorized(),
+                                   _ => Results.BadRequest(new ErrorResponse("unknown error"))
+                               };
+                           })
            .RequireTokenAuthentication()
            .WithName(PlaceSpawnEndpointName);
     }

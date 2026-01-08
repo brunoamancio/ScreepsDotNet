@@ -1,4 +1,4 @@
-namespace ScreepsDotNet.Backend.Http.Authentication;
+﻿namespace ScreepsDotNet.Backend.Http.Authentication;
 
 using System;
 using ScreepsDotNet.Backend.Core.Context;

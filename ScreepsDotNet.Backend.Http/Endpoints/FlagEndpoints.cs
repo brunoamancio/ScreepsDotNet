@@ -28,13 +28,12 @@ internal static class FlagEndpoints
                     async ([FromBody] CreateFlagRequestModel request,
                            IFlagService flagService,
                            ICurrentUserAccessor userAccessor,
-                           CancellationToken cancellationToken) =>
-                    {
-                        var userId = userAccessor.CurrentUser?.Id;
-                        if (string.IsNullOrEmpty(userId))
-                            return Results.Unauthorized();
+                           CancellationToken cancellationToken) => {
+                               var userId = userAccessor.CurrentUser?.Id;
+                               if (string.IsNullOrEmpty(userId))
+                                   return Results.Unauthorized();
 
-                        var result = await flagService.CreateFlagAsync(userId,
+                               var result = await flagService.CreateFlagAsync(userId,
                                                                  new CreateFlagRequest(request.Room,
                                                                                        request.X,
                                                                                        request.Y,
@@ -43,8 +42,8 @@ internal static class FlagEndpoints
                                                                                        request.SecondaryColor),
                                                                  cancellationToken).ConfigureAwait(false);
 
-                        return MapResult(result);
-                    })
+                               return MapResult(result);
+                           })
            .RequireTokenAuthentication()
            .WithName(CreateFlagEndpointName);
     }
@@ -55,21 +54,20 @@ internal static class FlagEndpoints
                     async ([FromBody] ChangeFlagColorRequestModel request,
                            IFlagService flagService,
                            ICurrentUserAccessor userAccessor,
-                           CancellationToken cancellationToken) =>
-                    {
-                        var userId = userAccessor.CurrentUser?.Id;
-                        if (string.IsNullOrEmpty(userId))
-                            return Results.Unauthorized();
+                           CancellationToken cancellationToken) => {
+                               var userId = userAccessor.CurrentUser?.Id;
+                               if (string.IsNullOrEmpty(userId))
+                                   return Results.Unauthorized();
 
-                        var result = await flagService.ChangeFlagColorAsync(userId,
+                               var result = await flagService.ChangeFlagColorAsync(userId,
                                                                       request.Room,
                                                                       request.Name,
                                                                       request.Color,
                                                                       request.SecondaryColor,
                                                                       cancellationToken).ConfigureAwait(false);
 
-                        return MapResult(result);
-                    })
+                               return MapResult(result);
+                           })
            .RequireTokenAuthentication()
            .WithName(ChangeFlagColorEndpointName);
     }
@@ -80,16 +78,15 @@ internal static class FlagEndpoints
                     async ([FromBody] RemoveFlagRequestModel request,
                            IFlagService flagService,
                            ICurrentUserAccessor userAccessor,
-                           CancellationToken cancellationToken) =>
-                    {
-                        var userId = userAccessor.CurrentUser?.Id;
-                        if (string.IsNullOrEmpty(userId))
-                            return Results.Unauthorized();
+                           CancellationToken cancellationToken) => {
+                               var userId = userAccessor.CurrentUser?.Id;
+                               if (string.IsNullOrEmpty(userId))
+                                   return Results.Unauthorized();
 
-                        var result = await flagService.RemoveFlagAsync(userId, request.Room, request.Name, cancellationToken).ConfigureAwait(false);
+                               var result = await flagService.RemoveFlagAsync(userId, request.Room, request.Name, cancellationToken).ConfigureAwait(false);
 
-                        return MapResult(result);
-                    })
+                               return MapResult(result);
+                           })
            .RequireTokenAuthentication()
            .WithName(RemoveFlagEndpointName);
     }

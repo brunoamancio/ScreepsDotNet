@@ -1,4 +1,4 @@
-namespace ScreepsDotNet.Backend.Core.Constants;
+﻿namespace ScreepsDotNet.Backend.Core.Constants;
 
 public static class BadgeDocumentFields
 {

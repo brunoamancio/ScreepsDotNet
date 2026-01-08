@@ -1,4 +1,4 @@
-namespace ScreepsDotNet.Backend.Core.Context;
+﻿namespace ScreepsDotNet.Backend.Core.Context;
 
 using ScreepsDotNet.Backend.Core.Models;
 

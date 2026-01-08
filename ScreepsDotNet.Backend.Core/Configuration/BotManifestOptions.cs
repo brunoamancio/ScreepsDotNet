@@ -1,4 +1,4 @@
-namespace ScreepsDotNet.Backend.Core.Configuration;
+﻿namespace ScreepsDotNet.Backend.Core.Configuration;
 
 /// <summary>
 /// Configuration describing where to load legacy bot definitions from.

@@ -1,4 +1,4 @@
-namespace ScreepsDotNet.Backend.Http.Health;
+﻿namespace ScreepsDotNet.Backend.Http.Health;
 
 public static class HealthResponseFields
 {

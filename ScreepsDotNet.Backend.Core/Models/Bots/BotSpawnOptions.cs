@@ -1,4 +1,4 @@
-namespace ScreepsDotNet.Backend.Core.Models.Bots;
+﻿namespace ScreepsDotNet.Backend.Core.Models.Bots;
 
 /// <summary>
 /// Additional knobs accepted by the legacy bot spawn CLI verb.

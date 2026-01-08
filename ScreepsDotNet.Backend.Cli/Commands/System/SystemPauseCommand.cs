@@ -1,4 +1,4 @@
-using ScreepsDotNet.Backend.Core.Services;
+﻿using ScreepsDotNet.Backend.Core.Services;
 using Spectre.Console;
 using Spectre.Console.Cli;
 

@@ -1,4 +1,4 @@
-namespace ScreepsDotNet.Backend.Http.Authentication;
+﻿namespace ScreepsDotNet.Backend.Http.Authentication;
 
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;

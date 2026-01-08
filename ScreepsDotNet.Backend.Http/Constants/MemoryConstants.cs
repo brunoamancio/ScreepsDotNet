@@ -1,4 +1,4 @@
-namespace ScreepsDotNet.Backend.Http.Constants;
+﻿namespace ScreepsDotNet.Backend.Http.Constants;
 
 public static class MemoryConstants
 {

@@ -1,4 +1,4 @@
-namespace ScreepsDotNet.Backend.Core.Constants;
+﻿namespace ScreepsDotNet.Backend.Core.Constants;
 
 /// <summary>
 /// Defines the Redis keys and channels used to control the Screeps runtime via the CLI.

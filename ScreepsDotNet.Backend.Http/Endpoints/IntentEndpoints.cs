@@ -1,4 +1,4 @@
-namespace ScreepsDotNet.Backend.Http.Endpoints;
+﻿namespace ScreepsDotNet.Backend.Http.Endpoints;
 
 using Microsoft.AspNetCore.Mvc;
 using ScreepsDotNet.Backend.Core.Context;
@@ -24,26 +24,23 @@ internal static class IntentEndpoints
                     async ([FromBody] AddObjectIntentRequest request,
                            IIntentService intentService,
                            ICurrentUserAccessor userAccessor,
-                           CancellationToken cancellationToken) =>
-                    {
-                        var userId = userAccessor.CurrentUser?.Id;
-                        if (string.IsNullOrEmpty(userId))
-                            return Results.Unauthorized();
+                           CancellationToken cancellationToken) => {
+                               var userId = userAccessor.CurrentUser?.Id;
+                               if (string.IsNullOrEmpty(userId))
+                                   return Results.Unauthorized();
 
-                        if (!request.IsValid())
-                            return Results.BadRequest(new ErrorResponse("invalid params"));
+                               if (!request.IsValid())
+                                   return Results.BadRequest(new ErrorResponse("invalid params"));
 
-                        try
-                        {
-                            await intentService.AddObjectIntentAsync(request.Room, request.ObjectId, request.IntentName, request.IntentPayload, userId, cancellationToken).ConfigureAwait(false);
-                        }
-                        catch (IntentValidationException ex)
-                        {
-                            return Results.BadRequest(new ErrorResponse(ex.Message));
-                        }
+                               try {
+                                   await intentService.AddObjectIntentAsync(request.Room, request.ObjectId, request.IntentName, request.IntentPayload, userId, cancellationToken).ConfigureAwait(false);
+                               }
+                               catch (IntentValidationException ex) {
+                                   return Results.BadRequest(new ErrorResponse(ex.Message));
+                               }
 
-                        return Results.Ok(new { ok = 1 });
-                    })
+                               return Results.Ok(new { ok = 1 });
+                           })
            .RequireTokenAuthentication()
            .WithName(AddObjectIntentEndpointName);
     }
@@ -54,26 +51,23 @@ internal static class IntentEndpoints
                     async ([FromBody] AddGlobalIntentRequest request,
                            IIntentService intentService,
                            ICurrentUserAccessor userAccessor,
-                           CancellationToken cancellationToken) =>
-                    {
-                        var userId = userAccessor.CurrentUser?.Id;
-                        if (string.IsNullOrEmpty(userId))
-                            return Results.Unauthorized();
+                           CancellationToken cancellationToken) => {
+                               var userId = userAccessor.CurrentUser?.Id;
+                               if (string.IsNullOrEmpty(userId))
+                                   return Results.Unauthorized();
 
-                        if (!request.HasPayload)
-                            return Results.BadRequest(new ErrorResponse("invalid params"));
+                               if (!request.HasPayload)
+                                   return Results.BadRequest(new ErrorResponse("invalid params"));
 
-                        try
-                        {
-                            await intentService.AddGlobalIntentAsync(request.IntentName, request.IntentPayload, userId, cancellationToken).ConfigureAwait(false);
-                        }
-                        catch (IntentValidationException ex)
-                        {
-                            return Results.BadRequest(new ErrorResponse(ex.Message));
-                        }
+                               try {
+                                   await intentService.AddGlobalIntentAsync(request.IntentName, request.IntentPayload, userId, cancellationToken).ConfigureAwait(false);
+                               }
+                               catch (IntentValidationException ex) {
+                                   return Results.BadRequest(new ErrorResponse(ex.Message));
+                               }
 
-                        return Results.Ok(new { ok = 1 });
-                    })
+                               return Results.Ok(new { ok = 1 });
+                           })
            .RequireTokenAuthentication()
            .WithName(AddGlobalIntentEndpointName);
     }

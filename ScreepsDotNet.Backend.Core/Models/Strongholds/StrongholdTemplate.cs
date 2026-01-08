@@ -1,4 +1,4 @@
-namespace ScreepsDotNet.Backend.Core.Models.Strongholds;
+﻿namespace ScreepsDotNet.Backend.Core.Models.Strongholds;
 
 /// <summary>
 /// Metadata describing a spawnable NPC Stronghold configuration.
