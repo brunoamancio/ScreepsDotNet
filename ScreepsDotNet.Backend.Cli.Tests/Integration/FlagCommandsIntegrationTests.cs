@@ -109,7 +109,5 @@ public sealed class FlagCommandsIntegrationTests(MongoMapIntegrationFixture fixt
     }
 
     private MongoFlagService CreateFlagService()
-    {
-        return new MongoFlagService(_fixture.DatabaseProvider, NullLogger<MongoFlagService>.Instance);
-    }
+        => new(_fixture.DatabaseProvider, NullLogger<MongoFlagService>.Instance);
 }

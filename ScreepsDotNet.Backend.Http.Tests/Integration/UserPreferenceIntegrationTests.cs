@@ -1,7 +1,5 @@
 ﻿namespace ScreepsDotNet.Backend.Http.Tests.Integration;
 
-using System.Collections.Generic;
-using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using MongoDB.Driver;

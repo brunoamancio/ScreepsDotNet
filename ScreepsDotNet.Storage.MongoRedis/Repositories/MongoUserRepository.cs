@@ -98,9 +98,8 @@ public sealed class MongoUserRepository(IMongoDatabaseProvider databaseProvider)
             {
                 SteamProfileLinkHidden = !visible
             });
-        } else {
+        } else
             update = Builders<UserDocument>.Update.Set(u => u.Steam!.SteamProfileLinkHidden, !visible);
-        }
 
         await _collection.UpdateOneAsync(u => u.Id == userId, update, cancellationToken: cancellationToken).ConfigureAwait(false);
     }

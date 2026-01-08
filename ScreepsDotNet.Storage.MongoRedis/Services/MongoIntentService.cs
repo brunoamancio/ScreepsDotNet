@@ -285,13 +285,9 @@ public sealed class MongoIntentService : IIntentService
     {
         double value;
         if (element.ValueKind == JsonValueKind.Number)
-        {
             value = element.GetDouble();
-        }
         else if (!double.TryParse(ConvertToFlexibleString(element), NumberStyles.Float, CultureInfo.InvariantCulture, out value))
-        {
             throw new IntentValidationException("invalid price");
-        }
 
         return (int)Math.Round(value * 1000, MidpointRounding.AwayFromZero);
     }
