@@ -88,6 +88,7 @@ static void ConfigureServices(HostApplicationBuilder builder)
     builder.Services.AddSingleton<IFlagService, MongoFlagService>();
     builder.Services.AddSingleton<IInvaderService, MongoInvaderService>();
     builder.Services.AddSingleton<IIntentService, MongoIntentService>();
+    builder.Services.AddSingleton<IPowerCreepService, MongoPowerCreepService>();
 
     builder.Services.AddSingleton<ICliApplication, CliApplication>();
 }

@@ -35,6 +35,7 @@
 - `/api/user/badge`, `/api/user/email`, `/api/user/set-steam-visible`, `/api/user/notify-prefs` – implemented profile management and preference endpoints writing to the `users` collection with the same validation rules and parity logic as the Node server.
 - `/api/game/market/*` – parity routes for `orders-index`, `orders`, `my-orders`, and `stats` backed by typed repositories and DTO factories that scale prices (thousandths → credits) and enforce query validation.
 - `/api/game/*` world endpoints – `map-stats`, `room-status`, `room-terrain`, `rooms`, `world-size`, `time`, `tick`, `place-spawn`, `create-flag`, `change-flag-color`, `remove-flag`, `create-invader`, and `remove-invader` implemented with Mongo-backed repositories, DTO factories, deterministic seeds (docker + Testcontainers), and HTTP scratch files for quick smoke testing.
+- `/api/game/power-creeps/*` – legacy parity for list/create/delete/cancel-delete/upgrade/rename/experimentation, all backed by the new `MongoPowerCreepService` so the responses include `_id`, shard/room metadata, fatigue, store contents, and cooldown/delete timestamps exactly like `backend-local`.
 - `/api/game/add-object-intent` + `/api/game/add-global-intent` – new intent endpoints backed by `MongoIntentService`, reusing the legacy sanitization rules (string/number/boolean transforms, price scaling, body-part filtering) and enforcing the safe-mode guard before storing data in `rooms.intents` / `users.intents`.
 - `/api/game/bot/*`, `/api/game/stronghold/*`, `/api/game/system/*`, and `/api/game/map/*` – admin routes for bot AI management, stronghold templates/spawn/expand, system controls (pause/resume, tick duration, broadcast, reseed with `confirm=RESET`), and map generation/open/close/remove tasks reusing the shared Mongo/Redis services from the CLI.
 - Core abstractions defined for server info, users, rooms, CLI sessions, storage status, and engine ticks.
@@ -73,6 +74,7 @@
    - `ScreepsDotNet.Backend.Http/SystemEndpoints.http` covers `/api/game/system/*` (status, pause/resume, tick duration, server messages, destructive reset with `confirm=RESET`).
    - `ScreepsDotNet.Backend.Http/MapEndpoints.http` covers `/api/game/map/*` (generate/open/close/remove/assets/terrain refresh).
    - `ScreepsDotNet.Backend.Http/IntentEndpoints.http` sends `/api/game/add-object-intent` + `/api/game/add-global-intent` payloads so you can verify manual intents end-to-end.
+   - `ScreepsDotNet.Backend.Http/PowerCreepEndpoints.http` hits `/api/game/power-creeps/*` so you can create/rename/upgrade/delete/cancel creeps plus register experimentation resets without wiring a custom client.
    - CLI quick checks (run from `ScreepsDotNet`):
      - `dotnet run --project ScreepsDotNet.Backend.Cli -- version --json`
      - `dotnet run --project ScreepsDotNet.Backend.Cli -- storage status --json`
@@ -85,7 +87,7 @@
 
 - All Mongo scripts inside `docker/mongo-init` run only when the container initializes an empty volume.
 - `docker/mongo-init/seed-server-data.js` keeps the canonical server metadata document (`server.data` collection) in sync with the legacy backend defaults (`welcomeText`, socket throttles, renderer metadata). For .NET-side tooling/tests, the shared constants live in `ScreepsDotNet.Backend.Core/Seeding/SeedDataDefaults.cs`—reuse that class whenever you need deterministic seed values so the CLI and integration harness stay aligned.
-- `docker/mongo-init/seed-users.js` inserts/updates the canonical `test-user` record plus sample controller/spawn objects (`rooms.objects`) and a short credit history in `users.money` so `/api/user/money-history` has data. The newer HTTP routes (code/memory/console) lazily create their own per-user documents once you hit them.
+- `docker/mongo-init/seed-users.js` inserts/updates the canonical `test-user` record plus sample controller/spawn objects (`rooms.objects`), a deterministic pair of power creeps (`users.power_creeps` + a matching `rooms.objects` document for the spawned creep), and a short credit history in `users.money` so `/api/user/money-history` has data. The newer HTTP routes (code/memory/console) lazily create their own per-user documents once you hit them.
 - When schemas or seed files change, do a clean reset so everyone picks up the new baseline:
   ```powershell
   docker compose down -v      # stops containers and removes mongo-data / redis-data volumes
@@ -130,15 +132,15 @@
 
 ## Pending / Next Steps
 
-1. **Power creep & remaining legacy `/api/game/*` routes**
-   - Implement the `/api/game/power-creeps/*` surface (create/delete/spawn/suicide/upgrade, etc.) plus any other outstanding write-heavy endpoints documented under `docs/specs/MarketWorldEndpoints.md`. These will need new repositories/services, Mongo seeds, and HTTP/CLI parity just like the bot/stronghold/intent work.
+1. **Shard-aware helpers & remaining `/api/game/*` intent variants**
+   - With power creeps, bots, strongholds, map, invader, and intent flows online, the remaining backlog from `docs/specs/MarketWorldEndpoints.md` is the shard-specific helpers/custom intent types the legacy config enables. Tackling these will require new Mongo fixtures (both docker + Testcontainers) plus integration suites so multi-shard edge cases stay deterministic.
 2. **CLI/HTTP polish**
    - Add optional `--json` output to any remaining CLI commands, extend the HTTP admin routes with structured responses/logging, and keep README/AGENT/manual `.http` files current whenever new management features land.
 
 ## Market & World API Spec Snapshot
 
 - `docs/specs/MarketWorldEndpoints.md` remains the canonical reference for legacy behavior, Mongo schemas, .NET repository contracts, and the integration test matrix. It now documents both the read-model endpoints and the manual intent routes (`add-object-intent`, `add-global-intent`, spawn/flag/invader helpers) so future tweaks stay consistent with backend-local.
-- Scope priorities (in order): CLI/HTTP admin parity + regression scaffolding, then any remaining legacy routes (power creeps, shard-specific behaviors) once deterministic seeds/tests exist for those mutations.
+- Scope priorities (in order): CLI/HTTP admin parity + regression scaffolding, then the shard-specific helpers/custom intent variants once deterministic seeds/tests exist for those mutations.
 
 ## Tips for Agents
 

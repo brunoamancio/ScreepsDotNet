@@ -7,7 +7,8 @@ public enum RoomObjectType
     Controller,
     Spawn,
     Mineral,
-    InvaderCore
+    InvaderCore,
+    PowerCreep
 }
 
 public static class RoomObjectTypeExtensions
@@ -17,7 +18,8 @@ public static class RoomObjectTypeExtensions
         [RoomObjectType.Controller] = "controller",
         [RoomObjectType.Spawn] = "spawn",
         [RoomObjectType.Mineral] = "mineral",
-        [RoomObjectType.InvaderCore] = "invaderCore"
+        [RoomObjectType.InvaderCore] = "invaderCore",
+        [RoomObjectType.PowerCreep] = "powerCreep"
     };
 
     public static string ToDocumentValue(this RoomObjectType type)

@@ -1,0 +1,70 @@
+### Authentication
+# Acquire a token via the seeded integration ticket.
+# @name Login
+POST {{host}}/api/auth/steam-ticket
+Content-Type: application/json
+
+{
+    "ticket": "integration-ticket",
+    "useNativeAuth": false
+}
+
+> {% client.global.set("auth_token", response.body.token); %}
+
+### List power creeps
+GET {{host}}/api/game/power-creeps/list
+X-Token: {{auth_token}}
+
+### Create power creep
+POST {{host}}/api/game/power-creeps/create
+X-Token: {{auth_token}}
+Content-Type: application/json
+
+{
+    "name": "OperatorHttp",
+    "className": "operator"
+}
+
+### Rename power creep
+POST {{host}}/api/game/power-creeps/rename
+X-Token: {{auth_token}}
+Content-Type: application/json
+
+{
+    "id": "64d000000000000000000002",
+    "name": "RenamedViaHttp"
+}
+
+### Upgrade power creep
+POST {{host}}/api/game/power-creeps/upgrade
+X-Token: {{auth_token}}
+Content-Type: application/json
+
+{
+    "id": "64d000000000000000000002",
+    "powers": {
+        "1": 2
+    }
+}
+
+### Delete power creep
+POST {{host}}/api/game/power-creeps/delete
+X-Token: {{auth_token}}
+Content-Type: application/json
+
+{
+    "id": "64d000000000000000000002"
+}
+
+### Cancel delete
+POST {{host}}/api/game/power-creeps/cancel-delete
+X-Token: {{auth_token}}
+Content-Type: application/json
+
+{
+    "id": "64d000000000000000000002"
+}
+
+### Register experimentation reset
+POST {{host}}/api/game/power-creeps/experimentation
+X-Token: {{auth_token}}

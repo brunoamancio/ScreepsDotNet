@@ -43,6 +43,28 @@ public static class SeedDataDefaults
         public const string Type = "market.sell";
     }
 
+    public static class Power
+    {
+        public const double Total = 1_000_000;
+        public const double Experimentations = 2;
+    }
+
+    public static class PowerCreeps
+    {
+        public const string ActiveId = "64d000000000000000000001";
+        public const string DormantId = "64d000000000000000000002";
+        public const string ActiveName = "IntegrationOperator";
+        public const string DormantName = "BenchOperator";
+        public const string ClassName = "operator";
+        public const int ActiveX = 20;
+        public const int ActiveY = 20;
+        public const int ActiveHits = 2800;
+        public const int ActiveHitsMax = 3000;
+        public const int ActiveTicksToLive = 4500;
+        public const int ActiveStoreCapacity = 400;
+        public const int ActiveStoreOps = 120;
+    }
+
     public static class Console
     {
         public const string Expression = "console.log('integration test');";

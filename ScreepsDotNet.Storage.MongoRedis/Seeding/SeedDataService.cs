@@ -21,6 +21,7 @@ public sealed class SeedDataService : ISeedDataService
     private const string UserMoneyCollectionName = "users.money";
     private const string UserConsoleCollectionName = "users.console";
     private const string UserMemoryCollectionName = "users.memory";
+    private const string UsersPowerCreepsCollectionName = "users.power_creeps";
     private const string MarketOrdersCollectionName = "market.orders";
     private const string MarketStatsCollectionName = "market.stats";
     private const string MongoNamespaceNotFoundCode = "NamespaceNotFound";
@@ -55,7 +56,8 @@ public sealed class SeedDataService : ISeedDataService
             UserMemoryCollectionName,
             MarketOrdersCollectionName,
             MarketStatsCollectionName,
-            WorldInfoCollectionName
+            WorldInfoCollectionName,
+            UsersPowerCreepsCollectionName
         };
 
         foreach (var name in collectionNames)
@@ -67,6 +69,7 @@ public sealed class SeedDataService : ISeedDataService
         await SeedServerDataAsync(database, cancellationToken).ConfigureAwait(false);
         await SeedVersionInfoAsync(database, cancellationToken).ConfigureAwait(false);
         await SeedRoomObjectsAsync(database, cancellationToken).ConfigureAwait(false);
+        await SeedPowerCreepsAsync(database, cancellationToken).ConfigureAwait(false);
         await SeedMoneyHistoryAsync(database, cancellationToken).ConfigureAwait(false);
         await SeedUserMemoryAsync(database, cancellationToken).ConfigureAwait(false);
         await SeedMarketOrdersAsync(database, cancellationToken).ConfigureAwait(false);
@@ -94,6 +97,9 @@ public sealed class SeedDataService : ISeedDataService
             UsernameLower = SeedDataDefaults.User.Username.ToLowerInvariant(),
             Cpu = DefaultCpu,
             Active = ActiveFlagValue,
+            Power = SeedDataDefaults.Power.Total,
+            PowerExperimentations = SeedDataDefaults.Power.Experimentations,
+            PowerExperimentationTime = 0,
             Badge = new Dictionary<string, object?>(StringComparer.Ordinal)
             {
                 [BadgeDocumentFields.Type] = BadgeTypeValue,
@@ -150,6 +156,24 @@ public sealed class SeedDataService : ISeedDataService
                 Type = "invaderCore",
                 Room = SeedDataDefaults.World.SecondaryRoom,
                 Level = 2
+            },
+            new RoomObjectDocument
+            {
+                Id = ObjectId.Parse(SeedDataDefaults.PowerCreeps.ActiveId),
+                UserId = SeedDataDefaults.User.Id,
+                Type = RoomObjectType.PowerCreep.ToDocumentValue(),
+                Room = SeedDataDefaults.World.StartRoom,
+                X = SeedDataDefaults.PowerCreeps.ActiveX,
+                Y = SeedDataDefaults.PowerCreeps.ActiveY,
+                Hits = SeedDataDefaults.PowerCreeps.ActiveHits,
+                HitsMax = SeedDataDefaults.PowerCreeps.ActiveHitsMax,
+                TicksToLive = SeedDataDefaults.PowerCreeps.ActiveTicksToLive,
+                Store = new Dictionary<string, int>(StringComparer.Ordinal)
+                {
+                    ["ops"] = SeedDataDefaults.PowerCreeps.ActiveStoreOps
+                },
+                StoreCapacity = SeedDataDefaults.PowerCreeps.ActiveStoreCapacity,
+                Fatigue = 0
             }
         };
 
@@ -371,6 +395,52 @@ public sealed class SeedDataService : ISeedDataService
 
         var collection = database.GetCollection<MarketStatsDocument>(MarketStatsCollectionName);
         return collection.InsertManyAsync(entries, cancellationToken: cancellationToken);
+    }
+
+    private static Task SeedPowerCreepsAsync(IMongoDatabase database, CancellationToken cancellationToken)
+    {
+        var collection = database.GetCollection<PowerCreepDocument>(UsersPowerCreepsCollectionName);
+        var documents = new[]
+        {
+            new PowerCreepDocument
+            {
+                Id = ObjectId.Parse(SeedDataDefaults.PowerCreeps.ActiveId),
+                UserId = SeedDataDefaults.User.Id,
+                Name = SeedDataDefaults.PowerCreeps.ActiveName,
+                ClassName = SeedDataDefaults.PowerCreeps.ClassName,
+                Level = 3,
+                HitsMax = SeedDataDefaults.PowerCreeps.ActiveHitsMax,
+                Store = new Dictionary<string, int>(StringComparer.Ordinal)
+                {
+                    ["ops"] = SeedDataDefaults.PowerCreeps.ActiveStoreOps
+                },
+                StoreCapacity = SeedDataDefaults.PowerCreeps.ActiveStoreCapacity,
+                SpawnCooldownTime = null,
+                Powers = new Dictionary<string, PowerCreepPowerDocument>(StringComparer.Ordinal)
+                {
+                    ["1"] = new() { Level = 2 },
+                    ["2"] = new() { Level = 1 }
+                }
+            },
+            new PowerCreepDocument
+            {
+                Id = ObjectId.Parse(SeedDataDefaults.PowerCreeps.DormantId),
+                UserId = SeedDataDefaults.User.Id,
+                Name = SeedDataDefaults.PowerCreeps.DormantName,
+                ClassName = SeedDataDefaults.PowerCreeps.ClassName,
+                Level = 1,
+                HitsMax = 2000,
+                Store = new Dictionary<string, int>(StringComparer.Ordinal),
+                StoreCapacity = 200,
+                SpawnCooldownTime = 0,
+                Powers = new Dictionary<string, PowerCreepPowerDocument>(StringComparer.Ordinal)
+                {
+                    ["1"] = new() { Level = 1 }
+                }
+            }
+        };
+
+        return collection.InsertManyAsync(documents, cancellationToken: cancellationToken);
     }
 
     private static Task SeedWorldInfoAsync(IMongoDatabase database, CancellationToken cancellationToken)

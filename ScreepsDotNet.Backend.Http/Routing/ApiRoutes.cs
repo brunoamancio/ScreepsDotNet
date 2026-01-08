@@ -79,6 +79,18 @@ public static class ApiRoutes
             public const string Reset = $"{SystemBase}/reset";
         }
 
+        public static class PowerCreeps
+        {
+            private const string PowerBase = $"{Base}/power-creeps";
+            public const string List = $"{PowerBase}/list";
+            public const string Create = $"{PowerBase}/create";
+            public const string Delete = $"{PowerBase}/delete";
+            public const string CancelDelete = $"{PowerBase}/cancel-delete";
+            public const string Upgrade = $"{PowerBase}/upgrade";
+            public const string Rename = $"{PowerBase}/rename";
+            public const string Experimentation = $"{PowerBase}/experimentation";
+        }
+
         public static class Intent
         {
             public const string AddObject = $"{Base}/add-object-intent";

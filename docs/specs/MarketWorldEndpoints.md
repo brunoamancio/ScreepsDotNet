@@ -26,7 +26,7 @@ The scope below covers both the read/management APIs that are consumed by the of
 | World  | `GET /api/game/time`                          | Public. Equivalent to `common.getGametime()`, response `{ time }`.                                                                                  |
 | World  | `GET /api/game/tick`                          | Public. Uses in-memory rolling min of last 30 tick durations. For parity we can proxy the node semantics via metrics captured from storage later.   |
 
-Remaining backlog (documented for future): power-creep management, HTTP admin overrides beyond what exists today, and any shards/custom intent types that the legacy config enables. These depend on additional storage + orchestration work and are tracked separately.
+Remaining backlog (documented for future): shard-specific helpers and any custom intent types that the legacy config enables. These depend on additional storage + orchestration work and are tracked separately.
 
 ---
 

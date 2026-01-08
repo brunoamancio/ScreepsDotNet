@@ -50,6 +50,9 @@ public sealed class RoomObjectDocument
     [BsonElement("store")]
     public Dictionary<string, int>? Store { get; set; }
 
+    [BsonElement("storeCapacity")]
+    public int? StoreCapacity { get; set; }
+
     [BsonElement("storeCapacityResource")]
     public Dictionary<string, int>? StoreCapacityResource { get; set; }
 
@@ -58,6 +61,12 @@ public sealed class RoomObjectDocument
 
     [BsonElement("hitsMax")]
     public int? HitsMax { get; set; }
+
+    [BsonElement("ticksToLive")]
+    public int? TicksToLive { get; set; }
+
+    [BsonElement("fatigue")]
+    public int? Fatigue { get; set; }
 
     [BsonElement("spawning")]
     public BsonValue? Spawning { get; set; }
@@ -106,6 +115,9 @@ public sealed class RoomObjectDocument
 
     [BsonElement("status")]
     public string? Status { get; set; }
+
+    [BsonElement("shard")]
+    public string? Shard { get; set; }
 }
 
 [BsonIgnoreExtraElements]

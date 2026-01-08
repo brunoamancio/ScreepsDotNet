@@ -48,6 +48,7 @@ Modern .NET rewrite of the Screeps private server backend. The solution contains
 - `ScreepsDotNet.Backend.Http/SystemEndpoints.http` hits `/api/game/system/*` (status, pause/resume, tick get/set, server message, reset with `confirm=RESET`) for admin verification.
 - `ScreepsDotNet.Backend.Http/MapEndpoints.http` manages `/api/game/map/*` (generate, open/close, remove, assets update, terrain refresh).
 - `ScreepsDotNet.Backend.Http/IntentEndpoints.http` queues `/api/game/add-object-intent` and `/api/game/add-global-intent` payloads so you can verify manual intents without writing custom tooling.
+- `ScreepsDotNet.Backend.Http/PowerCreepEndpoints.http` hits `/api/game/power-creeps/*` (list/create/rename/upgrade/delete/cancel-delete/experimentation) for testing the new operator management surface.
 
 5. **Run automated tests (unit + integration):**
    ```powershell
@@ -185,3 +186,9 @@ If you add new endpoints or storage requirements, update:
 - `/api/game/add-object-intent` and `/api/game/add-global-intent` now write to `rooms.intents` / `users.intents` via the new `MongoIntentService`. Payloads are sanitized against the legacy schema (string/number/boolean converters, body part filters, price scaling), and activating safe mode enforces the same gametime/safeMode guard that Node uses.
 - Integration coverage lives in `ScreepsDotNet.Backend.Http.Tests/Integration/IntentEndpointsIntegrationTests` so every intent mutation is validated against a disposable Mongo + Redis stack.
 - Use `IntentEndpoints.http` for quick smoke tests (authentication snippet included).
+
+## Power creep endpoints
+
+- `/api/game/power-creeps/list`, `/create`, `/delete`, `/cancel-delete`, `/upgrade`, `/rename`, and `/experimentation` now mirror the legacy maintenance routes using `MongoPowerCreepService`. They perform the same validation as `backend-local` (class gating, spawn/delete cooldowns, power budget math, experimentation cooldowns) while projecting room data (hits, fatigue, shard, coordinates) when a creep is spawned.
+- Integration coverage lives in `ScreepsDotNet.Backend.Http.Tests/Integration/PowerCreepEndpointsIntegrationTests`, which drives the HTTP host against Testcontainers Mongo/Redis to verify list/create/rename/delete/cancel/upgrade/experimentation flows.
+- The HTTP scratch file `PowerCreepEndpoints.http` matches the CLI defaults so you can manage creeps via REST without shelling into the host. These endpoints reuse the same storage-backed services, so anything you test here automatically benefits the CLI and future automation.

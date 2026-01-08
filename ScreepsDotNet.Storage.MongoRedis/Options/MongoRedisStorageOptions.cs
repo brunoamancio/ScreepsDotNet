@@ -10,6 +10,8 @@ public sealed class MongoRedisStorageOptions
 
     public string UsersCollection { get; init; } = "users";
 
+    public string UsersPowerCreepsCollection { get; init; } = "users.power_creeps";
+
     public string RoomsCollection { get; init; } = "rooms";
 
     public string RoomObjectsCollection { get; init; } = "rooms.objects";

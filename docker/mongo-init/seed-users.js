@@ -19,8 +19,8 @@ db.users.updateOne(
             lastRespawnDate: new Date(),
             lastChargeTime: new Date(),
             blocked: false,
-            power: 0,
-            powerExperimentations: 0,
+            power: 1000000,
+            powerExperimentations: 2,
             powerExperimentationTime: 0,
             steam: {
                 id: '90071992547409920',
@@ -71,6 +71,63 @@ db['rooms.objects'].updateOne(
     },
     { upsert: true }
 );
+
+const powerCreepActiveId = ObjectId('64d000000000000000000001');
+const powerCreepDormantId = ObjectId('64d000000000000000000002');
+
+db['rooms.objects'].updateOne(
+    { _id: powerCreepActiveId },
+    {
+        $set: {
+            _id: powerCreepActiveId,
+            user: 'test-user',
+            type: 'powerCreep',
+            room: 'W1N1',
+            x: 20,
+            y: 20,
+            hits: 2800,
+            hitsMax: 3000,
+            ticksToLive: 4500,
+            store: { ops: 120 },
+            storeCapacity: 400,
+            fatigue: 0
+        }
+    },
+    { upsert: true }
+);
+
+db['users.power_creeps'].deleteMany({ user: 'test-user' });
+db['users.power_creeps'].insertMany([
+    {
+        _id: powerCreepActiveId,
+        user: 'test-user',
+        name: 'IntegrationOperator',
+        className: 'operator',
+        level: 3,
+        hitsMax: 3000,
+        store: { ops: 120 },
+        storeCapacity: 400,
+        spawnCooldownTime: null,
+        powers: {
+            '1': { level: 2 },
+            '2': { level: 1 }
+        }
+    },
+    {
+        _id: powerCreepDormantId,
+        user: 'test-user',
+        name: 'BenchOperator',
+        className: 'operator',
+        level: 1,
+        hitsMax: 2000,
+        store: {},
+        storeCapacity: 200,
+        spawnCooldownTime: 0,
+        powers: {
+            '1': { level: 1 }
+        }
+    }
+]);
 
 db['users.money'].deleteMany({ user: 'test-user' });
 db['users.money'].insertMany([
