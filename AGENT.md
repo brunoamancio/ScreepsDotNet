@@ -29,8 +29,8 @@
 
 - `/health` – ASP.NET health checks with custom JSON output (Mongo/Redis probe).
 - `/api/server/info` – reads metadata from Mongo `serverData` (seeded automatically).
-- `/api/user/*` (branches, code, memory, console, notify prefs, badge SVG, respawn) – wired to Mongo/Redis repositories (`MongoUserCodeRepository`, `MongoUserMemoryRepository`, `MongoUserConsoleRepository`, `MongoUserRespawnService`, `MongoUserWorldRepository`) with the same semantics as the legacy Screeps backend.
-- `/api/user/badge`, `/api/user/email`, `/api/user/set-steam-visible` – newly implemented profile management endpoints writing to the `users` collection with the same validation rules as the Node server.
+- `/api/user/*` (branches, code, memory, console, notify prefs, badge SVG, respawn, tutorial done, set steam visible) – wired to Mongo/Redis repositories (`MongoUserCodeRepository`, `MongoUserMemoryRepository`, `MongoUserConsoleRepository`, `MongoUserRespawnService`, `MongoUserWorldRepository`, `MongoUserRepository`) with the same semantics as the legacy Screeps backend.
+- `/api/user/badge`, `/api/user/email`, `/api/user/set-steam-visible`, `/api/user/notify-prefs` – implemented profile management and preference endpoints writing to the `users` collection with the same validation rules and parity logic as the Node server.
 - `/api/game/market/*` – parity routes for `orders-index`, `orders`, `my-orders`, and `stats` backed by typed repositories and DTO factories that scale prices (thousandths → credits) and enforce query validation.
 - `/api/game/*` world endpoints – `map-stats`, `room-status`, `room-terrain`, `rooms`, `world-size`, `time`, `tick`, and `place-spawn` implemented with Mongo-backed repositories, DTO factories, deterministic seeds (docker + Testcontainers), and HTTP scratch files for quick smoke testing.
 - Core abstractions defined for server info, users, rooms, CLI sessions, storage status, and engine ticks.

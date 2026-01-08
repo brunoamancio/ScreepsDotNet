@@ -85,10 +85,24 @@ public sealed class MongoUserRepository(IMongoDatabaseProvider databaseProvider)
         return result.MatchedCount == 0 ? EmailUpdateResult.UserNotFound : EmailUpdateResult.Success;
     }
 
-    public Task SetSteamVisibilityAsync(string userId, bool visible, CancellationToken cancellationToken = default)
+    public async Task SetSteamVisibilityAsync(string userId, bool visible, CancellationToken cancellationToken = default)
     {
-        var update = Builders<UserDocument>.Update.Set("steam.steamProfileLinkHidden", !visible);
-        return _collection.UpdateOneAsync(user => user.Id == userId, update, cancellationToken: cancellationToken);
+        var user = await _collection.Find(u => u.Id == userId)
+                                    .Project(u => new { u.Steam })
+                                    .FirstOrDefaultAsync(cancellationToken)
+                                    .ConfigureAwait(false);
+
+        UpdateDefinition<UserDocument> update;
+        if (user?.Steam is null) {
+            update = Builders<UserDocument>.Update.Set(u => u.Steam, new UserSteamDocument
+            {
+                SteamProfileLinkHidden = !visible
+            });
+        } else {
+            update = Builders<UserDocument>.Update.Set(u => u.Steam!.SteamProfileLinkHidden, !visible);
+        }
+
+        await _collection.UpdateOneAsync(u => u.Id == userId, update, cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 
     private static UserProfile MapToUserProfile(UserDocument document, string fallbackId)
