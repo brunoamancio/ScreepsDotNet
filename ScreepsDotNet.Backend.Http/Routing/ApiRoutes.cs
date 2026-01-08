@@ -32,6 +32,9 @@ public static class ApiRoutes
             public const string Tick = $"{Base}/tick";
             public const string PlaceSpawn = $"{Base}/place-spawn";
             public const string CreateConstruction = $"{Base}/create-construction";
+            public const string CreateFlag = $"{Base}/create-flag";
+            public const string ChangeFlagColor = $"{Base}/change-flag-color";
+            public const string RemoveFlag = $"{Base}/remove-flag";
         }
     }
 

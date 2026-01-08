@@ -1,4 +1,5 @@
 ﻿using ScreepsDotNet.Backend.Cli.Commands.Bot;
+using ScreepsDotNet.Backend.Cli.Commands.Flag;
 using ScreepsDotNet.Backend.Cli.Commands.Map;
 using ScreepsDotNet.Backend.Cli.Commands.Stronghold;
 using ScreepsDotNet.Backend.Cli.Commands.System;
@@ -165,6 +166,20 @@ internal sealed class CliApplication(IServiceProvider serviceProvider, ILogger<C
                 branch.AddCommand<StrongholdExpandCommand>("expand")
                       .WithDescription("Force a stronghold expansion.")
                       .WithExample("strongholds", "expand", "--room", "W5N3");
+            });
+
+            config.AddBranch("flag", branch =>
+            {
+                branch.SetDescription("Flag management.");
+                branch.AddCommand<FlagCreateCommand>("create")
+                      .WithDescription("Create a new flag.")
+                      .WithExample("flag", "create", "--username", "test-user", "--room", "W1N1", "--x", "25", "--y", "25", "--name", "Flag1");
+                branch.AddCommand<FlagChangeColorCommand>("change-color")
+                      .WithDescription("Change an existing flag's color.")
+                      .WithExample("flag", "change-color", "--username", "test-user", "--room", "W1N1", "--name", "Flag1", "--color", "Red");
+                branch.AddCommand<FlagRemoveCommand>("remove")
+                      .WithDescription("Remove a flag.")
+                      .WithExample("flag", "remove", "--username", "test-user", "--room", "W1N1", "--name", "Flag1");
             });
         });
 

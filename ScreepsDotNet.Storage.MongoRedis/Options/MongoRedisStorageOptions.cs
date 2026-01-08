@@ -34,5 +34,7 @@ public sealed class MongoRedisStorageOptions
 
     public string VersionInfoCollection { get; init; } = "server.version";
 
+    public string RoomsFlagsCollection { get; init; } = "rooms.flags";
+
     public string RedisConnectionString { get; init; } = "localhost:6379";
 }

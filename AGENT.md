@@ -20,6 +20,7 @@
   - `system tick set --ms <milliseconds>`
   - `bots list|spawn|reload|remove`
   - `strongholds templates|spawn|expand`
+  - `flag create|change-color|remove`
 - `ScreepsDotNet.Storage.MongoRedis/` – MongoDB/Redis infrastructure (adapter + repositories) used by the HTTP host.
   - `.editorconfig`, `.globalconfig`, `.gitattributes`, `Directory.Build.props` – shared tooling settings.
   - `docker/` – supporting assets (Mongo init scripts, etc.).

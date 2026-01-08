@@ -85,6 +85,7 @@ static void ConfigureServices(HostApplicationBuilder builder)
     builder.Services.AddSingleton<ISystemControlService, RedisSystemControlService>();
     builder.Services.AddSingleton<IStrongholdTemplateProvider, EmbeddedStrongholdTemplateProvider>();
     builder.Services.AddSingleton<IStrongholdControlService, MongoStrongholdControlService>();
+    builder.Services.AddSingleton<IFlagService, MongoFlagService>();
 
     builder.Services.AddSingleton<ICliApplication, CliApplication>();
 }

@@ -12,5 +12,6 @@ internal static class EndpointRegistration
         WorldEndpoints.Map(app);
         SpawnEndpoints.Map(app);
         ConstructionEndpoints.Map(app);
+        FlagEndpoints.Map(app);
     }
 }
