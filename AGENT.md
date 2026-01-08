@@ -35,6 +35,7 @@
 - `/api/user/badge`, `/api/user/email`, `/api/user/set-steam-visible`, `/api/user/notify-prefs` – implemented profile management and preference endpoints writing to the `users` collection with the same validation rules and parity logic as the Node server.
 - `/api/game/market/*` – parity routes for `orders-index`, `orders`, `my-orders`, and `stats` backed by typed repositories and DTO factories that scale prices (thousandths → credits) and enforce query validation.
 - `/api/game/*` world endpoints – `map-stats`, `room-status`, `room-terrain`, `rooms`, `world-size`, `time`, `tick`, `place-spawn`, `create-flag`, `change-flag-color`, `remove-flag`, `create-invader`, and `remove-invader` implemented with Mongo-backed repositories, DTO factories, deterministic seeds (docker + Testcontainers), and HTTP scratch files for quick smoke testing.
+- `/api/game/bot/*` – admin endpoints for listing bot definitions and invoking spawn/reload/remove operations via the shared `MongoBotControlService` (same semantics as the CLI).
 - Core abstractions defined for server info, users, rooms, CLI sessions, storage status, and engine ticks.
 - Mongo repositories implemented for server info, users, and owned rooms; ready for future endpoints.
 - Integration tests spin up disposable Mongo + Redis containers via Testcontainers to validate real storage behavior.
@@ -66,6 +67,7 @@
    - `GET http://localhost:5210/health`
    - `GET http://localhost:5210/api/server/info`
    - `ScreepsDotNet.Backend.Http/MarketEndpoints.http` + `WorldEndpoints.http` contain ready-to-send requests for every market/world route once the backend is running.
+   - `ScreepsDotNet.Backend.Http/BotEndpoints.http` exercises the `/api/game/bot/*` admin routes (list/spawn/reload/remove).
    - CLI quick checks (run from `ScreepsDotNet`):
      - `dotnet run --project ScreepsDotNet.Backend.Cli -- version --json`
      - `dotnet run --project ScreepsDotNet.Backend.Cli -- storage status --json`
@@ -96,6 +98,7 @@
 
 - `appsettings.json` & `appsettings.Development.json`:
   - `Storage:MongoRedis` connection strings + collection names.
+- Sample bot manifest lives at `ScreepsDotNet.Backend.Http/mods.sample.json`. Copy it when you need a quick `mods.json` target for either the CLI (`--modfile`) or the HTTP host (`BotManifestOptions:ManifestFile` / `MODFILE`).
 - Server metadata + version info now live in Mongo (`server.data` + `server.version`). Update `docker/mongo-init/seed-server-data.js` and `SeedDataDefaults` before changing these defaults so HTTP + CLI surfaces stay in sync.
 - `docker-compose.yml` uses volumes `mongo-data` / `redis-data`. Run `docker compose down -v` to reseed.
 

@@ -38,6 +38,15 @@ public static class ApiRoutes
             public const string CreateInvader = $"{Base}/create-invader";
             public const string RemoveInvader = $"{Base}/remove-invader";
         }
+
+        public static class Bot
+        {
+            private const string BotBase = $"{Base}/bot";
+            public const string List = $"{BotBase}/list";
+            public const string Spawn = $"{BotBase}/spawn";
+            public const string Reload = $"{BotBase}/reload";
+            public const string Remove = $"{BotBase}/remove";
+        }
     }
 
     public static class Server

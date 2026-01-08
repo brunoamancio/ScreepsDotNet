@@ -1,8 +1,8 @@
 ﻿namespace ScreepsDotNet.Backend.Cli.Commands.Flag;
 
 using global::System.ComponentModel;
-using ScreepsDotNet.Backend.Core.Services;
 using ScreepsDotNet.Backend.Core.Repositories;
+using ScreepsDotNet.Backend.Core.Services;
 using Spectre.Console;
 using Spectre.Console.Cli;
 

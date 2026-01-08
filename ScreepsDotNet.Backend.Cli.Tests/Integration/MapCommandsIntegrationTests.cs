@@ -1,8 +1,8 @@
 namespace ScreepsDotNet.Backend.Cli.Tests.Integration;
 
 using MongoDB.Driver;
-using ScreepsDotNet.Backend.Core.Constants;
 using ScreepsDotNet.Backend.Cli.Commands.Map;
+using ScreepsDotNet.Backend.Core.Constants;
 using ScreepsDotNet.Storage.MongoRedis.Repositories.Documents;
 using Spectre.Console.Cli;
 

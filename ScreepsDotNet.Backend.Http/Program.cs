@@ -18,6 +18,13 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddOpenApi();
 builder.Services.Configure<MongoRedisStorageOptions>(builder.Configuration.GetSection(MongoRedisStorageOptions.SectionName));
 builder.Services.Configure<AuthOptions>(builder.Configuration.GetSection(AuthOptions.SectionName));
+builder.Services.Configure<BotManifestOptions>(builder.Configuration.GetSection(nameof(BotManifestOptions)));
+builder.Services.PostConfigure<BotManifestOptions>(options =>
+{
+    options.ManifestFile ??= builder.Configuration["modfile"]
+                             ?? builder.Configuration["MODFILE"]
+                             ?? Environment.GetEnvironmentVariable("MODFILE");
+});
 builder.Services.AddSingleton<IStorageAdapter, MongoRedisStorageAdapter>();
 builder.Services.AddSingleton<IMongoDatabaseProvider, MongoDatabaseProvider>();
 builder.Services.AddSingleton<IRedisConnectionProvider, RedisConnectionProvider>();
@@ -41,6 +48,8 @@ builder.Services.AddSingleton<IPlayerSpawnService, MongoPlayerSpawnService>();
 builder.Services.AddSingleton<IConstructionService, MongoConstructionService>();
 builder.Services.AddSingleton<IFlagService, MongoFlagService>();
 builder.Services.AddSingleton<IInvaderService, MongoInvaderService>();
+builder.Services.AddSingleton<IBotDefinitionProvider, FileSystemBotDefinitionProvider>();
+builder.Services.AddSingleton<IBotControlService, MongoBotControlService>();
 builder.Services.AddSingleton<IBadgeSvgGenerator, BadgeSvgGenerator>();
 builder.Services.AddSingleton<IVersionInfoProvider, VersionInfoProvider>();
 builder.Services.AddSingleton<ITokenService, RedisTokenService>();

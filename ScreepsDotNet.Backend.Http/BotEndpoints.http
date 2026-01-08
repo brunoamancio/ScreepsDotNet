@@ -1,0 +1,49 @@
+﻿### Authentication
+# Obtain a session token using the seeded dev ticket
+# @name Login
+POST {{host}}/api/auth/steam-ticket
+Content-Type: application/json
+
+{
+    "ticket": "integration-ticket",
+    "useNativeAuth": false
+}
+
+> {% client.global.set("auth_token", response.body.token); %}
+
+### List Bot Definitions
+GET {{host}}/api/game/bot/list
+X-Token: {{auth_token}}
+
+### Spawn Bot
+POST {{host}}/api/game/bot/spawn
+X-Token: {{auth_token}}
+Content-Type: application/json
+
+{
+    "bot": "alpha",
+    "room": "W9N9",
+    "username": "AlphaCommander",
+    "cpu": 120,
+    "gcl": 2,
+    "x": 20,
+    "y": 20
+}
+
+### Reload Bot AI
+POST {{host}}/api/game/bot/reload
+X-Token: {{auth_token}}
+Content-Type: application/json
+
+{
+    "bot": "alpha"
+}
+
+### Remove Bot User
+POST {{host}}/api/game/bot/remove
+X-Token: {{auth_token}}
+Content-Type: application/json
+
+{
+    "username": "AlphaCommander"
+}

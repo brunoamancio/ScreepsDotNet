@@ -3,8 +3,17 @@ namespace ScreepsDotNet.Backend.Http.Tests.Integration;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using ScreepsDotNet.Backend.Core.Services;
+using ScreepsDotNet.Backend.Http.Tests.TestSupport;
 
-internal sealed class IntegrationWebApplicationFactory(string mongoConnectionString, string mongoDatabase, string redisConnectionString, string userId, string ticket, string steamId)
+internal sealed class IntegrationWebApplicationFactory(string mongoConnectionString,
+                                                      string mongoDatabase,
+                                                      string redisConnectionString,
+                                                      string userId,
+                                                      string ticket,
+                                                      string steamId)
     : WebApplicationFactory<Program>
 {
     private const string IntegrationEnvironmentName = "Integration";
@@ -34,6 +43,11 @@ internal sealed class IntegrationWebApplicationFactory(string mongoConnectionStr
                 [TicketSteamIdKey] = steamId
             };
             configBuilder.AddInMemoryCollection(settings);
+        });
+        builder.ConfigureServices(services =>
+        {
+            services.RemoveAll<IBotDefinitionProvider>();
+            services.AddSingleton<IBotDefinitionProvider, StaticBotDefinitionProvider>();
         });
     }
 }

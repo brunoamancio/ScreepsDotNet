@@ -43,6 +43,7 @@ Modern .NET rewrite of the Screeps private server backend. The solution contains
 4. **Use the `.http` helpers for smoke testing:**
    - `ScreepsDotNet.Backend.Http/UserEndpoints.http` contains ready-made requests for memory, code, branches, console, badge SVG, etc. Update the `@ScreepsDotNet_User_Token` variable with the token from the previous step and execute the requests directly from JetBrains Rider / VS Code (REST Client) / HTTPie.
    - `ScreepsDotNet.Backend.Http/CoreEndpoints.http` provides `/health`, `/api/version`, and `/api/server/info` requests.
+   - `ScreepsDotNet.Backend.Http/BotEndpoints.http` exercises the new `/api/game/bot/*` routes (list/spawn/reload/remove).
 
 5. **Run automated tests (unit + integration):**
    ```powershell
@@ -72,6 +73,7 @@ dotnet run --project ScreepsDotNet.Backend.Cli/ScreepsDotNet.Backend.Cli.csproj 
 | `--modfile` / `SCREEPSCLI_modfile` / `MODFILE` | Path to the legacy `mods.json` manifest containing bot AI definitions. |
 
 Every option can also be supplied via `SCREEPSCLI_<option>` environment variables, e.g., `SCREEPSCLI_connection-string`.
+If you just need something to point at while experimenting, copy `ScreepsDotNet.Backend.Http/mods.sample.json` to a writable location and adjust the bot paths to the modules you want to load.
 
 ### Bot commands
 
