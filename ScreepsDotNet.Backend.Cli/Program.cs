@@ -76,6 +76,7 @@ static void ConfigureServices(HostApplicationBuilder builder)
     builder.Services.AddSingleton<IWorldMetadataRepository, MongoWorldMetadataRepository>();
     builder.Services.AddSingleton<IVersionMetadataRepository, MongoVersionMetadataRepository>();
     builder.Services.AddSingleton<IUserRespawnService, MongoUserRespawnService>();
+    builder.Services.AddSingleton<IPlayerSpawnService, MongoPlayerSpawnService>();
     builder.Services.AddSingleton<IMapControlService, MongoMapControlService>();
     builder.Services.AddSingleton<IBotDefinitionProvider, FileSystemBotDefinitionProvider>();
     builder.Services.AddSingleton<IBotControlService, MongoBotControlService>();

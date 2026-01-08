@@ -30,6 +30,7 @@ public static class ApiRoutes
             public const string WorldSize = $"{Base}/world-size";
             public const string Time = $"{Base}/time";
             public const string Tick = $"{Base}/tick";
+            public const string PlaceSpawn = $"{Base}/place-spawn";
         }
     }
 

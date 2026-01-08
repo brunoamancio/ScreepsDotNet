@@ -10,5 +10,6 @@ internal static class EndpointRegistration
         UserEndpoints.Map(app);
         MarketEndpoints.Map(app);
         WorldEndpoints.Map(app);
+        SpawnEndpoints.Map(app);
     }
 }
