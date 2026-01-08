@@ -102,6 +102,23 @@ Example:
 dotnet run --project ScreepsDotNet.Backend.Cli -- strongholds spawn --room W5N3 --template bunker3 --deploy-delay 10
 ```
 
+### Map commands
+
+| Command | Purpose | Key flags |
+| --- | --- | --- |
+| `map generate --room <name> [--sources <1-5>] [--terrain <preset>] [--no-controller] [--keeper-lairs] [--mineral <type>] [--overwrite] [--seed <int>] [--json]` | Procedurally create or overwrite a room with deterministic options. | Terrain presets follow `plain`, `swampLow`, `swampHeavy`, `checker`, `mixed`. |
+| `map open --room <name>` | Mark a room as active/accessible. | |
+| `map close --room <name>` | Disable a room (legacy “bus” flag). | |
+| `map remove --room <name> [--purge-objects]` | Delete the room entry (optionally wipe room objects). | |
+| `map assets update --room <name> [--full]` | Regenerate cached renderer assets for a room. | `--full` performs a complete rebuild instead of incremental. |
+| `map terrain refresh` | Rebuild the global terrain cache (no parameters). | |
+
+Example:
+
+```powershell
+dotnet run --project ScreepsDotNet.Backend.Cli -- map generate --room W10N5 --sources 3 --terrain swampHeavy --keeper-lairs --overwrite --json
+```
+
 ## Storage Notes
 
 - User data (profile, notify prefs, branches, memory, console queue) lives in Mongo collections:
