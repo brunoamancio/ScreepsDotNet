@@ -15,6 +15,9 @@
   - `user memory get --user-id <id> [--segment <0-99>] [--json]`
   - `user memory set --user-id <id> (--value <json> [--path <path>] | --segment <0-99> --data <text>)`
   - `world dump --room <name> [--decoded] [--json]`
+  - `system status|pause|resume|message|reset`
+  - `system tick get [--json]`
+  - `system tick set --ms <milliseconds>`
 - `ScreepsDotNet.Storage.MongoRedis/` – MongoDB/Redis infrastructure (adapter + repositories) used by the HTTP host.
   - `.editorconfig`, `.globalconfig`, `.gitattributes`, `Directory.Build.props` – shared tooling settings.
   - `docker/` – supporting assets (Mongo init scripts, etc.).
@@ -108,10 +111,10 @@
 
 ## Pending / Next Steps
 
-1. **CLI Command Framework & Utilities**
-   - Build out `ScreepsDotNet.Backend.Cli` beyond the new host scaffold: add a command framework plus verbs for reseeding storage, inspecting users, dumping world metadata, and scripting regression workflows.
+1. **CLI map/bot parity (Phase 2 remainder)**
+   - Port the legacy `cli/map.js` helpers (generate/open/close/remove/update assets/terrain) and bot/stronghold utilities into reusable services, then expose them as new CLI branches. Add tests + docs once the services exist.
 2. **Write-heavy `/api/game/*` routes**
-   - Implement spawn placement, construction/flag intents, notify toggles, and invader management per the remainder of `docs/specs/MarketWorldEndpoints.md`. These depend on the room/world repositories we just added—extend docker + Testcontainers seeds before adding the endpoints/tests.
+   - Implement spawn placement, construction/flag intents, notify toggles, and invader management per the remainder of `docs/specs/MarketWorldEndpoints.md`. These depend on deterministic Mongo/Redis seeds—extend docker + Testcontainers harnesses first.
 3. **Server info provider parity**
    - Replace the remaining in-memory providers (e.g., `VersionInfoProvider` caching) with storage-backed equivalents so `/api/version` and `/api/server/info` always reflect Mongo state, then remove duplicated configuration blocks.
 

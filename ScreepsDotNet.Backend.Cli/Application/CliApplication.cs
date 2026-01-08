@@ -1,4 +1,6 @@
-﻿namespace ScreepsDotNet.Backend.Cli.Application;
+﻿using ScreepsDotNet.Backend.Cli.Commands.System;
+
+namespace ScreepsDotNet.Backend.Cli.Application;
 
 using Microsoft.Extensions.Logging;
 using ScreepsDotNet.Backend.Cli.Commands;
@@ -33,7 +35,7 @@ internal sealed class CliApplication(IServiceProvider serviceProvider, ILogger<C
             {
                 branch.SetDescription("Storage utilities.");
                 branch.AddCommand<StorageStatusCommand>("status").WithDescription("Check Mongo/Redis health.");
-                branch.AddCommand<StorageReseedCommand>("reseed").WithDescription("Reseed Mongo/Redis with default data (coming soon).");
+                branch.AddCommand<StorageReseedCommand>("reseed").WithDescription("Reseed Mongo/Redis with default data.");
             });
 
             config.AddBranch("user", branch =>
@@ -52,6 +54,22 @@ internal sealed class CliApplication(IServiceProvider serviceProvider, ILogger<C
             {
                 branch.SetDescription("World utilities.");
                 branch.AddCommand<WorldDumpCommand>("dump").WithDescription("Dump room terrain data.");
+            });
+
+            config.AddBranch("system", branch =>
+            {
+                branch.SetDescription("Runtime/system controls.");
+                branch.AddCommand<SystemStatusCommand>("status").WithDescription("Show pause/tick status.");
+                branch.AddCommand<SystemPauseCommand>("pause").WithDescription("Pause the simulation loop.");
+                branch.AddCommand<SystemResumeCommand>("resume").WithDescription("Resume the simulation loop.");
+                branch.AddCommand<SystemMessageCommand>("message").WithDescription("Broadcast a server message.");
+                branch.AddCommand<SystemResetCommand>("reset").WithDescription("Reset world data (reseeds Mongo).");
+                branch.AddBranch("tick", tick =>
+                {
+                    tick.SetDescription("Tick duration utilities.");
+                    tick.AddCommand<SystemTickGetCommand>("get").WithDescription("Show the current tick duration.");
+                    tick.AddCommand<SystemTickSetCommand>("set").WithDescription("Update the minimal tick duration.");
+                });
             });
         });
 
