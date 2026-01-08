@@ -1,5 +1,6 @@
 ﻿using ScreepsDotNet.Backend.Cli.Commands.Bot;
 using ScreepsDotNet.Backend.Cli.Commands.Flag;
+using ScreepsDotNet.Backend.Cli.Commands.Invader;
 using ScreepsDotNet.Backend.Cli.Commands.Map;
 using ScreepsDotNet.Backend.Cli.Commands.Stronghold;
 using ScreepsDotNet.Backend.Cli.Commands.System;
@@ -180,6 +181,17 @@ internal sealed class CliApplication(IServiceProvider serviceProvider, ILogger<C
                 branch.AddCommand<FlagRemoveCommand>("remove")
                       .WithDescription("Remove a flag.")
                       .WithExample("flag", "remove", "--username", "test-user", "--room", "W1N1", "--name", "Flag1");
+            });
+
+            config.AddBranch("invader", branch =>
+            {
+                branch.SetDescription("NPC invader management.");
+                branch.AddCommand<InvaderCreateCommand>("create")
+                      .WithDescription("Create a new invader.")
+                      .WithExample("invader", "create", "--username", "test-user", "--room", "W1N1", "--x", "25", "--y", "25", "--type", "Melee", "--size", "Small");
+                branch.AddCommand<InvaderRemoveCommand>("remove")
+                      .WithDescription("Remove an invader.")
+                      .WithExample("invader", "remove", "--username", "test-user", "--id", "60f1a2b3c4d5e6f7a8b9c0d1");
             });
         });
 

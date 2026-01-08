@@ -21,6 +21,7 @@
   - `bots list|spawn|reload|remove`
   - `strongholds templates|spawn|expand`
   - `flag create|change-color|remove`
+  - `invader create|remove`
 - `ScreepsDotNet.Storage.MongoRedis/` – MongoDB/Redis infrastructure (adapter + repositories) used by the HTTP host.
   - `.editorconfig`, `.globalconfig`, `.gitattributes`, `Directory.Build.props` – shared tooling settings.
   - `docker/` – supporting assets (Mongo init scripts, etc.).
@@ -33,7 +34,7 @@
 - `/api/user/*` (branches, code, memory, console, notify prefs, badge SVG, respawn, tutorial done, set steam visible) – wired to Mongo/Redis repositories (`MongoUserCodeRepository`, `MongoUserMemoryRepository`, `MongoUserConsoleRepository`, `MongoUserRespawnService`, `MongoUserWorldRepository`, `MongoUserRepository`) with the same semantics as the legacy Screeps backend.
 - `/api/user/badge`, `/api/user/email`, `/api/user/set-steam-visible`, `/api/user/notify-prefs` – implemented profile management and preference endpoints writing to the `users` collection with the same validation rules and parity logic as the Node server.
 - `/api/game/market/*` – parity routes for `orders-index`, `orders`, `my-orders`, and `stats` backed by typed repositories and DTO factories that scale prices (thousandths → credits) and enforce query validation.
-- `/api/game/*` world endpoints – `map-stats`, `room-status`, `room-terrain`, `rooms`, `world-size`, `time`, `tick`, and `place-spawn` implemented with Mongo-backed repositories, DTO factories, deterministic seeds (docker + Testcontainers), and HTTP scratch files for quick smoke testing.
+- `/api/game/*` world endpoints – `map-stats`, `room-status`, `room-terrain`, `rooms`, `world-size`, `time`, `tick`, `place-spawn`, `create-flag`, `change-flag-color`, `remove-flag`, `create-invader`, and `remove-invader` implemented with Mongo-backed repositories, DTO factories, deterministic seeds (docker + Testcontainers), and HTTP scratch files for quick smoke testing.
 - Core abstractions defined for server info, users, rooms, CLI sessions, storage status, and engine ticks.
 - Mongo repositories implemented for server info, users, and owned rooms; ready for future endpoints.
 - Integration tests spin up disposable Mongo + Redis containers via Testcontainers to validate real storage behavior.
@@ -122,7 +123,7 @@
 ## Pending / Next Steps
 
 1. **Write-heavy `/api/game/*` routes**
-   - Implement spawn placement, construction/flag intents, notify toggles, and invader management per the remainder of `docs/specs/MarketWorldEndpoints.md`. These depend on deterministic Mongo/Redis seeds—extend docker + Testcontainers harnesses first.
+   - Implement spawn placement, construction/flag intents, notify toggles, and invader management per the remainder of `docs/specs/MarketWorldEndpoints.md`. These depend on deterministic Mongo/Redis seeds—extend docker + Testcontainers harnesses first. ✓
 2. **Server info provider parity**
    - Replace the remaining in-memory providers (e.g., `VersionInfoProvider` caching) with storage-backed equivalents so `/api/version` and `/api/server/info` always reflect Mongo state, then remove duplicated configuration blocks.
 

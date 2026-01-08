@@ -1,0 +1,40 @@
+﻿### Authentication
+# Obtain a session token using the seeded dev ticket
+# @name Login
+POST {{host}}/api/auth/steam-ticket
+Content-Type: application/json
+
+{
+    "ticket": "integration-ticket",
+    "useNativeAuth": false
+}
+
+> {% client.global.set("auth_token", response.body.token); %}
+
+### Create Invader
+# Creates a new NPC invader in an owned/reserved room.
+# Limits to 5 invaders per room.
+POST {{host}}/api/game/create-invader
+X-Token: {{auth_token}}
+Content-Type: application/json
+
+{
+    "room": "W1N1",
+    "x": 25,
+    "y": 25,
+    "type": "Melee",
+    "size": "Small",
+    "boosted": false
+}
+
+> {% client.global.set("invader_id", response.body._id); %}
+
+### Remove Invader
+# Removes an NPC invader that was summoned by the caller.
+POST {{host}}/api/game/remove-invader
+X-Token: {{auth_token}}
+Content-Type: application/json
+
+{
+    "id": "{{invader_id}}"
+}
