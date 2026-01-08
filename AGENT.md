@@ -130,10 +130,10 @@
 
 ## Pending / Next Steps
 
-1. **HTTP admin parity / CLI safeguards**
-   - Mirror the CLI-only maintenance flows (system reset with `--confirm`, tick overrides, broadcast helpers) behind authenticated HTTP routes so automation doesn’t need shell access. Reuse the existing `ISystemControlService` and keep the confirmation semantics consistent between CLI + HTTP.
-2. **Server info provider parity**
-   - Replace the remaining in-memory providers (e.g., `VersionInfoProvider` caching) with storage-backed equivalents so `/api/version` and `/api/server/info` always reflect Mongo state, then remove duplicated configuration blocks.
+1. **Power creep & remaining legacy `/api/game/*` routes**
+   - Implement the `/api/game/power-creeps/*` surface (create/delete/spawn/suicide/upgrade, etc.) plus any other outstanding write-heavy endpoints documented under `docs/specs/MarketWorldEndpoints.md`. These will need new repositories/services, Mongo seeds, and HTTP/CLI parity just like the bot/stronghold/intent work.
+2. **CLI/HTTP polish**
+   - Add optional `--json` output to any remaining CLI commands, extend the HTTP admin routes with structured responses/logging, and keep README/AGENT/manual `.http` files current whenever new management features land.
 
 ## Market & World API Spec Snapshot
 
