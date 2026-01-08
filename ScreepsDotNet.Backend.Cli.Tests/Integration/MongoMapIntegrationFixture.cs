@@ -23,6 +23,8 @@ public sealed class MongoMapIntegrationFixture : IAsyncLifetime
 
     public IMongoDatabase Database { get; private set; } = null!;
 
+    public IMongoDatabaseProvider DatabaseProvider => _databaseProvider;
+
     public MongoMapControlService MapControlService { get; private set; } = null!;
 
     public async Task InitializeAsync()
