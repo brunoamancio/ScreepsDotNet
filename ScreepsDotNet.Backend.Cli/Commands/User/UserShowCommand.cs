@@ -7,7 +7,7 @@ using Spectre.Console.Cli;
 
 internal sealed class UserShowCommand(IUserRepository userRepository, ILogger<UserShowCommand> logger) : AsyncCommand<UserShowCommand.Settings>
 {
-    private static readonly System.Text.Json.JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
+    private static readonly global::System.Text.Json.JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
     public sealed class Settings : CommandSettings
     {
         [CommandOption("--user-id <ID>")]
@@ -48,7 +48,7 @@ internal sealed class UserShowCommand(IUserRepository userRepository, ILogger<Us
         }
 
         if (settings.OutputJson) {
-            var payload = System.Text.Json.JsonSerializer.Serialize(result, JsonOptions);
+            var payload = global::System.Text.Json.JsonSerializer.Serialize(result, JsonOptions);
             AnsiConsole.WriteLine(payload);
             return 0;
         }

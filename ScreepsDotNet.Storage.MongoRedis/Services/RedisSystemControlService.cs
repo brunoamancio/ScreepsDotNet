@@ -1,14 +1,16 @@
 namespace ScreepsDotNet.Storage.MongoRedis.Services;
 
 using System.Globalization;
+using Microsoft.Extensions.Logging;
 using ScreepsDotNet.Backend.Core.Constants;
 using ScreepsDotNet.Backend.Core.Services;
 using ScreepsDotNet.Storage.MongoRedis.Providers;
 using StackExchange.Redis;
 
-public sealed class RedisSystemControlService(IRedisConnectionProvider connectionProvider)
+public sealed class RedisSystemControlService(IRedisConnectionProvider connectionProvider, ILogger<RedisSystemControlService> logger)
     : ISystemControlService, IDisposable
 {
+    private readonly ILogger<RedisSystemControlService> _logger = logger;
     private readonly IConnectionMultiplexer _connection = connectionProvider.GetConnection();
 
     public async Task<bool> IsSimulationPausedAsync(CancellationToken cancellationToken = default)
@@ -70,6 +72,6 @@ public sealed class RedisSystemControlService(IRedisConnectionProvider connectio
     {
         var db = _connection.GetDatabase();
         await db.StringSetAsync(SystemControlConstants.MainLoopPausedKey, paused ? "1" : "0").ConfigureAwait(false);
-        logger.LogInformation("Simulation {State}.", paused ? "paused" : "resumed");
+        _logger.LogInformation("Simulation {State}.", paused ? "paused" : "resumed");
     }
 }

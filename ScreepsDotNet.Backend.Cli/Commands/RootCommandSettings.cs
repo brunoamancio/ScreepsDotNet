@@ -1,7 +1,7 @@
 ﻿namespace ScreepsDotNet.Backend.Cli.Commands;
 
-using System;
-using System.ComponentModel;
+using global::System;
+using global::System.ComponentModel;
 using Spectre.Console;
 using Spectre.Console.Cli;
 

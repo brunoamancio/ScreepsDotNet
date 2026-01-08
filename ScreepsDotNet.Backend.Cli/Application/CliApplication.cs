@@ -1,4 +1,5 @@
-﻿using ScreepsDotNet.Backend.Cli.Commands.System;
+﻿using ScreepsDotNet.Backend.Cli.Commands.Map;
+using ScreepsDotNet.Backend.Cli.Commands.System;
 
 namespace ScreepsDotNet.Backend.Cli.Application;
 
@@ -69,6 +70,25 @@ internal sealed class CliApplication(IServiceProvider serviceProvider, ILogger<C
                     tick.SetDescription("Tick duration utilities.");
                     tick.AddCommand<SystemTickGetCommand>("get").WithDescription("Show the current tick duration.");
                     tick.AddCommand<SystemTickSetCommand>("set").WithDescription("Update the minimal tick duration.");
+                });
+            });
+
+            config.AddBranch("map", branch =>
+            {
+                branch.SetDescription("Map editing utilities.");
+                branch.AddCommand<MapGenerateCommand>("generate").WithDescription("Procedurally generate a room.");
+                branch.AddCommand<MapOpenCommand>("open").WithDescription("Open (enable) a room.");
+                branch.AddCommand<MapCloseCommand>("close").WithDescription("Close (disable) a room.");
+                branch.AddCommand<MapRemoveCommand>("remove").WithDescription("Remove a room entry.");
+                branch.AddBranch("assets", assets =>
+                {
+                    assets.SetDescription("Map asset helpers.");
+                    assets.AddCommand<MapAssetsUpdateCommand>("update").WithDescription("Regenerate map assets (stubbed until renderer lands).");
+                });
+                branch.AddBranch("terrain", terrain =>
+                {
+                    terrain.SetDescription("Terrain cache helpers.");
+                    terrain.AddCommand<MapTerrainRefreshCommand>("refresh").WithDescription("Refresh cached terrain metadata.");
                 });
             });
         });

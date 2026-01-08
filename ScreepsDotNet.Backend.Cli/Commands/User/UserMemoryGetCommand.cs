@@ -1,6 +1,6 @@
 ﻿namespace ScreepsDotNet.Backend.Cli.Commands.User;
 
-using System.Text.Json;
+using global::System.Text.Json;
 using ScreepsDotNet.Backend.Core.Repositories;
 using Spectre.Console;
 using Spectre.Console.Cli;

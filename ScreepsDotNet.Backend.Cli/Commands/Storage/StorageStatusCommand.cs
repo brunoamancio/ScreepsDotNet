@@ -1,6 +1,6 @@
 ﻿namespace ScreepsDotNet.Backend.Cli.Commands.Storage;
 
-using System.Text.Json;
+using global::System.Text.Json;
 using Microsoft.Extensions.Logging;
 using ScreepsDotNet.Backend.Core.Storage;
 using Spectre.Console;
@@ -27,7 +27,7 @@ internal sealed class StorageStatusCommand(IStorageAdapter storageAdapter, ILogg
                 status.LastSynchronizationUtc,
                 status.Details
             };
-            AnsiConsole.WriteLine(System.Text.Json.JsonSerializer.Serialize(payload, JsonOptions));
+            AnsiConsole.WriteLine(JsonSerializer.Serialize(payload, JsonOptions));
             return status.IsConnected ? 0 : 1;
         }
 
