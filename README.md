@@ -114,7 +114,7 @@ dotnet run --project ScreepsDotNet.Backend.Cli -- strongholds spawn --room W5N3 
 | `system status [--json]` | Show whether the simulation loop is paused and the current tick duration. | |
 | `system pause` / `system resume` | Toggle the simulation main loop. | |
 | `system message "<text>"` | Broadcast a server notification via Redis pub/sub. | |
-| `system reset [--force]` | Reseed Mongo/Redis using the canonical seed data. | `--force` required when targeting non-default DBs. |
+| `system reset --confirm RESET [--force]` | Reseed Mongo/Redis using the canonical seed data. | `--force` required when targeting non-default DBs. |
 | `system tick get [--json]` | Display the minimal tick duration stored in Redis. | |
 | `system tick set --ms <milliseconds>` | Update and broadcast the minimal tick duration. | |
 

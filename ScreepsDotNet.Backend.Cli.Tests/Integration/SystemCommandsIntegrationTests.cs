@@ -94,7 +94,7 @@ public sealed class SystemCommandsIntegrationTests(SystemCommandsIntegrationFixt
         await rooms.InsertOneAsync(new RoomDocument { Id = "W99N99", Status = "normal" });
 
         var resetCommand = new SystemResetCommand(new SeedDataService(), Options.Create(_fixture.StorageOptions), NullLogger<SystemResetCommand>.Instance);
-        var exitCode = await resetCommand.ExecuteAsync(null!, new SystemResetCommand.Settings { Force = true }, CancellationToken.None);
+        var exitCode = await resetCommand.ExecuteAsync(null!, new SystemResetCommand.Settings { Force = true, Confirm = "RESET" }, CancellationToken.None);
         Assert.Equal(0, exitCode);
 
         var exists = await rooms.Find(document => document.Id == "W99N99").AnyAsync();
