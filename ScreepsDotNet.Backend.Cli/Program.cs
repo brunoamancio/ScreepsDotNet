@@ -49,6 +49,7 @@ static void ConfigureLogging(HostApplicationBuilder builder)
 
 static void ConfigureServices(HostApplicationBuilder builder)
 {
+    builder.Services.Configure<ConsoleLifetimeOptions>(options => options.SuppressStatusMessages = true);
     builder.Services.Configure<ServerDataOptions>(builder.Configuration.GetSection(ServerDataOptions.SectionName));
     builder.Services.Configure<VersionInfoOptions>(builder.Configuration.GetSection(VersionInfoOptions.SectionName));
     builder.Services.Configure<MongoRedisStorageOptions>(builder.Configuration.GetSection(MongoRedisStorageOptions.SectionName));

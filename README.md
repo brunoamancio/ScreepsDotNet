@@ -102,6 +102,23 @@ Example:
 dotnet run --project ScreepsDotNet.Backend.Cli -- strongholds spawn --room W5N3 --template bunker3 --deploy-delay 10
 ```
 
+### System commands
+
+| Command | Purpose | Key flags |
+| --- | --- | --- |
+| `system status [--json]` | Show whether the simulation loop is paused and the current tick duration. | |
+| `system pause` / `system resume` | Toggle the simulation main loop. | |
+| `system message "<text>"` | Broadcast a server notification via Redis pub/sub. | |
+| `system reset [--force]` | Reseed Mongo/Redis using the canonical seed data. | `--force` required when targeting non-default DBs. |
+| `system tick get [--json]` | Display the minimal tick duration stored in Redis. | |
+| `system tick set --ms <milliseconds>` | Update and broadcast the minimal tick duration. | |
+
+Example:
+
+```powershell
+dotnet run --project ScreepsDotNet.Backend.Cli -- system tick set --ms 750
+```
+
 ### Map commands
 
 | Command | Purpose | Key flags |

@@ -64,6 +64,12 @@
    - `GET http://localhost:5210/health`
    - `GET http://localhost:5210/api/server/info`
    - `ScreepsDotNet.Backend.Http/MarketEndpoints.http` + `WorldEndpoints.http` contain ready-to-send requests for every market/world route once the backend is running.
+   - CLI quick checks (run from `ScreepsDotNet`):
+     - `dotnet run --project ScreepsDotNet.Backend.Cli -- version --json`
+     - `dotnet run --project ScreepsDotNet.Backend.Cli -- storage status --json`
+     - `dotnet run --project ScreepsDotNet.Backend.Cli -- system status --json`
+     - `dotnet run --project ScreepsDotNet.Backend.Cli -- bots list --json`
+     - `dotnet run --project ScreepsDotNet.Backend.Cli -- map generate --room W10N5 --overwrite --json`
 7. **Build:** ensure no running `dotnet run` locks DLLs before invoking `dotnet build`.
 
 ### Resetting / Updating Seed Data
@@ -103,6 +109,7 @@
   - `Rendering/Helpers/BadgeSampleFactory.cs` – builds consistent badge payloads (numeric + custom samples) and exposes the `BadgeSample`/`BadgePayload` types.
   - `Rendering/Helpers/BadgeGalleryMarkdownBuilder.cs` – generates the markdown table stored in `docs/badges/BadgeGallery.md`.
   Reuse these helpers instead of re-serializing badges or duplicating file-system logic in new tests.
+- CLI integration coverage lives in `ScreepsDotNet.Backend.Cli.Tests/Integration` (map, bots, strongholds, and system suites). These use Testcontainers Mongo + Redis; when adding new commands, follow the same fixture pattern so `dotnet test` exercises real storage.
 - Mongo access now goes through typed POCOs under `ScreepsDotNet.Storage.MongoRedis.Repositories.Documents`. When you add a new collection:
   1. Create a document type with `[BsonElement]` attributes (and `[BsonIgnoreExtraElements]` when needed).
   2. Point the repository at `IMongoCollection<TDocument>`; do **not** fall back to `BsonDocument`.
@@ -113,11 +120,9 @@
 
 ## Pending / Next Steps
 
-1. **CLI map/bot parity (Phase 2 remainder)**
-   - Port the legacy `cli/map.js` helpers (generate/open/close/remove/update assets/terrain) and bot/stronghold utilities into reusable services, then expose them as new CLI branches. Add tests + docs once the services exist.
-2. **Write-heavy `/api/game/*` routes**
+1. **Write-heavy `/api/game/*` routes**
    - Implement spawn placement, construction/flag intents, notify toggles, and invader management per the remainder of `docs/specs/MarketWorldEndpoints.md`. These depend on deterministic Mongo/Redis seeds—extend docker + Testcontainers harnesses first.
-3. **Server info provider parity**
+2. **Server info provider parity**
    - Replace the remaining in-memory providers (e.g., `VersionInfoProvider` caching) with storage-backed equivalents so `/api/version` and `/api/server/info` always reflect Mongo state, then remove duplicated configuration blocks.
 
 ## Market & World API Spec Snapshot
