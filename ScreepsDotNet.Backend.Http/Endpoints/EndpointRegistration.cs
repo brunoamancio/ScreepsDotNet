@@ -17,5 +17,6 @@ internal static class EndpointRegistration
         BotEndpoints.Map(app);
         StrongholdEndpoints.Map(app);
         SystemEndpoints.Map(app);
+        MapEndpoints.Map(app);
     }
 }

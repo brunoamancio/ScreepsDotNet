@@ -1,0 +1,66 @@
+﻿### Authentication
+# @name Login
+POST {{host}}/api/auth/steam-ticket
+Content-Type: application/json
+
+{
+    "ticket": "integration-ticket",
+    "useNativeAuth": false
+}
+
+> {% client.global.set("auth_token", response.body.token); %}
+
+### Map Generate
+POST {{host}}/api/game/map/generate
+X-Token: {{auth_token}}
+Content-Type: application/json
+
+{
+    "room": "W39N39",
+    "sources": 2,
+    "terrain": "mixed",
+    "keeperLairs": true,
+    "overwrite": true
+}
+
+### Map Open
+POST {{host}}/api/game/map/open
+X-Token: {{auth_token}}
+Content-Type: application/json
+
+{
+    "room": "W39N39"
+}
+
+### Map Close
+POST {{host}}/api/game/map/close
+X-Token: {{auth_token}}
+Content-Type: application/json
+
+{
+    "room": "W39N39"
+}
+
+### Map Remove
+POST {{host}}/api/game/map/remove
+X-Token: {{auth_token}}
+Content-Type: application/json
+
+{
+    "room": "W39N39",
+    "purgeObjects": true
+}
+
+### Map Assets Update
+POST {{host}}/api/game/map/assets-update
+X-Token: {{auth_token}}
+Content-Type: application/json
+
+{
+    "room": "W39N39",
+    "full": true
+}
+
+### Terrain Refresh
+POST {{host}}/api/game/map/terrain-refresh
+X-Token: {{auth_token}}

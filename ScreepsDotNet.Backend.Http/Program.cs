@@ -53,6 +53,7 @@ builder.Services.AddSingleton<IStrongholdControlService, MongoStrongholdControlS
 builder.Services.AddSingleton<IBotDefinitionProvider, FileSystemBotDefinitionProvider>();
 builder.Services.AddSingleton<IBotControlService, MongoBotControlService>();
 builder.Services.AddSingleton<ISystemControlService, RedisSystemControlService>();
+builder.Services.AddSingleton<IMapControlService, MongoMapControlService>();
 builder.Services.AddSingleton<IBadgeSvgGenerator, BadgeSvgGenerator>();
 builder.Services.AddSingleton<IVersionInfoProvider, VersionInfoProvider>();
 builder.Services.AddSingleton<ITokenService, RedisTokenService>();

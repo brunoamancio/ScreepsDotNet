@@ -56,6 +56,17 @@ public static class ApiRoutes
             public const string Expand = $"{StrongholdBase}/expand";
         }
 
+        public static class Map
+        {
+            private const string MapBase = $"{Base}/map";
+            public const string Generate = $"{MapBase}/generate";
+            public const string Open = $"{MapBase}/open";
+            public const string Close = $"{MapBase}/close";
+            public const string Remove = $"{MapBase}/remove";
+            public const string AssetsUpdate = $"{MapBase}/assets-update";
+            public const string TerrainRefresh = $"{MapBase}/terrain-refresh";
+        }
+
         public static class System
         {
             private const string SystemBase = $"{Base}/system";
