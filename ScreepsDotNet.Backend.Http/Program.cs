@@ -11,6 +11,7 @@ using ScreepsDotNet.Storage.MongoRedis.Adapters;
 using ScreepsDotNet.Storage.MongoRedis.Options;
 using ScreepsDotNet.Storage.MongoRedis.Providers;
 using ScreepsDotNet.Storage.MongoRedis.Repositories;
+using ScreepsDotNet.Storage.MongoRedis.Seeding;
 using ScreepsDotNet.Storage.MongoRedis.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -58,6 +59,7 @@ builder.Services.AddSingleton<IMapControlService, MongoMapControlService>();
 builder.Services.AddSingleton<IBadgeSvgGenerator, BadgeSvgGenerator>();
 builder.Services.AddSingleton<IVersionInfoProvider, VersionInfoProvider>();
 builder.Services.AddSingleton<ITokenService, RedisTokenService>();
+builder.Services.AddSingleton<ISeedDataService, SeedDataService>();
 builder.Services.AddScoped<ICurrentUserAccessor, CurrentUserAccessor>();
 builder.Services.AddHealthChecks().AddCheck<StorageHealthCheck>(StorageHealthCheck.HealthCheckName);
 

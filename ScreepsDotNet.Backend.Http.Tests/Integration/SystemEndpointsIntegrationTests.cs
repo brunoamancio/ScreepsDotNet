@@ -2,6 +2,8 @@
 
 using System.Net.Http.Json;
 using System.Text.Json;
+using MongoDB.Bson;
+using MongoDB.Driver;
 using ScreepsDotNet.Backend.Core.Constants;
 using ScreepsDotNet.Backend.Core.Seeding;
 using ScreepsDotNet.Backend.Http.Routing;
@@ -83,6 +85,36 @@ public sealed class SystemEndpointsIntegrationTests(IntegrationTestHarness harne
         var received = await tcs.Task.WaitAsync(TimeSpan.FromSeconds(5));
         Assert.Equal(payload, received);
         await subscriber.DisposeAsync();
+    }
+
+    [Fact]
+    public async Task Reset_RequiresConfirmation()
+    {
+        var token = await LoginAsync();
+        SetAuth(token);
+
+        var response = await _client.PostAsJsonAsync(ApiRoutes.Game.System.Reset, new { confirm = "nope" });
+        Assert.False(response.IsSuccessStatusCode);
+        Assert.Equal(System.Net.HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Reset_ReplaysSeedData_WhenConfirmed()
+    {
+        var token = await LoginAsync();
+        SetAuth(token);
+
+        var users = harness.Database.GetCollection<BsonDocument>("users");
+        var filter = Builders<BsonDocument>.Filter.Eq("_id", SeedDataDefaults.User.Id);
+        await users.UpdateOneAsync(filter,
+                                   Builders<BsonDocument>.Update.Set("username", "TamperedUser"));
+
+        var response = await _client.PostAsJsonAsync(ApiRoutes.Game.System.Reset, new { confirm = "RESET" });
+        response.EnsureSuccessStatusCode();
+
+        var restored = await users.Find(filter).FirstOrDefaultAsync();
+        Assert.NotNull(restored);
+        Assert.Equal(SeedDataDefaults.User.Username, restored["username"].AsString);
     }
 
     private async Task<string> LoginAsync()

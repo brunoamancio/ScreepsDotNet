@@ -2,11 +2,15 @@ namespace ScreepsDotNet.Backend.Http.Endpoints;
 
 using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 using ScreepsDotNet.Backend.Core.Context;
+using ScreepsDotNet.Backend.Core.Seeding;
 using ScreepsDotNet.Backend.Core.Services;
 using ScreepsDotNet.Backend.Http.Authentication;
 using ScreepsDotNet.Backend.Http.Endpoints.Models;
 using ScreepsDotNet.Backend.Http.Routing;
+using ScreepsDotNet.Storage.MongoRedis.Options;
+using ScreepsDotNet.Storage.MongoRedis.Seeding;
 
 internal static class SystemEndpoints
 {
@@ -16,6 +20,8 @@ internal static class SystemEndpoints
     private const string TickGetEndpointName = "GetSystemTickDuration";
     private const string TickSetEndpointName = "PostSystemTickDuration";
     private const string MessageEndpointName = "PostSystemMessage";
+    private const string ResetEndpointName = "PostSystemReset";
+    private const string ResetConfirmationToken = "RESET";
 
     public static void Map(WebApplication app)
     {
@@ -25,6 +31,7 @@ internal static class SystemEndpoints
         MapTickGet(app);
         MapTickSet(app);
         MapMessage(app);
+        MapReset(app);
     }
 
     private static void MapStatus(WebApplication app)
@@ -145,6 +152,38 @@ internal static class SystemEndpoints
            .WithName(MessageEndpointName);
     }
 
+    private static void MapReset(WebApplication app)
+    {
+        app.MapPost(ApiRoutes.Game.System.Reset,
+                    async ([FromBody] SystemResetRequest request,
+                           ISeedDataService seedDataService,
+                           IOptions<MongoRedisStorageOptions> storageOptions,
+                           ICurrentUserAccessor accessor,
+                           CancellationToken cancellationToken) =>
+                    {
+                        if (accessor.CurrentUser?.Id is null)
+                            return Results.Unauthorized();
+
+                        if (!string.Equals(request.Confirm, ResetConfirmationToken, StringComparison.OrdinalIgnoreCase))
+                            return Results.BadRequest(new ErrorResponse($"confirmation required (set confirm to {ResetConfirmationToken})"));
+
+                        var options = storageOptions.Value;
+                        if (string.IsNullOrWhiteSpace(options.MongoConnectionString) || string.IsNullOrWhiteSpace(options.MongoDatabase))
+                            return Results.BadRequest(new ErrorResponse("storage configuration is incomplete"));
+
+                        var isDefaultDatabase = string.Equals(options.MongoDatabase,
+                                                              SeedDataDefaults.Database.Name,
+                                                              StringComparison.OrdinalIgnoreCase);
+                        if (!isDefaultDatabase && !request.Force)
+                            return Results.BadRequest(new ErrorResponse($"refusing to reset database '{options.MongoDatabase}' without force=true"));
+
+                        await seedDataService.ReseedAsync(options.MongoConnectionString, options.MongoDatabase, cancellationToken).ConfigureAwait(false);
+                        return Results.Ok(new { ok = 1 });
+                    })
+           .RequireTokenAuthentication()
+           .WithName(ResetEndpointName);
+    }
+
     private sealed record SystemStatusResponse(
         [property: JsonPropertyName("ok")] int Ok,
         [property: JsonPropertyName("paused")] bool Paused,
@@ -171,4 +210,8 @@ internal static class SystemEndpoints
 
     private sealed record SystemMessageRequest(
         [property: JsonPropertyName("message")] string Message);
+
+    private sealed record SystemResetRequest(
+        [property: JsonPropertyName("confirm")] string? Confirm,
+        [property: JsonPropertyName("force")] bool Force);
 }

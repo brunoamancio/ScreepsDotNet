@@ -43,3 +43,13 @@ Content-Type: application/json
 {
     "message": "Server maintenance starting soon."
 }
+
+### Reset Storage (requires confirm=RESET; force optional for non-default DBs)
+POST {{host}}/api/game/system/reset
+X-Token: {{auth_token}}
+Content-Type: application/json
+
+{
+    "confirm": "RESET",
+    "force": false
+}
