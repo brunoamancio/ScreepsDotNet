@@ -2,8 +2,10 @@
 
 using System;
 using MongoDB.Driver;
+using ScreepsDotNet.Backend.Core.Constants;
 using ScreepsDotNet.Backend.Core.Seeding;
 using ScreepsDotNet.Storage.MongoRedis.Seeding;
+using StackExchange.Redis;
 using Testcontainers.MongoDb;
 using Testcontainers.Redis;
 
@@ -20,6 +22,8 @@ public sealed class IntegrationTestHarness : IAsyncLifetime
     internal IntegrationWebApplicationFactory Factory { get; private set; } = null!;
 
     public IMongoDatabase Database { get; private set; } = null!;
+
+    public string RedisConnectionString => _redisContainer.GetConnectionString();
 
     public DateTime InitializedAtUtc { get; private set; }
 
@@ -47,6 +51,7 @@ public sealed class IntegrationTestHarness : IAsyncLifetime
             return;
 
         await _seedDataService.ReseedAsync(Database).ConfigureAwait(false);
+        await ResetRedisStateAsync().ConfigureAwait(false);
     }
 
     public async Task DisposeAsync()
@@ -54,5 +59,13 @@ public sealed class IntegrationTestHarness : IAsyncLifetime
         await Factory.DisposeAsync();
         await _mongoContainer.DisposeAsync();
         await _redisContainer.DisposeAsync();
+    }
+
+    private async Task ResetRedisStateAsync()
+    {
+        await using var connection = await ConnectionMultiplexer.ConnectAsync(RedisConnectionString).ConfigureAwait(false);
+        var db = connection.GetDatabase();
+        await db.StringSetAsync(SystemControlConstants.MainLoopPausedKey, "0").ConfigureAwait(false);
+        await db.StringSetAsync(SystemControlConstants.MainLoopMinimumDurationKey, SystemControlConstants.DefaultTickDurationMilliseconds).ConfigureAwait(false);
     }
 }

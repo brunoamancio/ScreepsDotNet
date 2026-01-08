@@ -35,8 +35,7 @@
 - `/api/user/badge`, `/api/user/email`, `/api/user/set-steam-visible`, `/api/user/notify-prefs` – implemented profile management and preference endpoints writing to the `users` collection with the same validation rules and parity logic as the Node server.
 - `/api/game/market/*` – parity routes for `orders-index`, `orders`, `my-orders`, and `stats` backed by typed repositories and DTO factories that scale prices (thousandths → credits) and enforce query validation.
 - `/api/game/*` world endpoints – `map-stats`, `room-status`, `room-terrain`, `rooms`, `world-size`, `time`, `tick`, `place-spawn`, `create-flag`, `change-flag-color`, `remove-flag`, `create-invader`, and `remove-invader` implemented with Mongo-backed repositories, DTO factories, deterministic seeds (docker + Testcontainers), and HTTP scratch files for quick smoke testing.
-- `/api/game/bot/*` and `/api/game/stronghold/*` – admin routes for bot AI management plus stronghold templates/spawn/expand actions, reusing the Mongo-backed services already exercised by the CLI.
-- `/api/game/bot/*` – admin endpoints for listing bot definitions and invoking spawn/reload/remove operations via the shared `MongoBotControlService` (same semantics as the CLI).
+- `/api/game/bot/*`, `/api/game/stronghold/*`, and `/api/game/system/*` – admin routes for bot AI management, stronghold templates/spawn/expand, and system controls (pause/resume, tick duration, broadcast) reusing the shared Mongo/Redis services from the CLI.
 - Core abstractions defined for server info, users, rooms, CLI sessions, storage status, and engine ticks.
 - Mongo repositories implemented for server info, users, and owned rooms; ready for future endpoints.
 - Integration tests spin up disposable Mongo + Redis containers via Testcontainers to validate real storage behavior.
@@ -70,6 +69,7 @@
    - `ScreepsDotNet.Backend.Http/MarketEndpoints.http` + `WorldEndpoints.http` contain ready-to-send requests for every market/world route once the backend is running.
    - `ScreepsDotNet.Backend.Http/BotEndpoints.http` exercises the `/api/game/bot/*` admin routes (list/spawn/reload/remove).
    - `ScreepsDotNet.Backend.Http/StrongholdEndpoints.http` covers `/api/game/stronghold/*` (templates/spawn/expand).
+   - `ScreepsDotNet.Backend.Http/SystemEndpoints.http` covers `/api/game/system/*` (status, pause/resume, tick duration, server messages).
    - CLI quick checks (run from `ScreepsDotNet`):
      - `dotnet run --project ScreepsDotNet.Backend.Cli -- version --json`
      - `dotnet run --project ScreepsDotNet.Backend.Cli -- storage status --json`

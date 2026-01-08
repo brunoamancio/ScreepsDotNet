@@ -1,0 +1,45 @@
+﻿### Authentication
+# @name Login
+POST {{host}}/api/auth/steam-ticket
+Content-Type: application/json
+
+{
+    "ticket": "integration-ticket",
+    "useNativeAuth": false
+}
+
+> {% client.global.set("auth_token", response.body.token); %}
+
+### System Status
+GET {{host}}/api/game/system/status
+X-Token: {{auth_token}}
+
+### Pause Simulation
+POST {{host}}/api/game/system/pause
+X-Token: {{auth_token}}
+
+### Resume Simulation
+POST {{host}}/api/game/system/resume
+X-Token: {{auth_token}}
+
+### Tick Duration (Get)
+GET {{host}}/api/game/system/tick
+X-Token: {{auth_token}}
+
+### Tick Duration (Set)
+POST {{host}}/api/game/system/tick-set
+X-Token: {{auth_token}}
+Content-Type: application/json
+
+{
+    "duration": 750
+}
+
+### Broadcast Message
+POST {{host}}/api/game/system/message
+X-Token: {{auth_token}}
+Content-Type: application/json
+
+{
+    "message": "Server maintenance starting soon."
+}

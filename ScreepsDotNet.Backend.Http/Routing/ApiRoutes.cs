@@ -55,6 +55,17 @@ public static class ApiRoutes
             public const string Spawn = $"{StrongholdBase}/spawn";
             public const string Expand = $"{StrongholdBase}/expand";
         }
+
+        public static class System
+        {
+            private const string SystemBase = $"{Base}/system";
+            public const string Status = $"{SystemBase}/status";
+            public const string Pause = $"{SystemBase}/pause";
+            public const string Resume = $"{SystemBase}/resume";
+            public const string Tick = $"{SystemBase}/tick";
+            public const string TickSet = $"{SystemBase}/tick-set";
+            public const string Message = $"{SystemBase}/message";
+        }
     }
 
     public static class Server
