@@ -219,8 +219,7 @@ public sealed class MongoStrongholdControlService(IMongoDatabaseProvider databas
         };
 
     private static BsonArray BuildInvulnerabilityEffect(int deployTime)
-        => new(new[]
-        {
+        => new([
             new BsonDocument
             {
                 ["effect"] = InvulnerabilityEffectId,
@@ -228,7 +227,7 @@ public sealed class MongoStrongholdControlService(IMongoDatabaseProvider databas
                 ["endTime"] = deployTime,
                 ["duration"] = StrongholdDeployDuration
             }
-        });
+        ]);
 
     private static BsonDocument? FindController(IEnumerable<BsonDocument> objects)
         => objects.FirstOrDefault(doc => doc.TryGetValue("type", out var typeValue)

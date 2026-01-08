@@ -50,9 +50,8 @@ internal sealed class StrongholdTemplatesCommand(IStrongholdTemplateProvider tem
 
         AnsiConsole.Write(table);
 
-        if (depositTypes.Count > 0) {
+        if (depositTypes.Count > 0)
             AnsiConsole.MarkupLine($"\nDeposit types: [cyan]{string.Join(", ", depositTypes)}[/]");
-        }
 
         return 0;
     }

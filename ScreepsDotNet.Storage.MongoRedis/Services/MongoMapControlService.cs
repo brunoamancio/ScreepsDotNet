@@ -11,23 +11,14 @@ using ScreepsDotNet.Backend.Core.Services;
 using ScreepsDotNet.Storage.MongoRedis.Providers;
 using ScreepsDotNet.Storage.MongoRedis.Repositories.Documents;
 
-public sealed partial class MongoMapControlService : IMapControlService
+public sealed partial class MongoMapControlService(IMongoDatabaseProvider databaseProvider, ILogger<MongoMapControlService> logger) : IMapControlService
 {
     private static readonly string[] MineralPool = ["H", "O", "U", "L", "K", "Z", "X"];
     private static readonly char[] TerrainAlphabet = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ".ToCharArray();
 
-    private readonly ILogger<MongoMapControlService> _logger;
-    private readonly IMongoCollection<RoomDocument> _rooms;
-    private readonly IMongoCollection<RoomObjectDocument> _roomObjects;
-    private readonly IMongoCollection<RoomTerrainDocument> _roomTerrain;
-
-    public MongoMapControlService(IMongoDatabaseProvider databaseProvider, ILogger<MongoMapControlService> logger)
-    {
-        _logger = logger;
-        _rooms = databaseProvider.GetCollection<RoomDocument>(databaseProvider.Settings.RoomsCollection);
-        _roomObjects = databaseProvider.GetCollection<RoomObjectDocument>(databaseProvider.Settings.RoomObjectsCollection);
-        _roomTerrain = databaseProvider.GetCollection<RoomTerrainDocument>(databaseProvider.Settings.RoomTerrainCollection);
-    }
+    private readonly IMongoCollection<RoomDocument> _rooms = databaseProvider.GetCollection<RoomDocument>(databaseProvider.Settings.RoomsCollection);
+    private readonly IMongoCollection<RoomObjectDocument> _roomObjects = databaseProvider.GetCollection<RoomObjectDocument>(databaseProvider.Settings.RoomObjectsCollection);
+    private readonly IMongoCollection<RoomTerrainDocument> _roomTerrain = databaseProvider.GetCollection<RoomTerrainDocument>(databaseProvider.Settings.RoomTerrainCollection);
 
     public async Task<MapGenerationResult> GenerateRoomAsync(MapRoomGenerationOptions options, CancellationToken cancellationToken = default)
     {
@@ -68,7 +59,7 @@ public sealed partial class MongoMapControlService : IMapControlService
         if (newObjects.Count > 0)
             await _roomObjects.InsertManyAsync(newObjects, cancellationToken: cancellationToken).ConfigureAwait(false);
 
-        _logger.LogInformation("Generated room {Room} with {Objects} objects (controller: {Controller}, sources: {Sources}, keeperLairs: {Lairs}).",
+        logger.LogInformation("Generated room {Room} with {Objects} objects (controller: {Controller}, sources: {Sources}, keeperLairs: {Lairs}).",
             options.RoomName, newObjects.Count, options.IncludeController, normalizedSources, options.IncludeKeeperLairs);
 
         return new MapGenerationResult(options.RoomName,
@@ -96,13 +87,13 @@ public sealed partial class MongoMapControlService : IMapControlService
         if (purgeObjects)
             await _roomObjects.DeleteManyAsync(obj => obj.Room == roomName, cancellationToken).ConfigureAwait(false);
 
-        _logger.LogInformation("Removed room {Room} (purge objects: {Purge}).", roomName, purgeObjects);
+        logger.LogInformation("Removed room {Room} (purge objects: {Purge}).", roomName, purgeObjects);
     }
 
     public Task UpdateRoomAssetsAsync(string roomName, bool fullRegeneration, CancellationToken cancellationToken = default)
     {
         ValidateRoomName(roomName);
-        _logger.LogWarning("Asset regeneration for room {Room} is not yet implemented. Skipping (full={Full}).", roomName, fullRegeneration);
+        logger.LogWarning("Asset regeneration for room {Room} is not yet implemented. Skipping (full={Full}).", roomName, fullRegeneration);
         return Task.CompletedTask;
     }
 
@@ -110,7 +101,7 @@ public sealed partial class MongoMapControlService : IMapControlService
     {
         var update = Builders<RoomTerrainDocument>.Update.Set(doc => doc.Type, "terrain");
         await _roomTerrain.UpdateManyAsync(FilterDefinition<RoomTerrainDocument>.Empty, update, cancellationToken: cancellationToken).ConfigureAwait(false);
-        _logger.LogInformation("Refreshed terrain metadata for {Count} rooms.", await _roomTerrain.CountDocumentsAsync(FilterDefinition<RoomTerrainDocument>.Empty, cancellationToken: cancellationToken).ConfigureAwait(false));
+        logger.LogInformation("Refreshed terrain metadata for {Count} rooms.", await _roomTerrain.CountDocumentsAsync(FilterDefinition<RoomTerrainDocument>.Empty, cancellationToken: cancellationToken).ConfigureAwait(false));
     }
 
     private async Task SetRoomStatusAsync(string roomName, string status, CancellationToken cancellationToken)
@@ -124,7 +115,7 @@ public sealed partial class MongoMapControlService : IMapControlService
         if (result.MatchedCount == 0)
             throw new InvalidOperationException($"Room {roomName} does not exist.");
 
-        _logger.LogInformation("Room {Room} status set to {Status}.", roomName, status);
+        logger.LogInformation("Room {Room} status set to {Status}.", roomName, status);
     }
 
     private static void ValidateRoomName(string roomName)

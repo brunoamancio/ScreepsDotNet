@@ -140,22 +140,17 @@ public sealed class BotCommandsIntegrationTests(MongoMapIntegrationFixture fixtu
                                           NullLogger<MongoBotControlService>.Instance);
     }
 
-    private sealed class InMemoryBotDefinitionProvider : IBotDefinitionProvider
+    private sealed class InMemoryBotDefinitionProvider(string botName) : IBotDefinitionProvider
     {
-        private readonly Dictionary<string, BotDefinition> _definitions;
-
-        public InMemoryBotDefinitionProvider(string botName)
+        private readonly Dictionary<string, BotDefinition> _definitions = new(StringComparer.OrdinalIgnoreCase)
         {
-            _definitions = new Dictionary<string, BotDefinition>(StringComparer.OrdinalIgnoreCase)
-            {
-                [botName] = new BotDefinition(botName,
-                                              $"Definition for {botName}",
-                                              new Dictionary<string, string>(StringComparer.Ordinal)
-                                              {
-                                                  ["main"] = "module.exports = {};"
-                                              })
-            };
-        }
+            [botName] = new BotDefinition(botName,
+                                          $"Definition for {botName}",
+                                          new Dictionary<string, string>(StringComparer.Ordinal)
+                                          {
+                                              ["main"] = "module.exports = {};"
+                                          })
+        };
 
         public Task<IReadOnlyList<BotDefinition>> GetDefinitionsAsync(CancellationToken cancellationToken = default)
             => Task.FromResult<IReadOnlyList<BotDefinition>>(_definitions.Values.ToList());

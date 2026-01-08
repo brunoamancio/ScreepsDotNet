@@ -101,7 +101,5 @@ public sealed class SystemCommandsIntegrationTests(SystemCommandsIntegrationFixt
         Assert.False(exists);
     }
 
-    private sealed class EmptySettings : CommandSettings
-    {
-    }
+    private sealed class EmptySettings : CommandSettings;
 }
