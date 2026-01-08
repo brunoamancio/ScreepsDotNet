@@ -28,8 +28,8 @@ public sealed class MongoBotControlService(IMongoDatabaseProvider databaseProvid
     private readonly IMongoCollection<UserDocument> _usersCollection = databaseProvider.GetCollection<UserDocument>(databaseProvider.Settings.UsersCollection);
     private readonly IMongoCollection<UserCodeDocument> _userCodeCollection = databaseProvider.GetCollection<UserCodeDocument>(databaseProvider.Settings.UserCodeCollection);
     private readonly IMongoCollection<UserMemoryDocument> _userMemoryCollection = databaseProvider.GetCollection<UserMemoryDocument>(databaseProvider.Settings.UserMemoryCollection);
-    private readonly IMongoCollection<BsonDocument> _roomsCollection = databaseProvider.GetCollection<BsonDocument>(databaseProvider.Settings.RoomsCollection);
-    private readonly IMongoCollection<BsonDocument> _roomObjectsCollection = databaseProvider.GetCollection<BsonDocument>(databaseProvider.Settings.RoomObjectsCollection);
+    private readonly IMongoCollection<RoomDocument> _roomsCollection = databaseProvider.GetCollection<RoomDocument>(databaseProvider.Settings.RoomsCollection);
+    private readonly IMongoCollection<RoomObjectDocument> _roomObjectsCollection = databaseProvider.GetCollection<RoomObjectDocument>(databaseProvider.Settings.RoomObjectsCollection);
     private readonly IMongoCollection<RoomTerrainDocument> _roomTerrainCollection = databaseProvider.GetCollection<RoomTerrainDocument>(databaseProvider.Settings.RoomTerrainCollection);
     private readonly Random _random = new();
 
@@ -44,9 +44,9 @@ public sealed class MongoBotControlService(IMongoDatabaseProvider databaseProvid
         if (definition.Modules.Count == 0)
             throw new InvalidOperationException($"Bot '{botName}' does not contain any modules.");
 
-        var controllerFilter = Builders<BsonDocument>.Filter.And(
-            Builders<BsonDocument>.Filter.Eq("room", roomName),
-            Builders<BsonDocument>.Filter.Eq("type", StructureType.Controller.ToDocumentValue()));
+        var controllerFilter = Builders<RoomObjectDocument>.Filter.And(
+            Builders<RoomObjectDocument>.Filter.Eq(doc => doc.Room, roomName),
+            Builders<RoomObjectDocument>.Filter.Eq(doc => doc.Type, StructureType.Controller.ToDocumentValue()));
 
         var controller = await _roomObjectsCollection.Find(controllerFilter)
                                                      .FirstOrDefaultAsync(cancellationToken)
@@ -54,8 +54,8 @@ public sealed class MongoBotControlService(IMongoDatabaseProvider databaseProvid
         if (controller is null)
             throw new InvalidOperationException($"Room {roomName} does not contain a controller.");
 
-        if (controller.TryGetValue("user", out var existingOwner) && !existingOwner.IsBsonNull)
-            throw new InvalidOperationException($"Room {roomName} is already owned by {existingOwner}.");
+        if (controller.UserId is not null)
+            throw new InvalidOperationException($"Room {roomName} is already owned by {controller.UserId}.");
 
         var username = string.IsNullOrWhiteSpace(options.Username)
             ? await GenerateUniqueUsernameAsync(cancellationToken).ConfigureAwait(false)
@@ -104,7 +104,7 @@ public sealed class MongoBotControlService(IMongoDatabaseProvider databaseProvid
                                                       .ConfigureAwait(false)
                            ?? throw new InvalidOperationException($"Terrain data for room {roomName} was not found.");
 
-        var roomObjects = await _roomObjectsCollection.Find(Builders<BsonDocument>.Filter.Eq("room", roomName))
+        var roomObjects = await _roomObjectsCollection.Find(Builders<RoomObjectDocument>.Filter.Eq(doc => doc.Room, roomName))
                                                       .ToListAsync(cancellationToken)
                                                       .ConfigureAwait(false);
 
@@ -112,24 +112,24 @@ public sealed class MongoBotControlService(IMongoDatabaseProvider databaseProvid
         await InsertSpawnAsync(roomName, userId, spawnX, spawnY, cancellationToken).ConfigureAwait(false);
 
         var gameTime = await worldMetadata.GetGameTimeAsync(cancellationToken).ConfigureAwait(false);
-        var safeModeExpiry = gameTime + DefaultSafeModeDuration;
-        var controllerUpdate = Builders<BsonDocument>.Update
-                                                     .Set("user", userId)
-                                                     .Set("level", options.GlobalControlLevel ?? 1)
-                                                     .Set("progress", 0)
-                                                     .Set("downgradeTime", safeModeExpiry)
-                                                     .Set("safeMode", safeModeExpiry);
+        var safeModeExpiry = (int)(gameTime + DefaultSafeModeDuration);
+        var controllerUpdate = Builders<RoomObjectDocument>.Update
+                                                     .Set(doc => doc.UserId, userId)
+                                                     .Set(doc => doc.Level, options.GlobalControlLevel ?? 1)
+                                                     .Set(doc => doc.Progress, 0)
+                                                     .Set(doc => doc.DowngradeTime, (long)safeModeExpiry)
+                                                     .Set(doc => doc.SafeMode, safeModeExpiry);
 
         await _roomObjectsCollection.UpdateOneAsync(controllerFilter,
                                                     controllerUpdate,
                                                     cancellationToken: cancellationToken)
                                     .ConfigureAwait(false);
 
-        var roomUpdate = Builders<BsonDocument>.Update
-                                               .Set("status", "normal")
-                                               .Set("invaderGoal", DefaultInvaderGoal);
+        var roomUpdate = Builders<RoomDocument>.Update
+                                               .Set(doc => doc.Status, "normal")
+                                               .Set(doc => doc.InvaderGoal, DefaultInvaderGoal);
 
-        await _roomsCollection.UpdateOneAsync(Builders<BsonDocument>.Filter.Eq("_id", roomName),
+        await _roomsCollection.UpdateOneAsync(Builders<RoomDocument>.Filter.Eq(doc => doc.Id, roomName),
                                               roomUpdate,
                                               new UpdateOptions { IsUpsert = true },
                                               cancellationToken)
@@ -243,7 +243,7 @@ public sealed class MongoBotControlService(IMongoDatabaseProvider databaseProvid
         };
     }
 
-    private (int x, int y) ResolveSpawnPosition(string? terrain, IReadOnlyCollection<BsonDocument> roomObjects, BotSpawnOptions options)
+    private (int x, int y) ResolveSpawnPosition(string? terrain, IReadOnlyCollection<RoomObjectDocument> roomObjects, BotSpawnOptions options)
     {
         if (terrain is null)
             throw new InvalidOperationException("Room terrain is missing.");
@@ -277,21 +277,21 @@ public sealed class MongoBotControlService(IMongoDatabaseProvider databaseProvid
 
     private async Task InsertSpawnAsync(string roomName, string userId, int x, int y, CancellationToken cancellationToken)
     {
-        var spawnDoc = new BsonDocument
+        var spawnDoc = new RoomObjectDocument
         {
-            ["_id"] = ObjectId.GenerateNewId(),
-            ["type"] = StructureType.Spawn.ToDocumentValue(),
-            ["room"] = roomName,
-            ["x"] = x,
-            ["y"] = y,
-            ["name"] = "Spawn1",
-            ["user"] = userId,
-            ["store"] = new BsonDocument("energy", SpawnEnergyStart),
-            ["storeCapacityResource"] = new BsonDocument("energy", SpawnEnergyCapacity),
-            ["hits"] = SpawnHits,
-            ["hitsMax"] = SpawnHits,
-            ["spawning"] = BsonNull.Value,
-            ["notifyWhenAttacked"] = false
+            Id = ObjectId.GenerateNewId(),
+            Type = StructureType.Spawn.ToDocumentValue(),
+            Room = roomName,
+            X = x,
+            Y = y,
+            Name = "Spawn1",
+            UserId = userId,
+            Store = new Dictionary<string, int> { ["energy"] = SpawnEnergyStart },
+            StoreCapacityResource = new Dictionary<string, int> { ["energy"] = SpawnEnergyCapacity },
+            Hits = SpawnHits,
+            HitsMax = SpawnHits,
+            Spawning = BsonNull.Value,
+            NotifyWhenAttacked = false
         };
 
         await _roomObjectsCollection.InsertOneAsync(spawnDoc, cancellationToken: cancellationToken).ConfigureAwait(false);
@@ -324,12 +324,8 @@ public sealed class MongoBotControlService(IMongoDatabaseProvider databaseProvid
         return 0;
     }
 
-    private static bool IsOccupied(IReadOnlyCollection<BsonDocument> objects, int x, int y)
-        => objects.Any(obj => obj.TryGetValue("x", out var ox)
-                              && obj.TryGetValue("y", out var oy)
-                              && ox.IsInt32 && oy.IsInt32
-                              && ox.AsInt32 == x
-                              && oy.AsInt32 == y);
+    private static bool IsOccupied(IReadOnlyCollection<RoomObjectDocument> objects, int x, int y)
+        => objects.Any(obj => obj.X == x && obj.Y == y);
 
     private static readonly string[] RandomNames =
     [

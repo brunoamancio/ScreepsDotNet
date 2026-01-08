@@ -37,6 +37,9 @@ public sealed class RoomDocument
     [BsonElement("powerBankTime")]
     public long? PowerBankTime { get; set; }
 
+    [BsonElement("invaderGoal")]
+    public int? InvaderGoal { get; set; }
+
     [BsonIgnore]
     public string? Name
     {

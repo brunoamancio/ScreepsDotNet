@@ -33,7 +33,7 @@ public sealed class MongoStrongholdControlService(IMongoDatabaseProvider databas
     };
 
     private readonly IMongoCollection<RoomTerrainDocument> _terrainCollection = databaseProvider.GetCollection<RoomTerrainDocument>(databaseProvider.Settings.RoomTerrainCollection);
-    private readonly IMongoCollection<BsonDocument> _roomObjectsCollection = databaseProvider.GetCollection<BsonDocument>(databaseProvider.Settings.RoomObjectsCollection);
+    private readonly IMongoCollection<RoomObjectDocument> _roomObjectsCollection = databaseProvider.GetCollection<RoomObjectDocument>(databaseProvider.Settings.RoomObjectsCollection);
     private readonly Random _random = new();
 
     public async Task<StrongholdSpawnResult> SpawnAsync(string roomName, StrongholdSpawnOptions options, CancellationToken cancellationToken = default)
@@ -48,7 +48,7 @@ public sealed class MongoStrongholdControlService(IMongoDatabaseProvider databas
                                               .ConfigureAwait(false)
                       ?? throw new InvalidOperationException($"Terrain data for room {roomName} is missing.");
 
-        var objects = await _roomObjectsCollection.Find(Builders<BsonDocument>.Filter.Eq("room", roomName))
+        var objects = await _roomObjectsCollection.Find(Builders<RoomObjectDocument>.Filter.Eq(doc => doc.Room, roomName))
                                                   .ToListAsync(cancellationToken)
                                                   .ConfigureAwait(false);
         var controller = FindController(objects);
@@ -62,11 +62,11 @@ public sealed class MongoStrongholdControlService(IMongoDatabaseProvider databas
 
         var deployDelay = options.DeployDelayTicks.GetValueOrDefault(DefaultDeployDelay);
         var gameTime = await worldMetadataRepository.GetGameTimeAsync(cancellationToken).ConfigureAwait(false);
-        var deployTime = gameTime + deployDelay;
+        var deployTime = (int)(gameTime + deployDelay);
         var strongholdId = $"{roomName}_{gameTime}";
         var depositType = depositTypes[_random.Next(depositTypes.Count)];
 
-        var structures = new List<BsonDocument>();
+        var structures = new List<RoomObjectDocument>();
         foreach (var blueprint in template.Structures) {
             var x = originX + blueprint.OffsetX;
             var y = originY + blueprint.OffsetY;
@@ -90,14 +90,14 @@ public sealed class MongoStrongholdControlService(IMongoDatabaseProvider databas
 
         await _roomObjectsCollection.InsertManyAsync(structures, cancellationToken: cancellationToken).ConfigureAwait(false);
 
-        if (controller is not null && controller.TryGetValue("_id", out var controllerId)) {
-            var filter = Builders<BsonDocument>.Filter.Eq("_id", controllerId);
-            var update = Builders<BsonDocument>.Update
-                                               .Set("user", userId)
-                                               .Set("level", 8)
-                                               .Set("progress", 0)
-                                               .Set("downgradeTime", deployTime)
-                                               .Set("effects", BuildInvulnerabilityEffect(deployTime));
+        if (controller is not null) {
+            var filter = Builders<RoomObjectDocument>.Filter.Eq(doc => doc.Id, controller.Id);
+            var update = Builders<RoomObjectDocument>.Update
+                                               .Set(doc => doc.UserId, userId)
+                                               .Set(doc => doc.Level, 8)
+                                               .Set(doc => doc.Progress, 0)
+                                               .Set(doc => doc.DowngradeTime, (long)deployTime)
+                                               .Set(doc => doc.Effects, BuildInvulnerabilityEffect(deployTime));
 
             await _roomObjectsCollection.UpdateOneAsync(filter, update, cancellationToken: cancellationToken).ConfigureAwait(false);
         }
@@ -107,9 +107,9 @@ public sealed class MongoStrongholdControlService(IMongoDatabaseProvider databas
 
     public async Task<bool> ExpandAsync(string roomName, CancellationToken cancellationToken = default)
     {
-        var filter = Builders<BsonDocument>.Filter.And(
-            Builders<BsonDocument>.Filter.Eq("room", roomName),
-            Builders<BsonDocument>.Filter.Eq("type", StructureType.InvaderCore.ToDocumentValue()));
+        var filter = Builders<RoomObjectDocument>.Filter.And(
+            Builders<RoomObjectDocument>.Filter.Eq(doc => doc.Room, roomName),
+            Builders<RoomObjectDocument>.Filter.Eq(doc => doc.Type, StructureType.InvaderCore.ToDocumentValue()));
 
         var core = await _roomObjectsCollection.Find(filter)
                                                .FirstOrDefaultAsync(cancellationToken)
@@ -117,10 +117,10 @@ public sealed class MongoStrongholdControlService(IMongoDatabaseProvider databas
         if (core is null)
             return false;
 
-        var level = core.TryGetValue("level", out var levelValue) && levelValue.IsInt32 ? levelValue.AsInt32 : 1;
+        var level = core.Level ?? 1;
         var cooldown = ResolveExpandCooldown(level);
         var gameTime = await worldMetadataRepository.GetGameTimeAsync(cancellationToken).ConfigureAwait(false);
-        var update = Builders<BsonDocument>.Update.Set("nextExpandTime", gameTime + cooldown);
+        var update = Builders<RoomObjectDocument>.Update.Set(doc => doc.NextExpandTime, (int)(gameTime + cooldown));
         await _roomObjectsCollection.UpdateOneAsync(filter, update, cancellationToken: cancellationToken).ConfigureAwait(false);
         return true;
     }
@@ -139,7 +139,7 @@ public sealed class MongoStrongholdControlService(IMongoDatabaseProvider databas
         return templates[_random.Next(templates.Count)];
     }
 
-    private (int x, int y) FindPlacement(IEnumerable<StrongholdStructureBlueprint> structures, string? terrain, IReadOnlyCollection<BsonDocument> currentObjects)
+    private (int x, int y) FindPlacement(IEnumerable<StrongholdStructureBlueprint> structures, string? terrain, IReadOnlyCollection<RoomObjectDocument> currentObjects)
     {
         if (terrain is null)
             throw new InvalidOperationException("Terrain data unavailable.");
@@ -160,7 +160,7 @@ public sealed class MongoStrongholdControlService(IMongoDatabaseProvider databas
             ? cooldown
             : ExpandCooldownByLevel[1];
 
-    private static BsonDocument BuildInvaderCoreDocument(
+    private static RoomObjectDocument BuildInvaderCoreDocument(
         string roomName,
         int x,
         int y,
@@ -172,45 +172,42 @@ public sealed class MongoStrongholdControlService(IMongoDatabaseProvider databas
         string strongholdId)
     {
         var level = blueprint.Level ?? 1;
-        var document = new BsonDocument
+        var document = new RoomObjectDocument
         {
-            ["_id"] = ObjectId.GenerateNewId(),
-            ["type"] = StructureType.InvaderCore.ToDocumentValue(),
-            ["room"] = roomName,
-            ["x"] = x,
-            ["y"] = y,
-            ["user"] = userId,
-            ["level"] = level,
-            ["hits"] = InvaderCoreHits,
-            ["hitsMax"] = InvaderCoreHits,
-            ["templateName"] = templateName,
-            ["depositType"] = depositType,
-            ["deployTime"] = deployTime,
-            ["strongholdId"] = strongholdId,
-            ["nextExpandTime"] = deployTime + ResolveExpandCooldown(level),
-            ["effects"] = BuildInvulnerabilityEffect(deployTime)
+            Id = ObjectId.GenerateNewId(),
+            Type = StructureType.InvaderCore.ToDocumentValue(),
+            Room = roomName,
+            X = x,
+            Y = y,
+            UserId = userId,
+            Level = level,
+            Hits = InvaderCoreHits,
+            HitsMax = InvaderCoreHits,
+            TemplateName = templateName,
+            DepositType = depositType,
+            DeployTime = deployTime,
+            StrongholdId = strongholdId,
+            NextExpandTime = deployTime + ResolveExpandCooldown(level),
+            Effects = BuildInvulnerabilityEffect(deployTime),
+            StrongholdBehavior = blueprint.Behavior
         };
-
-        if (!string.IsNullOrWhiteSpace(blueprint.Behavior))
-            document["strongholdBehavior"] = blueprint.Behavior;
 
         return document;
     }
 
-    private static BsonDocument BuildRampartDocument(string roomName, int x, int y, string userId, string strongholdId, int deployTime)
+    private static RoomObjectDocument BuildRampartDocument(string roomName, int x, int y, string userId, string strongholdId, int deployTime)
         => new()
         {
-            ["_id"] = ObjectId.GenerateNewId(),
-            ["type"] = StructureType.Rampart.ToDocumentValue(),
-            ["room"] = roomName,
-            ["x"] = x,
-            ["y"] = y,
-            ["user"] = userId,
-            ["hits"] = 1,
-            ["hitsMax"] = 1,
-            ["isPublic"] = true,
-            ["strongholdId"] = strongholdId,
-            ["nextDecayTime"] = deployTime
+            Id = ObjectId.GenerateNewId(),
+            Type = StructureType.Rampart.ToDocumentValue(),
+            Room = roomName,
+            X = x,
+            Y = y,
+            UserId = userId,
+            Hits = 1,
+            HitsMax = 1,
+            StrongholdId = strongholdId,
+            NextExpandTime = deployTime // nextDecayTime in legacy
         };
 
     private static BsonArray BuildInvulnerabilityEffect(int deployTime)
@@ -224,34 +221,31 @@ public sealed class MongoStrongholdControlService(IMongoDatabaseProvider databas
             }
         ]);
 
-    private static BsonDocument? FindController(IEnumerable<BsonDocument> objects)
-        => objects.FirstOrDefault(doc => doc.TryGetValue("type", out var typeValue)
-                                         && typeValue.IsString
-                                         && string.Equals(typeValue.AsString, StructureType.Controller.ToDocumentValue(), StringComparison.Ordinal));
+    private static RoomObjectDocument? FindController(IEnumerable<RoomObjectDocument> objects)
+        => objects.FirstOrDefault(doc => string.Equals(doc.Type, StructureType.Controller.ToDocumentValue(), StringComparison.Ordinal));
 
-    private static void EnsureRoomIsAvailable(BsonDocument? controller, string intendedUserId)
+    private static void EnsureRoomIsAvailable(RoomObjectDocument? controller, string intendedUserId)
     {
         if (controller is null)
             return;
 
-        if (controller.TryGetValue("user", out var owner) && !owner.IsBsonNull) {
-            if (!string.Equals(owner.ToString(), intendedUserId, StringComparison.Ordinal))
-                throw new InvalidOperationException($"Room {controller.GetValue("room", "?")} already has an owner.");
+        if (controller.UserId is not null) {
+            if (!string.Equals(controller.UserId, intendedUserId, StringComparison.Ordinal))
+                throw new InvalidOperationException($"Room {controller.Room ?? "?"} already has an owner.");
             return;
         }
 
-        if (!controller.TryGetValue("reservation", out var reservationValue) || !reservationValue.IsBsonDocument)
+        if (controller.Reservation is null)
             return;
 
-        var reservation = reservationValue.AsBsonDocument;
-        if (!reservation.TryGetValue("user", out var reservationUser) || reservationUser.IsBsonNull)
+        if (controller.Reservation.UserId is null)
             return;
 
-        if (!string.Equals(reservationUser.ToString(), intendedUserId, StringComparison.Ordinal))
+        if (!string.Equals(controller.Reservation.UserId, intendedUserId, StringComparison.Ordinal))
             throw new InvalidOperationException("Room is reserved by another user.");
     }
 
-    private static bool CanPlaceAll(IEnumerable<StrongholdStructureBlueprint> structures, string terrain, IReadOnlyCollection<BsonDocument> objects, int originX, int originY)
+    private static bool CanPlaceAll(IEnumerable<StrongholdStructureBlueprint> structures, string terrain, IReadOnlyCollection<RoomObjectDocument> objects, int originX, int originY)
     {
         foreach (var structure in structures) {
             var x = originX + structure.OffsetX;
@@ -262,11 +256,7 @@ public sealed class MongoStrongholdControlService(IMongoDatabaseProvider databas
             if (IsWall(terrain, x, y))
                 return false;
 
-            if (objects.Any(obj => obj.TryGetValue("x", out var ox)
-                                   && obj.TryGetValue("y", out var oy)
-                                   && ox.IsInt32 && oy.IsInt32
-                                   && ox.AsInt32 == x
-                                   && oy.AsInt32 == y))
+            if (objects.Any(obj => obj.X == x && obj.Y == y))
                 return false;
         }
 
