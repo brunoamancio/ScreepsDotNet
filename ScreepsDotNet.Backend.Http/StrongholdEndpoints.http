@@ -1,0 +1,36 @@
+﻿### Authentication
+# @name Login
+POST {{host}}/api/auth/steam-ticket
+Content-Type: application/json
+
+{
+    "ticket": "integration-ticket",
+    "useNativeAuth": false
+}
+
+> {% client.global.set("auth_token", response.body.token); %}
+
+### Stronghold Templates
+GET {{host}}/api/game/stronghold/templates
+X-Token: {{auth_token}}
+
+### Stronghold Spawn
+POST {{host}}/api/game/stronghold/spawn
+X-Token: {{auth_token}}
+Content-Type: application/json
+
+{
+    "room": "W40N40",
+    "template": "bunker1",
+    "x": 15,
+    "y": 15
+}
+
+### Stronghold Expand
+POST {{host}}/api/game/stronghold/expand
+X-Token: {{auth_token}}
+Content-Type: application/json
+
+{
+    "room": "W40N40"
+}

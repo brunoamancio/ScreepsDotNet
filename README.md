@@ -43,7 +43,8 @@ Modern .NET rewrite of the Screeps private server backend. The solution contains
 4. **Use the `.http` helpers for smoke testing:**
    - `ScreepsDotNet.Backend.Http/UserEndpoints.http` contains ready-made requests for memory, code, branches, console, badge SVG, etc. Update the `@ScreepsDotNet_User_Token` variable with the token from the previous step and execute the requests directly from JetBrains Rider / VS Code (REST Client) / HTTPie.
    - `ScreepsDotNet.Backend.Http/CoreEndpoints.http` provides `/health`, `/api/version`, and `/api/server/info` requests.
-   - `ScreepsDotNet.Backend.Http/BotEndpoints.http` exercises the new `/api/game/bot/*` routes (list/spawn/reload/remove).
+   - `ScreepsDotNet.Backend.Http/BotEndpoints.http` exercises the `/api/game/bot/*` routes (list/spawn/reload/remove).
+   - `ScreepsDotNet.Backend.Http/StrongholdEndpoints.http` covers `/api/game/stronghold/*` (templates/spawn/expand) for quick smoke testing.
 
 5. **Run automated tests (unit + integration):**
    ```powershell

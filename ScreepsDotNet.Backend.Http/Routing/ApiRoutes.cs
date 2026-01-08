@@ -47,6 +47,14 @@ public static class ApiRoutes
             public const string Reload = $"{BotBase}/reload";
             public const string Remove = $"{BotBase}/remove";
         }
+
+        public static class Stronghold
+        {
+            private const string StrongholdBase = $"{Base}/stronghold";
+            public const string Templates = $"{StrongholdBase}/templates";
+            public const string Spawn = $"{StrongholdBase}/spawn";
+            public const string Expand = $"{StrongholdBase}/expand";
+        }
     }
 
     public static class Server
