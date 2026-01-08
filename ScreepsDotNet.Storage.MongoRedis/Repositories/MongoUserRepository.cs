@@ -24,7 +24,7 @@ public sealed class MongoUserRepository(IMongoDatabaseProvider databaseProvider)
     {
         var filter = Builders<UserDocument>.Filter.Ne(user => user.Active, 0)
                      & Builders<UserDocument>.Filter.Gt(user => user.Cpu, 0)
-                     & Builders<UserDocument>.Filter.Eq(user => user.Bot, (bool?)null);
+                     & Builders<UserDocument>.Filter.Eq(user => user.Bot, null);
 
         var count = await _collection.CountDocumentsAsync(filter, cancellationToken: cancellationToken).ConfigureAwait(false);
         return (int)count;

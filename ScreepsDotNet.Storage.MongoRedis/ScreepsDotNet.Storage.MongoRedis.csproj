@@ -11,4 +11,8 @@
     <ProjectReference Include="..\ScreepsDotNet.Backend.Core\ScreepsDotNet.Backend.Core.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <EmbeddedResource Include="Data\StrongholdsData.json" />
+  </ItemGroup>
+
 </Project>

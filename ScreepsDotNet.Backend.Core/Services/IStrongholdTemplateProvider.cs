@@ -10,4 +10,6 @@ public interface IStrongholdTemplateProvider
     Task<IReadOnlyList<StrongholdTemplate>> GetTemplatesAsync(CancellationToken cancellationToken = default);
 
     Task<StrongholdTemplate?> FindTemplateAsync(string name, CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<string>> GetDepositTypesAsync(CancellationToken cancellationToken = default);
 }

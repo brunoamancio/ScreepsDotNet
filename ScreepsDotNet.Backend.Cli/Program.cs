@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using System;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -51,6 +52,12 @@ static void ConfigureServices(HostApplicationBuilder builder)
     builder.Services.Configure<ServerDataOptions>(builder.Configuration.GetSection(ServerDataOptions.SectionName));
     builder.Services.Configure<VersionInfoOptions>(builder.Configuration.GetSection(VersionInfoOptions.SectionName));
     builder.Services.Configure<MongoRedisStorageOptions>(builder.Configuration.GetSection(MongoRedisStorageOptions.SectionName));
+    builder.Services.Configure<BotManifestOptions>(options =>
+    {
+        options.ManifestFile = builder.Configuration["modfile"]
+                               ?? builder.Configuration["MODFILE"]
+                               ?? Environment.GetEnvironmentVariable("MODFILE");
+    });
 
     builder.Services.AddSingleton<IStorageAdapter, MongoRedisStorageAdapter>();
     builder.Services.AddSingleton<IMongoDatabaseProvider, MongoDatabaseProvider>();
@@ -71,9 +78,13 @@ static void ConfigureServices(HostApplicationBuilder builder)
     builder.Services.AddSingleton<IWorldMetadataRepository, MongoWorldMetadataRepository>();
     builder.Services.AddSingleton<IUserRespawnService, MongoUserRespawnService>();
     builder.Services.AddSingleton<IMapControlService, MongoMapControlService>();
+    builder.Services.AddSingleton<IBotDefinitionProvider, FileSystemBotDefinitionProvider>();
+    builder.Services.AddSingleton<IBotControlService, MongoBotControlService>();
     builder.Services.AddSingleton<IVersionInfoProvider, VersionInfoProvider>();
     builder.Services.AddSingleton<ISeedDataService, SeedDataService>();
     builder.Services.AddSingleton<ISystemControlService, RedisSystemControlService>();
+    builder.Services.AddSingleton<IStrongholdTemplateProvider, EmbeddedStrongholdTemplateProvider>();
+    builder.Services.AddSingleton<IStrongholdControlService, MongoStrongholdControlService>();
 
     builder.Services.AddSingleton<ICliApplication, CliApplication>();
 }

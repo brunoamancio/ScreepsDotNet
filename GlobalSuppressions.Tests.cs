@@ -8,3 +8,9 @@ using System.Diagnostics.CodeAnalysis;
                            Scope = "namespaceanddescendants",
                            Target = "~N:ScreepsDotNet.Backend.Http.Tests",
                            Justification = "Test names use underscores for readability and expressive intent.")]
+
+[assembly: SuppressMessage("Naming",
+                           "CA1707:Identifiers should not contain underscores",
+                           Scope = "namespaceanddescendants",
+                           Target = "~N:ScreepsDotNet.Backend.Cli.Tests",
+                           Justification = "Test names use underscores for readability and expressive intent.")]

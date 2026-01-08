@@ -51,6 +51,57 @@ Modern .NET rewrite of the Screeps private server backend. The solution contains
    - Unit tests swap repositories with fast fakes (no Docker dependencies).
    - Integration tests spin up disposable Mongo + Redis containers via [Testcontainers](https://github.com/testcontainers/testcontainers-dotnet) and exercise the real storage adapters/endpoints (including `/api/user/respawn`). Docker Desktop must be running for these tests to pass.
 
+## CLI (`screeps-cli`)
+
+The Spectre-based CLI mirrors the legacy `cli/` scripts so you can manage bots, strongholds, and map data without bringing up the HTTP host. Configuration comes exclusively from command-line switches or `SCREEPSCLI_*` environment variables (no `appsettings.json` dependency).
+
+Run the CLI with:
+
+```powershell
+dotnet run --project ScreepsDotNet.Backend.Cli/ScreepsDotNet.Backend.Cli.csproj -- --help
+```
+
+### Global switches
+
+| Option | Description |
+| --- | --- |
+| `--db`, `--storage`, `--storage-backend` | Select the storage backend (`mongodb` is currently the only valid value). |
+| `--connection-string`, `--mongo` | Override the MongoDB connection string (default `mongodb://localhost:27017/screeps`). |
+| `--cli_host`, `--cli_port` | Retain the legacy CLI listener flags (accepted for compatibility). |
+| `--host`, `--port`, `--password` | Legacy HTTP overrides accepted so the client launcher still works. |
+| `--modfile` / `SCREEPSCLI_modfile` / `MODFILE` | Path to the legacy `mods.json` manifest containing bot AI definitions. |
+
+Every option can also be supplied via `SCREEPSCLI_<option>` environment variables, e.g., `SCREEPSCLI_connection-string`.
+
+### Bot commands
+
+| Command | Purpose | Key flags |
+| --- | --- | --- |
+| `bots list [--json]` | Enumerate bot AI bundles discovered from `mods.json`. | `--json` returns structured metadata. |
+| `bots spawn --bot <name> --room <room> [--username <name>] [--cpu <int>] [--gcl <int>] [--x <0-49> --y <0-49>] [--json]` | Create a bot user, upload its modules, and place a spawn. | Coordinates default to a valid pad unless both `--x`/`--y` are provided. |
+| `bots reload --bot <name> [--json]` | Reload scripts for every user currently running the target AI. | Exit code `0` even when no users matched. |
+| `bots remove --username <name> [--json]` | Delete a bot-controlled user (with respawn/cleanup). | Exit code `1` if the user is missing or not a bot. |
+
+Example:
+
+```powershell
+dotnet run --project ScreepsDotNet.Backend.Cli -- bots spawn --bot invader --room W1N1 --cpu 150 --gcl 3
+```
+
+### Stronghold commands
+
+| Command | Purpose | Key flags |
+| --- | --- | --- |
+| `strongholds templates [--json]` | Display the embedded stronghold templates and deposit types. | |
+| `strongholds spawn --room <name> [--template <name>] [--x <0-49> --y <0-49>] [--owner <userId>] [--deploy-delay <ticks>] [--json]` | Place an NPC stronghold in the room, optionally forcing template/coords. | Coordinates default to a valid placement if omitted. |
+| `strongholds expand --room <name> [--json]` | Force the invader core in the room to queue its next expansion. | Exit code `1` if no eligible core exists. |
+
+Example:
+
+```powershell
+dotnet run --project ScreepsDotNet.Backend.Cli -- strongholds spawn --room W5N3 --template bunker3 --deploy-delay 10
+```
+
 ## Storage Notes
 
 - User data (profile, notify prefs, branches, memory, console queue) lives in Mongo collections:

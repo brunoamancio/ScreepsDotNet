@@ -1,4 +1,6 @@
-﻿using ScreepsDotNet.Backend.Cli.Commands.Map;
+﻿using ScreepsDotNet.Backend.Cli.Commands.Bot;
+using ScreepsDotNet.Backend.Cli.Commands.Map;
+using ScreepsDotNet.Backend.Cli.Commands.Stronghold;
 using ScreepsDotNet.Backend.Cli.Commands.System;
 
 namespace ScreepsDotNet.Backend.Cli.Application;
@@ -57,6 +59,15 @@ internal sealed class CliApplication(IServiceProvider serviceProvider, ILogger<C
                 branch.AddCommand<WorldDumpCommand>("dump").WithDescription("Dump room terrain data.");
             });
 
+            config.AddBranch("bots", branch =>
+            {
+                branch.SetDescription("NPC bot management.");
+                branch.AddCommand<BotListCommand>("list").WithDescription("List available bot AI bundles.");
+                branch.AddCommand<BotSpawnCommand>("spawn").WithDescription("Spawn a bot AI into a room.");
+                branch.AddCommand<BotReloadCommand>("reload").WithDescription("Reload bot AI scripts for all users.");
+                branch.AddCommand<BotRemoveCommand>("remove").WithDescription("Remove a bot-controlled user.");
+            });
+
             config.AddBranch("system", branch =>
             {
                 branch.SetDescription("Runtime/system controls.");
@@ -90,6 +101,14 @@ internal sealed class CliApplication(IServiceProvider serviceProvider, ILogger<C
                     terrain.SetDescription("Terrain cache helpers.");
                     terrain.AddCommand<MapTerrainRefreshCommand>("refresh").WithDescription("Refresh cached terrain metadata.");
                 });
+            });
+
+            config.AddBranch("strongholds", branch =>
+            {
+                branch.SetDescription("NPC stronghold controls.");
+                branch.AddCommand<StrongholdTemplatesCommand>("templates").WithDescription("List stronghold templates.");
+                branch.AddCommand<StrongholdSpawnCommand>("spawn").WithDescription("Create a new NPC stronghold.");
+                branch.AddCommand<StrongholdExpandCommand>("expand").WithDescription("Force a stronghold expansion.");
             });
         });
 

@@ -4,7 +4,7 @@ namespace ScreepsDotNet.Backend.Core.Models.Strongholds;
 /// Parameters supported by the legacy stronghold spawn CLI command.
 /// </summary>
 public sealed record StrongholdSpawnOptions(
-    string TemplateName,
+    string? TemplateName,
     int? X,
     int? Y,
     string? OwnerUserId,

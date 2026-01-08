@@ -6,5 +6,5 @@ namespace ScreepsDotNet.Backend.Core.Models.Strongholds;
 public sealed record StrongholdTemplate(
     string Name,
     string Description,
-    int Level,
-    int StructureCount);
+    int RewardLevel,
+    IReadOnlyList<StrongholdStructureBlueprint> Structures);
