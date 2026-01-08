@@ -29,6 +29,9 @@ public sealed class UserDocument
     [BsonElement("bot")]
     public bool? Bot { get; set; }
 
+    [BsonElement("botAi")]
+    public string? BotAi { get; set; }
+
     [BsonElement("badge")]
     public Dictionary<string, object?>? Badge { get; set; }
 
