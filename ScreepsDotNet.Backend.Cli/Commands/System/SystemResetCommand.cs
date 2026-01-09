@@ -1,5 +1,4 @@
 ﻿using System.ComponentModel;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using ScreepsDotNet.Backend.Core.Seeding;
 using ScreepsDotNet.Storage.MongoRedis.Options;
@@ -9,8 +8,8 @@ using Spectre.Console.Cli;
 
 namespace ScreepsDotNet.Backend.Cli.Commands.System;
 
-internal sealed class SystemResetCommand(ISeedDataService seedDataService, IOptions<MongoRedisStorageOptions> storageOptions, ILogger<SystemResetCommand> logger)
-    : AsyncCommand<SystemResetCommand.Settings>
+internal sealed class SystemResetCommand(ISeedDataService seedDataService, IOptions<MongoRedisStorageOptions> storageOptions, ILogger<SystemResetCommand>? logger = null, IHostApplicationLifetime? lifetime = null)
+    : CommandHandler<SystemResetCommand.Settings>(logger, lifetime)
 {
     public sealed class Settings : CommandSettings
     {
@@ -22,21 +21,21 @@ internal sealed class SystemResetCommand(ISeedDataService seedDataService, IOpti
         public string? Confirm { get; init; }
     }
 
-    public override async Task<int> ExecuteAsync(CommandContext context, Settings settings, CancellationToken cancellationToken)
+    protected override async Task<int> ExecuteCommandAsync(CommandContext context, Settings settings, CancellationToken cancellationToken)
     {
         if (!string.Equals(settings.Confirm, "RESET", StringComparison.OrdinalIgnoreCase)) {
-            logger.LogError("Confirmation required. Re-run with --confirm RESET to proceed.");
+            Logger.LogError("Confirmation required. Re-run with --confirm RESET to proceed.");
             return 1;
         }
 
         var options = storageOptions.Value;
         if (string.IsNullOrWhiteSpace(options.MongoConnectionString) || string.IsNullOrWhiteSpace(options.MongoDatabase)) {
-            logger.LogError("Mongo connection information is missing.");
+            Logger.LogError("Mongo connection information is missing.");
             return 1;
         }
 
         if (!string.Equals(options.MongoDatabase, SeedDataDefaults.Database.Name, StringComparison.OrdinalIgnoreCase) && !settings.Force) {
-            logger.LogWarning("Refusing to reset database '{Database}' without --force.", options.MongoDatabase);
+            Logger.LogWarning("Refusing to reset database '{Database}' without --force.", options.MongoDatabase);
             return 1;
         }
 

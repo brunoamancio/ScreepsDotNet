@@ -5,8 +5,8 @@ using ScreepsDotNet.Backend.Core.Repositories;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
-internal sealed class UserMemoryGetCommand(IUserMemoryRepository memoryRepository)
-    : AsyncCommand<UserMemoryGetCommand.Settings>
+internal sealed class UserMemoryGetCommand(IUserMemoryRepository memoryRepository, ILogger<UserMemoryGetCommand>? logger = null, IHostApplicationLifetime? lifetime = null)
+    : CommandHandler<UserMemoryGetCommand.Settings>(logger, lifetime)
 {
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
 
@@ -33,7 +33,7 @@ internal sealed class UserMemoryGetCommand(IUserMemoryRepository memoryRepositor
         }
     }
 
-    public override async Task<int> ExecuteAsync(CommandContext context, Settings settings, CancellationToken cancellationToken)
+    protected override async Task<int> ExecuteCommandAsync(CommandContext context, Settings settings, CancellationToken cancellationToken)
     {
         if (settings.Segment is { } segment) {
             var data = await memoryRepository.GetMemorySegmentAsync(settings.UserId!, segment, cancellationToken).ConfigureAwait(false);

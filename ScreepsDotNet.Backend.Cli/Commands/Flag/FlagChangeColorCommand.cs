@@ -6,7 +6,7 @@ using ScreepsDotNet.Backend.Core.Services;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
-internal sealed class FlagChangeColorCommand(IFlagService flagService, IUserRepository userRepository) : AsyncCommand<FlagChangeColorCommand.Settings>
+internal sealed class FlagChangeColorCommand(IFlagService flagService, IUserRepository userRepository, ILogger<FlagChangeColorCommand>? logger = null, IHostApplicationLifetime? lifetime = null) : CommandHandler<FlagChangeColorCommand.Settings>(logger, lifetime)
 {
     public sealed class Settings : CommandSettings
     {
@@ -53,7 +53,7 @@ internal sealed class FlagChangeColorCommand(IFlagService flagService, IUserRepo
         }
     }
 
-    public override async Task<int> ExecuteAsync(CommandContext context, Settings settings, CancellationToken cancellationToken)
+    protected override async Task<int> ExecuteCommandAsync(CommandContext context, Settings settings, CancellationToken cancellationToken)
     {
         var userId = settings.UserId;
         if (string.IsNullOrWhiteSpace(userId)) {

@@ -6,7 +6,7 @@ using ScreepsDotNet.Backend.Core.Services;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
-internal sealed class BotRemoveCommand(IBotControlService botControlService) : AsyncCommand<BotRemoveCommand.Settings>
+internal sealed class BotRemoveCommand(IBotControlService botControlService, ILogger<BotRemoveCommand>? logger = null, IHostApplicationLifetime? lifetime = null) : CommandHandler<BotRemoveCommand.Settings>(logger, lifetime)
 {
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
 
@@ -25,7 +25,7 @@ internal sealed class BotRemoveCommand(IBotControlService botControlService) : A
                 : ValidationResult.Success();
     }
 
-    public override async Task<int> ExecuteAsync(CommandContext context, Settings settings, CancellationToken cancellationToken)
+    protected override async Task<int> ExecuteCommandAsync(CommandContext context, Settings settings, CancellationToken cancellationToken)
     {
         var removed = await botControlService.RemoveAsync(settings.Username, cancellationToken).ConfigureAwait(false);
 

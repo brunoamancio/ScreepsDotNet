@@ -1,11 +1,18 @@
 ﻿namespace ScreepsDotNet.Backend.Cli.Commands.Version;
 
 using global::System.Text.Json;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using ScreepsDotNet.Backend.Cli.Infrastructure;
 using ScreepsDotNet.Backend.Core.Services;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
-internal sealed class VersionCommand(IVersionInfoProvider versionInfoProvider) : AsyncCommand<VersionCommand.Settings>
+internal sealed class VersionCommand(
+    IVersionInfoProvider versionInfoProvider,
+    ILogger<VersionCommand>? logger = null,
+    IHostApplicationLifetime? lifetime = null)
+    : CommandHandler<VersionCommand.Settings>(logger, lifetime)
 {
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
 
@@ -15,7 +22,7 @@ internal sealed class VersionCommand(IVersionInfoProvider versionInfoProvider) :
         public bool OutputJson { get; init; }
     }
 
-    public override async Task<int> ExecuteAsync(CommandContext context, Settings settings, CancellationToken cancellationToken)
+    protected override async Task<int> ExecuteCommandAsync(CommandContext context, Settings settings, CancellationToken cancellationToken)
     {
         var info = await versionInfoProvider.GetAsync(cancellationToken).ConfigureAwait(false);
 

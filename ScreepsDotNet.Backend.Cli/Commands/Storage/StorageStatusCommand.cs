@@ -6,7 +6,7 @@ using ScreepsDotNet.Backend.Core.Storage;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
-internal sealed class StorageStatusCommand(IStorageAdapter storageAdapter, ILogger<StorageStatusCommand> logger) : AsyncCommand<StorageStatusCommand.Settings>
+internal sealed class StorageStatusCommand(IStorageAdapter storageAdapter, ILogger<StorageStatusCommand>? logger = null, IHostApplicationLifetime? lifetime = null) : CommandHandler<StorageStatusCommand.Settings>(logger, lifetime)
 {
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
 
@@ -16,7 +16,7 @@ internal sealed class StorageStatusCommand(IStorageAdapter storageAdapter, ILogg
         public bool OutputJson { get; init; }
     }
 
-    public override async Task<int> ExecuteAsync(CommandContext context, Settings settings, CancellationToken cancellationToken)
+    protected override async Task<int> ExecuteCommandAsync(CommandContext context, Settings settings, CancellationToken cancellationToken)
     {
         var status = await storageAdapter.GetStatusAsync(cancellationToken).ConfigureAwait(false);
 
@@ -38,7 +38,7 @@ internal sealed class StorageStatusCommand(IStorageAdapter storageAdapter, ILogg
         AnsiConsole.Write(table);
 
         if (!status.IsConnected)
-            logger.LogWarning("Storage status reported disconnected: {Details}", status.Details);
+            Logger.LogWarning("Storage status reported disconnected: {Details}", status.Details);
 
         return status.IsConnected ? 0 : 1;
     }

@@ -5,7 +5,7 @@ using Spectre.Console.Cli;
 
 namespace ScreepsDotNet.Backend.Cli.Commands.System;
 
-internal sealed class SystemTickGetCommand(ISystemControlService controlService) : AsyncCommand<SystemTickGetCommand.Settings>
+internal sealed class SystemTickGetCommand(ISystemControlService controlService, ILogger<SystemTickGetCommand>? logger = null, IHostApplicationLifetime? lifetime = null) : CommandHandler<SystemTickGetCommand.Settings>(logger, lifetime)
 {
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
 
@@ -15,7 +15,7 @@ internal sealed class SystemTickGetCommand(ISystemControlService controlService)
         public bool OutputJson { get; init; }
     }
 
-    public override async Task<int> ExecuteAsync(CommandContext context, Settings settings, CancellationToken cancellationToken)
+    protected override async Task<int> ExecuteCommandAsync(CommandContext context, Settings settings, CancellationToken cancellationToken)
     {
         var duration = await controlService.GetTickDurationAsync(cancellationToken).ConfigureAwait(false);
 

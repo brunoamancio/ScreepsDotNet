@@ -6,7 +6,7 @@ using ScreepsDotNet.Backend.Core.Services;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
-internal sealed class FlagRemoveCommand(IFlagService flagService, IUserRepository userRepository) : AsyncCommand<FlagRemoveCommand.Settings>
+internal sealed class FlagRemoveCommand(IFlagService flagService, IUserRepository userRepository, ILogger<FlagRemoveCommand>? logger = null, IHostApplicationLifetime? lifetime = null) : CommandHandler<FlagRemoveCommand.Settings>(logger, lifetime)
 {
     public sealed class Settings : CommandSettings
     {
@@ -45,7 +45,7 @@ internal sealed class FlagRemoveCommand(IFlagService flagService, IUserRepositor
         }
     }
 
-    public override async Task<int> ExecuteAsync(CommandContext context, Settings settings, CancellationToken cancellationToken)
+    protected override async Task<int> ExecuteCommandAsync(CommandContext context, Settings settings, CancellationToken cancellationToken)
     {
         var userId = settings.UserId;
         if (string.IsNullOrWhiteSpace(userId)) {

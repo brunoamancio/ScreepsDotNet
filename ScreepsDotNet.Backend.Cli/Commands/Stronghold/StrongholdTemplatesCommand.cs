@@ -8,7 +8,7 @@ using ScreepsDotNet.Backend.Core.Services;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
-internal sealed class StrongholdTemplatesCommand(IStrongholdTemplateProvider templateProvider) : AsyncCommand<StrongholdTemplatesCommand.Settings>
+internal sealed class StrongholdTemplatesCommand(IStrongholdTemplateProvider templateProvider, ILogger<StrongholdTemplatesCommand>? logger = null, IHostApplicationLifetime? lifetime = null) : CommandHandler<StrongholdTemplatesCommand.Settings>(logger, lifetime)
 {
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
 
@@ -18,7 +18,7 @@ internal sealed class StrongholdTemplatesCommand(IStrongholdTemplateProvider tem
         public bool OutputJson { get; init; }
     }
 
-    public override async Task<int> ExecuteAsync(CommandContext context, Settings settings, CancellationToken cancellationToken)
+    protected override async Task<int> ExecuteCommandAsync(CommandContext context, Settings settings, CancellationToken cancellationToken)
     {
         var templates = await templateProvider.GetTemplatesAsync(cancellationToken).ConfigureAwait(false);
         var depositTypes = await templateProvider.GetDepositTypesAsync(cancellationToken).ConfigureAwait(false);

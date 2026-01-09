@@ -1,12 +1,11 @@
-﻿using Microsoft.Extensions.Logging;
-using Spectre.Console;
+﻿using Spectre.Console;
 using Spectre.Console.Cli;
 
 namespace ScreepsDotNet.Backend.Cli.Commands;
 
-internal sealed class RootCommand(ILogger<RootCommand> logger) : AsyncCommand<RootCommandSettings>
+internal sealed class RootCommand(ILogger<RootCommand>? logger = null, IHostApplicationLifetime? lifetime = null) : CommandHandler<RootCommandSettings>(logger, lifetime)
 {
-    public override Task<int> ExecuteAsync(CommandContext context, RootCommandSettings settings, CancellationToken cancellationToken)
+    protected override Task<int> ExecuteCommandAsync(CommandContext context, RootCommandSettings settings, CancellationToken cancellationToken)
     {
         LogConfigurationSummary(settings);
         AnsiConsole.MarkupLine("[bold]No command provided.[/] Use [green]--help[/] to see available commands.");
@@ -15,24 +14,24 @@ internal sealed class RootCommand(ILogger<RootCommand> logger) : AsyncCommand<Ro
 
     private void LogConfigurationSummary(RootCommandSettings settings)
     {
-        logger.LogInformation("Storage backend: {Backend}", settings.StorageBackend);
+        Logger.LogInformation("Storage backend: {Backend}", settings.StorageBackend);
 
         if (!string.IsNullOrWhiteSpace(settings.ConnectionString))
-            logger.LogInformation("Custom Mongo connection string supplied.");
+            Logger.LogInformation("Custom Mongo connection string supplied.");
 
         if (!string.IsNullOrWhiteSpace(settings.CliHost) || settings.CliPort.HasValue)
-            logger.LogInformation("Legacy CLI listener requested on {Host}:{Port}", settings.CliHost ?? "default", settings.CliPort ?? -1);
+            Logger.LogInformation("Legacy CLI listener requested on {Host}:{Port}", settings.CliHost ?? "default", settings.CliPort ?? -1);
 
         if (!string.IsNullOrWhiteSpace(settings.Host) || settings.Port.HasValue)
-            logger.LogInformation("HTTP host override requested: {Host}:{Port}", settings.Host ?? "default", settings.Port ?? -1);
+            Logger.LogInformation("HTTP host override requested: {Host}:{Port}", settings.Host ?? "default", settings.Port ?? -1);
 
         if (!string.IsNullOrWhiteSpace(settings.Password))
-            logger.LogInformation("Server password supplied.");
+            Logger.LogInformation("Server password supplied.");
 
         if (!string.IsNullOrWhiteSpace(settings.SteamApiKey))
-            logger.LogInformation("Steam API key provided.");
+            Logger.LogInformation("Steam API key provided.");
 
         if (settings.RunnerCount.HasValue || settings.ProcessorCount.HasValue)
-            logger.LogInformation("Worker counts => runners: {Runners}, processors: {Processors}", settings.RunnerCount, settings.ProcessorCount);
+            Logger.LogInformation("Worker counts => runners: {Runners}, processors: {Processors}", settings.RunnerCount, settings.ProcessorCount);
     }
 }

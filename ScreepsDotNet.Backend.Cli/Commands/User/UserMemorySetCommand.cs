@@ -6,8 +6,8 @@ using ScreepsDotNet.Backend.Core.Repositories;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
-internal sealed class UserMemorySetCommand(IUserMemoryRepository memoryRepository, ILogger<UserMemorySetCommand> logger)
-    : AsyncCommand<UserMemorySetCommand.Settings>
+internal sealed class UserMemorySetCommand(IUserMemoryRepository memoryRepository, ILogger<UserMemorySetCommand>? logger = null, IHostApplicationLifetime? lifetime = null)
+    : CommandHandler<UserMemorySetCommand.Settings>(logger, lifetime)
 {
     public sealed class Settings : CommandSettings
     {
@@ -46,14 +46,14 @@ internal sealed class UserMemorySetCommand(IUserMemoryRepository memoryRepositor
         }
     }
 
-    public override async Task<int> ExecuteAsync(CommandContext context, Settings settings, CancellationToken cancellationToken)
+    protected override async Task<int> ExecuteCommandAsync(CommandContext context, Settings settings, CancellationToken cancellationToken)
     {
         if (settings.Segment is { } segment) {
             await memoryRepository.SetMemorySegmentAsync(settings.UserId!, segment, settings.SegmentData, cancellationToken).ConfigureAwait(false);
             if (settings.UserId == null) return 0;
 
             AnsiConsole.MarkupLine("[green]Updated memory segment {0} for {1}.[/]", segment, settings.UserId);
-            logger.LogInformation("Updated segment {Segment} for {UserId}.", segment, settings.UserId);
+            Logger.LogInformation("Updated segment {Segment} for {UserId}.", segment, settings.UserId);
             return 0;
         }
 
@@ -62,7 +62,7 @@ internal sealed class UserMemorySetCommand(IUserMemoryRepository memoryRepositor
         if (settings.UserId == null) return 0;
 
         AnsiConsole.MarkupLine("[green]Updated memory for {0} at path '{1}'.[/]", settings.UserId, settings.Path ?? "(root)");
-        logger.LogInformation("Updated memory for {UserId} at path {Path}.", settings.UserId, settings.Path ?? "(root)");
+        Logger.LogInformation("Updated memory for {UserId} at path {Path}.", settings.UserId, settings.Path ?? "(root)");
         return 0;
     }
 

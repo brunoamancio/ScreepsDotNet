@@ -9,7 +9,7 @@ using ScreepsDotNet.Backend.Core.Services;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
-internal sealed class StrongholdSpawnCommand(IStrongholdControlService strongholdControlService) : AsyncCommand<StrongholdSpawnCommand.Settings>
+internal sealed class StrongholdSpawnCommand(IStrongholdControlService strongholdControlService, ILogger<StrongholdSpawnCommand>? logger = null, IHostApplicationLifetime? lifetime = null) : CommandHandler<StrongholdSpawnCommand.Settings>(logger, lifetime)
 {
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
 
@@ -70,7 +70,7 @@ internal sealed class StrongholdSpawnCommand(IStrongholdControlService stronghol
         }
     }
 
-    public override async Task<int> ExecuteAsync(CommandContext context, Settings settings, CancellationToken cancellationToken)
+    protected override async Task<int> ExecuteCommandAsync(CommandContext context, Settings settings, CancellationToken cancellationToken)
     {
         if (!RoomReferenceParser.TryParse(settings.RoomName, settings.Shard, out var reference) || reference is null)
             throw new InvalidOperationException("Room validation failed.");

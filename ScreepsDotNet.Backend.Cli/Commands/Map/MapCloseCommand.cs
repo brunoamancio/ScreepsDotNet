@@ -7,7 +7,7 @@ using ScreepsDotNet.Backend.Core.Services;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
-internal sealed class MapCloseCommand(IMapControlService mapControlService) : AsyncCommand<MapCloseCommand.Settings>
+internal sealed class MapCloseCommand(IMapControlService mapControlService, ILogger<MapCloseCommand>? logger = null, IHostApplicationLifetime? lifetime = null) : CommandHandler<MapCloseCommand.Settings>(logger, lifetime)
 {
     public sealed class Settings : CommandSettings
     {
@@ -31,7 +31,7 @@ internal sealed class MapCloseCommand(IMapControlService mapControlService) : As
         }
     }
 
-    public override async Task<int> ExecuteAsync(CommandContext context, Settings settings, CancellationToken cancellationToken)
+    protected override async Task<int> ExecuteCommandAsync(CommandContext context, Settings settings, CancellationToken cancellationToken)
     {
         if (!RoomReferenceParser.TryParse(settings.RoomName, settings.Shard, out var reference) || reference is null)
             throw new InvalidOperationException("Room name validation failed.");

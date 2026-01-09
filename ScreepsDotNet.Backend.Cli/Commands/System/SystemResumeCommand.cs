@@ -4,9 +4,9 @@ using Spectre.Console.Cli;
 
 namespace ScreepsDotNet.Backend.Cli.Commands.System;
 
-internal sealed class SystemResumeCommand(ISystemControlService controlService) : AsyncCommand<CommandSettings>
+internal sealed class SystemResumeCommand(ISystemControlService controlService, ILogger<SystemResumeCommand>? logger = null, IHostApplicationLifetime? lifetime = null) : CommandHandler<CommandSettings>(logger, lifetime)
 {
-    public override async Task<int> ExecuteAsync(CommandContext context, CommandSettings settings, CancellationToken cancellationToken)
+    protected override async Task<int> ExecuteCommandAsync(CommandContext context, CommandSettings settings, CancellationToken cancellationToken)
     {
         await controlService.ResumeSimulationAsync(cancellationToken).ConfigureAwait(false);
         AnsiConsole.MarkupLine("[green]Simulation loop resumed.[/]");

@@ -6,7 +6,7 @@ using ScreepsDotNet.Backend.Core.Services;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
-internal sealed class BotReloadCommand(IBotControlService botControlService) : AsyncCommand<BotReloadCommand.Settings>
+internal sealed class BotReloadCommand(IBotControlService botControlService, ILogger<BotReloadCommand>? logger = null, IHostApplicationLifetime? lifetime = null) : CommandHandler<BotReloadCommand.Settings>(logger, lifetime)
 {
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
 
@@ -25,7 +25,7 @@ internal sealed class BotReloadCommand(IBotControlService botControlService) : A
                 : ValidationResult.Success();
     }
 
-    public override async Task<int> ExecuteAsync(CommandContext context, Settings settings, CancellationToken cancellationToken)
+    protected override async Task<int> ExecuteCommandAsync(CommandContext context, Settings settings, CancellationToken cancellationToken)
     {
         var count = await botControlService.ReloadAsync(settings.BotName, cancellationToken).ConfigureAwait(false);
 

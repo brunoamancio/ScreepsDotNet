@@ -10,7 +10,7 @@ using ScreepsDotNet.Backend.Core.Services;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
-internal sealed class MapGenerateCommand(IMapControlService mapControlService) : AsyncCommand<MapGenerateCommand.Settings>
+internal sealed class MapGenerateCommand(IMapControlService mapControlService, ILogger<MapGenerateCommand>? logger = null, IHostApplicationLifetime? lifetime = null) : CommandHandler<MapGenerateCommand.Settings>(logger, lifetime)
 {
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
 
@@ -73,7 +73,7 @@ internal sealed class MapGenerateCommand(IMapControlService mapControlService) :
         }
     }
 
-    public override async Task<int> ExecuteAsync(CommandContext context, Settings settings, CancellationToken cancellationToken)
+    protected override async Task<int> ExecuteCommandAsync(CommandContext context, Settings settings, CancellationToken cancellationToken)
     {
         if (!RoomReferenceParser.TryParse(settings.RoomName, settings.Shard, out var reference) || reference is null)
             throw new InvalidOperationException("Room name validation failed.");

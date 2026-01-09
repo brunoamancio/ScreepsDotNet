@@ -8,7 +8,7 @@ using ScreepsDotNet.Backend.Core.Services;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
-internal sealed class BotSpawnCommand(IBotControlService botControlService) : AsyncCommand<BotSpawnCommand.Settings>
+internal sealed class BotSpawnCommand(IBotControlService botControlService, ILogger<BotSpawnCommand>? logger = null, IHostApplicationLifetime? lifetime = null) : CommandHandler<BotSpawnCommand.Settings>(logger, lifetime)
 {
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
 
@@ -76,7 +76,7 @@ internal sealed class BotSpawnCommand(IBotControlService botControlService) : As
         }
     }
 
-    public override async Task<int> ExecuteAsync(CommandContext context, Settings settings, CancellationToken cancellationToken)
+    protected override async Task<int> ExecuteCommandAsync(CommandContext context, Settings settings, CancellationToken cancellationToken)
     {
         var options = new BotSpawnOptions(settings.Username,
                                           settings.Cpu,

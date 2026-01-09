@@ -5,7 +5,7 @@ using ScreepsDotNet.Backend.Core.Repositories;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
-internal sealed class UserShowCommand(IUserRepository userRepository, ILogger<UserShowCommand> logger) : AsyncCommand<UserShowCommand.Settings>
+internal sealed class UserShowCommand(IUserRepository userRepository, ILogger<UserShowCommand>? logger = null, IHostApplicationLifetime? lifetime = null) : CommandHandler<UserShowCommand.Settings>(logger, lifetime)
 {
     private static readonly global::System.Text.Json.JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
     public sealed class Settings : CommandSettings
@@ -28,7 +28,7 @@ internal sealed class UserShowCommand(IUserRepository userRepository, ILogger<Us
         }
     }
 
-    public override async Task<int> ExecuteAsync(CommandContext context, Settings settings, CancellationToken cancellationToken)
+    protected override async Task<int> ExecuteCommandAsync(CommandContext context, Settings settings, CancellationToken cancellationToken)
     {
         var userId = settings.UserId;
         if (string.IsNullOrWhiteSpace(userId) && !string.IsNullOrWhiteSpace(settings.Username)) {
@@ -37,13 +37,13 @@ internal sealed class UserShowCommand(IUserRepository userRepository, ILogger<Us
         }
 
         if (string.IsNullOrWhiteSpace(userId)) {
-            logger.LogError("Unable to resolve user identifier.");
+            Logger.LogError("Unable to resolve user identifier.");
             return 1;
         }
 
         var result = await userRepository.GetProfileAsync(userId, cancellationToken).ConfigureAwait(false);
         if (result is null) {
-            logger.LogWarning("User '{UserId}' not found.", userId);
+            Logger.LogWarning("User '{UserId}' not found.", userId);
             return 1;
         }
 

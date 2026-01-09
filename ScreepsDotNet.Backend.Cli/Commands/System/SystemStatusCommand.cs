@@ -5,7 +5,7 @@ using Spectre.Console.Cli;
 
 namespace ScreepsDotNet.Backend.Cli.Commands.System;
 
-internal sealed class SystemStatusCommand(ISystemControlService controlService) : AsyncCommand<SystemStatusCommand.Settings>
+internal sealed class SystemStatusCommand(ISystemControlService controlService, ILogger<SystemStatusCommand>? logger = null, IHostApplicationLifetime? lifetime = null) : CommandHandler<SystemStatusCommand.Settings>(logger, lifetime)
 {
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
 
@@ -15,7 +15,7 @@ internal sealed class SystemStatusCommand(ISystemControlService controlService) 
         public bool OutputJson { get; init; }
     }
 
-    public override async Task<int> ExecuteAsync(CommandContext context, Settings settings, CancellationToken cancellationToken)
+    protected override async Task<int> ExecuteCommandAsync(CommandContext context, Settings settings, CancellationToken cancellationToken)
     {
         var paused = await controlService.IsSimulationPausedAsync(cancellationToken).ConfigureAwait(false);
         var tickDuration = await controlService.GetTickDurationAsync(cancellationToken).ConfigureAwait(false);

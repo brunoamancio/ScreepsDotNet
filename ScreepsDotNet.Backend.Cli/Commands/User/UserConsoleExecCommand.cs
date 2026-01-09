@@ -5,8 +5,8 @@ using ScreepsDotNet.Backend.Core.Repositories;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
-internal sealed class UserConsoleExecCommand(IUserConsoleRepository consoleRepository, ILogger<UserConsoleExecCommand> logger)
-    : AsyncCommand<UserConsoleExecCommand.Settings>
+internal sealed class UserConsoleExecCommand(IUserConsoleRepository consoleRepository, ILogger<UserConsoleExecCommand>? logger = null, IHostApplicationLifetime? lifetime = null)
+    : CommandHandler<UserConsoleExecCommand.Settings>(logger, lifetime)
 {
     public sealed class Settings : CommandSettings
     {
@@ -29,14 +29,14 @@ internal sealed class UserConsoleExecCommand(IUserConsoleRepository consoleRepos
         }
     }
 
-    public override async Task<int> ExecuteAsync(CommandContext context, Settings settings, CancellationToken cancellationToken)
+    protected override async Task<int> ExecuteCommandAsync(CommandContext context, Settings settings, CancellationToken cancellationToken)
     {
         await consoleRepository.EnqueueExpressionAsync(settings.UserId!, settings.Expression!, settings.Hidden, cancellationToken)
                                 .ConfigureAwait(false);
         if (settings.UserId == null) return 0;
 
         AnsiConsole.MarkupLine("[green]Queued expression for user '{0}'.[/]", settings.UserId);
-        logger.LogInformation("Queued console expression for {UserId}.", settings.UserId);
+        Logger.LogInformation("Queued console expression for {UserId}.", settings.UserId);
         return 0;
     }
 }

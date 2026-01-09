@@ -6,7 +6,7 @@ using ScreepsDotNet.Backend.Core.Services;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
-internal sealed class FlagCreateCommand(IFlagService flagService, IUserRepository userRepository) : AsyncCommand<FlagCreateCommand.Settings>
+internal sealed class FlagCreateCommand(IFlagService flagService, IUserRepository userRepository, ILogger<FlagCreateCommand>? logger = null, IHostApplicationLifetime? lifetime = null) : CommandHandler<FlagCreateCommand.Settings>(logger, lifetime)
 {
     public sealed class Settings : CommandSettings
     {
@@ -68,7 +68,7 @@ internal sealed class FlagCreateCommand(IFlagService flagService, IUserRepositor
         }
     }
 
-    public override async Task<int> ExecuteAsync(CommandContext context, Settings settings, CancellationToken cancellationToken)
+    protected override async Task<int> ExecuteCommandAsync(CommandContext context, Settings settings, CancellationToken cancellationToken)
     {
         var userId = settings.UserId;
         if (string.IsNullOrWhiteSpace(userId)) {

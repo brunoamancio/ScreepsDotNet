@@ -10,7 +10,7 @@ using ScreepsDotNet.Backend.Core.Repositories;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
-internal sealed class WorldDumpCommand(IRoomTerrainRepository terrainRepository) : AsyncCommand<WorldDumpCommand.Settings>
+internal sealed class WorldDumpCommand(IRoomTerrainRepository terrainRepository, ILogger<WorldDumpCommand>? logger = null, IHostApplicationLifetime? lifetime = null) : CommandHandler<WorldDumpCommand.Settings>(logger, lifetime)
 {
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
     public sealed class Settings : CommandSettings
@@ -41,7 +41,7 @@ internal sealed class WorldDumpCommand(IRoomTerrainRepository terrainRepository)
         }
     }
 
-    public override async Task<int> ExecuteAsync(CommandContext context, Settings settings, CancellationToken cancellationToken)
+    protected override async Task<int> ExecuteCommandAsync(CommandContext context, Settings settings, CancellationToken cancellationToken)
     {
         var references = new List<RoomReference>(settings.Rooms.Length);
         foreach (var room in settings.Rooms) {

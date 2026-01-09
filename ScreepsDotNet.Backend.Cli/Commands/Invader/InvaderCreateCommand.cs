@@ -9,7 +9,7 @@ using ScreepsDotNet.Backend.Core.Services;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
-internal sealed class InvaderCreateCommand(IInvaderService invaderService, IUserRepository userRepository) : AsyncCommand<InvaderCreateCommand.Settings>
+internal sealed class InvaderCreateCommand(IInvaderService invaderService, IUserRepository userRepository, ILogger<InvaderCreateCommand>? logger = null, IHostApplicationLifetime? lifetime = null) : CommandHandler<InvaderCreateCommand.Settings>(logger, lifetime)
 {
     public sealed class Settings : CommandSettings
     {
@@ -72,7 +72,7 @@ internal sealed class InvaderCreateCommand(IInvaderService invaderService, IUser
         }
     }
 
-    public override async Task<int> ExecuteAsync(CommandContext context, Settings settings, CancellationToken cancellationToken)
+    protected override async Task<int> ExecuteCommandAsync(CommandContext context, Settings settings, CancellationToken cancellationToken)
     {
         var userId = settings.UserId;
         if (string.IsNullOrWhiteSpace(userId)) {

@@ -9,8 +9,8 @@ using ScreepsDotNet.Storage.MongoRedis.Seeding;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
-internal sealed class StorageReseedCommand(ISeedDataService seedDataService, IOptions<MongoRedisStorageOptions> storageOptions, ILogger<StorageReseedCommand> logger)
-    : AsyncCommand<StorageReseedCommand.Settings>
+internal sealed class StorageReseedCommand(ISeedDataService seedDataService, IOptions<MongoRedisStorageOptions> storageOptions, ILogger<StorageReseedCommand>? logger = null, IHostApplicationLifetime? lifetime = null)
+    : CommandHandler<StorageReseedCommand.Settings>(logger, lifetime)
 {
     public sealed class Settings : CommandSettings
     {
@@ -22,21 +22,21 @@ internal sealed class StorageReseedCommand(ISeedDataService seedDataService, IOp
         public string? Confirm { get; init; }
     }
 
-    public override async Task<int> ExecuteAsync(CommandContext context, Settings settings, CancellationToken cancellationToken)
+    protected override async Task<int> ExecuteCommandAsync(CommandContext context, Settings settings, CancellationToken cancellationToken)
     {
         if (!string.Equals(settings.Confirm, "RESET", StringComparison.OrdinalIgnoreCase)) {
-            logger.LogError("Confirmation required. Re-run with --confirm RESET to proceed.");
+            Logger.LogError("Confirmation required. Re-run with --confirm RESET to proceed.");
             return 1;
         }
 
         var options = storageOptions.Value;
         if (string.IsNullOrWhiteSpace(options.MongoConnectionString) || string.IsNullOrWhiteSpace(options.MongoDatabase)) {
-            logger.LogError("Mongo connection information is missing.");
+            Logger.LogError("Mongo connection information is missing.");
             return 1;
         }
 
         if (!string.Equals(options.MongoDatabase, SeedDataDefaults.Database.Name, StringComparison.OrdinalIgnoreCase) && !settings.Force) {
-            logger.LogWarning("Refusing to reseed database '{Database}' without --force.", options.MongoDatabase);
+            Logger.LogWarning("Refusing to reseed database '{Database}' without --force.", options.MongoDatabase);
             return 1;
         }
 
