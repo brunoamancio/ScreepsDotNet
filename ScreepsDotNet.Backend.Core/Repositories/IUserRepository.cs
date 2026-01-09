@@ -17,4 +17,10 @@ public interface IUserRepository
     Task<EmailUpdateResult> UpdateEmailAsync(string userId, string email, CancellationToken cancellationToken = default);
 
     Task SetSteamVisibilityAsync(string userId, bool visible, CancellationToken cancellationToken = default);
+
+    Task<bool> EmailExistsAsync(string email, CancellationToken cancellationToken = default);
+
+    Task<bool> UsernameExistsAsync(string username, CancellationToken cancellationToken = default);
+
+    Task<SetUsernameResult> SetUsernameAsync(string userId, string username, string? email, CancellationToken cancellationToken = default);
 }

@@ -7,6 +7,7 @@ internal static class EndpointRegistration
         VersionEndpoints.Map(app);
         AuthEndpoints.Map(app);
         ServerEndpoints.Map(app);
+        RegisterEndpoints.Map(app);
         UserEndpoints.Map(app);
         MarketEndpoints.Map(app);
         WorldEndpoints.Map(app);

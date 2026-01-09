@@ -101,6 +101,55 @@ public sealed class MongoUserRepository(IMongoDatabaseProvider databaseProvider)
         await _collection.UpdateOneAsync(u => u.Id == userId, update, cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 
+    public Task<bool> EmailExistsAsync(string email, CancellationToken cancellationToken = default)
+    {
+        var normalized = email.ToLowerInvariant();
+        return _collection.Find(user => user.Email == normalized)
+                          .AnyAsync(cancellationToken);
+    }
+
+    public Task<bool> UsernameExistsAsync(string username, CancellationToken cancellationToken = default)
+    {
+        var normalized = username.ToLowerInvariant();
+        return _collection.Find(user => user.UsernameLower == normalized)
+                          .AnyAsync(cancellationToken);
+    }
+
+    public async Task<SetUsernameResult> SetUsernameAsync(string userId, string username, string? email, CancellationToken cancellationToken = default)
+    {
+        var user = await _collection.Find(u => u.Id == userId)
+                                    .Project(u => new { u.Id, u.Username })
+                                    .FirstOrDefaultAsync(cancellationToken)
+                                    .ConfigureAwait(false);
+
+        if (user is null)
+            return SetUsernameResult.UserNotFound;
+
+        if (!string.IsNullOrWhiteSpace(user.Username))
+            return SetUsernameResult.UsernameAlreadySet;
+
+        var usernameLower = username.ToLowerInvariant();
+        var duplicate = await _collection.Find(u => u.UsernameLower == usernameLower)
+                                         .AnyAsync(cancellationToken)
+                                         .ConfigureAwait(false);
+        if (duplicate)
+            return SetUsernameResult.UsernameExists;
+
+        var update = Builders<UserDocument>.Update
+                                           .Set(u => u.Username, username)
+                                           .Set(u => u.UsernameLower, usernameLower);
+
+        if (!string.IsNullOrWhiteSpace(email))
+        {
+            var normalizedEmail = email.ToLowerInvariant();
+            update = update.Set(u => u.Email, normalizedEmail)
+                           .Set(u => u.EmailDirty, false);
+        }
+
+        var result = await _collection.UpdateOneAsync(user => user.Id == userId, update, cancellationToken: cancellationToken).ConfigureAwait(false);
+        return result.ModifiedCount == 0 ? SetUsernameResult.Failed : SetUsernameResult.Success;
+    }
+
     private static UserProfile MapToUserProfile(UserDocument document, string fallbackId)
         => new(
             document.Id ?? fallbackId,

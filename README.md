@@ -49,6 +49,7 @@ Modern .NET rewrite of the Screeps private server backend. The solution contains
 - `ScreepsDotNet.Backend.Http/MapEndpoints.http` manages `/api/game/map/*` (generate, open/close, remove, assets update, terrain refresh).
 - `ScreepsDotNet.Backend.Http/IntentEndpoints.http` queues `/api/game/add-object-intent` and `/api/game/add-global-intent` payloads so you can verify manual intents without writing custom tooling.
 - `ScreepsDotNet.Backend.Http/PowerCreepEndpoints.http` hits `/api/game/power-creeps/*` (list/create/rename/upgrade/delete/cancel-delete/experimentation) for testing the new operator management surface.
+- `ScreepsDotNet.Backend.Http/RegisterEndpoints.http` covers `/api/register/*` (check-email, check-username, set-username) so you can exercise the onboarding flow end-to-end.
 - `ScreepsDotNet.Backend.Http/WorldEndpoints.http` includes both default-room samples and new shard-aware requests (pass `shard=shard1` or include `"shard": "shard1"` in the JSON body) so you can exercise the secondary shard seeded by default.
 - All `/api/game/world/*` read routes also understand the legacy `shardName/RoomName` notation (e.g., `shard1/W21N20`). If you supply both a `shard` parameter and a prefixed room, the explicit `shard` parameter wins.
 - Any `customIntentTypes` / `customObjectTypes` declared in your `mods.json` are now honored automatically: `/api/game/add-*intent` uses the merged schemas, while `/api/server/info` and `/api/version` surface the mod-supplied object metadata so the official client can render custom assets.
@@ -194,6 +195,7 @@ This wipes `mongo-data` / `redis-data`, reruns every script in `docker/mongo-ini
 - Public routes (`/api/user/find`, `/api/user/rooms`, `/api/user/badge-svg`, `/api/user/stats`) return data seeded into Mongo.
 - Profile management routes (`/api/user/badge`, `/api/user/email`, `/api/user/set-steam-visible`) update the canonical `users` document with the same validation rules as the legacy backend.
 - Messaging routes (`/api/user/messages/send|list|index|mark-read|unread-count`) share `MongoUserMessageService`, which persists bi-directional threads in `users.messages`, upserts notifications in `users.notifications`, and enforces the same 100 KB payload limit + respondent validation as the legacy backend. Scratch samples live in `UserEndpoints.http`.
+- Registration routes (`/api/register/check-email`, `/api/register/check-username`, `/api/register/set-username`) mirror the onboarding flow from backend-local: the public checks validate format and uniqueness, while the protected `set-username` call (token required) claims a username and optional email for the authenticated user. Examples live in `RegisterEndpoints.http`.
 
 If you add new endpoints or storage requirements, update:
 1. `docker/mongo-init/seed-users.js` (and document the change here).

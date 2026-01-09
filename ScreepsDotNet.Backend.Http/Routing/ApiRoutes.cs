@@ -147,4 +147,12 @@ public static class ApiRoutes
             public const string UnreadCount = $"{MessagesRouteBase}/unread-count";
         }
     }
+
+    public static class Register
+    {
+        private const string Base = "/api/register";
+        public const string CheckEmail = $"{Base}/check-email";
+        public const string CheckUsername = $"{Base}/check-username";
+        public const string SetUsername = $"{Base}/set-username";
+    }
 }

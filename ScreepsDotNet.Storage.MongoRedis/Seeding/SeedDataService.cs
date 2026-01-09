@@ -116,6 +116,7 @@ public sealed class SeedDataService : ISeedDataService
             Id = SeedDataDefaults.User.Id,
             Username = SeedDataDefaults.User.Username,
             UsernameLower = SeedDataDefaults.User.Username.ToLowerInvariant(),
+            Email = SeedDataDefaults.User.Email,
             Cpu = DefaultCpu,
             Active = ActiveFlagValue,
             Power = SeedDataDefaults.Power.Total,

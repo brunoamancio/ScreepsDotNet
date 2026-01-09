@@ -1,0 +1,21 @@
+@ScreepsDotNet_Backend_Http_HostAddress = http://localhost:5210
+@ScreepsDotNet_User_Token = dev-ticket-token
+
+### Register - Check Email (public)
+GET {{ScreepsDotNet_Backend_Http_HostAddress}}/api/register/check-email?email=new-user@example.com
+Accept: application/json
+
+### Register - Check Username (public)
+GET {{ScreepsDotNet_Backend_Http_HostAddress}}/api/register/check-username?username=NewPlayer
+Accept: application/json
+
+### Register - Set Username (protected)
+POST {{ScreepsDotNet_Backend_Http_HostAddress}}/api/register/set-username
+X-Token: {{ScreepsDotNet_User_Token}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "username": "NewPlayer",
+  "email": "player@example.com"
+}

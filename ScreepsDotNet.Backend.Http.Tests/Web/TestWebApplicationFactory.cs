@@ -127,6 +127,7 @@ internal sealed class FakeUserRepository : IUserRepository
 
     private UserBadgeUpdate? _latestBadge;
     private string _currentEmail = AuthTestValues.Email;
+    private string? _currentUsername = AuthTestValues.Username;
     private bool _steamProfileHidden;
 
     private static readonly IReadOnlyDictionary<string, object?> PublicBadge = new Dictionary<string, object?>
@@ -158,6 +159,7 @@ internal sealed class FakeUserRepository : IUserRepository
 
         var profile = BaseProfile with
         {
+            Username = _currentUsername,
             Email = _currentEmail,
             Badge = badge,
             NotifyPrefs = new Dictionary<string, object?>(_notifyPrefs),
@@ -209,6 +211,24 @@ internal sealed class FakeUserRepository : IUserRepository
     {
         _steamProfileHidden = !visible;
         return Task.CompletedTask;
+    }
+
+    public Task<bool> EmailExistsAsync(string email, CancellationToken cancellationToken = default)
+        => Task.FromResult(string.Equals(_currentEmail, email, StringComparison.OrdinalIgnoreCase));
+
+    public Task<bool> UsernameExistsAsync(string username, CancellationToken cancellationToken = default)
+        => Task.FromResult(string.Equals(_currentUsername, username, StringComparison.OrdinalIgnoreCase));
+
+    public Task<SetUsernameResult> SetUsernameAsync(string userId, string username, string? email, CancellationToken cancellationToken = default)
+    {
+        if (!string.IsNullOrWhiteSpace(_currentUsername))
+            return Task.FromResult(SetUsernameResult.UsernameAlreadySet);
+
+        _currentUsername = username;
+        if (!string.IsNullOrWhiteSpace(email))
+            _currentEmail = email;
+
+        return Task.FromResult(SetUsernameResult.Success);
     }
 
     private static IDictionary<string, object?> BuildBadgeDictionary(UserBadgeUpdate badge)

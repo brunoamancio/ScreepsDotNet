@@ -14,6 +14,7 @@ public static class SeedDataDefaults
     {
         public const string Id = "integration-user";
         public const string Username = "IntegrationUser";
+        public const string Email = "integration@screeps.test";
     }
 
     public static class Auth
