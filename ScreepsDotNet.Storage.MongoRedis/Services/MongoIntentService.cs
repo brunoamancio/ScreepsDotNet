@@ -61,6 +61,7 @@ public sealed class MongoIntentService : IIntentService
     }
 
     public async Task AddObjectIntentAsync(string roomName,
+                                           string? shardName,
                                            string objectId,
                                            string intentName,
                                            JsonElement payload,
@@ -70,7 +71,8 @@ public sealed class MongoIntentService : IIntentService
         ValidateCommonArguments(roomName, objectId, intentName, payload, userId);
 
         var normalizedRoom = roomName.Trim();
-        await EnsureRoomIsPlayableAsync(normalizedRoom, cancellationToken).ConfigureAwait(false);
+        var normalizedShard = string.IsNullOrWhiteSpace(shardName) ? null : shardName.Trim();
+        await EnsureRoomIsPlayableAsync(normalizedRoom, normalizedShard, cancellationToken).ConfigureAwait(false);
 
         if (string.Equals(intentName, ActivateSafeModeIntent, StringComparison.Ordinal))
             await EnsureSafeModeAvailableAsync(userId, cancellationToken).ConfigureAwait(false);
@@ -78,17 +80,19 @@ public sealed class MongoIntentService : IIntentService
         var schemas = await _intentSchemaCatalog.GetSchemasAsync(cancellationToken).ConfigureAwait(false);
         var sanitized = SanitizeIntent(schemas, intentName, payload, forceArray: false);
 
-        var filter = Builders<RoomIntentDocument>.Filter.Eq(document => document.Room, normalizedRoom);
+        var filter = BuildRoomIntentFilter(normalizedRoom, normalizedShard);
         var update = Builders<RoomIntentDocument>.Update
                                                  .Set($"users.{userId}.objectsManual.{objectId}", sanitized)
-                                                 .SetOnInsert(document => document.Room, normalizedRoom);
+                                                 .SetOnInsert(document => document.Room, normalizedRoom)
+                                                 .SetOnInsert(document => document.Shard, normalizedShard);
         await _roomIntentsCollection.UpdateOneAsync(filter,
                                                     update,
                                                     new UpdateOptions { IsUpsert = true },
                                                     cancellationToken).ConfigureAwait(false);
 
+        var displayRoom = string.IsNullOrWhiteSpace(normalizedShard) ? normalizedRoom : $"{normalizedShard}/{normalizedRoom}";
         _logger.LogInformation("Queued object intent {Intent} for user {UserId} in room {Room} (object {ObjectId}).",
-            intentName, userId, normalizedRoom, objectId);
+            intentName, userId, displayRoom, objectId);
     }
 
     public async Task AddGlobalIntentAsync(string intentName,
@@ -117,7 +121,7 @@ public sealed class MongoIntentService : IIntentService
         _logger.LogInformation("Queued global intent {Intent} for user {UserId}.", intentName, userId);
     }
 
-    private async Task EnsureRoomIsPlayableAsync(string roomName, CancellationToken cancellationToken)
+    private async Task EnsureRoomIsPlayableAsync(string roomName, string? shardName, CancellationToken cancellationToken)
     {
         var normalizedRoom = roomName.Trim();
         if (string.IsNullOrWhiteSpace(normalizedRoom))
@@ -127,7 +131,13 @@ public sealed class MongoIntentService : IIntentService
         if (!SupportedRoomPrefixes.Contains(prefix))
             throw new IntentValidationException("not supported");
 
-        var room = await _roomsCollection.Find(document => document.Id == normalizedRoom)
+        var filter = Builders<RoomDocument>.Filter.Eq(document => document.Id, normalizedRoom);
+        filter &= string.IsNullOrWhiteSpace(shardName)
+            ? Builders<RoomDocument>.Filter.Or(Builders<RoomDocument>.Filter.Eq(document => document.Shard, null),
+                                               Builders<RoomDocument>.Filter.Exists(document => document.Shard, false))
+            : Builders<RoomDocument>.Filter.Eq(document => document.Shard, shardName.Trim());
+
+        var room = await _roomsCollection.Find(filter)
                                          .FirstOrDefaultAsync(cancellationToken)
                                          .ConfigureAwait(false) ?? throw new IntentValidationException("invalid room");
         var isOutOfBorders = string.Equals(room.Status, "out of borders", StringComparison.OrdinalIgnoreCase);
@@ -197,6 +207,18 @@ public sealed class MongoIntentService : IIntentService
     private static IEnumerable<JsonElement> EnumerateSingleton(JsonElement element)
     {
         yield return element;
+    }
+
+    private static FilterDefinition<RoomIntentDocument> BuildRoomIntentFilter(string roomName, string? shardName)
+    {
+        var builder = Builders<RoomIntentDocument>.Filter;
+        var filter = builder.Eq(document => document.Room, roomName);
+        if (string.IsNullOrWhiteSpace(shardName))
+            filter &= builder.Or(builder.Eq(document => document.Shard, null), builder.Exists("shard", false));
+        else
+            filter &= builder.Eq(document => document.Shard, shardName.Trim());
+
+        return filter;
     }
 
     private static BsonDocument SanitizeIntentObject(IntentDefinition definition, JsonElement payload)

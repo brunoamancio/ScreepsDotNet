@@ -123,6 +123,45 @@ public sealed class BotEndpointsIntegrationTests(IntegrationTestHarness harness)
         Assert.Equal("user not found", content.GetProperty("error").GetString());
     }
 
+    [Fact]
+    public async Task SpawnBot_WithShard_PersistsShardMetadata()
+    {
+        var token = await LoginAsync();
+        SetAuthHeader(token);
+
+        var room = SeedDataDefaults.Bots.SecondaryShardRoom;
+        var shard = SeedDataDefaults.World.SecondaryShardName;
+        await PrepareNeutralRoomAsync(room, shard);
+
+        var payload = new
+        {
+            bot = "alpha",
+            room,
+            shard,
+            username = "ShardCommander"
+        };
+
+        var content = await ReadJsonAsync(await _client.PostAsJsonAsync(ApiRoutes.Game.Bot.Spawn, payload));
+        Assert.Equal(shard, content.GetProperty("shard").GetString());
+
+        var userId = content.GetProperty("userId").GetString();
+        Assert.False(string.IsNullOrWhiteSpace(userId));
+
+        var objectsCollection = harness.Database.GetCollection<BsonDocument>("rooms.objects");
+        var spawnFilter = Builders<BsonDocument>.Filter.And(
+            Builders<BsonDocument>.Filter.Eq("room", room),
+            Builders<BsonDocument>.Filter.Eq("shard", shard),
+            Builders<BsonDocument>.Filter.Eq("type", "spawn"),
+            Builders<BsonDocument>.Filter.Eq("user", userId));
+        var spawnDocument = await objectsCollection.Find(spawnFilter).FirstOrDefaultAsync();
+        Assert.NotNull(spawnDocument);
+
+        var roomsCollection = harness.Database.GetCollection<BsonDocument>("rooms");
+        var roomDocument = await roomsCollection.Find(Builders<BsonDocument>.Filter.Eq("_id", room)).FirstOrDefaultAsync();
+        Assert.NotNull(roomDocument);
+        Assert.Equal(shard, roomDocument["shard"].AsString);
+    }
+
     private async Task<JsonElement> SpawnBotAsync(string room)
     {
         var payload = new { bot = "alpha", room };
@@ -145,28 +184,37 @@ public sealed class BotEndpointsIntegrationTests(IntegrationTestHarness harness)
         _client.DefaultRequestHeaders.Add("X-Token", token);
     }
 
-    private async Task PrepareNeutralRoomAsync(string room)
+    private async Task PrepareNeutralRoomAsync(string room, string? shard = null)
     {
         var roomsCollection = harness.Database.GetCollection<BsonDocument>("rooms");
+        var roomDoc = new BsonDocument { ["_id"] = room, ["status"] = "normal" };
+        if (shard is not null)
+            roomDoc["shard"] = shard;
         await roomsCollection.ReplaceOneAsync(new BsonDocument("_id", room),
-                                              new BsonDocument { ["_id"] = room, ["status"] = "normal" },
+                                              roomDoc,
                                               new ReplaceOptions { IsUpsert = true });
 
         var terrainCollection = harness.Database.GetCollection<BsonDocument>("rooms.terrain");
+        var terrainDoc = new BsonDocument { ["room"] = room, ["terrain"] = new string('0', 2500) };
+        if (shard is not null)
+            terrainDoc["shard"] = shard;
         await terrainCollection.ReplaceOneAsync(new BsonDocument("room", room),
-                                                new BsonDocument { ["room"] = room, ["terrain"] = new string('0', 2500) },
+                                                terrainDoc,
                                                 new ReplaceOptions { IsUpsert = true });
 
         var objectsCollection = harness.Database.GetCollection<BsonDocument>("rooms.objects");
         await objectsCollection.DeleteManyAsync(Builders<BsonDocument>.Filter.Eq("room", room));
-        await objectsCollection.InsertOneAsync(new BsonDocument
+        var controllerDoc = new BsonDocument
         {
             ["type"] = "controller",
             ["room"] = room,
             ["x"] = 25,
             ["y"] = 25,
             ["level"] = 0
-        });
+        };
+        if (shard is not null)
+            controllerDoc["shard"] = shard;
+        await objectsCollection.InsertOneAsync(controllerDoc);
     }
     private static async Task<JsonElement> ReadJsonAsync(HttpResponseMessage response)
     {

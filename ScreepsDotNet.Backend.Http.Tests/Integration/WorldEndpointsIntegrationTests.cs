@@ -1,5 +1,7 @@
 ﻿namespace ScreepsDotNet.Backend.Http.Tests.Integration;
 
+using System.Buffers;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http.Json;
 using System.Text.Json;
@@ -12,6 +14,9 @@ using ScreepsDotNet.Backend.Http.Routing;
 [Collection(IntegrationTestSuiteDefinition.Name)]
 public sealed class WorldEndpointsIntegrationTests(IntegrationTestHarness harness) : IAsyncLifetime
 {
+    private static readonly SearchValues<char> WestEastSearch = SearchValues.Create("WE");
+    private static readonly SearchValues<char> NorthSouthSearch = SearchValues.Create("NS");
+
     private static readonly string[] RequestedRooms =
     [
         SeedDataDefaults.World.StartRoom,
@@ -245,8 +250,10 @@ public sealed class WorldEndpointsIntegrationTests(IntegrationTestHarness harnes
 
         response.EnsureSuccessStatusCode();
         using var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
-        Assert.Equal(2, payload.RootElement.GetProperty("width").GetInt32());
-        Assert.Equal(2, payload.RootElement.GetProperty("height").GetInt32());
+        var expectedWidth = CalculateExpectedWidth();
+        var expectedHeight = CalculateExpectedHeight();
+        Assert.Equal(expectedWidth, payload.RootElement.GetProperty("width").GetInt32());
+        Assert.Equal(expectedHeight, payload.RootElement.GetProperty("height").GetInt32());
     }
 
     [Fact]
@@ -307,5 +314,54 @@ public sealed class WorldEndpointsIntegrationTests(IntegrationTestHarness harnes
         response.EnsureSuccessStatusCode();
         using var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
         return payload.RootElement.GetProperty(AuthResponseFields.Token).GetString()!;
+    }
+
+    private static int CalculateExpectedWidth()
+    {
+        var rooms = GetSeedRooms();
+        var westValues = rooms.Select(ParseWestCoordinate).ToList();
+        return westValues.Max() - westValues.Min() + 1;
+    }
+
+    private static int CalculateExpectedHeight()
+    {
+        var rooms = GetSeedRooms();
+        var northValues = rooms.Select(ParseNorthCoordinate).ToList();
+        return northValues.Max() - northValues.Min() + 1;
+    }
+
+    private static IReadOnlyCollection<string> GetSeedRooms()
+        => new[]
+        {
+            SeedDataDefaults.World.StartRoom,
+            SeedDataDefaults.World.SecondaryRoom,
+            SeedDataDefaults.World.SecondaryShardRoom,
+            SeedDataDefaults.Bots.SecondaryShardRoom,
+            SeedDataDefaults.Strongholds.SecondaryShardRoom,
+            SeedDataDefaults.Intents.SecondaryShardRoom
+        };
+
+    private static int ParseWestCoordinate(string room)
+    {
+        var span = room.AsSpan();
+        var start = span.IndexOfAny(WestEastSearch);
+        if (start < 0 || start + 1 >= span.Length)
+            return 0;
+
+        var remaining = span[(start + 1)..];
+        var end = remaining.IndexOfAny(NorthSouthSearch);
+        var numberSpan = end >= 0 ? remaining[..end] : remaining;
+        return int.TryParse(numberSpan, out var value) ? value : 0;
+    }
+
+    private static int ParseNorthCoordinate(string room)
+    {
+        var span = room.AsSpan();
+        var start = span.IndexOfAny(NorthSouthSearch);
+        if (start < 0 || start + 1 >= span.Length)
+            return 0;
+
+        var numberSpan = span[(start + 1)..];
+        return int.TryParse(numberSpan, out var value) ? value : 0;
     }
 }

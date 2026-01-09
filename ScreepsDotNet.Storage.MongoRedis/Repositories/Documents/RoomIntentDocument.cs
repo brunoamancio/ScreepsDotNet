@@ -14,6 +14,9 @@ public sealed class RoomIntentDocument
     [BsonElement("room")]
     public string? Room { get; set; }
 
+    [BsonElement("shard")]
+    public string? Shard { get; set; }
+
     [BsonElement("users")]
     [BsonDictionaryOptions(DictionaryRepresentation.Document)]
     public Dictionary<string, RoomIntentUserDocument>? Users { get; set; }

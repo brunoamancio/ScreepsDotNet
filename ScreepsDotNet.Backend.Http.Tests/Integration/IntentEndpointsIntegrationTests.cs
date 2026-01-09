@@ -55,6 +55,50 @@ public sealed class IntentEndpointsIntegrationTests(IntegrationTestHarness harne
     }
 
     [Fact]
+    public async Task AddObjectIntent_WithShard_PersistsShardScopedDocument()
+    {
+        var token = await LoginAsync();
+        _client.DefaultRequestHeaders.Add("X-Token", token);
+
+        var room = SeedDataDefaults.Intents.SecondaryShardRoom;
+        var shard = SeedDataDefaults.World.SecondaryShardName;
+        await EnsureRoomAsync(room, shard);
+
+        var request = new
+        {
+            room,
+            shard,
+            _id = SeedDataDefaults.Intents.SecondaryShardObjectId,
+            name = "move",
+            intent = new { id = SeedDataDefaults.Intents.SecondaryShardObjectId, direction = 6 }
+        };
+
+        var response = await _client.PostAsJsonAsync(ApiRoutes.Game.Intent.AddObject, request);
+        response.EnsureSuccessStatusCode();
+
+        var intents = harness.Database.GetCollection<BsonDocument>("rooms.intents");
+        var shardFilter = Builders<BsonDocument>.Filter.And(
+            Builders<BsonDocument>.Filter.Eq("room", room),
+            Builders<BsonDocument>.Filter.Eq("shard", shard));
+        var shardDocument = await intents.Find(shardFilter).FirstOrDefaultAsync();
+        Assert.NotNull(shardDocument);
+
+        var usersDoc = shardDocument["users"].AsBsonDocument;
+        var userIntentDoc = usersDoc[SeedDataDefaults.User.Id].AsBsonDocument;
+        var objectsManual = userIntentDoc["objectsManual"].AsBsonDocument;
+        var intentDoc = objectsManual[SeedDataDefaults.Intents.SecondaryShardObjectId].AsBsonDocument["move"].AsBsonDocument;
+        Assert.Equal(6, intentDoc["direction"].AsInt32);
+
+        var primaryFilter = Builders<BsonDocument>.Filter.And(
+            Builders<BsonDocument>.Filter.Eq("room", room),
+            Builders<BsonDocument>.Filter.Or(
+                Builders<BsonDocument>.Filter.Exists("shard", false),
+                Builders<BsonDocument>.Filter.Eq("shard", BsonNull.Value)));
+        var primaryDocument = await intents.Find(primaryFilter).FirstOrDefaultAsync();
+        Assert.Null(primaryDocument);
+    }
+
+    [Fact]
     public async Task AddObjectIntent_SafeModeActive_ReturnsError()
     {
         var token = await LoginAsync();
@@ -107,8 +151,8 @@ public sealed class IntentEndpointsIntegrationTests(IntegrationTestHarness harne
 
         var collection = harness.Database.GetCollection<BsonDocument>("users.intents");
         var document = await collection.Find(new BsonDocument("user", SeedDataDefaults.User.Id))
-                                       .FirstOrDefaultAsync()
-                                       ;
+                                       .Sort(Builders<BsonDocument>.Sort.Descending("_id"))
+                                       .FirstOrDefaultAsync();
 
         Assert.NotNull(document);
         var intents = document["intents"].AsBsonDocument;
@@ -137,6 +181,7 @@ public sealed class IntentEndpointsIntegrationTests(IntegrationTestHarness harne
 
         var collection = harness.Database.GetCollection<BsonDocument>("users.intents");
         var document = await collection.Find(new BsonDocument("user", SeedDataDefaults.User.Id))
+                                       .Sort(Builders<BsonDocument>.Sort.Descending("_id"))
                                        .FirstOrDefaultAsync();
 
         Assert.NotNull(document);
@@ -154,16 +199,19 @@ public sealed class IntentEndpointsIntegrationTests(IntegrationTestHarness harne
         return json.GetProperty("token").GetString()!;
     }
 
-    private async Task EnsureRoomAsync(string room)
+    private async Task EnsureRoomAsync(string room, string? shard = null)
     {
         var rooms = harness.Database.GetCollection<BsonDocument>("rooms");
+        var roomDoc = new BsonDocument
+        {
+            ["_id"] = room,
+            ["status"] = "normal",
+            ["openTime"] = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - 1000
+        };
+        if (shard is not null)
+            roomDoc["shard"] = shard;
         await rooms.ReplaceOneAsync(new BsonDocument("_id", room),
-                                    new BsonDocument
-                                    {
-                                        ["_id"] = room,
-                                        ["status"] = "normal",
-                                        ["openTime"] = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - 1000
-                                    },
+                                    roomDoc,
                                     new ReplaceOptions { IsUpsert = true });
     }
 }

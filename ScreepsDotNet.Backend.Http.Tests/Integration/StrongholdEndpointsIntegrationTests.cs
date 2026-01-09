@@ -148,6 +148,43 @@ public sealed class StrongholdEndpointsIntegrationTests(IntegrationTestHarness h
         Assert.Equal("stronghold not found", content.GetProperty("error").GetString());
     }
 
+    [Fact]
+    public async Task Expand_WithShardTargetsMatchingCore()
+    {
+        var token = await LoginAsync();
+        SetAuthHeader(token);
+
+        var room = SeedDataDefaults.Strongholds.SecondaryShardRoom;
+        var shard = SeedDataDefaults.World.SecondaryShardName;
+
+        var objectsCollection = harness.Database.GetCollection<BsonDocument>("rooms.objects");
+        var shardFilter = Builders<BsonDocument>.Filter.And(
+            Builders<BsonDocument>.Filter.Eq("room", room),
+            Builders<BsonDocument>.Filter.Eq("shard", shard),
+            Builders<BsonDocument>.Filter.Eq("type", "invaderCore"));
+        var seededCore = await objectsCollection.Find(shardFilter).FirstOrDefaultAsync();
+        Assert.NotNull(seededCore);
+        var originalNextExpand = seededCore["nextExpandTime"].AsInt32;
+
+        var nonShardFilter = Builders<BsonDocument>.Filter.And(
+            Builders<BsonDocument>.Filter.Eq("room", SeedDataDefaults.World.SecondaryRoom),
+            Builders<BsonDocument>.Filter.Eq("type", "invaderCore"));
+        var nonShardCoreBefore = await objectsCollection.Find(nonShardFilter).FirstOrDefaultAsync();
+
+        var response = await _client.PostAsJsonAsync(ApiRoutes.Game.Stronghold.Expand, new { room, shard });
+        response.EnsureSuccessStatusCode();
+
+        var updatedCore = await objectsCollection.Find(shardFilter).FirstOrDefaultAsync();
+        Assert.NotNull(updatedCore);
+        Assert.NotEqual(originalNextExpand, updatedCore["nextExpandTime"].AsInt32);
+
+        if (nonShardCoreBefore is not null && nonShardCoreBefore.TryGetValue("nextExpandTime", out var beforeValue)) {
+            var nonShardCoreAfter = await objectsCollection.Find(nonShardFilter).FirstOrDefaultAsync();
+            if (nonShardCoreAfter is not null && nonShardCoreAfter.TryGetValue("nextExpandTime", out var afterValue))
+                Assert.Equal(beforeValue, afterValue);
+        }
+    }
+
     private async Task<string> LoginAsync()
     {
         var request = new { ticket = SeedDataDefaults.Auth.Ticket };

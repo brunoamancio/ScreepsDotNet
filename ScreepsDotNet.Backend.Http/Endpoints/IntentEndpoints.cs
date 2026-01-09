@@ -3,6 +3,7 @@
 using Microsoft.AspNetCore.Mvc;
 using ScreepsDotNet.Backend.Core.Context;
 using ScreepsDotNet.Backend.Core.Services;
+using ScreepsDotNet.Backend.Core.Parsing;
 using ScreepsDotNet.Backend.Http.Authentication;
 using ScreepsDotNet.Backend.Http.Endpoints.Models;
 using ScreepsDotNet.Backend.Http.Routing;
@@ -32,8 +33,17 @@ internal static class IntentEndpoints
                                if (!request.IsValid())
                                    return Results.BadRequest(new ErrorResponse("invalid params"));
 
+                               if (!RoomReferenceParser.TryParse(request.Room, request.Shard, out var roomReference) || roomReference is null)
+                                   return Results.BadRequest(new ErrorResponse("invalid params"));
+
                                try {
-                                   await intentService.AddObjectIntentAsync(request.Room, request.ObjectId, request.IntentName, request.IntentPayload, userId, cancellationToken).ConfigureAwait(false);
+                                   await intentService.AddObjectIntentAsync(roomReference.RoomName,
+                                                                             roomReference.ShardName,
+                                                                             request.ObjectId,
+                                                                             request.IntentName,
+                                                                             request.IntentPayload,
+                                                                             userId,
+                                                                             cancellationToken).ConfigureAwait(false);
                                }
                                catch (IntentValidationException ex) {
                                    return Results.BadRequest(new ErrorResponse(ex.Message));

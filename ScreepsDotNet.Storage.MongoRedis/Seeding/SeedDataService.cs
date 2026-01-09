@@ -79,6 +79,8 @@ public sealed class SeedDataService : ISeedDataService
         await SeedMarketOrdersAsync(database, cancellationToken).ConfigureAwait(false);
         await SeedMarketStatsAsync(database, cancellationToken).ConfigureAwait(false);
         await SeedWorldInfoAsync(database, cancellationToken).ConfigureAwait(false);
+        await SeedRoomIntentsAsync(database, cancellationToken).ConfigureAwait(false);
+        await SeedUserIntentsAsync(database, cancellationToken).ConfigureAwait(false);
     }
 
     private static async Task DropCollectionIfExistsAsync(IMongoDatabase database, string name, CancellationToken cancellationToken)
@@ -205,6 +207,41 @@ public sealed class SeedDataService : ISeedDataService
                 Shard = SeedDataDefaults.World.SecondaryShardName,
                 MineralType = SeedDataDefaults.World.SecondaryShardMineralType,
                 Density = SeedDataDefaults.World.MineralDensity
+            },
+            new RoomObjectDocument
+            {
+                Id = ObjectId.GenerateNewId(),
+                Type = RoomObjectType.Controller.ToDocumentValue(),
+                Room = SeedDataDefaults.Bots.SecondaryShardRoom,
+                Shard = SeedDataDefaults.World.SecondaryShardName,
+                Level = 0
+            },
+            new RoomObjectDocument
+            {
+                Id = ObjectId.GenerateNewId(),
+                Type = RoomObjectType.Controller.ToDocumentValue(),
+                Room = SeedDataDefaults.Strongholds.SecondaryShardRoom,
+                Shard = SeedDataDefaults.World.SecondaryShardName,
+                Level = 0
+            },
+            new RoomObjectDocument
+            {
+                Id = ObjectId.GenerateNewId(),
+                Type = RoomObjectType.Controller.ToDocumentValue(),
+                Room = SeedDataDefaults.Intents.SecondaryShardRoom,
+                Shard = SeedDataDefaults.World.SecondaryShardName,
+                Level = 0
+            },
+            new RoomObjectDocument
+            {
+                Id = ObjectId.GenerateNewId(),
+                Type = StructureType.InvaderCore.ToDocumentValue(),
+                Room = SeedDataDefaults.Strongholds.SecondaryShardRoom,
+                Shard = SeedDataDefaults.World.SecondaryShardName,
+                Level = SeedDataDefaults.Strongholds.SecondaryShardCoreLevel,
+                StrongholdId = SeedDataDefaults.Strongholds.SecondaryShardStrongholdId,
+                TemplateName = SeedDataDefaults.Strongholds.SecondaryShardTemplate,
+                NextExpandTime = SeedDataDefaults.World.GameTime + 5000
             }
         };
 
@@ -299,6 +336,39 @@ public sealed class SeedDataService : ISeedDataService
             EnergyAvailable = 0
         };
 
+        var botShardRoom = new RoomDocument
+        {
+            Id = SeedDataDefaults.Bots.SecondaryShardRoom,
+            Shard = SeedDataDefaults.World.SecondaryShardName,
+            Status = "normal",
+            Novice = false,
+            RespawnArea = false,
+            Controller = new RoomControllerDocument { Level = 0 },
+            EnergyAvailable = 0
+        };
+
+        var strongholdShardRoom = new RoomDocument
+        {
+            Id = SeedDataDefaults.Strongholds.SecondaryShardRoom,
+            Shard = SeedDataDefaults.World.SecondaryShardName,
+            Status = "normal",
+            Novice = false,
+            RespawnArea = false,
+            Controller = new RoomControllerDocument { Level = 0 },
+            EnergyAvailable = 0
+        };
+
+        var intentShardRoom = new RoomDocument
+        {
+            Id = SeedDataDefaults.Intents.SecondaryShardRoom,
+            Shard = SeedDataDefaults.World.SecondaryShardName,
+            Status = "normal",
+            Novice = false,
+            RespawnArea = false,
+            Controller = new RoomControllerDocument { Level = 0 },
+            EnergyAvailable = 0
+        };
+
         return rooms.BulkWriteAsync([
             new ReplaceOneModel<RoomDocument>(Builders<RoomDocument>.Filter.Eq(room => room.Id, startRoom.Id), startRoom)
             {
@@ -309,6 +379,18 @@ public sealed class SeedDataService : ISeedDataService
                 IsUpsert = true
             },
             new ReplaceOneModel<RoomDocument>(Builders<RoomDocument>.Filter.Eq(room => room.Id, shardRoom.Id), shardRoom)
+            {
+                IsUpsert = true
+            },
+            new ReplaceOneModel<RoomDocument>(Builders<RoomDocument>.Filter.Eq(room => room.Id, botShardRoom.Id), botShardRoom)
+            {
+                IsUpsert = true
+            },
+            new ReplaceOneModel<RoomDocument>(Builders<RoomDocument>.Filter.Eq(room => room.Id, strongholdShardRoom.Id), strongholdShardRoom)
+            {
+                IsUpsert = true
+            },
+            new ReplaceOneModel<RoomDocument>(Builders<RoomDocument>.Filter.Eq(room => room.Id, intentShardRoom.Id), intentShardRoom)
             {
                 IsUpsert = true
             }
@@ -341,6 +423,30 @@ public sealed class SeedDataService : ISeedDataService
                 Shard = SeedDataDefaults.World.SecondaryShardName,
                 Type = "terrain",
                 Terrain = new string('2', 2500)
+            },
+            new RoomTerrainDocument
+            {
+                Id = ObjectId.GenerateNewId(),
+                Room = SeedDataDefaults.Bots.SecondaryShardRoom,
+                Shard = SeedDataDefaults.World.SecondaryShardName,
+                Type = "terrain",
+                Terrain = new string('0', 2500)
+            },
+            new RoomTerrainDocument
+            {
+                Id = ObjectId.GenerateNewId(),
+                Room = SeedDataDefaults.Strongholds.SecondaryShardRoom,
+                Shard = SeedDataDefaults.World.SecondaryShardName,
+                Type = "terrain",
+                Terrain = new string('0', 2500)
+            },
+            new RoomTerrainDocument
+            {
+                Id = ObjectId.GenerateNewId(),
+                Room = SeedDataDefaults.Intents.SecondaryShardRoom,
+                Shard = SeedDataDefaults.World.SecondaryShardName,
+                Type = "terrain",
+                Terrain = new string('0', 2500)
             }
         };
 
@@ -383,6 +489,76 @@ public sealed class SeedDataService : ISeedDataService
                                           document,
                                           new ReplaceOptions { IsUpsert = true },
                                           cancellationToken);
+    }
+
+    private static Task SeedRoomIntentsAsync(IMongoDatabase database, CancellationToken cancellationToken)
+    {
+        var collection = database.GetCollection<RoomIntentDocument>(RoomsIntentsCollectionName);
+        var documents = new[]
+        {
+            new RoomIntentDocument
+            {
+                Id = ObjectId.GenerateNewId(),
+                Room = SeedDataDefaults.World.StartRoom,
+                Shard = null,
+                Users = new Dictionary<string, RoomIntentUserDocument>(StringComparer.Ordinal)
+                {
+                    [SeedDataDefaults.User.Id] = new RoomIntentUserDocument
+                    {
+                        ObjectsManual = new Dictionary<string, BsonDocument>(StringComparer.Ordinal)
+                        {
+                            ["seed-controller"] = new BsonDocument("move", new BsonDocument
+                            {
+                                ["direction"] = 2,
+                                ["id"] = "seed-controller"
+                            })
+                        }
+                    }
+                }
+            },
+            new RoomIntentDocument
+            {
+                Id = ObjectId.GenerateNewId(),
+                Room = SeedDataDefaults.Intents.SecondaryShardRoom,
+                Shard = SeedDataDefaults.World.SecondaryShardName,
+                Users = new Dictionary<string, RoomIntentUserDocument>(StringComparer.Ordinal)
+                {
+                    [SeedDataDefaults.User.Id] = new RoomIntentUserDocument
+                    {
+                        ObjectsManual = new Dictionary<string, BsonDocument>(StringComparer.Ordinal)
+                        {
+                            [SeedDataDefaults.Intents.SecondaryShardObjectId] = new BsonDocument("move", new BsonDocument
+                            {
+                                ["direction"] = 1,
+                                ["id"] = SeedDataDefaults.Intents.SecondaryShardObjectId
+                            })
+                        }
+                    }
+                }
+            }
+        };
+
+        return collection.InsertManyAsync(documents, cancellationToken: cancellationToken);
+    }
+
+    private static Task SeedUserIntentsAsync(IMongoDatabase database, CancellationToken cancellationToken)
+    {
+        var collection = database.GetCollection<UserIntentDocument>(UsersIntentsCollectionName);
+        var document = new UserIntentDocument
+        {
+            Id = ObjectId.GenerateNewId(),
+            UserId = SeedDataDefaults.User.Id,
+            Intents = new BsonDocument("notify", new BsonArray
+            {
+                new BsonDocument
+                {
+                    ["message"] = "Seed message",
+                    ["groupInterval"] = 5
+                }
+            })
+        };
+
+        return collection.InsertOneAsync(document, cancellationToken: cancellationToken);
     }
 
     private static Task SeedMarketOrdersAsync(IMongoDatabase database, CancellationToken cancellationToken)

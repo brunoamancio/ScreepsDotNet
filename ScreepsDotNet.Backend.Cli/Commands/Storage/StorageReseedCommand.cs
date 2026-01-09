@@ -1,6 +1,6 @@
 ﻿namespace ScreepsDotNet.Backend.Cli.Commands.Storage;
 
-using System.ComponentModel;
+using global::System.ComponentModel;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using ScreepsDotNet.Backend.Core.Seeding;

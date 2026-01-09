@@ -40,6 +40,25 @@ public static class SeedDataDefaults
         public const int TickDuration = 650;
     }
 
+    public static class Bots
+    {
+        public const string SecondaryShardRoom = "W60N60";
+    }
+
+    public static class Strongholds
+    {
+        public const string SecondaryShardRoom = "W60N59";
+        public const string SecondaryShardStrongholdId = "shard1_stronghold_seed";
+        public const string SecondaryShardTemplate = "bunkerSeed";
+        public const int SecondaryShardCoreLevel = 3;
+    }
+
+    public static class Intents
+    {
+        public const string SecondaryShardRoom = "W60N58";
+        public const string SecondaryShardObjectId = "seed-intent-object";
+    }
+
     public static class Money
     {
         public const string Description = "Sold energy";

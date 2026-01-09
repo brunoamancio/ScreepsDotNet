@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 /// </summary>
 public interface IIntentService
 {
-    Task AddObjectIntentAsync(string roomName, string objectId, string intentName, JsonElement payload, string userId, CancellationToken cancellationToken = default);
+    Task AddObjectIntentAsync(string roomName, string? shardName, string objectId, string intentName, JsonElement payload, string userId, CancellationToken cancellationToken = default);
 
     Task AddGlobalIntentAsync(string intentName, JsonElement payload, string userId, CancellationToken cancellationToken = default);
 }

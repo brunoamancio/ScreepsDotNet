@@ -8,6 +8,9 @@ public sealed record AddObjectIntentRequest
     [JsonPropertyName("room")]
     public string Room { get; init; } = string.Empty;
 
+    [JsonPropertyName("shard")]
+    public string? Shard { get; init; }
+
     [JsonPropertyName("_id")]
     public string ObjectId { get; init; } = string.Empty;
 
