@@ -313,6 +313,8 @@ public sealed class MongoPowerCreepService : IPowerCreepService
         var storeCapacity = roomDoc?.StoreCapacity ?? document.StoreCapacity ?? 0;
         var hitsMax = roomDoc?.HitsMax ?? document.HitsMax ?? 0;
 
+        var shard = roomDoc?.Shard ?? document.Shard;
+
         return new PowerCreepListItem(
             document.Id.ToString(),
             document.Name,
@@ -323,7 +325,7 @@ public sealed class MongoPowerCreepService : IPowerCreepService
             storeCapacity,
             document.SpawnCooldownTime,
             document.DeleteTime,
-            document.Shard,
+            shard,
             powers,
             roomDoc?.Room,
             roomDoc?.X,

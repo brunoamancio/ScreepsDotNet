@@ -168,7 +168,8 @@ public sealed class SeedDataService : ISeedDataService
                 Id = ObjectId.Parse(SeedDataDefaults.PowerCreeps.ActiveId),
                 UserId = SeedDataDefaults.User.Id,
                 Type = RoomObjectType.PowerCreep.ToDocumentValue(),
-                Room = SeedDataDefaults.World.StartRoom,
+                Room = SeedDataDefaults.PowerCreeps.ActiveRoom,
+                Shard = SeedDataDefaults.PowerCreeps.ActiveShardName,
                 X = SeedDataDefaults.PowerCreeps.ActiveX,
                 Y = SeedDataDefaults.PowerCreeps.ActiveY,
                 Hits = SeedDataDefaults.PowerCreeps.ActiveHits,
@@ -503,11 +504,11 @@ public sealed class SeedDataService : ISeedDataService
                 Shard = null,
                 Users = new Dictionary<string, RoomIntentUserDocument>(StringComparer.Ordinal)
                 {
-                    [SeedDataDefaults.User.Id] = new RoomIntentUserDocument
+                    [SeedDataDefaults.User.Id] = new()
                     {
                         ObjectsManual = new Dictionary<string, BsonDocument>(StringComparer.Ordinal)
                         {
-                            ["seed-controller"] = new BsonDocument("move", new BsonDocument
+                            ["seed-controller"] = new("move", new BsonDocument
                             {
                                 ["direction"] = 2,
                                 ["id"] = "seed-controller"
@@ -523,11 +524,11 @@ public sealed class SeedDataService : ISeedDataService
                 Shard = SeedDataDefaults.World.SecondaryShardName,
                 Users = new Dictionary<string, RoomIntentUserDocument>(StringComparer.Ordinal)
                 {
-                    [SeedDataDefaults.User.Id] = new RoomIntentUserDocument
+                    [SeedDataDefaults.User.Id] = new()
                     {
                         ObjectsManual = new Dictionary<string, BsonDocument>(StringComparer.Ordinal)
                         {
-                            [SeedDataDefaults.Intents.SecondaryShardObjectId] = new BsonDocument("move", new BsonDocument
+                            [SeedDataDefaults.Intents.SecondaryShardObjectId] = new("move", new BsonDocument
                             {
                                 ["direction"] = 1,
                                 ["id"] = SeedDataDefaults.Intents.SecondaryShardObjectId
@@ -650,6 +651,7 @@ public sealed class SeedDataService : ISeedDataService
                 },
                 StoreCapacity = SeedDataDefaults.PowerCreeps.ActiveStoreCapacity,
                 SpawnCooldownTime = null,
+                Shard = SeedDataDefaults.PowerCreeps.ActiveShardName,
                 Powers = new Dictionary<string, PowerCreepPowerDocument>(StringComparer.Ordinal)
                 {
                     ["1"] = new() { Level = 2 },

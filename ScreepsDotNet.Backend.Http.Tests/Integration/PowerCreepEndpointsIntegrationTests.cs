@@ -34,7 +34,8 @@ public sealed class PowerCreepEndpointsIntegrationTests(IntegrationTestHarness h
         Assert.NotEmpty(creeps);
         var active = creeps.FirstOrDefault(item => item.GetProperty("_id").GetString() == SeedDataDefaults.PowerCreeps.ActiveId);
         Assert.NotEqual(JsonValueKind.Undefined, active.ValueKind);
-        Assert.Equal(SeedDataDefaults.World.StartRoom, active.GetProperty("room").GetString());
+        Assert.Equal(SeedDataDefaults.PowerCreeps.ActiveRoom, active.GetProperty("room").GetString());
+        Assert.Equal(SeedDataDefaults.PowerCreeps.ActiveShardName, active.GetProperty("shard").GetString());
     }
 
     [Fact]

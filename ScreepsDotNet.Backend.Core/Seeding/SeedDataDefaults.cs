@@ -80,6 +80,8 @@ public static class SeedDataDefaults
         public const string ActiveName = "IntegrationOperator";
         public const string DormantName = "BenchOperator";
         public const string ClassName = "operator";
+        public const string ActiveRoom = World.SecondaryShardRoom;
+        public const string ActiveShardName = World.SecondaryShardName;
         public const int ActiveX = 20;
         public const int ActiveY = 20;
         public const int ActiveHits = 2800;
