@@ -2,8 +2,10 @@
 
 using System.Collections.Generic;
 using ScreepsDotNet.Backend.Cli.Commands.World;
+using ScreepsDotNet.Backend.Cli.Formatting;
 using ScreepsDotNet.Backend.Core.Models;
 using ScreepsDotNet.Backend.Core.Repositories;
+using Spectre.Console;
 
 public sealed class WorldCommandTests
 {
@@ -11,10 +13,10 @@ public sealed class WorldCommandTests
     public async Task WorldStatsCommand_ForwardsRoomsAndStat()
     {
         var repository = new FakeWorldStatsRepository();
-        var command = new WorldStatsCommand(repository);
+        var command = new WorldStatsCommand(repository, new TestFormatter());
         var settings = new WorldStatsCommand.Settings
         {
-            Rooms = new[] { "W1N1", "shard2/W2N2" },
+            Rooms = ["W1N1", "shard2/W2N2"],
             StatName = "owners3",
             OutputJson = true
         };
@@ -33,7 +35,7 @@ public sealed class WorldCommandTests
     public async Task WorldOverviewCommand_PassesNormalizedReference()
     {
         var repository = new FakeRoomOverviewRepository();
-        var command = new WorldOverviewCommand(repository);
+        var command = new WorldOverviewCommand(repository, new TestFormatter());
         var settings = new WorldOverviewCommand.Settings
         {
             RoomName = "shard3/W7S2",
@@ -70,6 +72,25 @@ public sealed class WorldCommandTests
         {
             Reference = room;
             return Task.FromResult<RoomOverview?>(new RoomOverview(room, null));
+        }
+    }
+    private sealed class TestFormatter : ICommandOutputFormatter
+    {
+        public List<string> JsonPayloads { get; } = [];
+
+        public void WriteJson<T>(T payload)
+            => JsonPayloads.Add(payload?.ToString() ?? string.Empty);
+
+        public void WriteTable(Table table)
+        {
+        }
+
+        public void WriteKeyValueTable(IEnumerable<(string Key, string Value)> rows, string? title = null)
+        {
+        }
+
+        public void WriteMarkdownTable(string? title, IReadOnlyList<string> headers, IEnumerable<IReadOnlyList<string>> rows)
+        {
         }
     }
 }

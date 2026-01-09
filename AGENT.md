@@ -15,6 +15,8 @@
   - `user memory get --user-id <id> [--segment <0-99>] [--json]`
   - `user memory set --user-id <id> (--value <json> [--path <path>] | --segment <0-99> --data <text>)`
   - `world dump --room <name> [--decoded] [--json]`
+  - `world stats --room <name> [--stat owners1] [--json]`
+  - `world overview --room <name> [--json]`
   - `system status|pause|resume|message|reset`
   - `system tick get [--json]`
   - `system tick set --ms <milliseconds>`
@@ -22,6 +24,8 @@
   - `strongholds templates|spawn|expand` (all accept either `shard/Room` syntax or `--shard <name>` just like the HTTP endpoints).
   - `flag create|change-color|remove`
   - `invader create|remove`
+  - `auth issue|resolve`
+- All CLI handlers derive from `CommandHandler<TSettings>` and write output through `ICommandOutputFormatter`, so new commands get consistent logging, cancellation, and JSON/table rendering by default. Inject the formatter instead of writing directly to `AnsiConsole` unless you truly need custom output.
 - Every CLI verb that accepts a room identifier now shares the same shard-aware parser as the HTTP surface: operators can specify either the legacy inline form (`shard2/W20N20`) or pass `--shard shard2` alongside the room name. The parser trims/uppercases room names, rejects malformed identifiers, and keeps CLI + HTTP behavior in sync.
 - `ScreepsDotNet.Storage.MongoRedis/` – MongoDB/Redis infrastructure (adapter + repositories) used by the HTTP host.
   - `.editorconfig`, `.globalconfig`, `.gitattributes`, `Directory.Build.props` – shared tooling settings.

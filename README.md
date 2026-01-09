@@ -100,6 +100,14 @@ Example:
 dotnet run --project ScreepsDotNet.Backend.Cli -- bots spawn --bot invader --room W1N1 --cpu 150 --gcl 3
 ```
 
+### World commands
+
+| Command | Purpose | Key flags |
+| --- | --- | --- |
+| `world dump --room <name> [--room <name> ...] [--shard <name>] [--decoded] [--json]` | Export terrain documents (encoded or decoded) for one or more rooms. | Accepts repeated `--room` flags; `--decoded` expands 2 500 tiles. |
+| `world stats --room <name> [--room <name> ...] [--shard <name>] [--stat <owners1\|power5\|...>] [--json]` | Query `/api/game/map-stats` for the requested rooms, including ownership, signs, safe-mode status, and mineral hints. | Validates the legacy `ownersN`/`powerN` suffix pattern before hitting storage. |
+| `world overview --room <name> [--shard <name>] [--json]` | Display controller ownership for a single room (mirrors `/api/game/room-overview`). | Shows `(unowned)` when the controller has no owner/reservation. |
+
 ### Stronghold commands
 
 | Command | Purpose | Key flags |
@@ -162,6 +170,18 @@ Example:
 ```powershell
 dotnet run --project ScreepsDotNet.Backend.Cli -- map generate --room W10N5 --shard shard1 --sources 3 --terrain swampHeavy --keeper-lairs --overwrite --json
 ```
+
+### Auth commands
+
+| Command | Purpose | Key flags |
+| --- | --- | --- |
+| `auth issue --user-id <id> [--json]` | Mint a token for the specified user via the shared Redis token service (handy for HTTP smoke tests). | Token prints as JSON or a key/value table. |
+| `auth resolve --token <value> [--json]` | Resolve an auth token back to its user id, matching the logic in the HTTP middleware. | Exit code `1` if the token is missing or expired. |
+
+### CLI architecture notes
+
+- All commands derive from `CommandHandler<TSettings>`, which logs start/finish events, links cancellation tokens to `ConsoleLifetime`, and normalizes cancellation/failure exit codes.
+- Use `ICommandOutputFormatter` (registered as `CommandOutputFormatter`) for `--json`, table, or Markdown output instead of sprinkling `AnsiConsole` calls across commands. This keeps formatting consistent for both operators and tests.
 
 ## Storage Notes
 

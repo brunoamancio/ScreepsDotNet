@@ -331,15 +331,15 @@ public sealed class WorldEndpointsIntegrationTests(IntegrationTestHarness harnes
     }
 
     private static IReadOnlyCollection<string> GetSeedRooms()
-        => new[]
-        {
+        =>
+        [
             SeedDataDefaults.World.StartRoom,
             SeedDataDefaults.World.SecondaryRoom,
             SeedDataDefaults.World.SecondaryShardRoom,
             SeedDataDefaults.Bots.SecondaryShardRoom,
             SeedDataDefaults.Strongholds.SecondaryShardRoom,
             SeedDataDefaults.Intents.SecondaryShardRoom
-        };
+        ];
 
     private static int ParseWestCoordinate(string room)
     {

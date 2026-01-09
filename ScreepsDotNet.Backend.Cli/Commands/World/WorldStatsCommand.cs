@@ -5,7 +5,6 @@ using global::System.Collections.Generic;
 using global::System.ComponentModel;
 using global::System.Globalization;
 using global::System.Linq;
-using global::System.Text.Json;
 using global::System.Text.RegularExpressions;
 using ScreepsDotNet.Backend.Core.Models;
 using ScreepsDotNet.Backend.Core.Parsing;
@@ -13,16 +12,18 @@ using ScreepsDotNet.Backend.Core.Repositories;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
-internal sealed partial class WorldStatsCommand(IWorldStatsRepository statsRepository, ILogger<WorldStatsCommand>? logger = null, IHostApplicationLifetime? lifetime = null)
+internal sealed partial class WorldStatsCommand(
+    IWorldStatsRepository statsRepository,
+    ICommandOutputFormatter outputFormatter,
+    ILogger<WorldStatsCommand>? logger = null,
+    IHostApplicationLifetime? lifetime = null)
     : CommandHandler<WorldStatsCommand.Settings>(logger, lifetime)
 {
-    private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
-
     public sealed class Settings : CommandSettings
     {
         [CommandOption("--room <NAME>")]
         [Description("Room identifier (e.g., W1N1). Repeat for multiple rooms.")]
-        public string[] Rooms { get; init; } = Array.Empty<string>();
+        public string[] Rooms { get; init; } = [];
 
         [CommandOption("--stat <NAME>")]
         [Description("Legacy stat bucket (e.g., owners1, power5).")]
@@ -69,20 +70,20 @@ internal sealed partial class WorldStatsCommand(IWorldStatsRepository statsRepos
         var result = await statsRepository.GetMapStatsAsync(request, cancellationToken).ConfigureAwait(false);
 
         if (settings.OutputJson) {
-            AnsiConsole.WriteLine(JsonSerializer.Serialize(result, JsonOptions));
+            outputFormatter.WriteJson(result);
             return 0;
         }
 
-        RenderTable(result);
+        RenderTable(result, outputFormatter);
         return 0;
     }
 
-    private static void RenderTable(MapStatsResult result)
+    private static void RenderTable(MapStatsResult result, ICommandOutputFormatter outputFormatter)
     {
-        AnsiConsole.MarkupLine($"[grey]Game time:[/] [bold]{result.GameTime}[/]");
+        outputFormatter.WriteKeyValueTable([("Game time", result.GameTime.ToString(CultureInfo.InvariantCulture))]);
 
         if (result.Stats.Count == 0) {
-            AnsiConsole.MarkupLine("[yellow]No stats returned for the requested rooms.[/]");
+            outputFormatter.WriteKeyValueTable([("Status", "No stats returned for requested rooms")]);
             return;
         }
 
@@ -96,7 +97,7 @@ internal sealed partial class WorldStatsCommand(IWorldStatsRepository statsRepos
             table.AddRow(room.RoomName, room.Status ?? "unknown", ownerLabel, level, safeMode, mineral);
         }
 
-        AnsiConsole.Write(table);
+        outputFormatter.WriteTable(table);
     }
 
     private static string ResolveOwner(RoomOwnershipInfo? ownership, IReadOnlyDictionary<string, MapStatsUser> users)

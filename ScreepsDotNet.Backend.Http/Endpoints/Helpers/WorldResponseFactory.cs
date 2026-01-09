@@ -49,7 +49,7 @@ internal static class WorldResponseFactory
         var payload = entries.Select(entry =>
         {
             if (!string.Equals(entry.Type, "terrain", StringComparison.OrdinalIgnoreCase) || string.IsNullOrEmpty(entry.Terrain))
-                return new RoomTerrainDecodedEntryResponse(entry.RoomName, entry.Type, Array.Empty<TerrainTileResponse>());
+                return new RoomTerrainDecodedEntryResponse(entry.RoomName, entry.Type, []);
 
             var tiles = TerrainEncodingHelper.Decode(entry.Terrain!);
             return new RoomTerrainDecodedEntryResponse(entry.RoomName, entry.Type, tiles);

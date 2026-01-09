@@ -1,18 +1,19 @@
 ﻿namespace ScreepsDotNet.Backend.Cli.Commands.World;
 
 using global::System.ComponentModel;
-using global::System.Text.Json;
 using ScreepsDotNet.Backend.Core.Models;
 using ScreepsDotNet.Backend.Core.Parsing;
 using ScreepsDotNet.Backend.Core.Repositories;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
-internal sealed class WorldOverviewCommand(IRoomOverviewRepository overviewRepository, ILogger<WorldOverviewCommand>? logger = null, IHostApplicationLifetime? lifetime = null)
+internal sealed class WorldOverviewCommand(
+    IRoomOverviewRepository overviewRepository,
+    ICommandOutputFormatter outputFormatter,
+    ILogger<WorldOverviewCommand>? logger = null,
+    IHostApplicationLifetime? lifetime = null)
     : CommandHandler<WorldOverviewCommand.Settings>(logger, lifetime)
 {
-    private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
-
     public sealed class Settings : CommandSettings
     {
         [CommandOption("--room <NAME>")]
@@ -47,23 +48,22 @@ internal sealed class WorldOverviewCommand(IRoomOverviewRepository overviewRepos
         var overview = await overviewRepository.GetRoomOverviewAsync(reference, cancellationToken).ConfigureAwait(false);
 
         if (settings.OutputJson) {
-            var payload = new
+            outputFormatter.WriteJson(new
             {
                 room = new { reference.RoomName, reference.ShardName },
                 overview?.Owner
-            };
-            AnsiConsole.WriteLine(JsonSerializer.Serialize(payload, JsonOptions));
+            });
             return 0;
         }
 
         if (overview?.Owner is null) {
-            AnsiConsole.MarkupLine($"[yellow]{reference.RoomName}[/] has no owner.");
+            outputFormatter.WriteKeyValueTable([("Room", FormatRoom(reference)), ("Owner", "(unowned)")]);
             return 0;
         }
 
         var table = new Table().AddColumns("Room", "Owner", "User Id");
         table.AddRow(FormatRoom(reference), overview.Owner.Username, overview.Owner.Id);
-        AnsiConsole.Write(table);
+        outputFormatter.WriteTable(table);
         return 0;
     }
 

@@ -1,16 +1,17 @@
 ﻿namespace ScreepsDotNet.Backend.Cli.Commands.Auth;
 
 using global::System.ComponentModel;
-using global::System.Text.Json;
 using ScreepsDotNet.Backend.Core.Services;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
-internal sealed class AuthResolveCommand(ITokenService tokenService, ILogger<AuthResolveCommand>? logger = null, IHostApplicationLifetime? lifetime = null)
+internal sealed class AuthResolveCommand(
+    ITokenService tokenService,
+    ICommandOutputFormatter outputFormatter,
+    ILogger<AuthResolveCommand>? logger = null,
+    IHostApplicationLifetime? lifetime = null)
     : CommandHandler<AuthResolveCommand.Settings>(logger, lifetime)
 {
-    private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
-
     public sealed class Settings : CommandSettings
     {
         [CommandOption("--token <VALUE>")]
@@ -32,16 +33,16 @@ internal sealed class AuthResolveCommand(ITokenService tokenService, ILogger<Aut
         var userId = await tokenService.ResolveUserIdAsync(settings.Token!, cancellationToken).ConfigureAwait(false);
         if (string.IsNullOrWhiteSpace(userId)) {
             Logger.LogWarning("Token could not be resolved.");
-            AnsiConsole.MarkupLine("[red]Token not found or expired.[/]");
+            outputFormatter.WriteKeyValueTable([("Token", settings.Token!), ("Status", "not found / expired")]);
             return 1;
         }
 
         if (settings.OutputJson) {
-            AnsiConsole.WriteLine(JsonSerializer.Serialize(new { userId }, JsonOptions));
+            outputFormatter.WriteJson(new { userId });
             return 0;
         }
 
-        AnsiConsole.MarkupLine("[green]Token belongs to user:[/] {0}", userId);
+        outputFormatter.WriteKeyValueTable([("Token", settings.Token!), ("User Id", userId)], "Token owner");
         return 0;
     }
 }

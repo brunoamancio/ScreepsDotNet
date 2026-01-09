@@ -1,7 +1,10 @@
 ﻿namespace ScreepsDotNet.Backend.Cli.Tests.Commands;
 
+using System.Collections.Generic;
 using ScreepsDotNet.Backend.Cli.Commands.Auth;
+using ScreepsDotNet.Backend.Cli.Formatting;
 using ScreepsDotNet.Backend.Core.Services;
+using Spectre.Console;
 
 public sealed class AuthCommandTests
 {
@@ -9,7 +12,7 @@ public sealed class AuthCommandTests
     public async Task AuthIssueCommand_IssuesTokenForUser()
     {
         var service = new FakeTokenService();
-        var command = new AuthIssueCommand(service);
+        var command = new AuthIssueCommand(service, new TestFormatter());
         var settings = new AuthIssueCommand.Settings
         {
             UserId = "user-1",
@@ -26,7 +29,7 @@ public sealed class AuthCommandTests
     public async Task AuthResolveCommand_ReturnsErrorWhenTokenMissing()
     {
         var service = new FakeTokenService { ResolveResult = null };
-        var command = new AuthResolveCommand(service);
+        var command = new AuthResolveCommand(service, new TestFormatter());
         var settings = new AuthResolveCommand.Settings
         {
             Token = "missing-token"
@@ -55,6 +58,24 @@ public sealed class AuthCommandTests
         {
             LastResolvedToken = token;
             return Task.FromResult(ResolveResult);
+        }
+    }
+    private sealed class TestFormatter : ICommandOutputFormatter
+    {
+        public void WriteJson<T>(T payload)
+        {
+        }
+
+        public void WriteTable(Table table)
+        {
+        }
+
+        public void WriteKeyValueTable(IEnumerable<(string Key, string Value)> rows, string? title = null)
+        {
+        }
+
+        public void WriteMarkdownTable(string? title, IReadOnlyList<string> headers, IEnumerable<IReadOnlyList<string>> rows)
+        {
         }
     }
 }

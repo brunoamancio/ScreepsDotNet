@@ -246,7 +246,7 @@ internal sealed class FakeUserRepository : IUserRepository
 sealed file class FakeRoomRepository : IRoomRepository
 {
     public Task<IReadOnlyCollection<RoomSummary>> GetOwnedRoomsAsync(CancellationToken cancellationToken = default)
-        => Task.FromResult<IReadOnlyCollection<RoomSummary>>(Array.Empty<RoomSummary>());
+        => Task.FromResult<IReadOnlyCollection<RoomSummary>>([]);
 }
 
 internal sealed class FakeUserWorldRepository : IUserWorldRepository

@@ -253,7 +253,7 @@ internal static class WorldEndpoints
 
     private static bool IsValidMapStatsRequest(MapStatsRequestModel? request, out IReadOnlyList<RoomReference> rooms)
     {
-        rooms = Array.Empty<RoomReference>();
+        rooms = [];
         if (request?.Rooms is null || !MapStatsRequestValidator.IsValid(request))
             return false;
 

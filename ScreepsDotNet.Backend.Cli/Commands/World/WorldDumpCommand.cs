@@ -86,7 +86,7 @@ internal sealed class WorldDumpCommand(IRoomTerrainRepository terrainRepository,
     private static IReadOnlyList<object> DecodeTerrain(string? encoded)
     {
         if (string.IsNullOrEmpty(encoded))
-            return Array.Empty<object>();
+            return [];
 
         var tiles = new List<object>(encoded.Length);
         for (var index = 0; index < encoded.Length && index < 2500; index++) {

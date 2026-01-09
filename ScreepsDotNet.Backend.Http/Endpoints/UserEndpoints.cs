@@ -461,7 +461,7 @@ internal static class UserEndpoints
                               var controllerRooms = await userWorldRepository.GetControllerRoomsAsync(user.Id, cancellationToken).ConfigureAwait(false);
                               var roomsPayload = controllerRooms.Count > 0
                                   ? FormatRoomReferences(controllerRooms)
-                                  : Array.Empty<string>();
+                                  : [];
 
                               return Results.Ok(new Dictionary<string, object?>
                               {
@@ -739,7 +739,7 @@ internal static class UserEndpoints
                               var rooms = await userWorldRepository.GetControllerRoomsAsync(userId, cancellationToken).ConfigureAwait(false);
                               var roomsPayload = rooms.Count > 0
                                   ? FormatRoomReferences(rooms)
-                                  : Array.Empty<string>();
+                                  : [];
                               return Results.Ok(new Dictionary<string, object?>
                               {
                                   [UserResponseFields.Rooms] = roomsPayload

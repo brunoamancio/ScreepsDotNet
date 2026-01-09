@@ -12,7 +12,7 @@ public sealed class EmbeddedStrongholdTemplateProvider : IStrongholdTemplateProv
     private static readonly JsonSerializerOptions SerializerOptions = new(JsonSerializerDefaults.Web);
     private readonly SemaphoreSlim _lock = new(1, 1);
     private IReadOnlyDictionary<string, StrongholdTemplate> _templates = new Dictionary<string, StrongholdTemplate>(StringComparer.OrdinalIgnoreCase);
-    private IReadOnlyList<string> _depositTypes = Array.Empty<string>();
+    private IReadOnlyList<string> _depositTypes = [];
     private bool _initialized;
 
     public async Task<IReadOnlyList<StrongholdTemplate>> GetTemplatesAsync(CancellationToken cancellationToken = default)

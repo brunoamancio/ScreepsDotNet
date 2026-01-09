@@ -38,7 +38,7 @@ public sealed class MongoPowerCreepService : IPowerCreepService
                                        .ConfigureAwait(false);
 
         if (creeps.Count == 0)
-            return Array.Empty<PowerCreepListItem>();
+            return [];
 
         var creepIds = creeps.Select(creep => creep.Id).ToList();
         var roomObjects = await _roomObjects.Find(doc => creepIds.Contains(doc.Id))

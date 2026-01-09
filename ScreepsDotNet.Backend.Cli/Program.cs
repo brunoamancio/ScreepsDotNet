@@ -91,6 +91,7 @@ static void ConfigureServices(HostApplicationBuilder builder)
     builder.Services.AddSingleton<IUserMessageService, MongoUserMessageService>();
     builder.Services.AddSingleton<IModManifestProvider, FileSystemModManifestProvider>();
     builder.Services.AddSingleton<IIntentSchemaCatalog, ManifestIntentSchemaCatalog>();
+    builder.Services.AddSingleton<ICommandOutputFormatter, CommandOutputFormatter>();
     builder.Services.AddSingleton<ITokenService, RedisTokenService>();
 
     builder.Services.AddSingleton<ICliApplication, CliApplication>();

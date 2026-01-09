@@ -1,16 +1,17 @@
 ﻿namespace ScreepsDotNet.Backend.Cli.Commands.Auth;
 
 using global::System.ComponentModel;
-using global::System.Text.Json;
 using ScreepsDotNet.Backend.Core.Services;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
-internal sealed class AuthIssueCommand(ITokenService tokenService, ILogger<AuthIssueCommand>? logger = null, IHostApplicationLifetime? lifetime = null)
+internal sealed class AuthIssueCommand(
+    ITokenService tokenService,
+    ICommandOutputFormatter outputFormatter,
+    ILogger<AuthIssueCommand>? logger = null,
+    IHostApplicationLifetime? lifetime = null)
     : CommandHandler<AuthIssueCommand.Settings>(logger, lifetime)
 {
-    private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
-
     public sealed class Settings : CommandSettings
     {
         [CommandOption("--user-id <ID>")]
@@ -32,11 +33,11 @@ internal sealed class AuthIssueCommand(ITokenService tokenService, ILogger<AuthI
         var token = await tokenService.IssueTokenAsync(settings.UserId!, cancellationToken).ConfigureAwait(false);
 
         if (settings.OutputJson) {
-            AnsiConsole.WriteLine(JsonSerializer.Serialize(new { token }, JsonOptions));
+            outputFormatter.WriteJson(new { token });
             return 0;
         }
 
-        AnsiConsole.MarkupLine("[green]Issued token:[/] {0}", token);
+        outputFormatter.WriteKeyValueTable([("Token", token)], "Issued token");
         return 0;
     }
 }
