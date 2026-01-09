@@ -126,11 +126,13 @@ public sealed class MongoBotControlService(IMongoDatabaseProvider databaseProvid
                                                     cancellationToken: cancellationToken)
                                     .ConfigureAwait(false);
 
+        var roomFilter = BuildRoomDocumentFilter(normalizedRoom, normalizedShard);
         var roomUpdate = Builders<RoomDocument>.Update
                                                .Set(doc => doc.Status, "normal")
-                                               .Set(doc => doc.InvaderGoal, DefaultInvaderGoal);
+                                               .Set(doc => doc.InvaderGoal, DefaultInvaderGoal)
+                                               .Set(doc => doc.Shard, normalizedShard);
 
-        await _roomsCollection.UpdateOneAsync(Builders<RoomDocument>.Filter.Eq(doc => doc.Id, roomName),
+        await _roomsCollection.UpdateOneAsync(roomFilter,
                                               roomUpdate,
                                               new UpdateOptions { IsUpsert = true },
                                               cancellationToken)

@@ -103,13 +103,13 @@ dotnet run --project ScreepsDotNet.Backend.Cli -- bots spawn --bot invader --roo
 | Command | Purpose | Key flags |
 | --- | --- | --- |
 | `strongholds templates [--json]` | Display the embedded stronghold templates and deposit types. | |
-| `strongholds spawn --room <name> [--template <name>] [--x <0-49> --y <0-49>] [--owner <userId>] [--deploy-delay <ticks>] [--json]` | Place an NPC stronghold in the room, optionally forcing template/coords. | Coordinates default to a valid placement if omitted. |
-| `strongholds expand --room <name> [--json]` | Force the invader core in the room to queue its next expansion. | Exit code `1` if no eligible core exists. |
+| `strongholds spawn --room <name> [--shard <name>] [--template <name>] [--x <0-49> --y <0-49>] [--owner <userId>] [--deploy-delay <ticks>] [--json]` | Place an NPC stronghold in the room, optionally forcing template/coords and shard. | Coordinates default to a valid placement if omitted. |
+| `strongholds expand --room <name> [--shard <name>] [--json]` | Force the invader core in the room to queue its next expansion. | Exit code `1` if no eligible core exists. |
 
 Example:
 
 ```powershell
-dotnet run --project ScreepsDotNet.Backend.Cli -- strongholds spawn --room W5N3 --template bunker3 --deploy-delay 10
+dotnet run --project ScreepsDotNet.Backend.Cli -- strongholds spawn --room W5N3 --shard shard1 --template bunker3 --deploy-delay 10
 ```
 
 ### System commands

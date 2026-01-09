@@ -19,7 +19,7 @@
   - `system tick get [--json]`
   - `system tick set --ms <milliseconds>`
   - `bots list|spawn|reload|remove`
-  - `strongholds templates|spawn|expand`
+  - `strongholds templates|spawn|expand` (all accept either `shard/Room` syntax or `--shard <name>` just like the HTTP endpoints).
   - `flag create|change-color|remove`
   - `invader create|remove`
 - Every CLI verb that accepts a room identifier now shares the same shard-aware parser as the HTTP surface: operators can specify either the legacy inline form (`shard2/W20N20`) or pass `--shard shard2` alongside the room name. The parser trims/uppercases room names, rejects malformed identifiers, and keeps CLI + HTTP behavior in sync.
@@ -39,7 +39,7 @@
 - Legacy helper routes `/api/game/room-overview`, `/api/game/gen-unique-flag-name`, `/api/game/check-unique-flag-name`, and `/api/game/set-notify-when-attacked` are now wired to Mongo services so the official client’s world panels and safety toggles work identically to backend-local (with shard-aware room parsing).
 - `/api/game/power-creeps/*` – legacy parity for list/create/delete/cancel-delete/upgrade/rename/experimentation, all backed by the new `MongoPowerCreepService` so the responses include `_id`, shard/room metadata, fatigue, store contents, and cooldown/delete timestamps exactly like `backend-local`.
 - `/api/game/add-object-intent` + `/api/game/add-global-intent` – new intent endpoints backed by `MongoIntentService`, reusing the legacy sanitization rules (string/number/boolean transforms, price scaling, body-part filtering) and enforcing the safe-mode guard before storing data in `rooms.intents` / `users.intents`.
-- `/api/game/bot/*`, `/api/game/stronghold/*`, `/api/game/system/*`, and `/api/game/map/*` – admin routes for bot AI management, stronghold templates/spawn/expand, system controls (pause/resume, tick duration, broadcast, storage status, reseed with `confirm=RESET`), and map generation/open/close/remove tasks reusing the shared Mongo/Redis services from the CLI.
+- `/api/game/bot/*`, `/api/game/stronghold/*`, `/api/game/system/*`, and `/api/game/map/*` – admin routes for bot AI management, stronghold templates/spawn/expand (now shard-aware), system controls (pause/resume, tick duration, broadcast, storage status, reseed with `confirm=RESET`), and map generation/open/close/remove tasks reusing the shared Mongo/Redis services from the CLI.
 - `mods.json` plumbing – the new `FileSystemModManifestProvider` watches the manifest for bot directories and `customIntentTypes/customObjectTypes`, `ManifestIntentSchemaCatalog` merges them with the built-in schemas for `MongoIntentService`, and `/api/server/info` / `/api/version` surface the mod-defined object metadata so the official client renders custom assets just like backend-local.
 - Core abstractions defined for server info, users, rooms, CLI sessions, storage status, and engine ticks.
 - Mongo repositories implemented for server info, users, and owned rooms; ready for future endpoints.
@@ -75,7 +75,7 @@
 - `ScreepsDotNet.Backend.Http/MapEndpoints.http` includes shard-prefixed examples for generate/open/close/remove/assets; the endpoints accept either `shard/Room` within the `room` field or a separate `shard` property, matching the CLI input rules.
 - All `/api/game/world/*` read routes accept either explicit shard parameters **or** the legacy `shardName/RoomName` notation (e.g., `shard1/W21N20`). Explicit parameters override the inline prefix.
    - `ScreepsDotNet.Backend.Http/BotEndpoints.http` exercises the `/api/game/bot/*` admin routes (list/spawn/reload/remove).
-   - `ScreepsDotNet.Backend.Http/StrongholdEndpoints.http` covers `/api/game/stronghold/*` (templates/spawn/expand).
+- `ScreepsDotNet.Backend.Http/StrongholdEndpoints.http` covers `/api/game/stronghold/*` (templates/spawn/expand) including shard samples.
 - `ScreepsDotNet.Backend.Http/SystemEndpoints.http` covers `/api/game/system/*` (status, pause/resume, tick duration, server messages, storage status, storage reseed/reset with `confirm=RESET`).
    - `ScreepsDotNet.Backend.Http/MapEndpoints.http` covers `/api/game/map/*` (generate/open/close/remove/assets/terrain refresh).
    - `ScreepsDotNet.Backend.Http/IntentEndpoints.http` sends `/api/game/add-object-intent` + `/api/game/add-global-intent` payloads so you can verify manual intents end-to-end.

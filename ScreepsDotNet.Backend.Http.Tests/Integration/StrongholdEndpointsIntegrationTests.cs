@@ -58,6 +58,7 @@ public sealed class StrongholdEndpointsIntegrationTests(IntegrationTestHarness h
         var content = await response.Content.ReadFromJsonAsync<JsonElement>();
         Assert.Equal(1, content.GetProperty("ok").GetInt32());
         Assert.Equal(room, content.GetProperty("room").GetString());
+        Assert.Equal(JsonValueKind.Null, content.GetProperty("shard").ValueKind);
         Assert.Equal("bunker1", content.GetProperty("template").GetString());
         Assert.False(string.IsNullOrWhiteSpace(content.GetProperty("strongholdId").GetString()));
 
@@ -68,6 +69,40 @@ public sealed class StrongholdEndpointsIntegrationTests(IntegrationTestHarness h
                                           .FirstOrDefaultAsync();
         Assert.NotNull(core);
         Assert.Equal("bunker1", core["templateName"].AsString);
+    }
+
+    [Fact]
+    public async Task Spawn_WithShard_PersistsShardMetadata()
+    {
+        var token = await LoginAsync();
+        SetAuthHeader(token);
+
+        var room = "W42N42";
+        const string shard = "shard9";
+        await PrepareRoomAsync(room, shard);
+
+        var payload = new
+        {
+            room,
+            shard,
+            template = "bunker2",
+            x = 18,
+            y = 19
+        };
+
+        var response = await _client.PostAsJsonAsync(ApiRoutes.Game.Stronghold.Spawn, payload);
+        response.EnsureSuccessStatusCode();
+        var content = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal(shard, content.GetProperty("shard").GetString());
+
+        var objectsCollection = harness.Database.GetCollection<BsonDocument>("rooms.objects");
+        var filter = Builders<BsonDocument>.Filter.And(
+            Builders<BsonDocument>.Filter.Eq("room", room),
+            Builders<BsonDocument>.Filter.Eq("shard", shard),
+            Builders<BsonDocument>.Filter.Eq("type", "invaderCore"));
+        var core = await objectsCollection.Find(filter).FirstOrDefaultAsync();
+        Assert.NotNull(core);
+        Assert.Equal(shard, core["shard"].AsString);
     }
 
     [Fact]
@@ -129,26 +164,35 @@ public sealed class StrongholdEndpointsIntegrationTests(IntegrationTestHarness h
         _client.DefaultRequestHeaders.Add("X-Token", token);
     }
 
-    private async Task PrepareRoomAsync(string room)
+    private async Task PrepareRoomAsync(string room, string? shard = null)
     {
         var roomsCollection = harness.Database.GetCollection<BsonDocument>("rooms");
+        var roomDoc = new BsonDocument { ["_id"] = room, ["status"] = "normal" };
+        if (shard is not null)
+            roomDoc["shard"] = shard;
         await roomsCollection.ReplaceOneAsync(new BsonDocument("_id", room),
-                                              new BsonDocument { ["_id"] = room, ["status"] = "normal" },
+                                              roomDoc,
                                               new ReplaceOptions { IsUpsert = true });
 
         var terrainCollection = harness.Database.GetCollection<BsonDocument>("rooms.terrain");
+        var terrainDoc = new BsonDocument { ["room"] = room, ["terrain"] = new string('0', 2500) };
+        if (shard is not null)
+            terrainDoc["shard"] = shard;
         await terrainCollection.ReplaceOneAsync(new BsonDocument("room", room),
-                                                new BsonDocument { ["room"] = room, ["terrain"] = new string('0', 2500) },
+                                                terrainDoc,
                                                 new ReplaceOptions { IsUpsert = true });
 
         var objectsCollection = harness.Database.GetCollection<BsonDocument>("rooms.objects");
         await objectsCollection.DeleteManyAsync(Builders<BsonDocument>.Filter.Eq("room", room));
-        await objectsCollection.InsertOneAsync(new BsonDocument
+        var controllerDoc = new BsonDocument
         {
             ["type"] = "controller",
             ["room"] = room,
             ["x"] = 1,
             ["y"] = 1
-        });
+        };
+        if (shard is not null)
+            controllerDoc["shard"] = shard;
+        await objectsCollection.InsertOneAsync(controllerDoc);
     }
 }

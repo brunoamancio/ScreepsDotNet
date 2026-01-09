@@ -36,19 +36,25 @@ public sealed class MongoStrongholdControlService(IMongoDatabaseProvider databas
     private readonly IMongoCollection<RoomObjectDocument> _roomObjectsCollection = databaseProvider.GetCollection<RoomObjectDocument>(databaseProvider.Settings.RoomObjectsCollection);
     private readonly Random _random = new();
 
-    public async Task<StrongholdSpawnResult> SpawnAsync(string roomName, StrongholdSpawnOptions options, CancellationToken cancellationToken = default)
+    public async Task<StrongholdSpawnResult> SpawnAsync(string roomName, string? shardName, StrongholdSpawnOptions options, CancellationToken cancellationToken = default)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(roomName);
+        var normalizedRoom = roomName.Trim();
+        var normalizedShard = string.IsNullOrWhiteSpace(shardName) ? null : shardName.Trim();
+
         var template = await ResolveTemplateAsync(options.TemplateName, cancellationToken).ConfigureAwait(false);
         var depositTypes = await templateProvider.GetDepositTypesAsync(cancellationToken).ConfigureAwait(false);
         if (depositTypes.Count == 0)
             throw new InvalidOperationException("Stronghold deposit metadata is missing.");
 
-        var terrain = await _terrainCollection.Find(document => document.Room == roomName)
+        var terrainFilter = BuildTerrainFilter(normalizedRoom, normalizedShard);
+        var terrain = await _terrainCollection.Find(terrainFilter)
                                               .FirstOrDefaultAsync(cancellationToken)
                                               .ConfigureAwait(false)
-                      ?? throw new InvalidOperationException($"Terrain data for room {roomName} is missing.");
+                      ?? throw new InvalidOperationException($"Terrain data for room {normalizedRoom} is missing.");
 
-        var objects = await _roomObjectsCollection.Find(Builders<RoomObjectDocument>.Filter.Eq(doc => doc.Room, roomName))
+        var roomObjectsFilter = BuildRoomObjectFilter(normalizedRoom, normalizedShard);
+        var objects = await _roomObjectsCollection.Find(roomObjectsFilter)
                                                   .ToListAsync(cancellationToken)
                                                   .ConfigureAwait(false);
         var controller = FindController(objects);
@@ -63,7 +69,7 @@ public sealed class MongoStrongholdControlService(IMongoDatabaseProvider databas
         var deployDelay = options.DeployDelayTicks.GetValueOrDefault(DefaultDeployDelay);
         var gameTime = await worldMetadataRepository.GetGameTimeAsync(cancellationToken).ConfigureAwait(false);
         var deployTime = gameTime + deployDelay;
-        var strongholdId = $"{roomName}_{gameTime}";
+        var strongholdId = $"{normalizedRoom}_{gameTime}";
         var depositType = depositTypes[_random.Next(depositTypes.Count)];
 
         var structures = new List<RoomObjectDocument>();
@@ -72,7 +78,8 @@ public sealed class MongoStrongholdControlService(IMongoDatabaseProvider databas
             var y = originY + blueprint.OffsetY;
 
             if (blueprint.Type == StructureType.InvaderCore) {
-                structures.Add(BuildInvaderCoreDocument(roomName,
+                structures.Add(BuildInvaderCoreDocument(normalizedRoom,
+                                                        normalizedShard,
                                                         x,
                                                         y,
                                                         userId,
@@ -82,7 +89,7 @@ public sealed class MongoStrongholdControlService(IMongoDatabaseProvider databas
                                                         deployTime,
                                                         strongholdId));
             }
-            else if (blueprint.Type == StructureType.Rampart) structures.Add(BuildRampartDocument(roomName, x, y, userId, strongholdId, deployTime));
+            else if (blueprint.Type == StructureType.Rampart) structures.Add(BuildRampartDocument(normalizedRoom, normalizedShard, x, y, userId, strongholdId, deployTime));
         }
 
         if (structures.Count == 0)
@@ -102,14 +109,20 @@ public sealed class MongoStrongholdControlService(IMongoDatabaseProvider databas
             await _roomObjectsCollection.UpdateOneAsync(filter, update, cancellationToken: cancellationToken).ConfigureAwait(false);
         }
 
-        return new StrongholdSpawnResult(roomName, template.Name, strongholdId);
+        return new StrongholdSpawnResult(normalizedRoom, normalizedShard, template.Name, strongholdId);
     }
 
-    public async Task<bool> ExpandAsync(string roomName, CancellationToken cancellationToken = default)
+    public async Task<bool> ExpandAsync(string roomName, string? shardName, CancellationToken cancellationToken = default)
     {
-        var filter = Builders<RoomObjectDocument>.Filter.And(
-            Builders<RoomObjectDocument>.Filter.Eq(doc => doc.Room, roomName),
-            Builders<RoomObjectDocument>.Filter.Eq(doc => doc.Type, StructureType.InvaderCore.ToDocumentValue()));
+        ArgumentException.ThrowIfNullOrWhiteSpace(roomName);
+        var normalizedRoom = roomName.Trim();
+        var normalizedShard = string.IsNullOrWhiteSpace(shardName) ? null : shardName.Trim();
+
+        var roomFilter = BuildRoomObjectFilter(normalizedRoom, normalizedShard);
+        var builder = Builders<RoomObjectDocument>.Filter;
+        var filter = builder.And(
+            roomFilter,
+            builder.Eq(doc => doc.Type, StructureType.InvaderCore.ToDocumentValue()));
 
         var core = await _roomObjectsCollection.Find(filter)
                                                .FirstOrDefaultAsync(cancellationToken)
@@ -162,6 +175,7 @@ public sealed class MongoStrongholdControlService(IMongoDatabaseProvider databas
 
     private static RoomObjectDocument BuildInvaderCoreDocument(
         string roomName,
+        string? shardName,
         int x,
         int y,
         string userId,
@@ -177,6 +191,7 @@ public sealed class MongoStrongholdControlService(IMongoDatabaseProvider databas
             Id = ObjectId.GenerateNewId(),
             Type = StructureType.InvaderCore.ToDocumentValue(),
             Room = roomName,
+            Shard = shardName,
             X = x,
             Y = y,
             UserId = userId,
@@ -195,12 +210,13 @@ public sealed class MongoStrongholdControlService(IMongoDatabaseProvider databas
         return document;
     }
 
-    private static RoomObjectDocument BuildRampartDocument(string roomName, int x, int y, string userId, string strongholdId, int deployTime)
+    private static RoomObjectDocument BuildRampartDocument(string roomName, string? shardName, int x, int y, string userId, string strongholdId, int deployTime)
         => new()
         {
             Id = ObjectId.GenerateNewId(),
             Type = StructureType.Rampart.ToDocumentValue(),
             Room = roomName,
+            Shard = shardName,
             X = x,
             Y = y,
             UserId = userId,
@@ -220,6 +236,32 @@ public sealed class MongoStrongholdControlService(IMongoDatabaseProvider databas
                 ["duration"] = StrongholdDeployDuration
             }
         ]);
+
+    private static FilterDefinition<RoomObjectDocument> BuildRoomObjectFilter(string roomName, string? shardName)
+    {
+        var builder = Builders<RoomObjectDocument>.Filter;
+        var filters = new List<FilterDefinition<RoomObjectDocument>> { builder.Eq(doc => doc.Room, roomName) };
+        if (!string.IsNullOrWhiteSpace(shardName))
+            filters.Add(builder.Eq(doc => doc.Shard, shardName));
+        else
+            filters.Add(builder.Or(builder.Eq(doc => doc.Shard, null),
+                                   builder.Exists(nameof(RoomObjectDocument.Shard), false)));
+
+        return builder.And(filters);
+    }
+
+    private static FilterDefinition<RoomTerrainDocument> BuildTerrainFilter(string roomName, string? shardName)
+    {
+        var builder = Builders<RoomTerrainDocument>.Filter;
+        var filters = new List<FilterDefinition<RoomTerrainDocument>> { builder.Eq(doc => doc.Room, roomName) };
+        if (!string.IsNullOrWhiteSpace(shardName))
+            filters.Add(builder.Eq(doc => doc.Shard, shardName));
+        else
+            filters.Add(builder.Or(builder.Eq(doc => doc.Shard, null),
+                                   builder.Exists(nameof(RoomTerrainDocument.Shard), false)));
+
+        return builder.And(filters);
+    }
 
     private static RoomObjectDocument? FindController(IEnumerable<RoomObjectDocument> objects)
         => objects.FirstOrDefault(doc => string.Equals(doc.Type, StructureType.Controller.ToDocumentValue(), StringComparison.Ordinal));

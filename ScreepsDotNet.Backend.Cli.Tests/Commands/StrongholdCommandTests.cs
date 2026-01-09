@@ -25,13 +25,31 @@ public sealed class StrongholdCommandTests
 
         Assert.Equal(0, exitCode);
         Assert.NotNull(service.SpawnArguments);
-        var (room, options) = service.SpawnArguments!.Value;
+        var (room, shard, options) = service.SpawnArguments!.Value;
         Assert.Equal("W5N3", room);
+        Assert.Null(shard);
         Assert.Equal("bunker3", options.TemplateName);
         Assert.Equal(20, options.X);
         Assert.Equal(22, options.Y);
         Assert.Equal("2", options.OwnerUserId);
         Assert.Equal(10, options.DeployDelayTicks);
+    }
+
+    [Fact]
+    public async Task StrongholdSpawnCommand_AcceptsShardOverride()
+    {
+        var service = new FakeStrongholdControlService();
+        var command = new StrongholdSpawnCommand(service);
+        var settings = new StrongholdSpawnCommand.Settings
+        {
+            RoomName = "W6N4",
+            Shard = "shard2"
+        };
+
+        var exitCode = await command.ExecuteAsync(null!, settings, CancellationToken.None);
+
+        Assert.Equal(0, exitCode);
+        Assert.Equal("shard2", service.SpawnArguments!.Value.ShardName);
     }
 
     [Fact]
@@ -54,30 +72,30 @@ public sealed class StrongholdCommandTests
     {
         var service = new FakeStrongholdControlService { ExpandResult = false };
         var command = new StrongholdExpandCommand(service);
-        var settings = new StrongholdExpandCommand.Settings { RoomName = "W5N3" };
+        var settings = new StrongholdExpandCommand.Settings { RoomName = "W5N3", Shard = "shard1" };
 
         var exitCode = await command.ExecuteAsync(null!, settings, CancellationToken.None);
 
         Assert.Equal(1, exitCode);
-        Assert.Equal("W5N3", service.ExpandRoomName);
+        Assert.Equal(("W5N3", "shard1"), service.ExpandArguments);
     }
 
     private sealed class FakeStrongholdControlService : IStrongholdControlService
     {
-        public (string RoomName, StrongholdSpawnOptions Options)? SpawnArguments { get; private set; }
-        public string? ExpandRoomName { get; private set; }
-        public StrongholdSpawnResult SpawnResult { get; init; } = new("W5N3", "bunker3", "core-id");
+        public (string RoomName, string? ShardName, StrongholdSpawnOptions Options)? SpawnArguments { get; private set; }
+        public (string RoomName, string? ShardName)? ExpandArguments { get; private set; }
+        public StrongholdSpawnResult SpawnResult { get; init; } = new("W5N3", null, "bunker3", "core-id");
         public bool ExpandResult { get; init; } = true;
 
-        public Task<StrongholdSpawnResult> SpawnAsync(string roomName, StrongholdSpawnOptions options, CancellationToken cancellationToken = default)
+        public Task<StrongholdSpawnResult> SpawnAsync(string roomName, string? shardName, StrongholdSpawnOptions options, CancellationToken cancellationToken = default)
         {
-            SpawnArguments = (roomName, options);
+            SpawnArguments = (roomName, shardName, options);
             return Task.FromResult(SpawnResult);
         }
 
-        public Task<bool> ExpandAsync(string roomName, CancellationToken cancellationToken = default)
+        public Task<bool> ExpandAsync(string roomName, string? shardName, CancellationToken cancellationToken = default)
         {
-            ExpandRoomName = roomName;
+            ExpandArguments = (roomName, shardName);
             return Task.FromResult(ExpandResult);
         }
     }

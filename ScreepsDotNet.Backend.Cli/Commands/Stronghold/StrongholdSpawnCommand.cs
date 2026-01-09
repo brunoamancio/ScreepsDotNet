@@ -1,8 +1,10 @@
 ﻿namespace ScreepsDotNet.Backend.Cli.Commands.Stronghold;
 
+using global::System;
 using global::System.ComponentModel;
 using global::System.Text.Json;
 using ScreepsDotNet.Backend.Core.Models.Strongholds;
+using ScreepsDotNet.Backend.Core.Parsing;
 using ScreepsDotNet.Backend.Core.Services;
 using Spectre.Console;
 using Spectre.Console.Cli;
@@ -20,6 +22,10 @@ internal sealed class StrongholdSpawnCommand(IStrongholdControlService stronghol
         [CommandOption("--template <NAME>")]
         [Description("Specific template name (default random).")]
         public string? TemplateName { get; init; }
+
+        [CommandOption("--shard <NAME>")]
+        [Description("Optional shard (e.g., shard2).")]
+        public string? Shard { get; init; }
 
         [CommandOption("--x <COORD>")]
         [Description("Origin X coordinate (0-49). Requires --y.")]
@@ -57,19 +63,25 @@ internal sealed class StrongholdSpawnCommand(IStrongholdControlService stronghol
             if (DeployDelayTicks is < 0)
                 return ValidationResult.Error("Deploy delay must be zero or positive.");
 
+            if (!RoomReferenceParser.TryParse(RoomName, Shard, out _))
+                return ValidationResult.Error("Room must match W##N## (optionally shard/W##N##).");
+
             return ValidationResult.Success();
         }
     }
 
     public override async Task<int> ExecuteAsync(CommandContext context, Settings settings, CancellationToken cancellationToken)
     {
+        if (!RoomReferenceParser.TryParse(settings.RoomName, settings.Shard, out var reference) || reference is null)
+            throw new InvalidOperationException("Room validation failed.");
+
         var options = new StrongholdSpawnOptions(settings.TemplateName,
                                                  settings.X,
                                                  settings.Y,
                                                  settings.OwnerUserId,
                                                  settings.DeployDelayTicks);
 
-        var result = await strongholdControlService.SpawnAsync(settings.RoomName, options, cancellationToken).ConfigureAwait(false);
+        var result = await strongholdControlService.SpawnAsync(reference.RoomName, reference.ShardName, options, cancellationToken).ConfigureAwait(false);
 
         if (settings.OutputJson) {
             AnsiConsole.WriteLine(JsonSerializer.Serialize(result, JsonOptions));
@@ -77,7 +89,7 @@ internal sealed class StrongholdSpawnCommand(IStrongholdControlService stronghol
         }
 
         var table = new Table().AddColumn("Property").AddColumn("Value");
-        table.AddRow("Room", result.RoomName);
+        table.AddRow("Room", string.IsNullOrWhiteSpace(result.ShardName) ? result.RoomName : $"{result.ShardName}/{result.RoomName}");
         table.AddRow("Template", result.TemplateName);
         table.AddRow("Stronghold ID", result.InvaderCoreId);
         AnsiConsole.Write(table);

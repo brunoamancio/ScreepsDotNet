@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 using ScreepsDotNet.Backend.Core.Constants;
 using ScreepsDotNet.Backend.Core.Context;
 using ScreepsDotNet.Backend.Core.Models.Strongholds;
+using ScreepsDotNet.Backend.Core.Parsing;
 using ScreepsDotNet.Backend.Core.Services;
 using ScreepsDotNet.Backend.Http.Authentication;
 using ScreepsDotNet.Backend.Http.Endpoints.Models;
@@ -71,14 +72,17 @@ internal static class StrongholdEndpoints
                                if (!ValidateSpawnRequest(request, out var validationError))
                                    return Results.BadRequest(new ErrorResponse(validationError ?? InvalidParamsMessage));
 
+                               if (!RoomReferenceParser.TryParse(request.Room, request.Shard, out var reference) || reference is null)
+                                   return Results.BadRequest(new ErrorResponse(InvalidParamsMessage));
+
                                var options = new StrongholdSpawnOptions(request.Template,
                                                                  request.X,
                                                                  request.Y,
                                                                  request.OwnerUserId,
                                                                  request.DeployDelayTicks);
                                try {
-                                   var result = await controlService.SpawnAsync(request.Room, options, cancellationToken).ConfigureAwait(false);
-                                   return Results.Ok(new StrongholdSpawnResponse(result.RoomName, result.TemplateName, result.InvaderCoreId));
+                                   var result = await controlService.SpawnAsync(reference.RoomName, reference.ShardName, options, cancellationToken).ConfigureAwait(false);
+                                   return Results.Ok(new StrongholdSpawnResponse(result.RoomName, result.ShardName, result.TemplateName, result.InvaderCoreId));
                                }
                                catch (InvalidOperationException ex) {
                                    return Results.BadRequest(new ErrorResponse(ex.Message));
@@ -101,7 +105,10 @@ internal static class StrongholdEndpoints
                                if (string.IsNullOrWhiteSpace(request.Room))
                                    return Results.BadRequest(new ErrorResponse(InvalidParamsMessage));
 
-                               var expanded = await controlService.ExpandAsync(request.Room, cancellationToken).ConfigureAwait(false);
+                               if (!RoomReferenceParser.TryParse(request.Room, request.Shard, out var reference) || reference is null)
+                                   return Results.BadRequest(new ErrorResponse(InvalidParamsMessage));
+
+                               var expanded = await controlService.ExpandAsync(reference.RoomName, reference.ShardName, cancellationToken).ConfigureAwait(false);
                                return expanded
                                    ? Results.Ok(new { ok = 1 })
                                    : Results.BadRequest(new ErrorResponse(StrongholdNotFoundMessage));
@@ -167,6 +174,7 @@ internal static class StrongholdEndpoints
 
     private sealed record StrongholdSpawnRequest(
         [property: JsonPropertyName("room")] string Room,
+        [property: JsonPropertyName("shard")] string? Shard,
         [property: JsonPropertyName("template")] string? Template,
         [property: JsonPropertyName("x")] int? X,
         [property: JsonPropertyName("y")] int? Y,
@@ -176,15 +184,17 @@ internal static class StrongholdEndpoints
     private sealed record StrongholdSpawnResponse(
         [property: JsonPropertyName("ok")] int Ok,
         [property: JsonPropertyName("room")] string Room,
+        [property: JsonPropertyName("shard")] string? Shard,
         [property: JsonPropertyName("template")] string Template,
         [property: JsonPropertyName("strongholdId")] string StrongholdId)
     {
-        public StrongholdSpawnResponse(string room, string template, string strongholdId)
-            : this(1, room, template, strongholdId)
+        public StrongholdSpawnResponse(string room, string? shard, string template, string strongholdId)
+            : this(1, room, shard, template, strongholdId)
         {
         }
     }
 
     private sealed record StrongholdExpandRequest(
-        [property: JsonPropertyName("room")] string Room);
+        [property: JsonPropertyName("room")] string Room,
+        [property: JsonPropertyName("shard")] string? Shard);
 }

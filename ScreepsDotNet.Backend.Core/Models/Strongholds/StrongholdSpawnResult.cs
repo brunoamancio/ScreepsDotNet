@@ -5,5 +5,6 @@
 /// </summary>
 public sealed record StrongholdSpawnResult(
     string RoomName,
+    string? ShardName,
     string TemplateName,
     string InvaderCoreId);
