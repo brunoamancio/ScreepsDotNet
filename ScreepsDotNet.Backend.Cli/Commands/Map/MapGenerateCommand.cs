@@ -1,9 +1,11 @@
 ﻿namespace ScreepsDotNet.Backend.Cli.Commands.Map;
 
+using global::System;
 using global::System.ComponentModel;
 using global::System.Globalization;
 using global::System.Text.Json;
 using ScreepsDotNet.Backend.Core.Models.Map;
+using ScreepsDotNet.Backend.Core.Parsing;
 using ScreepsDotNet.Backend.Core.Services;
 using Spectre.Console;
 using Spectre.Console.Cli;
@@ -48,6 +50,10 @@ internal sealed class MapGenerateCommand(IMapControlService mapControlService) :
         [Description("Optional deterministic seed for generation.")]
         public int? Seed { get; init; }
 
+        [CommandOption("--shard <NAME>")]
+        [Description("Optional shard override (e.g., shard3).")]
+        public string? Shard { get; init; }
+
         [CommandOption("--json")]
         [Description("Output JSON summary.")]
         public bool OutputJson { get; init; }
@@ -60,13 +66,19 @@ internal sealed class MapGenerateCommand(IMapControlService mapControlService) :
             if (SourceCount is < 1 or > 5)
                 return ValidationResult.Error("Source count must be between 1 and 5.");
 
+            if (!RoomReferenceParser.TryParse(RoomName, Shard, out _))
+                return ValidationResult.Error("Room name must match W##N## (optionally shard/W##N##).");
+
             return ValidationResult.Success();
         }
     }
 
     public override async Task<int> ExecuteAsync(CommandContext context, Settings settings, CancellationToken cancellationToken)
     {
-        var options = new MapRoomGenerationOptions(settings.RoomName.Trim(),
+        if (!RoomReferenceParser.TryParse(settings.RoomName, settings.Shard, out var reference) || reference is null)
+            throw new InvalidOperationException("Room name validation failed.");
+
+        var options = new MapRoomGenerationOptions(reference.RoomName,
                                                    settings.Terrain,
                                                    settings.SourceCount,
                                                    IncludeController: !settings.NoController,

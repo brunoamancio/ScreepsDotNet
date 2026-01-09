@@ -1,10 +1,13 @@
 ﻿namespace ScreepsDotNet.Backend.Http.Endpoints;
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Mvc;
 using ScreepsDotNet.Backend.Core.Context;
+using ScreepsDotNet.Backend.Core.Models;
 using ScreepsDotNet.Backend.Core.Models.Map;
+using ScreepsDotNet.Backend.Core.Parsing;
 using ScreepsDotNet.Backend.Core.Services;
 using ScreepsDotNet.Backend.Http.Authentication;
 using ScreepsDotNet.Backend.Http.Endpoints.Models;
@@ -41,15 +44,18 @@ internal static class MapEndpoints
                                if (accessor.CurrentUser?.Id is null)
                                    return Results.Unauthorized();
 
+                               if (!TryNormalizeRoom(request.Room, request.Shard, out var reference))
+                                   return Results.BadRequest(new ErrorResponse("room is required"));
+
                                if (!ValidateGenerationRequest(request, out var preset, out var error))
                                    return Results.BadRequest(new ErrorResponse(error ?? InvalidParamsMessage));
 
                                var includeController = request.NoController is not true;
                                var includeKeeperLairs = request.KeeperLairs ?? false;
-                               var options = new MapRoomGenerationOptions(request.Room.Trim(),
-                                                                   preset,
-                                                                   request.Sources ?? 2,
-                                                                   includeController,
+                               var options = new MapRoomGenerationOptions(reference.RoomName,
+                                                                           preset,
+                                                                           request.Sources ?? 2,
+                                                                           includeController,
                                                                    includeKeeperLairs,
                                                                    request.MineralType,
                                                                    request.Overwrite ?? false,
@@ -105,11 +111,11 @@ internal static class MapEndpoints
                                if (accessor.CurrentUser?.Id is null)
                                    return Results.Unauthorized();
 
-                               if (string.IsNullOrWhiteSpace(request.Room))
+                               if (!TryNormalizeRoom(request.Room, request.Shard, out var reference))
                                    return Results.BadRequest(new ErrorResponse("room is required"));
 
                                try {
-                                   await mapControlService.RemoveRoomAsync(request.Room.Trim(), request.PurgeObjects ?? false, cancellationToken).ConfigureAwait(false);
+                                   await mapControlService.RemoveRoomAsync(reference.RoomName, request.PurgeObjects ?? false, cancellationToken).ConfigureAwait(false);
                                    return Results.Ok(new { ok = 1 });
                                }
                                catch (InvalidOperationException ex) {
@@ -130,11 +136,11 @@ internal static class MapEndpoints
                                if (accessor.CurrentUser?.Id is null)
                                    return Results.Unauthorized();
 
-                               if (string.IsNullOrWhiteSpace(request.Room))
+                               if (!TryNormalizeRoom(request.Room, request.Shard, out var reference))
                                    return Results.BadRequest(new ErrorResponse("room is required"));
 
                                try {
-                                   await mapControlService.UpdateRoomAssetsAsync(request.Room.Trim(), request.Full ?? false, cancellationToken).ConfigureAwait(false);
+                                   await mapControlService.UpdateRoomAssetsAsync(reference.RoomName, request.Full ?? false, cancellationToken).ConfigureAwait(false);
                                    return Results.Ok(new { ok = 1 });
                                }
                                catch (InvalidOperationException ex) {
@@ -169,11 +175,11 @@ internal static class MapEndpoints
         if (accessor.CurrentUser?.Id is null)
             return Results.Unauthorized();
 
-        if (string.IsNullOrWhiteSpace(request.Room))
+        if (!TryNormalizeRoom(request.Room, request.Shard, out var reference))
             return Results.BadRequest(new ErrorResponse("room is required"));
 
         try {
-            await handler(request.Room.Trim(), cancellationToken).ConfigureAwait(false);
+            await handler(reference.RoomName, cancellationToken).ConfigureAwait(false);
             return Results.Ok(new { ok = 1 });
         }
         catch (InvalidOperationException ex) {
@@ -205,8 +211,19 @@ internal static class MapEndpoints
         return true;
     }
 
+    private static bool TryNormalizeRoom(string? room, string? shard, [NotNullWhen(true)] out RoomReference? reference)
+    {
+        reference = null;
+        if (!RoomReferenceParser.TryParse(room, shard, out var parsed) || parsed is null)
+            return false;
+
+        reference = parsed;
+        return true;
+    }
+
     private sealed record MapGenerateRequest(
         [property: JsonPropertyName("room")] string Room,
+        [property: JsonPropertyName("shard")] string? Shard,
         [property: JsonPropertyName("sources")] int? Sources,
         [property: JsonPropertyName("terrain")] string? Terrain,
         [property: JsonPropertyName("noController")] bool? NoController,
@@ -237,13 +254,16 @@ internal static class MapEndpoints
     }
 
     private sealed record MapRoomRequest(
-        [property: JsonPropertyName("room")] string Room);
+        [property: JsonPropertyName("room")] string Room,
+        [property: JsonPropertyName("shard")] string? Shard);
 
     private sealed record MapRemoveRequest(
         [property: JsonPropertyName("room")] string Room,
+        [property: JsonPropertyName("shard")] string? Shard,
         [property: JsonPropertyName("purgeObjects")] bool? PurgeObjects);
 
     private sealed record MapAssetsRequest(
         [property: JsonPropertyName("room")] string Room,
+        [property: JsonPropertyName("shard")] string? Shard,
         [property: JsonPropertyName("full")] bool? Full);
 }

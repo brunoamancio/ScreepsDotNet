@@ -63,6 +63,21 @@ public sealed class MapEndpointsIntegrationTests(IntegrationTestHarness harness)
     }
 
     [Fact]
+    public async Task OpenRoom_WithShardPrefix_NormalizesRoom()
+    {
+        await SeedRoomAsync("W41N41", status: "closed");
+
+        var token = await LoginAsync();
+        SetAuth(token);
+
+        var response = await _client.PostAsJsonAsync(ApiRoutes.Game.Map.Open, new { room = "shard7/W41N41" });
+        response.EnsureSuccessStatusCode();
+
+        var status = await GetRoomStatusAsync("W41N41");
+        Assert.Equal("normal", status);
+    }
+
+    [Fact]
     public async Task RemoveRoom_DeletesDocuments()
     {
         await SeedRoomAsync("W32N32");
@@ -89,6 +104,18 @@ public sealed class MapEndpointsIntegrationTests(IntegrationTestHarness harness)
         SetAuth(token);
 
         var response = await _client.PostAsJsonAsync(ApiRoutes.Game.Map.AssetsUpdate, new { room = "W33N33", full = true });
+        response.EnsureSuccessStatusCode();
+    }
+
+    [Fact]
+    public async Task AssetsUpdate_WithShardProperty_NormalizesInput()
+    {
+        await SeedRoomAsync("W42N42");
+
+        var token = await LoginAsync();
+        SetAuth(token);
+
+        var response = await _client.PostAsJsonAsync(ApiRoutes.Game.Map.AssetsUpdate, new { room = "w42n42", shard = "shard5", full = false });
         response.EnsureSuccessStatusCode();
     }
 

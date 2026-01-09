@@ -62,6 +62,22 @@ public sealed class MapCommandTests
     }
 
     [Fact]
+    public async Task MapRemoveCommand_AllowsShardPrefixedRoom()
+    {
+        var service = new FakeMapControlService();
+        var command = new MapRemoveCommand(service);
+        var settings = new MapRemoveCommand.Settings
+        {
+            RoomName = "shard3/W7N7"
+        };
+
+        var exitCode = await command.ExecuteAsync(null!, settings, CancellationToken.None);
+
+        Assert.Equal(0, exitCode);
+        Assert.Equal("W7N7", service.RemovedRoom);
+    }
+
+    [Fact]
     public async Task MapAssetsUpdateCommand_HonorsFullFlag()
     {
         var service = new FakeMapControlService();

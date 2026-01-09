@@ -32,6 +32,16 @@ Content-Type: application/json
     "room": "W39N39"
 }
 
+### Map Open (Shard Override)
+POST {{host}}/api/game/map/open
+X-Token: {{auth_token}}
+Content-Type: application/json
+
+{
+    "room": "W41N41",
+    "shard": "shard7"
+}
+
 ### Map Close
 POST {{host}}/api/game/map/close
 X-Token: {{auth_token}}
@@ -59,6 +69,16 @@ Content-Type: application/json
 {
     "room": "W39N39",
     "full": true
+}
+
+### Map Assets Update (Shard Prefix)
+POST {{host}}/api/game/map/assets-update
+X-Token: {{auth_token}}
+Content-Type: application/json
+
+{
+    "room": "shard5/W42N42",
+    "full": false
 }
 
 ### Terrain Refresh

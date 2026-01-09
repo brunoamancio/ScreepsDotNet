@@ -1,6 +1,8 @@
 ﻿namespace ScreepsDotNet.Backend.Cli.Commands.Map;
 
+using global::System;
 using global::System.ComponentModel;
+using ScreepsDotNet.Backend.Core.Parsing;
 using ScreepsDotNet.Backend.Core.Services;
 using Spectre.Console;
 using Spectre.Console.Cli;
@@ -13,18 +15,29 @@ internal sealed class MapOpenCommand(IMapControlService mapControlService) : Asy
         [Description("Room to open.")]
         public string RoomName { get; init; } = string.Empty;
 
+        [CommandOption("--shard <NAME>")]
+        [Description("Optional shard override (e.g., shard3).")]
+        public string? Shard { get; init; }
+
         public override ValidationResult Validate()
         {
-            return string.IsNullOrWhiteSpace(RoomName)
-                ? ValidationResult.Error("Room name is required.")
-                : ValidationResult.Success();
+            if (string.IsNullOrWhiteSpace(RoomName))
+                return ValidationResult.Error("Room name is required.");
+
+            if (!RoomReferenceParser.TryParse(RoomName, Shard, out _))
+                return ValidationResult.Error("Room name must match W##N## (optionally shard/W##N##).");
+
+            return ValidationResult.Success();
         }
     }
 
     public override async Task<int> ExecuteAsync(CommandContext context, Settings settings, CancellationToken cancellationToken)
     {
-        await mapControlService.OpenRoomAsync(settings.RoomName.Trim(), cancellationToken).ConfigureAwait(false);
-        AnsiConsole.MarkupLine($"[green]Room {settings.RoomName} opened.[/]");
+        if (!RoomReferenceParser.TryParse(settings.RoomName, settings.Shard, out var reference) || reference is null)
+            throw new InvalidOperationException("Room name validation failed.");
+
+        await mapControlService.OpenRoomAsync(reference.RoomName, cancellationToken).ConfigureAwait(false);
+        AnsiConsole.MarkupLine($"[green]Room {reference.RoomName} opened.[/]");
         return 0;
     }
 }

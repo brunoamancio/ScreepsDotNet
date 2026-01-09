@@ -1,6 +1,8 @@
 ﻿namespace ScreepsDotNet.Backend.Cli.Commands.Map;
 
+using global::System;
 using global::System.ComponentModel;
+using ScreepsDotNet.Backend.Core.Parsing;
 using ScreepsDotNet.Backend.Core.Services;
 using Spectre.Console;
 using Spectre.Console.Cli;
@@ -17,18 +19,29 @@ internal sealed class MapRemoveCommand(IMapControlService mapControlService) : A
         [Description("Also remove room objects.")]
         public bool PurgeObjects { get; init; }
 
+        [CommandOption("--shard <NAME>")]
+        [Description("Optional shard override (e.g., shard3).")]
+        public string? Shard { get; init; }
+
         public override ValidationResult Validate()
         {
-            return string.IsNullOrWhiteSpace(RoomName)
-                ? ValidationResult.Error("Room name is required.")
-                : ValidationResult.Success();
+            if (string.IsNullOrWhiteSpace(RoomName))
+                return ValidationResult.Error("Room name is required.");
+
+            if (!RoomReferenceParser.TryParse(RoomName, Shard, out _))
+                return ValidationResult.Error("Room name must match W##N## (optionally shard/W##N##).");
+
+            return ValidationResult.Success();
         }
     }
 
     public override async Task<int> ExecuteAsync(CommandContext context, Settings settings, CancellationToken cancellationToken)
     {
-        await mapControlService.RemoveRoomAsync(settings.RoomName.Trim(), settings.PurgeObjects, cancellationToken).ConfigureAwait(false);
-        AnsiConsole.MarkupLine($"[red]Room {settings.RoomName} removed (purge={settings.PurgeObjects}).[/]");
+        if (!RoomReferenceParser.TryParse(settings.RoomName, settings.Shard, out var reference) || reference is null)
+            throw new InvalidOperationException("Room name validation failed.");
+
+        await mapControlService.RemoveRoomAsync(reference.RoomName, settings.PurgeObjects, cancellationToken).ConfigureAwait(false);
+        AnsiConsole.MarkupLine($"[red]Room {reference.RoomName} removed (purge={settings.PurgeObjects}).[/]");
         return 0;
     }
 }

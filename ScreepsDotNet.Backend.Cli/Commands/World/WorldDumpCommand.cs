@@ -1,8 +1,11 @@
 ﻿namespace ScreepsDotNet.Backend.Cli.Commands.World;
 
+using global::System;
+using global::System.Collections.Generic;
 using global::System.Linq;
 using global::System.Text.Json;
 using ScreepsDotNet.Backend.Core.Models;
+using ScreepsDotNet.Backend.Core.Parsing;
 using ScreepsDotNet.Backend.Core.Repositories;
 using Spectre.Console;
 using Spectre.Console.Cli;
@@ -18,6 +21,9 @@ internal sealed class WorldDumpCommand(IRoomTerrainRepository terrainRepository)
         [CommandOption("--decoded")]
         public bool DecodeTiles { get; init; }
 
+        [CommandOption("--shard <NAME>")]
+        public string? Shard { get; init; }
+
         [CommandOption("--json")]
         public bool OutputJson { get; init; }
 
@@ -26,13 +32,24 @@ internal sealed class WorldDumpCommand(IRoomTerrainRepository terrainRepository)
             if (Rooms.Length == 0)
                 return ValidationResult.Error("Specify at least one --room.");
 
+            foreach (var room in Rooms) {
+                if (!RoomReferenceParser.TryParse(room, Shard, out _))
+                    return ValidationResult.Error($"Invalid room: {room}. Use W##N## or shard/W##N##.");
+            }
+
             return ValidationResult.Success();
         }
     }
 
     public override async Task<int> ExecuteAsync(CommandContext context, Settings settings, CancellationToken cancellationToken)
     {
-        var references = settings.Rooms.Select(room => RoomReference.Create(room)).ToList();
+        var references = new List<RoomReference>(settings.Rooms.Length);
+        foreach (var room in settings.Rooms) {
+            if (!RoomReferenceParser.TryParse(room, settings.Shard, out var reference) || reference is null)
+                throw new InvalidOperationException("Room validation failed.");
+            references.Add(reference);
+        }
+
         var entries = await terrainRepository.GetTerrainEntriesAsync(references, cancellationToken).ConfigureAwait(false);
 
         if (settings.OutputJson) {

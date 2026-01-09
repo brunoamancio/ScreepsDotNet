@@ -22,6 +22,7 @@
   - `strongholds templates|spawn|expand`
   - `flag create|change-color|remove`
   - `invader create|remove`
+- Every CLI verb that accepts a room identifier now shares the same shard-aware parser as the HTTP surface: operators can specify either the legacy inline form (`shard2/W20N20`) or pass `--shard shard2` alongside the room name. The parser trims/uppercases room names, rejects malformed identifiers, and keeps CLI + HTTP behavior in sync.
 - `ScreepsDotNet.Storage.MongoRedis/` – MongoDB/Redis infrastructure (adapter + repositories) used by the HTTP host.
   - `.editorconfig`, `.globalconfig`, `.gitattributes`, `Directory.Build.props` – shared tooling settings.
   - `docker/` – supporting assets (Mongo init scripts, etc.).
@@ -71,6 +72,7 @@
    - `GET http://localhost:5210/health`
    - `GET http://localhost:5210/api/server/info`
 - `ScreepsDotNet.Backend.Http/MarketEndpoints.http` + `WorldEndpoints.http` contain ready-to-send requests for every market/world route once the backend is running. The world scratch file now includes shard-aware samples (set the `shard` query string or JSON property) so you can hit the seeded `shard1` data.
+- `ScreepsDotNet.Backend.Http/MapEndpoints.http` includes shard-prefixed examples for generate/open/close/remove/assets; the endpoints accept either `shard/Room` within the `room` field or a separate `shard` property, matching the CLI input rules.
 - All `/api/game/world/*` read routes accept either explicit shard parameters **or** the legacy `shardName/RoomName` notation (e.g., `shard1/W21N20`). Explicit parameters override the inline prefix.
    - `ScreepsDotNet.Backend.Http/BotEndpoints.http` exercises the `/api/game/bot/*` admin routes (list/spawn/reload/remove).
    - `ScreepsDotNet.Backend.Http/StrongholdEndpoints.http` covers `/api/game/stronghold/*` (templates/spawn/expand).
