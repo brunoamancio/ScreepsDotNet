@@ -1,5 +1,6 @@
 ﻿namespace ScreepsDotNet.Backend.Cli.Commands.Storage;
 
+using System.ComponentModel;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using ScreepsDotNet.Backend.Core.Seeding;
@@ -15,10 +16,19 @@ internal sealed class StorageReseedCommand(ISeedDataService seedDataService, IOp
     {
         [CommandOption("--force")]
         public bool Force { get; init; }
+
+        [CommandOption("--confirm <TEXT>")]
+        [Description("Type RESET to confirm the destructive action.")]
+        public string? Confirm { get; init; }
     }
 
     public override async Task<int> ExecuteAsync(CommandContext context, Settings settings, CancellationToken cancellationToken)
     {
+        if (!string.Equals(settings.Confirm, "RESET", StringComparison.OrdinalIgnoreCase)) {
+            logger.LogError("Confirmation required. Re-run with --confirm RESET to proceed.");
+            return 1;
+        }
+
         var options = storageOptions.Value;
         if (string.IsNullOrWhiteSpace(options.MongoConnectionString) || string.IsNullOrWhiteSpace(options.MongoDatabase)) {
             logger.LogError("Mongo connection information is missing.");
