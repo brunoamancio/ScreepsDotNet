@@ -14,6 +14,9 @@ public sealed class RoomFlagDocument
     [BsonElement("room")]
     public string? Room { get; set; }
 
+    [BsonElement("shard")]
+    public string? Shard { get; set; }
+
     [BsonElement("data")]
     public string? Data { get; set; }
 }

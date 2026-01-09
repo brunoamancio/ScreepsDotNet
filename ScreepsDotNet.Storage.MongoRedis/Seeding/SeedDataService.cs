@@ -174,6 +174,33 @@ public sealed class SeedDataService : ISeedDataService
                 },
                 StoreCapacity = SeedDataDefaults.PowerCreeps.ActiveStoreCapacity,
                 Fatigue = 0
+            },
+            new RoomObjectDocument
+            {
+                Id = ObjectId.GenerateNewId(),
+                Type = RoomObjectType.Controller.ToDocumentValue(),
+                Room = SeedDataDefaults.World.SecondaryShardRoom,
+                Shard = SeedDataDefaults.World.SecondaryShardName,
+                Reservation = new RoomReservationDocument
+                {
+                    UserId = SeedDataDefaults.User.Id,
+                    EndTime = SeedDataDefaults.World.GameTime + SeedDataDefaults.World.SecondaryShardSafeModeExpiry
+                },
+                Sign = new RoomSignDocument
+                {
+                    UserId = SeedDataDefaults.User.Id,
+                    Text = SeedDataDefaults.World.SecondaryShardControllerSign,
+                    Time = SeedDataDefaults.World.GameTime
+                }
+            },
+            new RoomObjectDocument
+            {
+                Id = ObjectId.GenerateNewId(),
+                Type = RoomObjectType.Mineral.ToDocumentValue(),
+                Room = SeedDataDefaults.World.SecondaryShardRoom,
+                Shard = SeedDataDefaults.World.SecondaryShardName,
+                MineralType = SeedDataDefaults.World.SecondaryShardMineralType,
+                Density = SeedDataDefaults.World.MineralDensity
             }
         };
 
@@ -253,12 +280,31 @@ public sealed class SeedDataService : ISeedDataService
             EnergyAvailable = 0
         };
 
+        var shardRoom = new RoomDocument
+        {
+            Id = SeedDataDefaults.World.SecondaryShardRoom,
+            Shard = SeedDataDefaults.World.SecondaryShardName,
+            Status = "normal",
+            Novice = false,
+            RespawnArea = false,
+            Owner = null,
+            Controller = new RoomControllerDocument
+            {
+                Level = 0
+            },
+            EnergyAvailable = 0
+        };
+
         return rooms.BulkWriteAsync([
             new ReplaceOneModel<RoomDocument>(Builders<RoomDocument>.Filter.Eq(room => room.Id, startRoom.Id), startRoom)
             {
                 IsUpsert = true
             },
             new ReplaceOneModel<RoomDocument>(Builders<RoomDocument>.Filter.Eq(room => room.Id, secondaryRoom.Id), secondaryRoom)
+            {
+                IsUpsert = true
+            },
+            new ReplaceOneModel<RoomDocument>(Builders<RoomDocument>.Filter.Eq(room => room.Id, shardRoom.Id), shardRoom)
             {
                 IsUpsert = true
             }
@@ -283,6 +329,14 @@ public sealed class SeedDataService : ISeedDataService
                 Room = SeedDataDefaults.World.SecondaryRoom,
                 Type = "terrain",
                 Terrain = new string('1', 2500)
+            },
+            new RoomTerrainDocument
+            {
+                Id = ObjectId.GenerateNewId(),
+                Room = SeedDataDefaults.World.SecondaryShardRoom,
+                Shard = SeedDataDefaults.World.SecondaryShardName,
+                Type = "terrain",
+                Terrain = new string('2', 2500)
             }
         };
 

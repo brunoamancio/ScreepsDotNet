@@ -49,6 +49,8 @@ Remaining backlog (detailed in §6): shard-scoped helper routes plus support for
 | `rooms.flags`      | `_id`, `user`, `room`, `data` (flag payload). Needed later for flag endpoints; tracked here for completeness.                                                                                                                                                                                                             |
 | `users`            | `_id`, `username`, `badge`. Already mapped via `UserDocument`; we need to ensure the only extra fields referenced by these world endpoints (`badge`) are part of the POCO.                                                                                                      |
 
+> **Update (Jan 2026):** Both the docker init scripts and the Testcontainers seed harness now include a `shard1` sample (`SeedDataDefaults.World.SecondaryShardRoom`) across `rooms`, `rooms.objects`, and `rooms.terrain`. Each document persists a `shard` field so shard-aware repositories/tests can filter deterministically.
+
 All new POCOs should live under `ScreepsDotNet.Storage.MongoRedis.Repositories.Documents`. Planned additions/changes:
 
 | POCO                                | Purpose                                                                                               |

@@ -153,6 +153,7 @@ dotnet run --project ScreepsDotNet.Backend.Cli -- map generate --room W10N5 --so
   - `users.money` – rolling credit transactions surfaced via `/api/user/money-history`.
   - `rooms.objects` – source of controller/spawn information for `/api/user/world-*` endpoints.
 - Server metadata (`server.data`) and version metadata (`server.version`) power `/api/server/info` and the `protocol/useNativeAuth/packageVersion` fields returned by `/api/version`. Adjust `seed-server-data.js` (and `SeedDataDefaults`) if you need to change these defaults.
+- Both the Testcontainers harness (`SeedDataService`) and the docker init scripts now seed a dedicated shard sample (`shard1` / `SeedDataDefaults.World.SecondaryShardRoom`) with matching `rooms`, `rooms.objects`, and `rooms.terrain` documents. Use it when exercising upcoming shard-aware world endpoints—each document carries a `shard` field so you can filter deterministically.
 - Redis is reserved for token storage and other future Screeps subsystems; the `docker compose` file already wires the container, but current endpoints do not rely on it yet.
 
 ### Repository Conventions

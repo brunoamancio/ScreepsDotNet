@@ -10,6 +10,9 @@ public sealed class RoomDocument
     [BsonRepresentation(BsonType.String)]
     public string Id { get; set; } = string.Empty;
 
+    [BsonElement("shard")]
+    public string? Shard { get; set; }
+
     [BsonElement("status")]
     public string? Status { get; set; }
 

@@ -3,6 +3,9 @@
 using System.Linq;
 using System.Net.Http.Json;
 using System.Text.Json;
+using MongoDB.Bson;
+using MongoDB.Driver;
+using ScreepsDotNet.Backend.Core.Constants;
 using ScreepsDotNet.Backend.Core.Seeding;
 using ScreepsDotNet.Backend.Http.Routing;
 
@@ -132,6 +135,33 @@ public sealed class WorldEndpointsIntegrationTests(IntegrationTestHarness harnes
         response.EnsureSuccessStatusCode();
         using var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
         Assert.Equal(SeedDataDefaults.World.TickDuration, payload.RootElement.GetProperty("tick").GetInt32());
+    }
+
+    [Fact]
+    public async Task ShardSeedData_IsAvailableInMongo()
+    {
+        var roomsCollection = harness.Database.GetCollection<BsonDocument>("rooms");
+        var shardRoomFilter = Builders<BsonDocument>.Filter.Eq("_id", SeedDataDefaults.World.SecondaryShardRoom);
+        var shardRoom = await roomsCollection.Find(shardRoomFilter).FirstOrDefaultAsync();
+        Assert.NotNull(shardRoom);
+        Assert.True(shardRoom.TryGetValue("shard", out var roomShard));
+        Assert.Equal(SeedDataDefaults.World.SecondaryShardName, roomShard.AsString);
+
+        var terrainCollection = harness.Database.GetCollection<BsonDocument>("rooms.terrain");
+        var terrain = await terrainCollection.Find(Builders<BsonDocument>.Filter.Eq("room", SeedDataDefaults.World.SecondaryShardRoom))
+                                             .FirstOrDefaultAsync();
+        Assert.NotNull(terrain);
+        Assert.True(terrain.TryGetValue("shard", out var terrainShard));
+        Assert.Equal(SeedDataDefaults.World.SecondaryShardName, terrainShard.AsString);
+
+        var objects = harness.Database.GetCollection<BsonDocument>("rooms.objects");
+        var controllerFilter = Builders<BsonDocument>.Filter.And(
+            Builders<BsonDocument>.Filter.Eq("room", SeedDataDefaults.World.SecondaryShardRoom),
+            Builders<BsonDocument>.Filter.Eq("type", RoomObjectType.Controller.ToDocumentValue()));
+        var controller = await objects.Find(controllerFilter).FirstOrDefaultAsync();
+        Assert.NotNull(controller);
+        Assert.True(controller.TryGetValue("shard", out var controllerShard));
+        Assert.Equal(SeedDataDefaults.World.SecondaryShardName, controllerShard.AsString);
     }
 
     private async Task<string> AuthenticateAsync()

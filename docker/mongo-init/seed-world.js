@@ -1,5 +1,8 @@
 const database = db.getSiblingDB("screeps");
 
+const secondaryShardRoom = "W3N3";
+const secondaryShardName = "shard1";
+
 const rooms = database.getCollection("rooms");
 rooms.updateOne(
   { _id: "W1N1" },
@@ -31,9 +34,25 @@ rooms.updateOne(
   },
   { upsert: true }
 );
+rooms.updateOne(
+  { _id: secondaryShardRoom },
+  {
+    $set: {
+      status: "normal",
+      shard: secondaryShardName,
+      novice: false,
+      respawnArea: false,
+      openTime: null,
+      owner: null,
+      controller: { level: 1 },
+      energyAvailable: 0
+    }
+  },
+  { upsert: true }
+);
 
 const terrain = database.getCollection("rooms.terrain");
-terrain.deleteMany({ room: { $in: ["W1N1", "W2N2"] } });
+terrain.deleteMany({ room: { $in: ["W1N1", "W2N2", secondaryShardRoom] } });
 terrain.insertOne({
   room: "W1N1",
   type: "terrain",
@@ -44,9 +63,15 @@ terrain.insertOne({
   type: "terrain",
   terrain: Array(2500).fill("1").join("")
 });
+terrain.insertOne({
+  room: secondaryShardRoom,
+  shard: secondaryShardName,
+  type: "terrain",
+  terrain: Array(2500).fill("2").join("")
+});
 
 const roomObjects = database.getCollection("rooms.objects");
-roomObjects.deleteMany({ room: { $in: ["W1N1", "W2N2"] } });
+roomObjects.deleteMany({ room: { $in: ["W1N1", "W2N2", secondaryShardRoom] } });
 roomObjects.insertMany([
   {
     type: "controller",
@@ -67,6 +92,20 @@ roomObjects.insertMany([
     room: "W2N2",
     user: "Invader",
     level: 2
+  },
+  {
+    type: "controller",
+    room: secondaryShardRoom,
+    shard: secondaryShardName,
+    reservation: { user: "test-user", endTime: 150000 },
+    sign: { user: "test-user", text: "Shard One Online", time: 123456 }
+  },
+  {
+    type: "mineral",
+    room: secondaryShardRoom,
+    shard: secondaryShardName,
+    mineralType: "O",
+    density: 2
   }
 ]);
 

@@ -12,6 +12,9 @@ public sealed class RoomTerrainDocument
     [BsonElement("room")]
     public string Room { get; set; } = string.Empty;
 
+    [BsonElement("shard")]
+    public string? Shard { get; set; }
+
     [BsonElement("type")]
     public string? Type { get; set; }
 

@@ -26,11 +26,16 @@ public static class SeedDataDefaults
     {
         public const string StartRoom = "W20N20";
         public const string SecondaryRoom = "W21N21";
+        public const string SecondaryShardRoom = "W21N20";
+        public const string SecondaryShardName = "shard1";
         public const string InvaderUser = "Invader";
         public const string MineralType = "H";
+        public const string SecondaryShardMineralType = "O";
         public const int MineralDensity = 3;
         public const int SafeModeExpiry = 200000;
+        public const int SecondaryShardSafeModeExpiry = 150000;
         public const string ControllerSign = "Integration FTW";
+        public const string SecondaryShardControllerSign = "Shard One Online";
         public const int GameTime = 123456;
         public const int TickDuration = 650;
     }

@@ -88,6 +88,7 @@
 - All Mongo scripts inside `docker/mongo-init` run only when the container initializes an empty volume.
 - `docker/mongo-init/seed-server-data.js` keeps the canonical server metadata document (`server.data` collection) in sync with the legacy backend defaults (`welcomeText`, socket throttles, renderer metadata). For .NET-side tooling/tests, the shared constants live in `ScreepsDotNet.Backend.Core/Seeding/SeedDataDefaults.cs`—reuse that class whenever you need deterministic seed values so the CLI and integration harness stay aligned.
 - `docker/mongo-init/seed-users.js` inserts/updates the canonical `test-user` record plus sample controller/spawn objects (`rooms.objects`), a deterministic pair of power creeps (`users.power_creeps` + a matching `rooms.objects` document for the spawned creep), and a short credit history in `users.money` so `/api/user/money-history` has data. The newer HTTP routes (code/memory/console) lazily create their own per-user documents once you hit them.
+- `seed-world.js` and `SeedDataService` now include a dedicated shard sample (`shard1`) using `SeedDataDefaults.World.SecondaryShardRoom`. The room, terrain, and controller/mineral objects all persist a `shard` field so upcoming shard-aware routes/tests can filter deterministically across both docker and Testcontainers environments.
 - When schemas or seed files change, do a clean reset so everyone picks up the new baseline:
   ```powershell
   docker compose down -v      # stops containers and removes mongo-data / redis-data volumes
