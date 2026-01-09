@@ -68,7 +68,8 @@
 6. **Manual smoke tests:**
    - `GET http://localhost:5210/health`
    - `GET http://localhost:5210/api/server/info`
-  - `ScreepsDotNet.Backend.Http/MarketEndpoints.http` + `WorldEndpoints.http` contain ready-to-send requests for every market/world route once the backend is running. The world scratch file now includes shard-aware samples (set the `shard` query string or JSON property) so you can hit the seeded `shard1` data.
+- `ScreepsDotNet.Backend.Http/MarketEndpoints.http` + `WorldEndpoints.http` contain ready-to-send requests for every market/world route once the backend is running. The world scratch file now includes shard-aware samples (set the `shard` query string or JSON property) so you can hit the seeded `shard1` data.
+- All `/api/game/world/*` read routes accept either explicit shard parameters **or** the legacy `shardName/RoomName` notation (e.g., `shard1/W21N20`). Explicit parameters override the inline prefix.
    - `ScreepsDotNet.Backend.Http/BotEndpoints.http` exercises the `/api/game/bot/*` admin routes (list/spawn/reload/remove).
    - `ScreepsDotNet.Backend.Http/StrongholdEndpoints.http` covers `/api/game/stronghold/*` (templates/spawn/expand).
    - `ScreepsDotNet.Backend.Http/SystemEndpoints.http` covers `/api/game/system/*` (status, pause/resume, tick duration, server messages, destructive reset with `confirm=RESET`).

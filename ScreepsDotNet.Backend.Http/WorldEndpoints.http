@@ -48,6 +48,9 @@ GET {{host}}/api/game/room-terrain?room=W1N1&encoded=1
 ### Room terrain (shard-specific)
 GET {{host}}/api/game/room-terrain?room=W21N20&shard=shard1&encoded=1
 
+### Room terrain (shard prefix)
+GET {{host}}/api/game/room-terrain?room=shard1/W21N20&encoded=1
+
 ### Bulk rooms terrain
 POST {{host}}/api/game/rooms
 Content-Type: application/json

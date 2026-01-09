@@ -76,6 +76,29 @@ public sealed class WorldEndpointsIntegrationTests(IntegrationTestHarness harnes
     }
 
     [Fact]
+    public async Task MapStats_WithShardPrefixedRoom_ResolvesShardAutomatically()
+    {
+        var token = await AuthenticateAsync();
+        var request = new HttpRequestMessage(HttpMethod.Post, ApiRoutes.Game.World.MapStats);
+        request.Headers.TryAddWithoutValidation(AuthHeaderNames.Token, token);
+        request.Content = JsonContent.Create(new
+        {
+            rooms = new[]
+            {
+                $"{SeedDataDefaults.World.SecondaryShardName}/{SeedDataDefaults.World.SecondaryShardRoom}"
+            },
+            statName = "owners1"
+        });
+
+        var response = await _client.SendAsync(request);
+
+        response.EnsureSuccessStatusCode();
+        using var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        var stats = payload.RootElement.GetProperty("stats");
+        Assert.True(stats.TryGetProperty(SeedDataDefaults.World.SecondaryShardRoom, out _));
+    }
+
+    [Fact]
     public async Task RoomStatus_ReturnsRoomFields()
     {
         var token = await AuthenticateAsync();
@@ -94,6 +117,21 @@ public sealed class WorldEndpointsIntegrationTests(IntegrationTestHarness harnes
     {
         var token = await AuthenticateAsync();
         var url = $"{ApiRoutes.Game.World.RoomStatus}?room={SeedDataDefaults.World.SecondaryShardRoom}&shard={SeedDataDefaults.World.SecondaryShardName}";
+        var request = new HttpRequestMessage(HttpMethod.Get, url);
+        request.Headers.TryAddWithoutValidation(AuthHeaderNames.Token, token);
+
+        var response = await _client.SendAsync(request);
+
+        response.EnsureSuccessStatusCode();
+        using var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        Assert.Equal("normal", payload.RootElement.GetProperty("room").GetProperty("status").GetString());
+    }
+
+    [Fact]
+    public async Task RoomStatus_WithShardPrefixedRoom_ReturnsRoomFields()
+    {
+        var token = await AuthenticateAsync();
+        var url = $"{ApiRoutes.Game.World.RoomStatus}?room={SeedDataDefaults.World.SecondaryShardName}/{SeedDataDefaults.World.SecondaryShardRoom}";
         var request = new HttpRequestMessage(HttpMethod.Get, url);
         request.Headers.TryAddWithoutValidation(AuthHeaderNames.Token, token);
 
@@ -141,6 +179,18 @@ public sealed class WorldEndpointsIntegrationTests(IntegrationTestHarness harnes
     }
 
     [Fact]
+    public async Task RoomTerrain_WithShardPrefixedRoom_ReturnsEntry()
+    {
+        var url = $"{ApiRoutes.Game.World.RoomTerrain}?room={SeedDataDefaults.World.SecondaryShardName}/{SeedDataDefaults.World.SecondaryShardRoom}&encoded=1";
+        var response = await _client.GetAsync(url);
+
+        response.EnsureSuccessStatusCode();
+        using var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        var terrain = payload.RootElement.GetProperty("terrain").EnumerateArray().First();
+        Assert.Equal(SeedDataDefaults.World.SecondaryShardRoom, terrain.GetProperty("room").GetString());
+    }
+
+    [Fact]
     public async Task Rooms_ReturnsRequestedEntries()
     {
         var response = await _client.PostAsJsonAsync(ApiRoutes.Game.World.Rooms, new
@@ -161,6 +211,24 @@ public sealed class WorldEndpointsIntegrationTests(IntegrationTestHarness harnes
         {
             rooms = new[] { SeedDataDefaults.World.SecondaryShardRoom },
             shard = SeedDataDefaults.World.SecondaryShardName
+        });
+
+        response.EnsureSuccessStatusCode();
+        using var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        var rooms = payload.RootElement.GetProperty("rooms").EnumerateArray().ToList();
+        Assert.Single(rooms);
+        Assert.Equal(SeedDataDefaults.World.SecondaryShardRoom, rooms[0].GetProperty("room").GetString());
+    }
+
+    [Fact]
+    public async Task Rooms_WithShardPrefixedInput_ReturnsShardEntries()
+    {
+        var response = await _client.PostAsJsonAsync(ApiRoutes.Game.World.Rooms, new
+        {
+            rooms = new[]
+            {
+                $"{SeedDataDefaults.World.SecondaryShardName}/{SeedDataDefaults.World.SecondaryShardRoom}"
+            }
         });
 
         response.EnsureSuccessStatusCode();

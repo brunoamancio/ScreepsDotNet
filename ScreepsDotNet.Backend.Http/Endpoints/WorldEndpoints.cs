@@ -2,7 +2,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using Microsoft.AspNetCore.Mvc;
 using ScreepsDotNet.Backend.Core.Models;
 using ScreepsDotNet.Backend.Core.Repositories;
@@ -62,7 +61,10 @@ internal static class WorldEndpoints
                               if (!IsValidRoomName(room))
                                   return Results.BadRequest(new ErrorResponse(InvalidParamsMessage));
 
-                              var status = await repository.GetRoomStatusAsync(room!, shard, cancellationToken).ConfigureAwait(false);
+                              if (!RoomReferenceParser.TryParse(room, shard, out var reference) || reference is null)
+                                  return Results.BadRequest(new ErrorResponse(InvalidParamsMessage));
+
+                              var status = await repository.GetRoomStatusAsync(reference.RoomName, reference.ShardName, cancellationToken).ConfigureAwait(false);
                               var payload = WorldResponseFactory.CreateRoomStatusResponse(status);
                               return Results.Ok(payload);
                           })
@@ -81,7 +83,10 @@ internal static class WorldEndpoints
                               if (!IsValidRoomName(room))
                                   return Results.BadRequest(new ErrorResponse(InvalidParamsMessage));
 
-                              var entries = await repository.GetTerrainEntriesAsync([RoomReference.Create(room!, shard)], cancellationToken).ConfigureAwait(false);
+                              if (!RoomReferenceParser.TryParse(room, shard, out var reference) || reference is null)
+                                  return Results.BadRequest(new ErrorResponse(InvalidParamsMessage));
+
+                              var entries = await repository.GetTerrainEntriesAsync(new[] { reference }, cancellationToken).ConfigureAwait(false);
                               var payload = string.IsNullOrEmpty(encoded)
                            ? WorldResponseFactory.CreateDecodedTerrainResponse(entries)
                            : WorldResponseFactory.CreateEncodedTerrainResponse(entries);
@@ -99,20 +104,13 @@ internal static class WorldEndpoints
                                if (request?.Rooms is null || request.Rooms.Count == 0)
                                    return Results.BadRequest(new ErrorResponse(InvalidParamsMessage));
 
-                               var rooms = request.Rooms.Where(static name => !string.IsNullOrWhiteSpace(name))
-                                                 .Select(static name => name.Trim())
-                                                 .Distinct(StringComparer.OrdinalIgnoreCase)
-                                                 .ToList();
-
-                               if (rooms.Count == 0)
+                               if (!RoomReferenceParser.TryParseRooms(request.Rooms, request.Shard, out var roomReferences))
                                    return Results.BadRequest(new ErrorResponse(InvalidParamsMessage));
 
-                               var roomReferences = rooms.Select(room => RoomReference.Create(room, request.Shard))
-                                                         .ToList();
                                var entries = await repository.GetTerrainEntriesAsync(roomReferences, cancellationToken).ConfigureAwait(false);
                                var payload = WorldResponseFactory.CreateRoomsResponse(entries);
                                return Results.Ok(payload);
-                          })
+                           })
            .WithName(RoomsEndpointName);
     }
 
@@ -156,13 +154,10 @@ internal static class WorldEndpoints
         if (request?.Rooms is null || !MapStatsRequestValidator.IsValid(request))
             return false;
 
-        var normalizedRooms = request.Rooms.Where(static name => !string.IsNullOrWhiteSpace(name))
-                                           .Select(static name => name.Trim())
-                                           .Distinct(StringComparer.OrdinalIgnoreCase)
-                                           .Select(name => RoomReference.Create(name, request.Shard))
-                                           .ToList();
+        if (!RoomReferenceParser.TryParseRooms(request.Rooms, request.Shard, out var normalizedRooms))
+            return false;
 
-        if (normalizedRooms.Count == 0 || string.IsNullOrWhiteSpace(request.StatName))
+        if (string.IsNullOrWhiteSpace(request.StatName))
             return false;
 
         rooms = normalizedRooms;

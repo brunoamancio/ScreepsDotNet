@@ -50,6 +50,7 @@ Modern .NET rewrite of the Screeps private server backend. The solution contains
 - `ScreepsDotNet.Backend.Http/IntentEndpoints.http` queues `/api/game/add-object-intent` and `/api/game/add-global-intent` payloads so you can verify manual intents without writing custom tooling.
 - `ScreepsDotNet.Backend.Http/PowerCreepEndpoints.http` hits `/api/game/power-creeps/*` (list/create/rename/upgrade/delete/cancel-delete/experimentation) for testing the new operator management surface.
 - `ScreepsDotNet.Backend.Http/WorldEndpoints.http` includes both default-room samples and new shard-aware requests (pass `shard=shard1` or include `"shard": "shard1"` in the JSON body) so you can exercise the secondary shard seeded by default.
+- All `/api/game/world/*` read routes also understand the legacy `shardName/RoomName` notation (e.g., `shard1/W21N20`). If you supply both a `shard` parameter and a prefixed room, the explicit `shard` parameter wins.
 
 5. **Run automated tests (unit + integration):**
    ```powershell
