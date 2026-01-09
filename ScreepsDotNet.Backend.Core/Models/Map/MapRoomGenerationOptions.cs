@@ -5,6 +5,7 @@
 /// </summary>
 public sealed record MapRoomGenerationOptions(
     string RoomName,
+    string? ShardName,
     MapTerrainPreset TerrainPreset,
     int SourceCount,
     bool IncludeController,

@@ -17,6 +17,7 @@ Content-Type: application/json
 
 {
     "room": "W39N39",
+    "shard": "shard1",
     "sources": 2,
     "terrain": "mixed",
     "keeperLairs": true,

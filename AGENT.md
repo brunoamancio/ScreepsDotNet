@@ -85,7 +85,7 @@
      - `dotnet run --project ScreepsDotNet.Backend.Cli -- storage status --json`
      - `dotnet run --project ScreepsDotNet.Backend.Cli -- system status --json`
      - `dotnet run --project ScreepsDotNet.Backend.Cli -- bots list --json`
-     - `dotnet run --project ScreepsDotNet.Backend.Cli -- map generate --room W10N5 --overwrite --json`
+    - `dotnet run --project ScreepsDotNet.Backend.Cli -- map generate --room W10N5 --shard shard1 --overwrite --json`
 7. **Build:** ensure no running `dotnet run` locks DLLs before invoking `dotnet build`.
 
 ### Resetting / Updating Seed Data

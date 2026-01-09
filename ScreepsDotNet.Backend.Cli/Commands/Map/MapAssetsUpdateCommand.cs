@@ -40,8 +40,9 @@ internal sealed class MapAssetsUpdateCommand(IMapControlService mapControlServic
         if (!RoomReferenceParser.TryParse(settings.RoomName, settings.Shard, out var reference) || reference is null)
             throw new InvalidOperationException("Room name validation failed.");
 
-        await mapControlService.UpdateRoomAssetsAsync(reference.RoomName, settings.Full, cancellationToken).ConfigureAwait(false);
-        AnsiConsole.MarkupLine($"[blue]Queued asset refresh for {reference.RoomName} (full={settings.Full}).[/]");
+        await mapControlService.UpdateRoomAssetsAsync(reference.RoomName, reference.ShardName, settings.Full, cancellationToken).ConfigureAwait(false);
+        var displayName = string.IsNullOrWhiteSpace(reference.ShardName) ? reference.RoomName : $"{reference.ShardName}/{reference.RoomName}";
+        AnsiConsole.MarkupLine($"[blue]Queued asset refresh for {displayName} (full={settings.Full}).[/]");
         return 0;
     }
 }

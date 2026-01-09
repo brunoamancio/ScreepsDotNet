@@ -53,6 +53,7 @@ internal static class MapEndpoints
                                var includeController = request.NoController is not true;
                                var includeKeeperLairs = request.KeeperLairs ?? false;
                                var options = new MapRoomGenerationOptions(reference.RoomName,
+                                                                           reference.ShardName,
                                                                            preset,
                                                                            request.Sources ?? 2,
                                                                            includeController,
@@ -62,7 +63,7 @@ internal static class MapEndpoints
                                                                    request.Seed);
                                try {
                                    var result = await mapControlService.GenerateRoomAsync(options, cancellationToken).ConfigureAwait(false);
-                                   return Results.Ok(new MapGenerateResponse(result));
+                                   return Results.Ok(new MapGenerateResponse(result, reference.ShardName));
                                }
                                catch (InvalidOperationException ex) {
                                    return Results.BadRequest(new ErrorResponse(ex.Message));
@@ -115,7 +116,7 @@ internal static class MapEndpoints
                                    return Results.BadRequest(new ErrorResponse("room is required"));
 
                                try {
-                                   await mapControlService.RemoveRoomAsync(reference.RoomName, request.PurgeObjects ?? false, cancellationToken).ConfigureAwait(false);
+                                   await mapControlService.RemoveRoomAsync(reference.RoomName, reference.ShardName, request.PurgeObjects ?? false, cancellationToken).ConfigureAwait(false);
                                    return Results.Ok(new { ok = 1 });
                                }
                                catch (InvalidOperationException ex) {
@@ -140,7 +141,7 @@ internal static class MapEndpoints
                                    return Results.BadRequest(new ErrorResponse("room is required"));
 
                                try {
-                                   await mapControlService.UpdateRoomAssetsAsync(reference.RoomName, request.Full ?? false, cancellationToken).ConfigureAwait(false);
+                                   await mapControlService.UpdateRoomAssetsAsync(reference.RoomName, reference.ShardName, request.Full ?? false, cancellationToken).ConfigureAwait(false);
                                    return Results.Ok(new { ok = 1 });
                                }
                                catch (InvalidOperationException ex) {
@@ -168,7 +169,7 @@ internal static class MapEndpoints
     }
 
     private static async Task<IResult> HandleRoomToggleAsync(MapRoomRequest request,
-                                                             Func<string, CancellationToken, Task> handler,
+                                                             Func<string, string?, CancellationToken, Task> handler,
                                                              ICurrentUserAccessor accessor,
                                                              CancellationToken cancellationToken)
     {
@@ -179,7 +180,7 @@ internal static class MapEndpoints
             return Results.BadRequest(new ErrorResponse("room is required"));
 
         try {
-            await handler(reference.RoomName, cancellationToken).ConfigureAwait(false);
+            await handler(reference.RoomName, reference.ShardName, cancellationToken).ConfigureAwait(false);
             return Results.Ok(new { ok = 1 });
         }
         catch (InvalidOperationException ex) {
@@ -235,15 +236,17 @@ internal static class MapEndpoints
     private sealed record MapGenerateResponse(
         [property: JsonPropertyName("ok")] int Ok,
         [property: JsonPropertyName("room")] string Room,
+        [property: JsonPropertyName("shard")] string? Shard,
         [property: JsonPropertyName("objects")] int ObjectCount,
         [property: JsonPropertyName("sources")] int SourceCount,
         [property: JsonPropertyName("controller")] bool ControllerCreated,
         [property: JsonPropertyName("keeperLairs")] bool KeeperLairsCreated,
         [property: JsonPropertyName("mineral")] string? MineralType)
     {
-        public MapGenerateResponse(MapGenerationResult result)
+        public MapGenerateResponse(MapGenerationResult result, string? shard)
             : this(1,
                    result.RoomName,
+                   shard,
                    result.ObjectCount,
                    result.SourceCount,
                    result.ControllerCreated,

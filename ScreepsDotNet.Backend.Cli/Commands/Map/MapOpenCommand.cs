@@ -36,8 +36,9 @@ internal sealed class MapOpenCommand(IMapControlService mapControlService) : Asy
         if (!RoomReferenceParser.TryParse(settings.RoomName, settings.Shard, out var reference) || reference is null)
             throw new InvalidOperationException("Room name validation failed.");
 
-        await mapControlService.OpenRoomAsync(reference.RoomName, cancellationToken).ConfigureAwait(false);
-        AnsiConsole.MarkupLine($"[green]Room {reference.RoomName} opened.[/]");
+        await mapControlService.OpenRoomAsync(reference.RoomName, reference.ShardName, cancellationToken).ConfigureAwait(false);
+        var displayName = string.IsNullOrWhiteSpace(reference.ShardName) ? reference.RoomName : $"{reference.ShardName}/{reference.RoomName}";
+        AnsiConsole.MarkupLine($"[green]Room {displayName} opened.[/]");
         return 0;
     }
 }

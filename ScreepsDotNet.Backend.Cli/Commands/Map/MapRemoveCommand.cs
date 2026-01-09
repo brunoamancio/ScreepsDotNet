@@ -40,8 +40,9 @@ internal sealed class MapRemoveCommand(IMapControlService mapControlService) : A
         if (!RoomReferenceParser.TryParse(settings.RoomName, settings.Shard, out var reference) || reference is null)
             throw new InvalidOperationException("Room name validation failed.");
 
-        await mapControlService.RemoveRoomAsync(reference.RoomName, settings.PurgeObjects, cancellationToken).ConfigureAwait(false);
-        AnsiConsole.MarkupLine($"[red]Room {reference.RoomName} removed (purge={settings.PurgeObjects}).[/]");
+        await mapControlService.RemoveRoomAsync(reference.RoomName, reference.ShardName, settings.PurgeObjects, cancellationToken).ConfigureAwait(false);
+        var displayName = string.IsNullOrWhiteSpace(reference.ShardName) ? reference.RoomName : $"{reference.ShardName}/{reference.RoomName}";
+        AnsiConsole.MarkupLine($"[red]Room {displayName} removed (purge={settings.PurgeObjects}).[/]");
         return 0;
     }
 }

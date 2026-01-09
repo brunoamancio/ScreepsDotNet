@@ -46,6 +46,36 @@ public sealed class MapEndpointsIntegrationTests(IntegrationTestHarness harness)
     }
 
     [Fact]
+    public async Task Generate_WithShard_PersistsShardMetadata()
+    {
+        var token = await LoginAsync();
+        SetAuth(token);
+
+        var payload = new
+        {
+            room = "W43N43",
+            shard = "shard8",
+            overwrite = true
+        };
+
+        var response = await _client.PostAsJsonAsync(ApiRoutes.Game.Map.Generate, payload);
+        response.EnsureSuccessStatusCode();
+        var content = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("shard8", content.GetProperty("shard").GetString());
+
+        var rooms = harness.Database.GetCollection<BsonDocument>("rooms");
+        var roomDoc = await rooms.Find(doc => doc["_id"] == "W43N43" && doc["shard"] == "shard8").FirstOrDefaultAsync();
+        Assert.NotNull(roomDoc);
+
+        var terrain = harness.Database.GetCollection<BsonDocument>("rooms.terrain");
+        var terrainDoc = await terrain.Find(doc => doc["room"] == "W43N43" && doc["shard"] == "shard8").FirstOrDefaultAsync();
+        Assert.NotNull(terrainDoc);
+
+        var objects = harness.Database.GetCollection<BsonDocument>("rooms.objects");
+        Assert.True(await objects.Find(doc => doc["room"] == "W43N43" && doc["shard"] == "shard8").AnyAsync());
+    }
+
+    [Fact]
     public async Task OpenAndCloseRoom_UpdateStatus()
     {
         await SeedRoomAsync("W31N31", status: "closed");
@@ -65,7 +95,7 @@ public sealed class MapEndpointsIntegrationTests(IntegrationTestHarness harness)
     [Fact]
     public async Task OpenRoom_WithShardPrefix_NormalizesRoom()
     {
-        await SeedRoomAsync("W41N41", status: "closed");
+        await SeedRoomAsync("W41N41", status: "closed", shard: "shard7");
 
         var token = await LoginAsync();
         SetAuth(token);
@@ -163,13 +193,19 @@ public sealed class MapEndpointsIntegrationTests(IntegrationTestHarness harness)
         _client.DefaultRequestHeaders.Add("X-Token", token);
     }
 
-    private async Task SeedRoomAsync(string roomName, string status = "normal")
+    private async Task SeedRoomAsync(string roomName, string status = "normal", string? shard = null)
     {
         var rooms = harness.Database.GetCollection<BsonDocument>("rooms");
-        await rooms.InsertOneAsync(new BsonDocument { ["_id"] = roomName, ["status"] = status });
+        var roomDoc = new BsonDocument { ["_id"] = roomName, ["status"] = status };
+        if (shard is not null)
+            roomDoc["shard"] = shard;
+        await rooms.InsertOneAsync(roomDoc);
 
         var terrain = harness.Database.GetCollection<BsonDocument>("rooms.terrain");
-        await terrain.InsertOneAsync(new BsonDocument { ["room"] = roomName, ["type"] = "terrain", ["terrain"] = new string('0', 2500) });
+        var terrainDoc = new BsonDocument { ["room"] = roomName, ["type"] = "terrain", ["terrain"] = new string('0', 2500) };
+        if (shard is not null)
+            terrainDoc["shard"] = shard;
+        await terrain.InsertOneAsync(terrainDoc);
     }
 
     private async Task<string> GetRoomStatusAsync(string roomName)

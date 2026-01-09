@@ -79,6 +79,7 @@ internal sealed class MapGenerateCommand(IMapControlService mapControlService) :
             throw new InvalidOperationException("Room name validation failed.");
 
         var options = new MapRoomGenerationOptions(reference.RoomName,
+                                                   reference.ShardName,
                                                    settings.Terrain,
                                                    settings.SourceCount,
                                                    IncludeController: !settings.NoController,
@@ -94,8 +95,9 @@ internal sealed class MapGenerateCommand(IMapControlService mapControlService) :
             return 0;
         }
 
+        var displayName = string.IsNullOrWhiteSpace(reference.ShardName) ? result.RoomName : $"{reference.ShardName}/{result.RoomName}";
         var table = new Table().AddColumn("Property").AddColumn("Value");
-        table.AddRow("Room", result.RoomName);
+        table.AddRow("Room", displayName);
         table.AddRow("Objects", result.ObjectCount.ToString(CultureInfo.InvariantCulture));
         table.AddRow("Sources", result.SourceCount.ToString(CultureInfo.InvariantCulture));
         table.AddRow("Controller", result.ControllerCreated ? "yes" : "no");

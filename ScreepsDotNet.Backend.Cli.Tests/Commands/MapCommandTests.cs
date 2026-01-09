@@ -16,6 +16,7 @@ public sealed class MapCommandTests
         var settings = new MapGenerateCommand.Settings
         {
             RoomName = " W3N3 ",
+            Shard = "shard8",
             Terrain = MapTerrainPreset.Plain,
             SourceCount = 3,
             NoController = true,
@@ -32,6 +33,7 @@ public sealed class MapCommandTests
         Assert.NotNull(service.GeneratedOptions);
         var options = service.GeneratedOptions!;
         Assert.Equal("W3N3", options.RoomName);
+        Assert.Equal("shard8", options.ShardName);
         Assert.Equal(MapTerrainPreset.Plain, options.TerrainPreset);
         Assert.Equal(3, options.SourceCount);
         Assert.False(options.IncludeController);
@@ -58,6 +60,7 @@ public sealed class MapCommandTests
 
         Assert.Equal(0, exitCode);
         Assert.Equal("W8S2", service.RemovedRoom);
+        Assert.Null(service.RemovedShard);
         Assert.True(service.PurgedObjects ?? false);
     }
 
@@ -75,6 +78,7 @@ public sealed class MapCommandTests
 
         Assert.Equal(0, exitCode);
         Assert.Equal("W7N7", service.RemovedRoom);
+        Assert.Equal("shard3", service.RemovedShard);
     }
 
     [Fact]
@@ -92,6 +96,7 @@ public sealed class MapCommandTests
 
         Assert.Equal(0, exitCode);
         Assert.Equal("W9N9", service.AssetRoomName);
+        Assert.Null(service.AssetShard);
         Assert.True(service.AssetFull ?? false);
     }
 
@@ -123,8 +128,10 @@ public sealed class MapCommandTests
         public MapGenerationResult? GenerationResult { get; set; }
         public MapGenerationResult? LastGenerationResult { get; private set; }
         public string? RemovedRoom { get; private set; }
+        public string? RemovedShard { get; private set; }
         public bool? PurgedObjects { get; private set; }
         public string? AssetRoomName { get; private set; }
+        public string? AssetShard { get; private set; }
         public bool? AssetFull { get; private set; }
         public bool TerrainRefreshed { get; private set; }
 
@@ -135,22 +142,24 @@ public sealed class MapCommandTests
             return Task.FromResult(LastGenerationResult!);
         }
 
-        public Task OpenRoomAsync(string roomName, CancellationToken cancellationToken = default)
+        public Task OpenRoomAsync(string roomName, string? shardName, CancellationToken cancellationToken = default)
             => Task.CompletedTask;
 
-        public Task CloseRoomAsync(string roomName, CancellationToken cancellationToken = default)
+        public Task CloseRoomAsync(string roomName, string? shardName, CancellationToken cancellationToken = default)
             => Task.CompletedTask;
 
-        public Task RemoveRoomAsync(string roomName, bool purgeObjects, CancellationToken cancellationToken = default)
+        public Task RemoveRoomAsync(string roomName, string? shardName, bool purgeObjects, CancellationToken cancellationToken = default)
         {
             RemovedRoom = roomName;
+            RemovedShard = shardName;
             PurgedObjects = purgeObjects;
             return Task.CompletedTask;
         }
 
-        public Task UpdateRoomAssetsAsync(string roomName, bool fullRegeneration, CancellationToken cancellationToken = default)
+        public Task UpdateRoomAssetsAsync(string roomName, string? shardName, bool fullRegeneration, CancellationToken cancellationToken = default)
         {
             AssetRoomName = roomName;
+            AssetShard = shardName;
             AssetFull = fullRegeneration;
             return Task.CompletedTask;
         }

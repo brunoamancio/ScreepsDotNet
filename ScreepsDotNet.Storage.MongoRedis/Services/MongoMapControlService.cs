@@ -24,6 +24,7 @@ public sealed partial class MongoMapControlService(IMongoDatabaseProvider databa
     {
         ArgumentNullException.ThrowIfNull(options);
         ValidateRoomName(options.RoomName);
+        var normalizedShard = string.IsNullOrWhiteSpace(options.ShardName) ? null : options.ShardName.Trim();
 
         var normalizedSources = Math.Clamp(options.SourceCount, 1, 3);
         var mineralType = string.IsNullOrWhiteSpace(options.MineralType)
@@ -32,7 +33,8 @@ public sealed partial class MongoMapControlService(IMongoDatabaseProvider databa
 
         var random = options.Seed.HasValue ? new Random(options.Seed.Value) : Random.Shared;
 
-        var existingRoom = await _rooms.Find(room => room.Id == options.RoomName)
+        var roomFilter = BuildRoomFilter(options.RoomName, normalizedShard);
+        var existingRoom = await _rooms.Find(roomFilter)
                                        .FirstOrDefaultAsync(cancellationToken)
                                        .ConfigureAwait(false);
         if (existingRoom is not null && !options.OverwriteExisting)
@@ -41,20 +43,21 @@ public sealed partial class MongoMapControlService(IMongoDatabaseProvider databa
         var roomDocument = new RoomDocument
         {
             Id = options.RoomName,
+            Shard = normalizedShard,
             Status = "normal",
             Novice = false,
             RespawnArea = false,
             OpenTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
         };
-        await _rooms.ReplaceOneAsync(room => room.Id == options.RoomName,
+        await _rooms.ReplaceOneAsync(roomFilter,
                                      roomDocument,
                                      new ReplaceOptions { IsUpsert = true },
                                      cancellationToken).ConfigureAwait(false);
 
         var terrainString = CreateEncodedTerrain(options.TerrainPreset, random);
-        await UpsertTerrainAsync(options.RoomName, terrainString, cancellationToken).ConfigureAwait(false);
+        await UpsertTerrainAsync(options.RoomName, normalizedShard, terrainString, cancellationToken).ConfigureAwait(false);
 
-        await _roomObjects.DeleteManyAsync(obj => obj.Room == options.RoomName, cancellationToken).ConfigureAwait(false);
+        await _roomObjects.DeleteManyAsync(BuildRoomObjectFilter(options.RoomName, normalizedShard), cancellationToken).ConfigureAwait(false);
         var newObjects = CreateRoomObjects(options, normalizedSources, mineralType, random);
         if (newObjects.Count > 0)
             await _roomObjects.InsertManyAsync(newObjects, cancellationToken: cancellationToken).ConfigureAwait(false);
@@ -71,29 +74,31 @@ public sealed partial class MongoMapControlService(IMongoDatabaseProvider databa
                                        mineralType);
     }
 
-    public Task OpenRoomAsync(string roomName, CancellationToken cancellationToken = default)
-        => SetRoomStatusAsync(roomName, "normal", cancellationToken);
+    public Task OpenRoomAsync(string roomName, string? shardName, CancellationToken cancellationToken = default)
+        => SetRoomStatusAsync(roomName, shardName, "normal", cancellationToken);
 
-    public Task CloseRoomAsync(string roomName, CancellationToken cancellationToken = default)
-        => SetRoomStatusAsync(roomName, "closed", cancellationToken);
+    public Task CloseRoomAsync(string roomName, string? shardName, CancellationToken cancellationToken = default)
+        => SetRoomStatusAsync(roomName, shardName, "closed", cancellationToken);
 
-    public async Task RemoveRoomAsync(string roomName, bool purgeObjects, CancellationToken cancellationToken = default)
+    public async Task RemoveRoomAsync(string roomName, string? shardName, bool purgeObjects, CancellationToken cancellationToken = default)
     {
         ValidateRoomName(roomName);
 
-        await _rooms.DeleteOneAsync(room => room.Id == roomName, cancellationToken).ConfigureAwait(false);
-        await _roomTerrain.DeleteOneAsync(terrain => terrain.Room == roomName, cancellationToken).ConfigureAwait(false);
+        var roomFilter = BuildRoomFilter(roomName, shardName);
+        await _rooms.DeleteOneAsync(roomFilter, cancellationToken).ConfigureAwait(false);
+        await _roomTerrain.DeleteOneAsync(BuildTerrainFilter(roomName, shardName), cancellationToken).ConfigureAwait(false);
 
         if (purgeObjects)
-            await _roomObjects.DeleteManyAsync(obj => obj.Room == roomName, cancellationToken).ConfigureAwait(false);
+            await _roomObjects.DeleteManyAsync(BuildRoomObjectFilter(roomName, shardName), cancellationToken).ConfigureAwait(false);
 
         logger.LogInformation("Removed room {Room} (purge objects: {Purge}).", roomName, purgeObjects);
     }
 
-    public Task UpdateRoomAssetsAsync(string roomName, bool fullRegeneration, CancellationToken cancellationToken = default)
+    public Task UpdateRoomAssetsAsync(string roomName, string? shardName, bool fullRegeneration, CancellationToken cancellationToken = default)
     {
         ValidateRoomName(roomName);
-        logger.LogWarning("Asset regeneration for room {Room} is not yet implemented. Skipping (full={Full}).", roomName, fullRegeneration);
+        var display = string.IsNullOrWhiteSpace(shardName) ? roomName : $"{shardName}/{roomName}";
+        logger.LogWarning("Asset regeneration for room {Room} is not yet implemented. Skipping (full={Full}).", display, fullRegeneration);
         return Task.CompletedTask;
     }
 
@@ -104,14 +109,14 @@ public sealed partial class MongoMapControlService(IMongoDatabaseProvider databa
         logger.LogInformation("Refreshed terrain metadata for {Count} rooms.", await _roomTerrain.CountDocumentsAsync(FilterDefinition<RoomTerrainDocument>.Empty, cancellationToken: cancellationToken).ConfigureAwait(false));
     }
 
-    private async Task SetRoomStatusAsync(string roomName, string status, CancellationToken cancellationToken)
+    private async Task SetRoomStatusAsync(string roomName, string? shardName, string status, CancellationToken cancellationToken)
     {
         ValidateRoomName(roomName);
 
         var update = Builders<RoomDocument>.Update
                                            .Set(room => room.Status, status)
                                            .Set(room => room.OpenTime, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
-        var result = await _rooms.UpdateOneAsync(room => room.Id == roomName, update, cancellationToken: cancellationToken).ConfigureAwait(false);
+        var result = await _rooms.UpdateOneAsync(BuildRoomFilter(roomName, shardName), update, cancellationToken: cancellationToken).ConfigureAwait(false);
         if (result.MatchedCount == 0)
             throw new InvalidOperationException($"Room {roomName} does not exist.");
 
@@ -124,17 +129,19 @@ public sealed partial class MongoMapControlService(IMongoDatabaseProvider databa
             throw new ArgumentException("Room name must match the Screeps notation (e.g., W8N3).", nameof(roomName));
     }
 
-    private async Task UpsertTerrainAsync(string roomName, string terrainData, CancellationToken cancellationToken)
+    private async Task UpsertTerrainAsync(string roomName, string? shardName, string terrainData, CancellationToken cancellationToken)
     {
-        var existing = await _roomTerrain.Find(document => document.Room == roomName)
+        var filter = BuildTerrainFilter(roomName, shardName);
+        var existing = await _roomTerrain.Find(filter)
                                          .FirstOrDefaultAsync(cancellationToken)
                                          .ConfigureAwait(false);
 
-        var document = existing ?? new RoomTerrainDocument { Id = ObjectId.GenerateNewId(), Room = roomName };
+        var document = existing ?? new RoomTerrainDocument { Id = ObjectId.GenerateNewId(), Room = roomName, Shard = shardName };
+        document.Shard = shardName;
         document.Type = "terrain";
         document.Terrain = terrainData;
 
-        await _roomTerrain.ReplaceOneAsync(terrain => terrain.Room == roomName,
+        await _roomTerrain.ReplaceOneAsync(filter,
                                            document,
                                            new ReplaceOptions { IsUpsert = true },
                                            cancellationToken).ConfigureAwait(false);
@@ -149,6 +156,7 @@ public sealed partial class MongoMapControlService(IMongoDatabaseProvider databa
             {
                 Id = ObjectId.GenerateNewId(),
                 Room = options.RoomName,
+                Shard = options.ShardName,
                 Type = RoomObjectType.Controller.ToDocumentValue(),
                 Level = 1,
                 X = 25,
@@ -162,6 +170,7 @@ public sealed partial class MongoMapControlService(IMongoDatabaseProvider databa
             {
                 Id = ObjectId.GenerateNewId(),
                 Room = options.RoomName,
+                Shard = options.ShardName,
                 Type = StructureType.Source.ToDocumentValue(),
                 X = x,
                 Y = y
@@ -172,6 +181,7 @@ public sealed partial class MongoMapControlService(IMongoDatabaseProvider databa
         {
             Id = ObjectId.GenerateNewId(),
             Room = options.RoomName,
+            Shard = options.ShardName,
             Type = RoomObjectType.Mineral.ToDocumentValue(),
             MineralType = mineralType,
             Density = 3,
@@ -185,6 +195,7 @@ public sealed partial class MongoMapControlService(IMongoDatabaseProvider databa
                 {
                     Id = ObjectId.GenerateNewId(),
                     Room = options.RoomName,
+                    Shard = options.ShardName,
                     Type = "keeperLair",
                     X = x,
                     Y = y
@@ -267,4 +278,37 @@ public sealed partial class MongoMapControlService(IMongoDatabaseProvider databa
 
     [GeneratedRegex("^[WE]\\d+[NS]\\d+$", RegexOptions.Compiled | RegexOptions.CultureInvariant)]
     private static partial Regex RoomNamePattern();
+
+    private static FilterDefinition<RoomDocument> BuildRoomFilter(string roomName, string? shardName)
+    {
+        var builder = Builders<RoomDocument>.Filter;
+        var filter = builder.Eq(doc => doc.Id, roomName);
+        if (!string.IsNullOrWhiteSpace(shardName))
+            return filter & builder.Eq(doc => doc.Shard, shardName);
+
+        return filter & builder.Or(builder.Eq(doc => doc.Shard, null),
+                                   builder.Exists(nameof(RoomDocument.Shard), false));
+    }
+
+    private static FilterDefinition<RoomTerrainDocument> BuildTerrainFilter(string roomName, string? shardName)
+    {
+        var builder = Builders<RoomTerrainDocument>.Filter;
+        var filter = builder.Eq(doc => doc.Room, roomName);
+        if (!string.IsNullOrWhiteSpace(shardName))
+            return filter & builder.Eq(doc => doc.Shard, shardName);
+
+        return filter & builder.Or(builder.Eq(doc => doc.Shard, null),
+                                   builder.Exists(nameof(RoomTerrainDocument.Shard), false));
+    }
+
+    private static FilterDefinition<RoomObjectDocument> BuildRoomObjectFilter(string roomName, string? shardName)
+    {
+        var builder = Builders<RoomObjectDocument>.Filter;
+        var filter = builder.Eq(doc => doc.Room, roomName);
+        if (!string.IsNullOrWhiteSpace(shardName))
+            return filter & builder.Eq(doc => doc.Shard, shardName);
+
+        return filter & builder.Or(builder.Eq(doc => doc.Shard, null),
+                                   builder.Exists(nameof(RoomObjectDocument.Shard), false));
+    }
 }

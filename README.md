@@ -135,17 +135,17 @@ dotnet run --project ScreepsDotNet.Backend.Cli -- system tick set --ms 750
 
 | Command | Purpose | Key flags |
 | --- | --- | --- |
-| `map generate --room <name> [--sources <1-5>] [--terrain <preset>] [--no-controller] [--keeper-lairs] [--mineral <type>] [--overwrite] [--seed <int>] [--json]` | Procedurally create or overwrite a room with deterministic options. | Terrain presets follow `plain`, `swampLow`, `swampHeavy`, `checker`, `mixed`. |
-| `map open --room <name>` | Mark a room as active/accessible. | |
-| `map close --room <name>` | Disable a room (legacy “bus” flag). | |
-| `map remove --room <name> [--purge-objects]` | Delete the room entry (optionally wipe room objects). | |
-| `map assets update --room <name> [--full]` | Regenerate cached renderer assets for a room. | `--full` performs a complete rebuild instead of incremental. |
+| `map generate --room <name> [--shard <name>] [--sources <1-5>] [--terrain <preset>] [--no-controller] [--keeper-lairs] [--mineral <type>] [--overwrite] [--seed <int>] [--json]` | Procedurally create or overwrite a room with deterministic options. | Terrain presets follow `plain`, `swampLow`, `swampHeavy`, `checker`, `mixed`. |
+| `map open --room <name> [--shard <name>]` | Mark a room as active/accessible. | |
+| `map close --room <name> [--shard <name>]` | Disable a room (legacy “bus” flag). | |
+| `map remove --room <name> [--shard <name>] [--purge-objects]` | Delete the room entry (optionally wipe room objects). | |
+| `map assets update --room <name> [--shard <name>] [--full]` | Regenerate cached renderer assets for a room. | `--full` performs a complete rebuild instead of incremental. |
 | `map terrain refresh` | Rebuild the global terrain cache (no parameters). | |
 
 Example:
 
 ```powershell
-dotnet run --project ScreepsDotNet.Backend.Cli -- map generate --room W10N5 --sources 3 --terrain swampHeavy --keeper-lairs --overwrite --json
+dotnet run --project ScreepsDotNet.Backend.Cli -- map generate --room W10N5 --shard shard1 --sources 3 --terrain swampHeavy --keeper-lairs --overwrite --json
 ```
 
 ## Storage Notes
