@@ -95,6 +95,34 @@ public sealed class FlagEndpointsIntegrationTests(IntegrationTestHarness harness
     }
 
     [Fact]
+    public async Task CreateFlag_WithShard_PersistsShard()
+    {
+        var token = await LoginAsync();
+        var room = SeedDataDefaults.World.SecondaryShardRoom;
+        var shard = SeedDataDefaults.World.SecondaryShardName;
+        var name = "ShardFlag";
+        var request = new
+        {
+            room,
+            shard,
+            x = 5,
+            y = 5,
+            name,
+            color = (int)Color.White,
+            secondaryColor = (int)Color.Grey
+        };
+        _client.DefaultRequestHeaders.Add("X-Token", token);
+
+        var response = await _client.PostAsJsonAsync(ApiRoutes.Game.World.CreateFlag, request);
+        response.EnsureSuccessStatusCode();
+
+        var flagsCollection = harness.Database.GetCollection<RoomFlagDocument>("rooms.flags");
+        var flag = await flagsCollection.Find(f => f.Id == name).FirstOrDefaultAsync();
+        Assert.NotNull(flag);
+        Assert.Equal(shard, flag.Shard);
+    }
+
+    [Fact]
     public async Task CreateFlag_TeleportsExistingFlag()
     {
         // Arrange

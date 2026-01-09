@@ -9,6 +9,7 @@ using ScreepsDotNet.Backend.Core.Context;
 using ScreepsDotNet.Backend.Core.Models.Bots;
 using ScreepsDotNet.Backend.Core.Services;
 using ScreepsDotNet.Backend.Http.Authentication;
+using ScreepsDotNet.Backend.Http.Endpoints.Helpers;
 using ScreepsDotNet.Backend.Http.Endpoints.Models;
 using ScreepsDotNet.Backend.Http.Routing;
 
@@ -54,15 +55,23 @@ internal static class BotEndpoints
                                if (string.IsNullOrWhiteSpace(request.Bot) || string.IsNullOrWhiteSpace(request.Room))
                                    return Results.BadRequest(new ErrorResponse("invalid params"));
 
+                               if (!RoomReferenceParser.TryParse(request.Room, request.Shard, out var roomReference) || roomReference is null)
+                                   return Results.BadRequest(new ErrorResponse("invalid params"));
+
                                try {
                                    var options = new BotSpawnOptions(request.Username, request.Cpu, request.GlobalControlLevel, request.SpawnX, request.SpawnY);
-                                   var result = await botControlService.SpawnAsync(request.Bot, request.Room, options, cancellationToken).ConfigureAwait(false);
+                                   var result = await botControlService.SpawnAsync(request.Bot,
+                                                                                      roomReference.RoomName,
+                                                                                      roomReference.ShardName,
+                                                                                      options,
+                                                                                      cancellationToken).ConfigureAwait(false);
                                    return Results.Ok(new
                                    {
                                        ok = 1,
                                        userId = result.UserId,
                                        username = result.Username,
                                        room = result.RoomName,
+                                       shard = result.ShardName,
                                        spawn = new { x = result.SpawnX, y = result.SpawnY }
                                    });
                                }
@@ -145,6 +154,7 @@ internal static class BotEndpoints
     private sealed record BotSpawnRequest(
         [property: JsonPropertyName("bot")] string Bot,
         [property: JsonPropertyName("room")] string Room,
+        [property: JsonPropertyName("shard")] string? Shard,
         [property: JsonPropertyName("username")] string? Username,
         [property: JsonPropertyName("cpu")] int? Cpu,
         [property: JsonPropertyName("gcl")] int? GlobalControlLevel,

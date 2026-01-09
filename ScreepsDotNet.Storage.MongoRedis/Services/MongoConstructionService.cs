@@ -20,7 +20,14 @@ public sealed class MongoConstructionService(IMongoDatabaseProvider databaseProv
 
     public async Task<PlaceConstructionResult> CreateConstructionAsync(string userId, PlaceConstructionRequest request, CancellationToken cancellationToken = default)
     {
-        logger.LogDebug("CreateConstructionAsync: User={UserId}, Room={Room}, X={X}, Y={Y}, Type={StructureType}", userId, request.Room, request.X, request.Y, request.StructureType);
+        if (string.IsNullOrWhiteSpace(request.Room))
+            return new PlaceConstructionResult(PlaceConstructionResultStatus.InvalidParams, ErrorMessage: "Invalid room");
+
+        var roomName = request.Room.Trim();
+        var shardName = string.IsNullOrWhiteSpace(request.Shard) ? null : request.Shard.Trim();
+
+        logger.LogDebug("CreateConstructionAsync: User={UserId}, Room={Room}, Shard={Shard}, X={X}, Y={Y}, Type={StructureType}",
+            userId, roomName, shardName ?? "default", request.X, request.Y, request.StructureType);
 
         if (request.X < 0 || request.X > 49 || request.Y < 0 || request.Y > 49)
             return new PlaceConstructionResult(PlaceConstructionResultStatus.InvalidParams, ErrorMessage: "Invalid coordinates");
@@ -35,12 +42,12 @@ public sealed class MongoConstructionService(IMongoDatabaseProvider databaseProv
             return new PlaceConstructionResult(PlaceConstructionResultStatus.InvalidParams, ErrorMessage: "Spawn name required");
 
         // checkConstructionSpot
-        var spotResult = await CheckConstructionSpotAsync(request.Room, request.StructureType, request.X, request.Y, cancellationToken).ConfigureAwait(false);
+        var spotResult = await CheckConstructionSpotAsync(roomName, shardName, request.StructureType, request.X, request.Y, cancellationToken).ConfigureAwait(false);
         if (spotResult.Status != PlaceConstructionResultStatus.Success)
             return spotResult;
 
         // checkController
-        var controllerResult = await CheckControllerAsync(request.Room, userId, request.StructureType, cancellationToken).ConfigureAwait(false);
+        var controllerResult = await CheckControllerAsync(roomName, shardName, userId, request.StructureType, cancellationToken).ConfigureAwait(false);
         if (controllerResult.Status != PlaceConstructionResultStatus.Success)
             return controllerResult;
 
@@ -57,7 +64,8 @@ public sealed class MongoConstructionService(IMongoDatabaseProvider databaseProv
         // progressTotal calculation
         var progressTotal = GameConstants.ConstructionCost[request.StructureType];
         if (request.StructureType == StructureType.Road) {
-            var terrainDoc = await _roomTerrainCollection.Find(t => t.Room == request.Room).FirstOrDefaultAsync(cancellationToken).ConfigureAwait(false);
+            var terrainFilter = BuildTerrainFilter(roomName, shardName);
+            var terrainDoc = await _roomTerrainCollection.Find(terrainFilter).FirstOrDefaultAsync(cancellationToken).ConfigureAwait(false);
             if (terrainDoc != null) {
                 var terrainValue = GetTerrainAt(terrainDoc.Terrain, request.X, request.Y);
                 if ((terrainValue & GameConstants.TerrainMaskSwamp) != 0)
@@ -73,7 +81,7 @@ public sealed class MongoConstructionService(IMongoDatabaseProvider databaseProv
         {
             ["_id"] = siteId,
             ["type"] = StructureType.ConstructionSite.ToDocumentValue(),
-            ["room"] = request.Room,
+            ["room"] = roomName,
             ["x"] = request.X,
             ["y"] = request.Y,
             ["structureType"] = request.StructureType.ToDocumentValue(),
@@ -82,55 +90,59 @@ public sealed class MongoConstructionService(IMongoDatabaseProvider databaseProv
             ["progress"] = 0,
             ["progressTotal"] = progressTotal
         };
+        if (!string.IsNullOrWhiteSpace(shardName))
+            siteDoc["shard"] = shardName;
 
         await _roomObjectsCollection.InsertOneAsync(siteDoc, cancellationToken: cancellationToken).ConfigureAwait(false);
 
-        logger.LogInformation("User {UserId} created construction site {StructureType} in {Room} at ({X}, {Y})", userId, request.StructureType, request.Room, request.X, request.Y);
+        logger.LogInformation("User {UserId} created construction site {StructureType} in {Room} (shard: {Shard}) at ({X}, {Y})",
+            userId, request.StructureType, roomName, shardName ?? "default", request.X, request.Y);
 
         return new PlaceConstructionResult(PlaceConstructionResultStatus.Success, Id: siteId.ToString());
     }
 
-    private async Task<PlaceConstructionResult> CheckConstructionSpotAsync(string room, StructureType structureType, int x, int y, CancellationToken cancellationToken)
+    private async Task<PlaceConstructionResult> CheckConstructionSpotAsync(string room, string? shard, StructureType structureType, int x, int y, CancellationToken cancellationToken)
     {
         if (x <= 0 || y <= 0 || x >= 49 || y >= 49)
             return new PlaceConstructionResult(PlaceConstructionResultStatus.InvalidLocation);
 
-        var terrainDoc = await _roomTerrainCollection.Find(t => t.Room == room).FirstOrDefaultAsync(cancellationToken).ConfigureAwait(false);
+        var terrainFilter = BuildTerrainFilter(room, shard);
+        var terrainDoc = await _roomTerrainCollection.Find(terrainFilter).FirstOrDefaultAsync(cancellationToken).ConfigureAwait(false);
         if (terrainDoc == null)
             return new PlaceConstructionResult(PlaceConstructionResultStatus.InvalidRoom);
 
+        var builder = Builders<BsonDocument>.Filter;
+        var baseRoomFilter = ShardFilterBuilder.ForRoom(builder, room, shard);
+
         if (structureType == StructureType.Extractor) {
-            var mineral = await _roomObjectsCollection.Find(Builders<BsonDocument>.Filter.And(
-                Builders<BsonDocument>.Filter.Eq("room", room),
-                Builders<BsonDocument>.Filter.Eq("x", x),
-                Builders<BsonDocument>.Filter.Eq("y", y),
-                Builders<BsonDocument>.Filter.Eq("type", StructureType.Mineral.ToDocumentValue())
-            )).AnyAsync(cancellationToken).ConfigureAwait(false);
+            var mineralFilter = baseRoomFilter &
+                                builder.Eq("x", x) &
+                                builder.Eq("y", y) &
+                                builder.Eq("type", StructureType.Mineral.ToDocumentValue());
+            var mineral = await _roomObjectsCollection.Find(mineralFilter).AnyAsync(cancellationToken).ConfigureAwait(false);
             if (!mineral)
                 return new PlaceConstructionResult(PlaceConstructionResultStatus.InvalidLocation, ErrorMessage: "Extractor must be on mineral");
         }
 
         // Check existing same structure or site
-        var existing = await _roomObjectsCollection.Find(Builders<BsonDocument>.Filter.And(
-            Builders<BsonDocument>.Filter.Eq("room", room),
-            Builders<BsonDocument>.Filter.Eq("x", x),
-            Builders<BsonDocument>.Filter.Eq("y", y),
-            Builders<BsonDocument>.Filter.Or(
-                Builders<BsonDocument>.Filter.Eq("type", structureType.ToDocumentValue()),
-                Builders<BsonDocument>.Filter.Eq("type", StructureType.ConstructionSite.ToDocumentValue())
-            )
-        )).AnyAsync(cancellationToken).ConfigureAwait(false);
+        var existingFilter = baseRoomFilter &
+                             builder.Eq("x", x) &
+                             builder.Eq("y", y) &
+                             builder.Or(
+                                 builder.Eq("type", structureType.ToDocumentValue()),
+                                 builder.Eq("type", StructureType.ConstructionSite.ToDocumentValue())
+                             );
+        var existing = await _roomObjectsCollection.Find(existingFilter).AnyAsync(cancellationToken).ConfigureAwait(false);
         if (existing)
             return new PlaceConstructionResult(PlaceConstructionResultStatus.InvalidLocation, ErrorMessage: "Position occupied");
 
         // Check blockers
         if (structureType != StructureType.Rampart) {
-            var blocker = await _roomObjectsCollection.Find(Builders<BsonDocument>.Filter.And(
-                Builders<BsonDocument>.Filter.Eq("room", room),
-                Builders<BsonDocument>.Filter.Eq("x", x),
-                Builders<BsonDocument>.Filter.Eq("y", y),
-                Builders<BsonDocument>.Filter.In("type", GameConstants.BlockerStructureTypes.Select(t => t.ToDocumentValue()))
-            )).AnyAsync(cancellationToken).ConfigureAwait(false);
+            var blockerFilter = baseRoomFilter &
+                                builder.Eq("x", x) &
+                                builder.Eq("y", y) &
+                                builder.In("type", GameConstants.BlockerStructureTypes.Select(t => t.ToDocumentValue()));
+            var blocker = await _roomObjectsCollection.Find(blockerFilter).AnyAsync(cancellationToken).ConfigureAwait(false);
             if (blocker)
                 return new PlaceConstructionResult(PlaceConstructionResultStatus.InvalidLocation, ErrorMessage: "Position blocked");
         }
@@ -142,14 +154,13 @@ public sealed class MongoConstructionService(IMongoDatabaseProvider databaseProv
         }
 
         // Check near exit
-        var nearExit = await _roomObjectsCollection.Find(Builders<BsonDocument>.Filter.And(
-            Builders<BsonDocument>.Filter.Eq("room", room),
-            Builders<BsonDocument>.Filter.Gt("x", x - 2),
-            Builders<BsonDocument>.Filter.Lt("x", x + 2),
-            Builders<BsonDocument>.Filter.Gt("y", y - 2),
-            Builders<BsonDocument>.Filter.Lt("y", y + 2),
-            Builders<BsonDocument>.Filter.Eq("type", StructureType.Exit.ToDocumentValue())
-        )).AnyAsync(cancellationToken).ConfigureAwait(false);
+        var nearExitFilter = baseRoomFilter &
+                             builder.Gt("x", x - 2) &
+                             builder.Lt("x", x + 2) &
+                             builder.Gt("y", y - 2) &
+                             builder.Lt("y", y + 2) &
+                             builder.Eq("type", StructureType.Exit.ToDocumentValue());
+        var nearExit = await _roomObjectsCollection.Find(nearExitFilter).AnyAsync(cancellationToken).ConfigureAwait(false);
         if (nearExit)
             return new PlaceConstructionResult(PlaceConstructionResultStatus.InvalidLocation, ErrorMessage: "Too near exit");
 
@@ -170,12 +181,14 @@ public sealed class MongoConstructionService(IMongoDatabaseProvider databaseProv
         return new PlaceConstructionResult(PlaceConstructionResultStatus.Success);
     }
 
-    private async Task<PlaceConstructionResult> CheckControllerAsync(string room, string userId, StructureType structureType, CancellationToken cancellationToken)
+    private async Task<PlaceConstructionResult> CheckControllerAsync(string room, string? shard, string userId, StructureType structureType, CancellationToken cancellationToken)
     {
-        var controller = await _roomObjectsCollection.Find(Builders<BsonDocument>.Filter.And(
-            Builders<BsonDocument>.Filter.Eq("room", room),
-            Builders<BsonDocument>.Filter.Eq("type", StructureType.Controller.ToDocumentValue())
-        )).FirstOrDefaultAsync(cancellationToken).ConfigureAwait(false);
+        var builder = Builders<BsonDocument>.Filter;
+        var controllerFilter = ShardFilterBuilder.ForRoom(builder, room, shard) &
+                               builder.Eq("type", StructureType.Controller.ToDocumentValue());
+        var controller = await _roomObjectsCollection.Find(controllerFilter)
+                                                     .FirstOrDefaultAsync(cancellationToken)
+                                                     .ConfigureAwait(false);
 
         if (controller == null)
             return new PlaceConstructionResult(PlaceConstructionResultStatus.Success); // Room without controller? Legacy allowed it if not spawn
@@ -197,22 +210,32 @@ public sealed class MongoConstructionService(IMongoDatabaseProvider databaseProv
         if (!GameConstants.ControllerStructures.TryGetValue(structureType, out var limits))
             return new PlaceConstructionResult(PlaceConstructionResultStatus.Success);
 
-        var existingCount = await _roomObjectsCollection.CountDocumentsAsync(
-            Builders<BsonDocument>.Filter.And(
-                Builders<BsonDocument>.Filter.Eq("room", room),
-                Builders<BsonDocument>.Filter.Or(
-                    Builders<BsonDocument>.Filter.Eq("type", structureType.ToDocumentValue()),
-                    Builders<BsonDocument>.Filter.And(
-                        Builders<BsonDocument>.Filter.Eq("type", StructureType.ConstructionSite.ToDocumentValue()),
-                        Builders<BsonDocument>.Filter.Eq("structureType", structureType.ToDocumentValue())
-                    )
-                )
-            ), cancellationToken: cancellationToken).ConfigureAwait(false);
+        var countFilter = ShardFilterBuilder.ForRoom(builder, room, shard) &
+                          builder.Or(
+                              builder.Eq("type", structureType.ToDocumentValue()),
+                              builder.And(
+                                  builder.Eq("type", StructureType.ConstructionSite.ToDocumentValue()),
+                                  builder.Eq("structureType", structureType.ToDocumentValue())
+                              )
+                          );
+
+        var existingCount = await _roomObjectsCollection.CountDocumentsAsync(countFilter, cancellationToken: cancellationToken).ConfigureAwait(false);
 
         if (existingCount >= limits[rcl])
             return new PlaceConstructionResult(PlaceConstructionResultStatus.RclNotEnough);
 
         return new PlaceConstructionResult(PlaceConstructionResultStatus.Success);
+    }
+
+    private static FilterDefinition<RoomTerrainDocument> BuildTerrainFilter(string room, string? shard)
+    {
+        var builder = Builders<RoomTerrainDocument>.Filter;
+        var filter = builder.Eq(document => document.Room, room);
+        if (!string.IsNullOrWhiteSpace(shard))
+            return filter & builder.Eq(document => document.Shard, shard);
+
+        return filter & builder.Or(builder.Eq(document => document.Shard, null),
+                                   builder.Exists(nameof(RoomTerrainDocument.Shard), false));
     }
 
     private static int GetTerrainAt(string? terrain, int x, int y)

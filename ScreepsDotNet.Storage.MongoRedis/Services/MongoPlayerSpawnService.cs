@@ -42,6 +42,13 @@ public sealed class MongoPlayerSpawnService(IMongoDatabaseProvider databaseProvi
         if (request.Name is { Length: > 50 })
             return new PlaceSpawnResult(PlaceSpawnResultStatus.InvalidParams, "Name too long");
 
+        if (string.IsNullOrWhiteSpace(request.Room))
+            return new PlaceSpawnResult(PlaceSpawnResultStatus.InvalidParams, "Invalid room");
+
+        var roomName = request.Room.Trim();
+        var shardName = string.IsNullOrWhiteSpace(request.Shard) ? null : request.Shard.Trim();
+        var bsonFilterBuilder = Builders<BsonDocument>.Filter;
+
         var profile = await userRepository.GetProfileAsync(userId, cancellationToken).ConfigureAwait(false);
         if (profile == null)
             return new PlaceSpawnResult(PlaceSpawnResultStatus.UserNotFound);
@@ -63,9 +70,8 @@ public sealed class MongoPlayerSpawnService(IMongoDatabaseProvider databaseProvi
             return new PlaceSpawnResult(PlaceSpawnResultStatus.AlreadyPlaying);
 
         // Validate room and controller
-        var controllerFilter = Builders<BsonDocument>.Filter.And(
-            Builders<BsonDocument>.Filter.Eq("room", request.Room),
-            Builders<BsonDocument>.Filter.Eq("type", StructureType.Controller.ToDocumentValue()));
+        var controllerFilter = ShardFilterBuilder.ForRoom(bsonFilterBuilder, roomName, shardName) &
+                               bsonFilterBuilder.Eq("type", StructureType.Controller.ToDocumentValue());
         var controller = await _roomObjectsCollection.Find(controllerFilter).FirstOrDefaultAsync(cancellationToken).ConfigureAwait(false);
 
         if (controller == null)
@@ -75,26 +81,29 @@ public sealed class MongoPlayerSpawnService(IMongoDatabaseProvider databaseProvi
             return new PlaceSpawnResult(PlaceSpawnResultStatus.InvalidRoom, "Room is already owned");
 
         // Validate position
-        var terrainDoc = await _roomTerrainCollection.Find(t => t.Room == request.Room).FirstOrDefaultAsync(cancellationToken).ConfigureAwait(false);
+        var terrainFilter = BuildTerrainFilter(roomName, shardName);
+        var terrainDoc = await _roomTerrainCollection.Find(terrainFilter)
+                                                     .FirstOrDefaultAsync(cancellationToken)
+                                                     .ConfigureAwait(false);
         if (terrainDoc == null)
             return new PlaceSpawnResult(PlaceSpawnResultStatus.InvalidRoom, "Room terrain not found");
 
         if (IsWall(terrainDoc.Terrain, request.X, request.Y))
             return new PlaceSpawnResult(PlaceSpawnResultStatus.InvalidPosition, "Cannot place on wall");
 
-        var objectsAtPos = await _roomObjectsCollection.Find(
-            Builders<BsonDocument>.Filter.And(
-                Builders<BsonDocument>.Filter.Eq("room", request.Room),
-                Builders<BsonDocument>.Filter.Eq("x", request.X),
-                Builders<BsonDocument>.Filter.Eq("y", request.Y)
-            )).AnyAsync(cancellationToken).ConfigureAwait(false);
+        var positionFilter = ShardFilterBuilder.ForRoom(bsonFilterBuilder, roomName, shardName) &
+                             bsonFilterBuilder.Eq("x", request.X) &
+                             bsonFilterBuilder.Eq("y", request.Y);
+        var objectsAtPos = await _roomObjectsCollection.Find(positionFilter)
+                                                       .AnyAsync(cancellationToken)
+                                                       .ConfigureAwait(false);
         if (objectsAtPos)
             return new PlaceSpawnResult(PlaceSpawnResultStatus.InvalidPosition, "Position is occupied");
 
         var gameTime = await worldMetadata.GetGameTimeAsync(cancellationToken).ConfigureAwait(false);
 
         // Room cleanup
-        await CleanupRoomAsync(request.Room, gameTime, cancellationToken).ConfigureAwait(false);
+        await CleanupRoomAsync(roomName, shardName, gameTime, cancellationToken).ConfigureAwait(false);
 
         // Update controller
         var safeModeExpiry = gameTime + DefaultSafeModeDuration;
@@ -107,20 +116,27 @@ public sealed class MongoPlayerSpawnService(IMongoDatabaseProvider databaseProvi
         await _roomObjectsCollection.UpdateOneAsync(controllerFilter, controllerUpdate, cancellationToken: cancellationToken).ConfigureAwait(false);
 
         // Reset sources
+        var sourcesFilter = ShardFilterBuilder.ForRoom(bsonFilterBuilder, roomName, shardName) &
+                            bsonFilterBuilder.Eq("type", StructureType.Source.ToDocumentValue());
         await _roomObjectsCollection.UpdateManyAsync(
-            Builders<BsonDocument>.Filter.And(
-                Builders<BsonDocument>.Filter.Eq("room", request.Room),
-                Builders<BsonDocument>.Filter.Eq("type", StructureType.Source.ToDocumentValue())),
+            sourcesFilter,
             Builders<BsonDocument>.Update.Set("invaderHarvested", 0),
             cancellationToken: cancellationToken).ConfigureAwait(false);
 
         // Insert spawn
-        await InsertSpawnAsync(request, userId, cancellationToken).ConfigureAwait(false);
+        await InsertSpawnAsync(request, roomName, shardName, userId, cancellationToken).ConfigureAwait(false);
 
         // Update room
+        var roomFilter = ShardFilterBuilder.ForRoomId(bsonFilterBuilder, roomName, shardName);
+        var roomUpdate = Builders<BsonDocument>.Update
+                                               .Set("status", "normal")
+                                               .Set("invaderGoal", DefaultInvaderGoal);
+        if (!string.IsNullOrWhiteSpace(shardName))
+            roomUpdate = roomUpdate.Set("shard", shardName);
+
         await _roomsCollection.UpdateOneAsync(
-            Builders<BsonDocument>.Filter.Eq("_id", request.Room),
-            Builders<BsonDocument>.Update.Set("status", "normal").Set("invaderGoal", DefaultInvaderGoal),
+            roomFilter,
+            roomUpdate,
             new UpdateOptions { IsUpsert = true },
             cancellationToken).ConfigureAwait(false);
 
@@ -130,37 +146,35 @@ public sealed class MongoPlayerSpawnService(IMongoDatabaseProvider databaseProvi
             Builders<UserDocument>.Update.Set(u => u.Active, 10000),
             cancellationToken: cancellationToken).ConfigureAwait(false);
 
-        logger.LogInformation("User {UserId} placed spawn in {Room} at ({X}, {Y})", userId, request.Room, request.X, request.Y);
+        logger.LogInformation("User {UserId} placed spawn in {Room} (shard: {Shard}) at ({X}, {Y})",
+            userId, roomName, shardName ?? "default", request.X, request.Y);
 
         return new PlaceSpawnResult(PlaceSpawnResultStatus.Success);
     }
 
-    private async Task CleanupRoomAsync(string room, long gameTime, CancellationToken cancellationToken)
+    private async Task CleanupRoomAsync(string room, string? shard, long gameTime, CancellationToken cancellationToken)
     {
-        // Delete creeps and construction sites
-        await _roomObjectsCollection.DeleteManyAsync(
-            Builders<BsonDocument>.Filter.And(
-                Builders<BsonDocument>.Filter.Eq("room", room),
-                Builders<BsonDocument>.Filter.Ne("user", BsonNull.Value),
-                Builders<BsonDocument>.Filter.In("type", CleanupObjectTypes)
-            ), cancellationToken).ConfigureAwait(false);
+        var filterBuilder = Builders<BsonDocument>.Filter;
+        var roomFilter = ShardFilterBuilder.ForRoom(filterBuilder, room, shard);
 
-        // Convert structures to ruins
-        var structuresFilter = Builders<BsonDocument>.Filter.And(
-            Builders<BsonDocument>.Filter.Eq("room", room),
-            Builders<BsonDocument>.Filter.Ne("user", BsonNull.Value),
-            Builders<BsonDocument>.Filter.Exists("hitsMax") // Assuming structures have hitsMax
-        );
-        // Note: The legacy code uses a list of structure types.
-        // For simplicity, we'll follow the logic of converting everything with a user and hitsMax that isn't excluded.
-        // Controller is excluded implicitly because it's usually not deleted/converted.
+        var cleanupFilter = roomFilter &
+                            filterBuilder.Ne("user", BsonNull.Value) &
+                            filterBuilder.In("type", CleanupObjectTypes);
 
-        var structures = await _roomObjectsCollection.Find(structuresFilter).ToListAsync(cancellationToken).ConfigureAwait(false);
+        await _roomObjectsCollection.DeleteManyAsync(cleanupFilter, cancellationToken).ConfigureAwait(false);
+
+        var structuresFilter = roomFilter &
+                               filterBuilder.Ne("user", BsonNull.Value) &
+                               filterBuilder.Exists("hitsMax");
+
+        var structures = await _roomObjectsCollection.Find(structuresFilter)
+                                                     .ToListAsync(cancellationToken)
+                                                     .ConfigureAwait(false);
         var ruins = new List<BsonDocument>();
         foreach (var s in structures) {
             if (s["type"].AsString == StructureType.Controller.ToDocumentValue()) continue;
 
-            ruins.Add(new BsonDocument
+            var ruin = new BsonDocument
             {
                 ["_id"] = ObjectId.GenerateNewId(),
                 ["type"] = StructureType.Ruin.ToDocumentValue(),
@@ -179,7 +193,11 @@ public sealed class MongoPlayerSpawnService(IMongoDatabaseProvider databaseProvi
                 ["store"] = s.GetValue("store", new BsonDocument()),
                 ["destroyTime"] = gameTime,
                 ["decayTime"] = gameTime + 100_000
-            });
+            };
+            if (!string.IsNullOrWhiteSpace(shard))
+                ruin["shard"] = shard;
+
+            ruins.Add(ruin);
         }
 
         if (ruins.Count > 0)
@@ -188,13 +206,13 @@ public sealed class MongoPlayerSpawnService(IMongoDatabaseProvider databaseProvi
         await _roomObjectsCollection.DeleteManyAsync(structuresFilter, cancellationToken).ConfigureAwait(false);
     }
 
-    private async Task InsertSpawnAsync(PlaceSpawnRequest request, string userId, CancellationToken cancellationToken)
+    private async Task InsertSpawnAsync(PlaceSpawnRequest request, string room, string? shard, string userId, CancellationToken cancellationToken)
     {
         var spawnDoc = new BsonDocument
         {
             ["_id"] = ObjectId.GenerateNewId(),
             ["type"] = StructureType.Spawn.ToDocumentValue(),
-            ["room"] = request.Room,
+            ["room"] = room,
             ["x"] = request.X,
             ["y"] = request.Y,
             ["name"] = request.Name ?? "Spawn1",
@@ -206,7 +224,21 @@ public sealed class MongoPlayerSpawnService(IMongoDatabaseProvider databaseProvi
             ["spawning"] = BsonNull.Value,
             ["notifyWhenAttacked"] = true
         };
+        if (!string.IsNullOrWhiteSpace(shard))
+            spawnDoc["shard"] = shard;
+
         await _roomObjectsCollection.InsertOneAsync(spawnDoc, cancellationToken: cancellationToken).ConfigureAwait(false);
+    }
+
+    private static FilterDefinition<RoomTerrainDocument> BuildTerrainFilter(string room, string? shard)
+    {
+        var builder = Builders<RoomTerrainDocument>.Filter;
+        var filter = builder.Eq(document => document.Room, room);
+        if (!string.IsNullOrWhiteSpace(shard))
+            return filter & builder.Eq(document => document.Shard, shard);
+
+        return filter & builder.Or(builder.Eq(document => document.Shard, null),
+                                   builder.Exists(nameof(RoomTerrainDocument.Shard), false));
     }
 
     private static bool IsWall(string? terrain, int x, int y)

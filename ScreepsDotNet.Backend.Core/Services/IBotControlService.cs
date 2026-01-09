@@ -7,7 +7,7 @@ using ScreepsDotNet.Backend.Core.Models.Bots;
 /// </summary>
 public interface IBotControlService
 {
-    Task<BotSpawnResult> SpawnAsync(string botName, string roomName, BotSpawnOptions options, CancellationToken cancellationToken = default);
+    Task<BotSpawnResult> SpawnAsync(string botName, string roomName, string? shardName, BotSpawnOptions options, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Reloads (re-syncs) the AI modules for every bot using the specified definition.

@@ -22,6 +22,10 @@ internal sealed class FlagRemoveCommand(IFlagService flagService, IUserRepositor
         [Description("The room name (e.g., W1N1).")]
         public string RoomName { get; init; } = string.Empty;
 
+        [CommandOption("--shard <NAME>")]
+        [Description("Optional shard name (e.g., shard1).")]
+        public string? Shard { get; init; }
+
         [CommandOption("--name <NAME>")]
         [Description("Unique name for the flag.")]
         public string Name { get; init; } = string.Empty;
@@ -56,6 +60,7 @@ internal sealed class FlagRemoveCommand(IFlagService flagService, IUserRepositor
         var result = await flagService.RemoveFlagAsync(
             userId,
             settings.RoomName,
+            settings.Shard,
             settings.Name,
             cancellationToken
         );
@@ -65,7 +70,8 @@ internal sealed class FlagRemoveCommand(IFlagService flagService, IUserRepositor
             return 1;
         }
 
-        AnsiConsole.MarkupLine($"[green]Success:[/] Flag [yellow]{settings.Name}[/] removed from [blue]{settings.RoomName}[/].");
+        var shardLabel = string.IsNullOrWhiteSpace(settings.Shard) ? string.Empty : $" ({Markup.Escape(settings.Shard)})";
+        AnsiConsole.MarkupLine($"[green]Success:[/] Flag [yellow]{settings.Name}[/] removed from [blue]{settings.RoomName}[/]{shardLabel}.");
         return 0;
     }
 }

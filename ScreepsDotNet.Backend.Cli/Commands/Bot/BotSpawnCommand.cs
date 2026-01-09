@@ -22,6 +22,10 @@ internal sealed class BotSpawnCommand(IBotControlService botControlService) : As
         [Description("Room name where the bot should spawn (e.g., W1N1).")]
         public string RoomName { get; init; } = string.Empty;
 
+        [CommandOption("--shard <NAME>")]
+        [Description("Optional shard name (e.g., shard1).")]
+        public string? Shard { get; init; }
+
         [CommandOption("--username <NAME>")]
         [Description("Custom username for the bot (default is random).")]
         public string? Username { get; init; }
@@ -80,7 +84,7 @@ internal sealed class BotSpawnCommand(IBotControlService botControlService) : As
                                           settings.SpawnX,
                                           settings.SpawnY);
 
-        var result = await botControlService.SpawnAsync(settings.BotName, settings.RoomName, options, cancellationToken).ConfigureAwait(false);
+        var result = await botControlService.SpawnAsync(settings.BotName, settings.RoomName, settings.Shard, options, cancellationToken).ConfigureAwait(false);
 
         if (settings.OutputJson) {
             var payload = new
@@ -88,6 +92,7 @@ internal sealed class BotSpawnCommand(IBotControlService botControlService) : As
                 result.UserId,
                 result.Username,
                 result.RoomName,
+                result.ShardName,
                 Spawn = new { result.SpawnX, result.SpawnY }
             };
             AnsiConsole.WriteLine(JsonSerializer.Serialize(payload, JsonOptions));
@@ -98,6 +103,7 @@ internal sealed class BotSpawnCommand(IBotControlService botControlService) : As
         table.AddRow("User ID", result.UserId);
         table.AddRow("Username", result.Username);
         table.AddRow("Room", result.RoomName);
+        table.AddRow("Shard", result.ShardName ?? "default");
         table.AddRow("Spawn", $"({result.SpawnX.ToString(CultureInfo.InvariantCulture)},{result.SpawnY.ToString(CultureInfo.InvariantCulture)})");
         AnsiConsole.Write(table);
 

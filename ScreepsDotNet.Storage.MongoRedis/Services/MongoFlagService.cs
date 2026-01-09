@@ -25,6 +25,12 @@ public sealed class MongoFlagService(IMongoDatabaseProvider databaseProvider, IL
         if (string.IsNullOrWhiteSpace(request.Name) || request.Name.Length > MaxFlagNameLength)
             return new FlagResult(FlagResultStatus.InvalidParams, $"Flag name must be between 1 and {MaxFlagNameLength} characters");
 
+        if (string.IsNullOrWhiteSpace(request.Room))
+            return new FlagResult(FlagResultStatus.InvalidParams, "Invalid room");
+
+        var roomName = request.Room.Trim();
+        var shardName = string.IsNullOrWhiteSpace(request.Shard) ? null : request.Shard.Trim();
+
         // Remove existing flag with the same name across all rooms for this user (parity with legacy)
         // Note: In legacy, it seems the flag name is globally unique across all rooms for all users if it's the _id.
         // Actually, let's check if flags are unique per user.
@@ -45,7 +51,8 @@ public sealed class MongoFlagService(IMongoDatabaseProvider databaseProvider, IL
         {
             Id = request.Name,
             UserId = userId,
-            Room = request.Room,
+            Room = roomName,
+            Shard = shardName,
             Data = $"{request.X}|{request.Y}|{(int)request.Color}|{(int)request.SecondaryColor}"
         };
 
@@ -57,13 +64,20 @@ public sealed class MongoFlagService(IMongoDatabaseProvider databaseProvider, IL
             return new FlagResult(FlagResultStatus.InvalidParams, "Flag name already exists");
         }
 
-        logger.LogInformation("User {UserId} created flag {FlagName} in {Room} at ({X}, {Y})", userId, request.Name, request.Room, request.X, request.Y);
+        logger.LogInformation("User {UserId} created flag {FlagName} in {Room} (shard: {Shard}) at ({X}, {Y})",
+            userId, request.Name, roomName, shardName ?? "default", request.X, request.Y);
         return new FlagResult(FlagResultStatus.Success);
     }
 
-    public async Task<FlagResult> ChangeFlagColorAsync(string userId, string room, string name, Color color, Color secondaryColor, CancellationToken cancellationToken = default)
+    public async Task<FlagResult> ChangeFlagColorAsync(string userId, string room, string? shard, string name, Color color, Color secondaryColor, CancellationToken cancellationToken = default)
     {
-        var flag = await _flagsCollection.Find(f => f.Id == name && f.UserId == userId && f.Room == room)
+        if (string.IsNullOrWhiteSpace(room))
+            return new FlagResult(FlagResultStatus.InvalidParams, "Invalid room");
+
+        var normalizedRoom = room.Trim();
+        var shardName = string.IsNullOrWhiteSpace(shard) ? null : shard.Trim();
+        var filter = BuildFlagFilter(userId, normalizedRoom, name, shardName);
+        var flag = await _flagsCollection.Find(filter)
                                          .FirstOrDefaultAsync(cancellationToken)
                                          .ConfigureAwait(false);
 
@@ -77,20 +91,28 @@ public sealed class MongoFlagService(IMongoDatabaseProvider databaseProvider, IL
         var newData = $"{parts[0]}|{parts[1]}|{(int)color}|{(int)secondaryColor}";
         var update = Builders<RoomFlagDocument>.Update.Set(f => f.Data, newData);
 
-        await _flagsCollection.UpdateOneAsync(f => f.Id == name && f.UserId == userId && f.Room == room, update, cancellationToken: cancellationToken).ConfigureAwait(false);
+        await _flagsCollection.UpdateOneAsync(filter, update, cancellationToken: cancellationToken).ConfigureAwait(false);
 
-        logger.LogInformation("User {UserId} changed color of flag {FlagName} in {Room} to {Color}/{SecondaryColor}", userId, name, room, color, secondaryColor);
+        logger.LogInformation("User {UserId} changed color of flag {FlagName} in {Room} (shard: {Shard}) to {Color}/{SecondaryColor}",
+            userId, name, normalizedRoom, shardName ?? "default", color, secondaryColor);
         return new FlagResult(FlagResultStatus.Success);
     }
 
-    public async Task<FlagResult> RemoveFlagAsync(string userId, string room, string name, CancellationToken cancellationToken = default)
+    public async Task<FlagResult> RemoveFlagAsync(string userId, string room, string? shard, string name, CancellationToken cancellationToken = default)
     {
-        var result = await _flagsCollection.DeleteOneAsync(f => f.Id == name && f.UserId == userId && f.Room == room, cancellationToken).ConfigureAwait(false);
+        if (string.IsNullOrWhiteSpace(room))
+            return new FlagResult(FlagResultStatus.InvalidParams, "Invalid room");
+
+        var normalizedRoom = room.Trim();
+        var shardName = string.IsNullOrWhiteSpace(shard) ? null : shard.Trim();
+        var filter = BuildFlagFilter(userId, normalizedRoom, name, shardName);
+
+        var result = await _flagsCollection.DeleteOneAsync(filter, cancellationToken).ConfigureAwait(false);
 
         if (result.DeletedCount == 0)
             return new FlagResult(FlagResultStatus.FlagNotFound, "Flag not found");
 
-        logger.LogInformation("User {UserId} removed flag {FlagName} in {Room}", userId, name, room);
+        logger.LogInformation("User {UserId} removed flag {FlagName} in {Room} (shard: {Shard})", userId, name, normalizedRoom, shardName ?? "default");
         return new FlagResult(FlagResultStatus.Success);
     }
 
@@ -118,5 +140,20 @@ public sealed class MongoFlagService(IMongoDatabaseProvider databaseProvider, IL
                                            .AnyAsync(cancellationToken)
                                            .ConfigureAwait(false);
         return !exists;
+    }
+
+    private static FilterDefinition<RoomFlagDocument> BuildFlagFilter(string userId, string room, string name, string? shard)
+    {
+        var builder = Builders<RoomFlagDocument>.Filter;
+        var filter = builder.And(
+            builder.Eq(flag => flag.Id, name),
+            builder.Eq(flag => flag.UserId, userId),
+            builder.Eq(flag => flag.Room, room));
+
+        if (!string.IsNullOrWhiteSpace(shard))
+            return filter & builder.Eq(flag => flag.Shard, shard);
+
+        return filter & builder.Or(builder.Eq(flag => flag.Shard, null),
+                                   builder.Exists(flag => flag.Shard, false));
     }
 }

@@ -130,23 +130,45 @@ public sealed class SpawnEndpointsIntegrationTests(IntegrationTestHarness harnes
         Assert.Equal("Position is occupied", content.GetProperty("error").GetString());
     }
 
-    private async Task PrepareRoomWithNeutralControllerAsync(string room)
+    private async Task PrepareRoomWithNeutralControllerAsync(string room, string? shard = null)
     {
         var roomsCollection = harness.Database.GetCollection<BsonDocument>("rooms");
-        await roomsCollection.InsertOneAsync(new BsonDocument { ["_id"] = room, ["status"] = "normal" });
+        var roomDoc = new BsonDocument { ["_id"] = room, ["status"] = "normal" };
+        if (!string.IsNullOrWhiteSpace(shard))
+            roomDoc["shard"] = shard;
+        var roomFilter = Builders<BsonDocument>.Filter.Eq("_id", room);
+        if (!string.IsNullOrWhiteSpace(shard))
+            roomFilter &= Builders<BsonDocument>.Filter.Eq("shard", shard);
+        await roomsCollection.ReplaceOneAsync(roomFilter, roomDoc, new ReplaceOptions { IsUpsert = true });
 
         var terrainCollection = harness.Database.GetCollection<BsonDocument>("rooms.terrain");
-        await terrainCollection.InsertOneAsync(new BsonDocument { ["room"] = room, ["terrain"] = new string('0', 2500) });
+        var terrainDoc = new BsonDocument { ["room"] = room, ["terrain"] = new string('0', 2500) };
+        if (!string.IsNullOrWhiteSpace(shard))
+            terrainDoc["shard"] = shard;
+        var terrainFilter = Builders<BsonDocument>.Filter.Eq("room", room);
+        if (!string.IsNullOrWhiteSpace(shard))
+            terrainFilter &= Builders<BsonDocument>.Filter.Eq("shard", shard);
+        await terrainCollection.ReplaceOneAsync(terrainFilter, terrainDoc, new ReplaceOptions { IsUpsert = true });
 
         var objectsCollection = harness.Database.GetCollection<BsonDocument>("rooms.objects");
-        await objectsCollection.InsertOneAsync(new BsonDocument
+        var controllerDoc = new BsonDocument
         {
             ["type"] = "controller",
             ["room"] = room,
             ["x"] = 10,
             ["y"] = 10,
             ["level"] = 0
-        });
+        };
+        if (!string.IsNullOrWhiteSpace(shard))
+            controllerDoc["shard"] = shard;
+
+        var controllerFilter = Builders<BsonDocument>.Filter.And(
+            Builders<BsonDocument>.Filter.Eq("room", room),
+            Builders<BsonDocument>.Filter.Eq("type", "controller"));
+        if (!string.IsNullOrWhiteSpace(shard))
+            controllerFilter &= Builders<BsonDocument>.Filter.Eq("shard", shard);
+        await objectsCollection.DeleteManyAsync(controllerFilter);
+        await objectsCollection.InsertOneAsync(controllerDoc);
     }
 
     [Fact]
@@ -192,5 +214,31 @@ public sealed class SpawnEndpointsIntegrationTests(IntegrationTestHarness harnes
         // Verify extension is gone
         var extension = await objectsCollection.Find(Builders<BsonDocument>.Filter.Eq("type", StructureType.Extension.ToDocumentValue())).FirstOrDefaultAsync();
         Assert.Null(extension);
+    }
+
+    [Fact]
+    public async Task PlaceSpawn_WithShardParameter_SetsShardField()
+    {
+        var token = await LoginAsync();
+        var room = SeedDataDefaults.World.SecondaryShardRoom;
+        var shard = SeedDataDefaults.World.SecondaryShardName;
+        await PrepareRoomWithNeutralControllerAsync(room, shard);
+
+        var objectsCollection = harness.Database.GetCollection<BsonDocument>("rooms.objects");
+        await objectsCollection.DeleteManyAsync(Builders<BsonDocument>.Filter.Eq("user", SeedDataDefaults.User.Id));
+
+        var request = new PlaceSpawnRequest(room, 22, 22, "ShardSpawn", shard);
+        _client.DefaultRequestHeaders.Add("X-Token", token);
+
+        var response = await _client.PostAsJsonAsync(ApiRoutes.Game.World.PlaceSpawn, request);
+        response.EnsureSuccessStatusCode();
+
+        var spawnFilter = Builders<BsonDocument>.Filter.And(
+            Builders<BsonDocument>.Filter.Eq("room", room),
+            Builders<BsonDocument>.Filter.Eq("shard", shard),
+            Builders<BsonDocument>.Filter.Eq("type", StructureType.Spawn.ToDocumentValue()));
+        var spawnDoc = await objectsCollection.Find(spawnFilter).FirstOrDefaultAsync();
+        Assert.NotNull(spawnDoc);
+        Assert.Equal(shard, spawnDoc["shard"].AsString);
     }
 }

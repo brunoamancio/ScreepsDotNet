@@ -22,6 +22,10 @@ internal sealed class FlagChangeColorCommand(IFlagService flagService, IUserRepo
         [Description("The room name (e.g., W1N1).")]
         public string RoomName { get; init; } = string.Empty;
 
+        [CommandOption("--shard <NAME>")]
+        [Description("Optional shard name (e.g., shard1).")]
+        public string? Shard { get; init; }
+
         [CommandOption("--name <NAME>")]
         [Description("Unique name for the flag.")]
         public string Name { get; init; } = string.Empty;
@@ -64,6 +68,7 @@ internal sealed class FlagChangeColorCommand(IFlagService flagService, IUserRepo
         var result = await flagService.ChangeFlagColorAsync(
             userId,
             settings.RoomName,
+            settings.Shard,
             settings.Name,
             settings.Color,
             settings.SecondaryColor ?? settings.Color,

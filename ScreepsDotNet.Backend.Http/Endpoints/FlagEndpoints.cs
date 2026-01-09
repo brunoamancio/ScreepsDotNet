@@ -6,11 +6,13 @@ using ScreepsDotNet.Backend.Core.Constants;
 using ScreepsDotNet.Backend.Core.Context;
 using ScreepsDotNet.Backend.Core.Services;
 using ScreepsDotNet.Backend.Http.Authentication;
+using ScreepsDotNet.Backend.Http.Endpoints.Helpers;
 using ScreepsDotNet.Backend.Http.Endpoints.Models;
 using ScreepsDotNet.Backend.Http.Routing;
 
 internal static class FlagEndpoints
 {
+    private const string InvalidParamsMessage = "invalid params";
     private const string CreateFlagEndpointName = "PostCreateFlag";
     private const string ChangeFlagColorEndpointName = "PostChangeFlagColor";
     private const string RemoveFlagEndpointName = "PostRemoveFlag";
@@ -33,14 +35,18 @@ internal static class FlagEndpoints
                                if (string.IsNullOrEmpty(userId))
                                    return Results.Unauthorized();
 
-                               var result = await flagService.CreateFlagAsync(userId,
-                                                                 new CreateFlagRequest(request.Room,
-                                                                                       request.X,
-                                                                                       request.Y,
-                                                                                       request.Name,
-                                                                                       request.Color,
-                                                                                       request.SecondaryColor),
-                                                                 cancellationToken).ConfigureAwait(false);
+                               if (!RoomReferenceParser.TryParse(request.Room, request.Shard, out var reference) || reference is null)
+                                   return Results.BadRequest(new ErrorResponse(InvalidParamsMessage));
+
+                               var createRequest = new CreateFlagRequest(reference.RoomName,
+                                                                          request.X,
+                                                                          request.Y,
+                                                                          request.Name,
+                                                                          request.Color,
+                                                                          request.SecondaryColor,
+                                                                          reference.ShardName);
+
+                               var result = await flagService.CreateFlagAsync(userId, createRequest, cancellationToken).ConfigureAwait(false);
 
                                return MapResult(result);
                            })
@@ -59,8 +65,12 @@ internal static class FlagEndpoints
                                if (string.IsNullOrEmpty(userId))
                                    return Results.Unauthorized();
 
+                               if (!RoomReferenceParser.TryParse(request.Room, request.Shard, out var reference) || reference is null)
+                                   return Results.BadRequest(new ErrorResponse(InvalidParamsMessage));
+
                                var result = await flagService.ChangeFlagColorAsync(userId,
-                                                                      request.Room,
+                                                                      reference.RoomName,
+                                                                      reference.ShardName,
                                                                       request.Name,
                                                                       request.Color,
                                                                       request.SecondaryColor,
@@ -83,7 +93,14 @@ internal static class FlagEndpoints
                                if (string.IsNullOrEmpty(userId))
                                    return Results.Unauthorized();
 
-                               var result = await flagService.RemoveFlagAsync(userId, request.Room, request.Name, cancellationToken).ConfigureAwait(false);
+                               if (!RoomReferenceParser.TryParse(request.Room, request.Shard, out var reference) || reference is null)
+                                   return Results.BadRequest(new ErrorResponse(InvalidParamsMessage));
+
+                               var result = await flagService.RemoveFlagAsync(userId,
+                                                                              reference.RoomName,
+                                                                              reference.ShardName,
+                                                                              request.Name,
+                                                                              cancellationToken).ConfigureAwait(false);
 
                                return MapResult(result);
                            })
@@ -105,6 +122,7 @@ internal static class FlagEndpoints
 
     internal sealed record CreateFlagRequestModel(
         [property: JsonPropertyName("room")] string Room,
+        [property: JsonPropertyName("shard")] string? Shard,
         [property: JsonPropertyName("x")] int X,
         [property: JsonPropertyName("y")] int Y,
         [property: JsonPropertyName("name")] string Name,
@@ -113,11 +131,13 @@ internal static class FlagEndpoints
 
     internal sealed record ChangeFlagColorRequestModel(
         [property: JsonPropertyName("room")] string Room,
+        [property: JsonPropertyName("shard")] string? Shard,
         [property: JsonPropertyName("name")] string Name,
         [property: JsonPropertyName("color")] Color Color,
         [property: JsonPropertyName("secondaryColor")] Color SecondaryColor);
 
     internal sealed record RemoveFlagRequestModel(
         [property: JsonPropertyName("room")] string Room,
+        [property: JsonPropertyName("shard")] string? Shard,
         [property: JsonPropertyName("name")] string Name);
 }

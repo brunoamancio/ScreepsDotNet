@@ -1,6 +1,6 @@
 ﻿namespace ScreepsDotNet.Backend.Core.Models;
 
-public record PlaceSpawnRequest(string Room, int X, int Y, string? Name);
+public record PlaceSpawnRequest(string Room, int X, int Y, string? Name, string? Shard = null);
 
 public enum PlaceSpawnResultStatus
 {

@@ -7,5 +7,6 @@ public sealed record BotSpawnResult(
     string UserId,
     string Username,
     string RoomName,
+    string? ShardName,
     int SpawnX,
     int SpawnY);

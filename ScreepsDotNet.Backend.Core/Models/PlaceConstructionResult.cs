@@ -2,7 +2,7 @@
 
 using ScreepsDotNet.Backend.Core.Constants;
 
-public record PlaceConstructionRequest(string Room, int X, int Y, StructureType StructureType, string? Name);
+public record PlaceConstructionRequest(string Room, int X, int Y, StructureType StructureType, string? Name, string? Shard = null);
 
 public enum PlaceConstructionResultStatus
 {

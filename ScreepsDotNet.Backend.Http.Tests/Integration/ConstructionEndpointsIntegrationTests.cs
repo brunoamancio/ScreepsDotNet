@@ -120,16 +120,52 @@ public sealed class ConstructionEndpointsIntegrationTests(IntegrationTestHarness
         Assert.Equal("Position blocked", content.GetProperty("error").GetString());
     }
 
-    private async Task PrepareRoomWithControllerAsync(string room, string userId, int level)
+    [Fact]
+    public async Task CreateConstruction_WithShard_Success()
     {
-        var roomsCollection = harness.Database.GetCollection<BsonDocument>("rooms");
-        await roomsCollection.InsertOneAsync(new BsonDocument { ["_id"] = room, ["status"] = "normal" });
+        var token = await LoginAsync();
+        var room = SeedDataDefaults.World.SecondaryShardRoom;
+        var shard = SeedDataDefaults.World.SecondaryShardName;
+        await PrepareRoomWithControllerAsync(room, SeedDataDefaults.User.Id, 2, shard);
 
-        var terrainCollection = harness.Database.GetCollection<BsonDocument>("rooms.terrain");
-        await terrainCollection.InsertOneAsync(new BsonDocument { ["room"] = room, ["terrain"] = new string('0', 2500) });
+        var request = new PlaceConstructionRequest(room, 15, 15, StructureType.Road, null, shard);
+        _client.DefaultRequestHeaders.Add("X-Token", token);
+
+        var response = await _client.PostAsJsonAsync(ApiRoutes.Game.World.CreateConstruction, request);
+        response.EnsureSuccessStatusCode();
 
         var objectsCollection = harness.Database.GetCollection<BsonDocument>("rooms.objects");
-        await objectsCollection.InsertOneAsync(new BsonDocument
+        var filter = Builders<BsonDocument>.Filter.And(
+            Builders<BsonDocument>.Filter.Eq("room", room),
+            Builders<BsonDocument>.Filter.Eq("shard", shard),
+            Builders<BsonDocument>.Filter.Eq("type", "constructionSite"));
+        var site = await objectsCollection.Find(filter).FirstOrDefaultAsync();
+        Assert.NotNull(site);
+        Assert.Equal(shard, site["shard"].AsString);
+    }
+
+    private async Task PrepareRoomWithControllerAsync(string room, string userId, int level, string? shard = null)
+    {
+        var roomsCollection = harness.Database.GetCollection<BsonDocument>("rooms");
+        var roomDoc = new BsonDocument { ["_id"] = room, ["status"] = "normal" };
+        if (!string.IsNullOrWhiteSpace(shard))
+            roomDoc["shard"] = shard;
+        var roomFilter = Builders<BsonDocument>.Filter.Eq("_id", room);
+        if (!string.IsNullOrWhiteSpace(shard))
+            roomFilter &= Builders<BsonDocument>.Filter.Eq("shard", shard);
+        await roomsCollection.ReplaceOneAsync(roomFilter, roomDoc, new ReplaceOptions { IsUpsert = true });
+
+        var terrainCollection = harness.Database.GetCollection<BsonDocument>("rooms.terrain");
+        var terrainDoc = new BsonDocument { ["room"] = room, ["terrain"] = new string('0', 2500) };
+        if (!string.IsNullOrWhiteSpace(shard))
+            terrainDoc["shard"] = shard;
+        var terrainFilter = Builders<BsonDocument>.Filter.Eq("room", room);
+        if (!string.IsNullOrWhiteSpace(shard))
+            terrainFilter &= Builders<BsonDocument>.Filter.Eq("shard", shard);
+        await terrainCollection.ReplaceOneAsync(terrainFilter, terrainDoc, new ReplaceOptions { IsUpsert = true });
+
+        var objectsCollection = harness.Database.GetCollection<BsonDocument>("rooms.objects");
+        var controllerDoc = new BsonDocument
         {
             ["type"] = "controller",
             ["room"] = room,
@@ -137,6 +173,16 @@ public sealed class ConstructionEndpointsIntegrationTests(IntegrationTestHarness
             ["y"] = 1,
             ["level"] = level,
             ["user"] = userId
-        });
+        };
+        if (!string.IsNullOrWhiteSpace(shard))
+            controllerDoc["shard"] = shard;
+
+        var controllerFilter = Builders<BsonDocument>.Filter.And(
+            Builders<BsonDocument>.Filter.Eq("room", room),
+            Builders<BsonDocument>.Filter.Eq("type", "controller"));
+        if (!string.IsNullOrWhiteSpace(shard))
+            controllerFilter &= Builders<BsonDocument>.Filter.Eq("shard", shard);
+        await objectsCollection.DeleteManyAsync(controllerFilter);
+        await objectsCollection.InsertOneAsync(controllerDoc);
     }
 }

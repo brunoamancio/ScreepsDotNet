@@ -33,10 +33,12 @@ public sealed class MongoBotControlService(IMongoDatabaseProvider databaseProvid
     private readonly IMongoCollection<RoomTerrainDocument> _roomTerrainCollection = databaseProvider.GetCollection<RoomTerrainDocument>(databaseProvider.Settings.RoomTerrainCollection);
     private readonly Random _random = new();
 
-    public async Task<BotSpawnResult> SpawnAsync(string botName, string roomName, BotSpawnOptions options, CancellationToken cancellationToken = default)
+    public async Task<BotSpawnResult> SpawnAsync(string botName, string roomName, string? shardName, BotSpawnOptions options, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(botName);
         ArgumentException.ThrowIfNullOrWhiteSpace(roomName);
+        var normalizedRoom = roomName.Trim();
+        var normalizedShard = string.IsNullOrWhiteSpace(shardName) ? null : shardName.Trim();
 
         var definition = await botDefinitionProvider.FindDefinitionAsync(botName, cancellationToken).ConfigureAwait(false)
                          ?? throw new InvalidOperationException($"Bot '{botName}' is not defined in mods.json.");
@@ -44,15 +46,15 @@ public sealed class MongoBotControlService(IMongoDatabaseProvider databaseProvid
         if (definition.Modules.Count == 0)
             throw new InvalidOperationException($"Bot '{botName}' does not contain any modules.");
 
-        var controllerFilter = Builders<RoomObjectDocument>.Filter.And(
-            Builders<RoomObjectDocument>.Filter.Eq(doc => doc.Room, roomName),
-            Builders<RoomObjectDocument>.Filter.Eq(doc => doc.Type, StructureType.Controller.ToDocumentValue()));
+        var controllerFilterBuilder = Builders<RoomObjectDocument>.Filter;
+        var controllerFilter = BuildRoomObjectRoomFilter(normalizedRoom, normalizedShard) &
+                               controllerFilterBuilder.Eq(doc => doc.Type, StructureType.Controller.ToDocumentValue());
 
         var controller = await _roomObjectsCollection.Find(controllerFilter)
                                                      .FirstOrDefaultAsync(cancellationToken)
-                                                     .ConfigureAwait(false) ?? throw new InvalidOperationException($"Room {roomName} does not contain a controller.");
+                                                     .ConfigureAwait(false) ?? throw new InvalidOperationException($"Room {normalizedRoom} does not contain a controller.");
         if (controller.UserId is not null)
-            throw new InvalidOperationException($"Room {roomName} is already owned by {controller.UserId}.");
+            throw new InvalidOperationException($"Room {normalizedRoom} is already owned by {controller.UserId}.");
 
         var username = string.IsNullOrWhiteSpace(options.Username)
             ? await GenerateUniqueUsernameAsync(cancellationToken).ConfigureAwait(false)
@@ -96,17 +98,19 @@ public sealed class MongoBotControlService(IMongoDatabaseProvider databaseProvid
         using (var memoryPayload = JsonDocument.Parse("{}"))
             await userMemoryRepository.UpdateMemoryAsync(userId, null, memoryPayload.RootElement, cancellationToken).ConfigureAwait(false);
 
-        var roomTerrain = await _roomTerrainCollection.Find(document => document.Room == roomName)
+        var terrainFilter = BuildTerrainFilter(normalizedRoom, normalizedShard);
+        var roomTerrain = await _roomTerrainCollection.Find(terrainFilter)
                                                       .FirstOrDefaultAsync(cancellationToken)
                                                       .ConfigureAwait(false)
-                           ?? throw new InvalidOperationException($"Terrain data for room {roomName} was not found.");
+                           ?? throw new InvalidOperationException($"Terrain data for room {normalizedRoom} was not found.");
 
-        var roomObjects = await _roomObjectsCollection.Find(Builders<RoomObjectDocument>.Filter.Eq(doc => doc.Room, roomName))
+        var roomObjectsFilter = BuildRoomObjectRoomFilter(normalizedRoom, normalizedShard);
+        var roomObjects = await _roomObjectsCollection.Find(roomObjectsFilter)
                                                       .ToListAsync(cancellationToken)
                                                       .ConfigureAwait(false);
 
         var (spawnX, spawnY) = ResolveSpawnPosition(roomTerrain.Terrain, roomObjects, options);
-        await InsertSpawnAsync(roomName, userId, spawnX, spawnY, cancellationToken).ConfigureAwait(false);
+        await InsertSpawnAsync(normalizedRoom, normalizedShard, userId, spawnX, spawnY, cancellationToken).ConfigureAwait(false);
 
         var gameTime = await worldMetadata.GetGameTimeAsync(cancellationToken).ConfigureAwait(false);
         var safeModeExpiry = gameTime + DefaultSafeModeDuration;
@@ -133,7 +137,7 @@ public sealed class MongoBotControlService(IMongoDatabaseProvider databaseProvid
                               .ConfigureAwait(false);
 
         logger.LogInformation("Spawned bot {Username} ({Bot}) in {Room}.", username, botName, roomName);
-        return new BotSpawnResult(userId, username, roomName, spawnX, spawnY);
+        return new BotSpawnResult(userId, username, normalizedRoom, normalizedShard, spawnX, spawnY);
     }
 
     public async Task<int> ReloadAsync(string botName, CancellationToken cancellationToken = default)
@@ -272,13 +276,14 @@ public sealed class MongoBotControlService(IMongoDatabaseProvider databaseProvid
         throw new InvalidOperationException("Unable to find a free tile for the spawn.");
     }
 
-    private async Task InsertSpawnAsync(string roomName, string userId, int x, int y, CancellationToken cancellationToken)
+    private async Task InsertSpawnAsync(string roomName, string? shardName, string userId, int x, int y, CancellationToken cancellationToken)
     {
         var spawnDoc = new RoomObjectDocument
         {
             Id = ObjectId.GenerateNewId(),
             Type = StructureType.Spawn.ToDocumentValue(),
             Room = roomName,
+            Shard = shardName,
             X = x,
             Y = y,
             Name = "Spawn1",
@@ -292,6 +297,39 @@ public sealed class MongoBotControlService(IMongoDatabaseProvider databaseProvid
         };
 
         await _roomObjectsCollection.InsertOneAsync(spawnDoc, cancellationToken: cancellationToken).ConfigureAwait(false);
+    }
+
+    private static FilterDefinition<RoomObjectDocument> BuildRoomObjectRoomFilter(string room, string? shard)
+    {
+        var builder = Builders<RoomObjectDocument>.Filter;
+        var filter = builder.Eq(doc => doc.Room, room);
+        if (!string.IsNullOrWhiteSpace(shard))
+            return filter & builder.Eq(doc => doc.Shard, shard);
+
+        return filter & builder.Or(builder.Eq(doc => doc.Shard, null),
+                                   builder.Exists(nameof(RoomObjectDocument.Shard), false));
+    }
+
+    private static FilterDefinition<RoomTerrainDocument> BuildTerrainFilter(string room, string? shard)
+    {
+        var builder = Builders<RoomTerrainDocument>.Filter;
+        var filter = builder.Eq(doc => doc.Room, room);
+        if (!string.IsNullOrWhiteSpace(shard))
+            return filter & builder.Eq(doc => doc.Shard, shard);
+
+        return filter & builder.Or(builder.Eq(doc => doc.Shard, null),
+                                   builder.Exists(nameof(RoomTerrainDocument.Shard), false));
+    }
+
+    private static FilterDefinition<RoomDocument> BuildRoomDocumentFilter(string room, string? shard)
+    {
+        var builder = Builders<RoomDocument>.Filter;
+        var filter = builder.Eq(doc => doc.Id, room);
+        if (!string.IsNullOrWhiteSpace(shard))
+            return filter & builder.Eq(doc => doc.Shard, shard);
+
+        return filter & builder.Or(builder.Eq(doc => doc.Shard, null),
+                                   builder.Exists(nameof(RoomDocument.Shard), false));
     }
 
     private static void ValidateCoordinate(int coordinate)

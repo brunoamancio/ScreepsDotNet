@@ -15,6 +15,7 @@ public sealed class BotCommandTests
         {
             BotName = "alpha",
             RoomName = "W1N1",
+            Shard = "shard2",
             Username = "OmegaBot",
             Cpu = 150,
             GlobalControlLevel = 3,
@@ -26,9 +27,10 @@ public sealed class BotCommandTests
 
         Assert.Equal(0, exitCode);
         Assert.NotNull(service.SpawnArguments);
-        var (bot, room, options) = service.SpawnArguments!.Value;
+        var (bot, room, shard, options) = service.SpawnArguments!.Value;
         Assert.Equal("alpha", bot);
         Assert.Equal("W1N1", room);
+        Assert.Equal("shard2", shard);
         Assert.Equal("OmegaBot", options.Username);
         Assert.Equal(150, options.Cpu);
         Assert.Equal(3, options.GlobalControlLevel);
@@ -67,16 +69,16 @@ public sealed class BotCommandTests
 
     private sealed class FakeBotControlService : IBotControlService
     {
-        public (string BotName, string RoomName, BotSpawnOptions Options)? SpawnArguments { get; private set; }
+        public (string BotName, string RoomName, string? ShardName, BotSpawnOptions Options)? SpawnArguments { get; private set; }
         public string? ReloadedBotName { get; private set; }
         public string? RemovedUsername { get; private set; }
-        public BotSpawnResult SpawnResult { get; init; } = new("user-1", "OmegaBot", "W1N1", 10, 12);
+        public BotSpawnResult SpawnResult { get; init; } = new("user-1", "OmegaBot", "W1N1", "shard2", 10, 12);
         public int ReloadResult { get; init; }
         public bool RemoveResult { get; init; } = true;
 
-        public Task<BotSpawnResult> SpawnAsync(string botName, string roomName, BotSpawnOptions options, CancellationToken cancellationToken = default)
+        public Task<BotSpawnResult> SpawnAsync(string botName, string roomName, string? shardName, BotSpawnOptions options, CancellationToken cancellationToken = default)
         {
-            SpawnArguments = (botName, roomName, options);
+            SpawnArguments = (botName, roomName, shardName, options);
             return Task.FromResult(SpawnResult);
         }
 

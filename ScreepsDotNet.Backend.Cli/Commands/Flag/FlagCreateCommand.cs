@@ -22,6 +22,10 @@ internal sealed class FlagCreateCommand(IFlagService flagService, IUserRepositor
         [Description("The room name (e.g., W1N1).")]
         public string RoomName { get; init; } = string.Empty;
 
+        [CommandOption("--shard <NAME>")]
+        [Description("Optional shard name (e.g., shard1).")]
+        public string? Shard { get; init; }
+
         [CommandOption("--x <COORD>")]
         [Description("X coordinate (0-49).")]
         public int X { get; init; }
@@ -82,7 +86,8 @@ internal sealed class FlagCreateCommand(IFlagService flagService, IUserRepositor
             settings.Y,
             settings.Name,
             settings.Color,
-            settings.SecondaryColor ?? settings.Color
+            settings.SecondaryColor ?? settings.Color,
+            settings.Shard
         );
 
         var result = await flagService.CreateFlagAsync(userId, request, cancellationToken).ConfigureAwait(false);
@@ -92,7 +97,8 @@ internal sealed class FlagCreateCommand(IFlagService flagService, IUserRepositor
             return 1;
         }
 
-        AnsiConsole.MarkupLine($"[green]Success:[/] Flag [yellow]{settings.Name}[/] created in [blue]{settings.RoomName}[/] at ({settings.X}, {settings.Y}).");
+        var shardLabel = string.IsNullOrWhiteSpace(settings.Shard) ? "default shard" : settings.Shard;
+        AnsiConsole.MarkupLine($"[green]Success:[/] Flag [yellow]{settings.Name}[/] created in [blue]{settings.RoomName}[/] ({Markup.Escape(shardLabel)}) at ({settings.X}, {settings.Y}).");
         return 0;
     }
 }
