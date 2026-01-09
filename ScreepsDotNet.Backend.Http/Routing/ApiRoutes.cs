@@ -102,6 +102,12 @@ public static class ApiRoutes
             public const string AddObject = $"{Base}/add-object-intent";
             public const string AddGlobal = $"{Base}/add-global-intent";
         }
+
+        public static class ObjectNames
+        {
+            public const string GenerateUnique = $"{Base}/gen-unique-object-name";
+            public const string CheckUnique = $"{Base}/check-unique-object-name";
+        }
     }
 
     public static class Server

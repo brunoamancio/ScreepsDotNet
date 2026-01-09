@@ -150,6 +150,24 @@ public sealed class MapEndpointsIntegrationTests(IntegrationTestHarness harness)
     }
 
     [Fact]
+    public async Task OpenRoom_WithShard_DoesNotAffectOtherShard()
+    {
+        await SeedRoomAsync("W50N40", status: "closed");
+        var shardRoom = SeedDataDefaults.World.SecondaryShardRoom;
+        var shard = SeedDataDefaults.World.SecondaryShardName;
+        await SeedRoomAsync(shardRoom, status: "closed", shard: shard);
+
+        var token = await LoginAsync();
+        SetAuth(token);
+
+        var response = await _client.PostAsJsonAsync(ApiRoutes.Game.Map.Open, new { room = shardRoom, shard });
+        response.EnsureSuccessStatusCode();
+
+        Assert.Equal("closed", await GetRoomStatusAsync("W50N40"));
+        Assert.Equal("normal", await GetRoomStatusAsync(shardRoom));
+    }
+
+    [Fact]
     public async Task TerrainRefresh_UpdatesType()
     {
         await SeedRoomAsync("W34N34");
@@ -199,13 +217,17 @@ public sealed class MapEndpointsIntegrationTests(IntegrationTestHarness harness)
         var roomDoc = new BsonDocument { ["_id"] = roomName, ["status"] = status };
         if (shard is not null)
             roomDoc["shard"] = shard;
-        await rooms.InsertOneAsync(roomDoc);
+        await rooms.ReplaceOneAsync(new BsonDocument("_id", roomName),
+                                    roomDoc,
+                                    new ReplaceOptions { IsUpsert = true });
 
         var terrain = harness.Database.GetCollection<BsonDocument>("rooms.terrain");
         var terrainDoc = new BsonDocument { ["room"] = roomName, ["type"] = "terrain", ["terrain"] = new string('0', 2500) };
         if (shard is not null)
             terrainDoc["shard"] = shard;
-        await terrain.InsertOneAsync(terrainDoc);
+        await terrain.ReplaceOneAsync(new BsonDocument("room", roomName),
+                                      terrainDoc,
+                                      new ReplaceOptions { IsUpsert = true });
     }
 
     private async Task<string> GetRoomStatusAsync(string roomName)

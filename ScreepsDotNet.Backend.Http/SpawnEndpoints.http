@@ -38,3 +38,24 @@ Content-Type: application/json
     "y": 25,
     "structureType": "extension"
 }
+
+### Generate Unique Spawn Name
+# Returns the next available spawn name for the current user.
+POST {{host}}/api/game/gen-unique-object-name
+X-Token: {{auth_token}}
+Content-Type: application/json
+
+{
+    "type": "spawn"
+}
+
+### Check Unique Spawn Name
+# Validates whether the provided spawn name is unused by the user.
+POST {{host}}/api/game/check-unique-object-name
+X-Token: {{auth_token}}
+Content-Type: application/json
+
+{
+    "type": "spawn",
+    "name": "Spawn2"
+}

@@ -53,6 +53,7 @@ builder.Services.AddSingleton<INotifyWhenAttackedService, MongoNotifyWhenAttacke
 builder.Services.AddSingleton<IInvaderService, MongoInvaderService>();
 builder.Services.AddSingleton<IIntentService, MongoIntentService>();
 builder.Services.AddSingleton<IPowerCreepService, MongoPowerCreepService>();
+builder.Services.AddSingleton<IObjectNameService, MongoObjectNameService>();
 builder.Services.AddSingleton<IUserMessageService, MongoUserMessageService>();
 builder.Services.AddSingleton<IStrongholdTemplateProvider, EmbeddedStrongholdTemplateProvider>();
 builder.Services.AddSingleton<IStrongholdControlService, MongoStrongholdControlService>();

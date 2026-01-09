@@ -98,6 +98,9 @@ public sealed class RoomObjectDocument
     [BsonElement("structure")]
     public RoomObjectStructureDocument? Structure { get; set; }
 
+    [BsonElement("structureType")]
+    public string? StructureType { get; set; }
+
     [BsonElement("downgradeTime")]
     public long? DowngradeTime { get; set; }
 

@@ -162,9 +162,46 @@ public sealed class BotEndpointsIntegrationTests(IntegrationTestHarness harness)
         Assert.Equal(shard, roomDocument["shard"].AsString);
     }
 
-    private async Task<JsonElement> SpawnBotAsync(string room)
+    [Fact]
+    public async Task RemoveBot_ShardsRemainIsolated()
     {
-        var payload = new { bot = "alpha", room };
+        var token = await LoginAsync();
+        SetAuthHeader(token);
+
+        const string primaryRoom = "W70N70";
+        await PrepareNeutralRoomAsync(primaryRoom);
+        var primarySpawn = await SpawnBotAsync(primaryRoom, username: "PrimaryCommander");
+        var primaryUsername = primarySpawn.GetProperty("username").GetString()!;
+
+        var shardRoom = SeedDataDefaults.Bots.SecondaryShardRoom;
+        var shardName = SeedDataDefaults.World.SecondaryShardName;
+        await PrepareNeutralRoomAsync(shardRoom, shardName);
+        var shardSpawn = await SpawnBotAsync(shardRoom, shardName, "ShardCommander");
+        var shardUsername = shardSpawn.GetProperty("username").GetString()!;
+
+        var response = await _client.PostAsJsonAsync(ApiRoutes.Game.Bot.Remove, new { username = shardUsername });
+        response.EnsureSuccessStatusCode();
+
+        var users = harness.Database.GetCollection<BsonDocument>("users");
+        Assert.True(await users.Find(Builders<BsonDocument>.Filter.Eq("username", primaryUsername)).AnyAsync());
+        Assert.False(await users.Find(Builders<BsonDocument>.Filter.Eq("username", shardUsername)).AnyAsync());
+
+        var objects = harness.Database.GetCollection<BsonDocument>("rooms.objects");
+        Assert.True(await objects.Find(Builders<BsonDocument>.Filter.And(
+            Builders<BsonDocument>.Filter.Eq("room", primaryRoom),
+            Builders<BsonDocument>.Filter.Eq("type", "spawn"))).AnyAsync());
+    }
+
+    private async Task<JsonElement> SpawnBotAsync(string room, string? shard = null, string? username = null)
+    {
+        var payload = new
+        {
+            bot = "alpha",
+            room,
+            shard,
+            username = username ?? "AutoCommander"
+        };
+
         return await ReadJsonAsync(await _client.PostAsJsonAsync(ApiRoutes.Game.Bot.Spawn, payload));
     }
 
