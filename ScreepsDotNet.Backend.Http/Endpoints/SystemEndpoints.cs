@@ -6,6 +6,7 @@ using Microsoft.Extensions.Options;
 using ScreepsDotNet.Backend.Core.Context;
 using ScreepsDotNet.Backend.Core.Seeding;
 using ScreepsDotNet.Backend.Core.Services;
+using ScreepsDotNet.Backend.Core.Storage;
 using ScreepsDotNet.Backend.Http.Authentication;
 using ScreepsDotNet.Backend.Http.Endpoints.Models;
 using ScreepsDotNet.Backend.Http.Routing;
@@ -21,6 +22,8 @@ internal static class SystemEndpoints
     private const string TickSetEndpointName = "PostSystemTickDuration";
     private const string MessageEndpointName = "PostSystemMessage";
     private const string ResetEndpointName = "PostSystemReset";
+    private const string StorageStatusEndpointName = "GetStorageStatus";
+    private const string StorageReseedEndpointName = "PostStorageReseed";
     private const string ResetConfirmationToken = "RESET";
 
     public static void Map(WebApplication app)
@@ -32,6 +35,8 @@ internal static class SystemEndpoints
         MapTickSet(app);
         MapMessage(app);
         MapReset(app);
+        MapStorageStatus(app);
+        MapStorageReseed(app);
     }
 
     private static void MapStatus(WebApplication app)
@@ -151,28 +156,65 @@ internal static class SystemEndpoints
                            ISeedDataService seedDataService,
                            IOptions<MongoRedisStorageOptions> storageOptions,
                            ICurrentUserAccessor accessor,
-                           CancellationToken cancellationToken) => {
-                               if (accessor.CurrentUser?.Id is null)
-                                   return Results.Unauthorized();
-
-                               if (!string.Equals(request.Confirm, ResetConfirmationToken, StringComparison.OrdinalIgnoreCase))
-                                   return Results.BadRequest(new ErrorResponse($"confirmation required (set confirm to {ResetConfirmationToken})"));
-
-                               var options = storageOptions.Value;
-                               if (string.IsNullOrWhiteSpace(options.MongoConnectionString) || string.IsNullOrWhiteSpace(options.MongoDatabase))
-                                   return Results.BadRequest(new ErrorResponse("storage configuration is incomplete"));
-
-                               var isDefaultDatabase = string.Equals(options.MongoDatabase,
-                                                              SeedDataDefaults.Database.Name,
-                                                              StringComparison.OrdinalIgnoreCase);
-                               if (!isDefaultDatabase && !request.Force)
-                                   return Results.BadRequest(new ErrorResponse($"refusing to reset database '{options.MongoDatabase}' without force=true"));
-
-                               await seedDataService.ReseedAsync(options.MongoConnectionString, options.MongoDatabase, cancellationToken).ConfigureAwait(false);
-                               return Results.Ok(new { ok = 1 });
-                           })
+                           CancellationToken cancellationToken)
+                        => await HandleReseedAsync(request, seedDataService, storageOptions, accessor, cancellationToken).ConfigureAwait(false))
            .RequireTokenAuthentication()
            .WithName(ResetEndpointName);
+    }
+
+    private static void MapStorageStatus(WebApplication app)
+    {
+        app.MapGet(ApiRoutes.Game.System.StorageStatus,
+                   async (IStorageAdapter storageAdapter,
+                          ICurrentUserAccessor accessor,
+                          CancellationToken cancellationToken) => {
+                              if (accessor.CurrentUser?.Id is null)
+                                  return Results.Unauthorized();
+
+                              var status = await storageAdapter.GetStatusAsync(cancellationToken).ConfigureAwait(false);
+                              return Results.Ok(new StorageStatusResponse(status.IsConnected, status.LastSynchronizationUtc, status.Details));
+                          })
+           .RequireTokenAuthentication()
+           .WithName(StorageStatusEndpointName);
+    }
+
+    private static void MapStorageReseed(WebApplication app)
+    {
+        app.MapPost(ApiRoutes.Game.System.StorageReseed,
+                    async ([FromBody] SystemResetRequest request,
+                           ISeedDataService seedDataService,
+                           IOptions<MongoRedisStorageOptions> storageOptions,
+                           ICurrentUserAccessor accessor,
+                           CancellationToken cancellationToken)
+                        => await HandleReseedAsync(request, seedDataService, storageOptions, accessor, cancellationToken).ConfigureAwait(false))
+           .RequireTokenAuthentication()
+           .WithName(StorageReseedEndpointName);
+    }
+
+    private static async Task<IResult> HandleReseedAsync(SystemResetRequest request,
+                                                        ISeedDataService seedDataService,
+                                                        IOptions<MongoRedisStorageOptions> storageOptions,
+                                                        ICurrentUserAccessor accessor,
+                                                        CancellationToken cancellationToken)
+    {
+        if (accessor.CurrentUser?.Id is null)
+            return Results.Unauthorized();
+
+        if (!string.Equals(request.Confirm, ResetConfirmationToken, StringComparison.OrdinalIgnoreCase))
+            return Results.BadRequest(new ErrorResponse($"confirmation required (set confirm to {ResetConfirmationToken})"));
+
+        var options = storageOptions.Value;
+        if (string.IsNullOrWhiteSpace(options.MongoConnectionString) || string.IsNullOrWhiteSpace(options.MongoDatabase))
+            return Results.BadRequest(new ErrorResponse("storage configuration is incomplete"));
+
+        var isDefaultDatabase = string.Equals(options.MongoDatabase,
+                                              SeedDataDefaults.Database.Name,
+                                              StringComparison.OrdinalIgnoreCase);
+        if (!isDefaultDatabase && !request.Force)
+            return Results.BadRequest(new ErrorResponse($"refusing to reset database '{options.MongoDatabase}' without force=true"));
+
+        await seedDataService.ReseedAsync(options.MongoConnectionString, options.MongoDatabase, cancellationToken).ConfigureAwait(false);
+        return Results.Ok(new { ok = 1 });
     }
 
     private sealed record SystemStatusResponse(
@@ -198,6 +240,18 @@ internal static class SystemEndpoints
 
     private sealed record TickDurationRequest(
         [property: JsonPropertyName("duration")] int DurationMilliseconds);
+
+    private sealed record StorageStatusResponse(
+        [property: JsonPropertyName("ok")] int Ok,
+        [property: JsonPropertyName("connected")] bool Connected,
+        [property: JsonPropertyName("lastSyncUtc")] DateTimeOffset? LastSyncUtc,
+        [property: JsonPropertyName("details")] string? Details)
+    {
+        public StorageStatusResponse(bool connected, DateTimeOffset? lastSyncUtc, string? details)
+            : this(1, connected, lastSyncUtc, details)
+        {
+        }
+    }
 
     private sealed record SystemMessageRequest(
         [property: JsonPropertyName("message")] string Message);

@@ -117,6 +117,37 @@ public sealed class SystemEndpointsIntegrationTests(IntegrationTestHarness harne
         Assert.Equal(SeedDataDefaults.User.Username, restored["username"].AsString);
     }
 
+    [Fact]
+    public async Task StorageStatus_ReturnsAdapterHealth()
+    {
+        var token = await LoginAsync();
+        SetAuth(token);
+
+        var response = await _client.GetAsync(ApiRoutes.Game.System.StorageStatus);
+        response.EnsureSuccessStatusCode();
+        var content = await ReadJsonAsync(response);
+        Assert.True(content.GetProperty("connected").GetBoolean());
+    }
+
+    [Fact]
+    public async Task StorageReseed_MirrorsResetSemantics()
+    {
+        var token = await LoginAsync();
+        SetAuth(token);
+
+        var users = harness.Database.GetCollection<BsonDocument>("users");
+        var filter = Builders<BsonDocument>.Filter.Eq("_id", SeedDataDefaults.User.Id);
+        await users.UpdateOneAsync(filter,
+                                   Builders<BsonDocument>.Update.Set("username", "TamperedStorageUser"));
+
+        var response = await _client.PostAsJsonAsync(ApiRoutes.Game.System.StorageReseed, new { confirm = "RESET" });
+        response.EnsureSuccessStatusCode();
+
+        var restored = await users.Find(filter).FirstOrDefaultAsync();
+        Assert.NotNull(restored);
+        Assert.Equal(SeedDataDefaults.User.Username, restored["username"].AsString);
+    }
+
     private async Task<string> LoginAsync()
     {
         var request = new { ticket = SeedDataDefaults.Auth.Ticket };

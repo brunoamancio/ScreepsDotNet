@@ -39,7 +39,7 @@
 - Legacy helper routes `/api/game/room-overview`, `/api/game/gen-unique-flag-name`, `/api/game/check-unique-flag-name`, and `/api/game/set-notify-when-attacked` are now wired to Mongo services so the official client’s world panels and safety toggles work identically to backend-local (with shard-aware room parsing).
 - `/api/game/power-creeps/*` – legacy parity for list/create/delete/cancel-delete/upgrade/rename/experimentation, all backed by the new `MongoPowerCreepService` so the responses include `_id`, shard/room metadata, fatigue, store contents, and cooldown/delete timestamps exactly like `backend-local`.
 - `/api/game/add-object-intent` + `/api/game/add-global-intent` – new intent endpoints backed by `MongoIntentService`, reusing the legacy sanitization rules (string/number/boolean transforms, price scaling, body-part filtering) and enforcing the safe-mode guard before storing data in `rooms.intents` / `users.intents`.
-- `/api/game/bot/*`, `/api/game/stronghold/*`, `/api/game/system/*`, and `/api/game/map/*` – admin routes for bot AI management, stronghold templates/spawn/expand, system controls (pause/resume, tick duration, broadcast, reseed with `confirm=RESET`), and map generation/open/close/remove tasks reusing the shared Mongo/Redis services from the CLI.
+- `/api/game/bot/*`, `/api/game/stronghold/*`, `/api/game/system/*`, and `/api/game/map/*` – admin routes for bot AI management, stronghold templates/spawn/expand, system controls (pause/resume, tick duration, broadcast, storage status, reseed with `confirm=RESET`), and map generation/open/close/remove tasks reusing the shared Mongo/Redis services from the CLI.
 - `mods.json` plumbing – the new `FileSystemModManifestProvider` watches the manifest for bot directories and `customIntentTypes/customObjectTypes`, `ManifestIntentSchemaCatalog` merges them with the built-in schemas for `MongoIntentService`, and `/api/server/info` / `/api/version` surface the mod-defined object metadata so the official client renders custom assets just like backend-local.
 - Core abstractions defined for server info, users, rooms, CLI sessions, storage status, and engine ticks.
 - Mongo repositories implemented for server info, users, and owned rooms; ready for future endpoints.
@@ -76,7 +76,7 @@
 - All `/api/game/world/*` read routes accept either explicit shard parameters **or** the legacy `shardName/RoomName` notation (e.g., `shard1/W21N20`). Explicit parameters override the inline prefix.
    - `ScreepsDotNet.Backend.Http/BotEndpoints.http` exercises the `/api/game/bot/*` admin routes (list/spawn/reload/remove).
    - `ScreepsDotNet.Backend.Http/StrongholdEndpoints.http` covers `/api/game/stronghold/*` (templates/spawn/expand).
-   - `ScreepsDotNet.Backend.Http/SystemEndpoints.http` covers `/api/game/system/*` (status, pause/resume, tick duration, server messages, destructive reset with `confirm=RESET`).
+- `ScreepsDotNet.Backend.Http/SystemEndpoints.http` covers `/api/game/system/*` (status, pause/resume, tick duration, server messages, storage status, storage reseed/reset with `confirm=RESET`).
    - `ScreepsDotNet.Backend.Http/MapEndpoints.http` covers `/api/game/map/*` (generate/open/close/remove/assets/terrain refresh).
    - `ScreepsDotNet.Backend.Http/IntentEndpoints.http` sends `/api/game/add-object-intent` + `/api/game/add-global-intent` payloads so you can verify manual intents end-to-end.
    - `ScreepsDotNet.Backend.Http/PowerCreepEndpoints.http` hits `/api/game/power-creeps/*` so you can create/rename/upgrade/delete/cancel creeps plus register experimentation resets without wiring a custom client.
@@ -139,7 +139,7 @@
 ## Pending / Next Steps
 
 1. **Shard-aware helpers & write-heavy `/api/game/*` mutations**
-   - With power creeps, mods, bots, strongholds, map, invader, and manual intent flows online, the outstanding backlog from `docs/specs/MarketWorldEndpoints.md` is the shard-scoped write APIs (spawn placement edge cases, construction batching, notify toggles, etc.). These require deterministic Mongo/Testcontainers fixtures plus HTTP integration suites mirroring the CLI coverage so shard behavior stays consistent.
+   - Power-creep parity (list/create/delete/cancel-delete/upgrade/rename/experimentation) is complete across HTTP + CLI, so the remaining backlog from `docs/specs/MarketWorldEndpoints.md` centers on shard-scoped write APIs (spawn placement edge cases, construction batching, notify toggles, etc.). These require deterministic Mongo/Testcontainers fixtures plus HTTP integration suites mirroring the CLI coverage so shard behavior stays consistent.
 2. **CLI/HTTP polish**
    - Add optional `--json` output to any remaining CLI commands, extend the HTTP admin routes with structured responses/logging, and keep README/AGENT/manual `.http` files current whenever new management features land.
 

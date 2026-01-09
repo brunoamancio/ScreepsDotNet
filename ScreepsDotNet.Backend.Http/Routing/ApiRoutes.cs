@@ -81,6 +81,8 @@ public static class ApiRoutes
             public const string TickSet = $"{SystemBase}/tick-set";
             public const string Message = $"{SystemBase}/message";
             public const string Reset = $"{SystemBase}/reset";
+            public const string StorageStatus = $"{SystemBase}/storage-status";
+            public const string StorageReseed = $"{SystemBase}/storage-reseed";
         }
 
         public static class PowerCreeps

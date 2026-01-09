@@ -45,7 +45,7 @@ Modern .NET rewrite of the Screeps private server backend. The solution contains
    - `ScreepsDotNet.Backend.Http/CoreEndpoints.http` provides `/health`, `/api/version`, and `/api/server/info` requests.
 - `ScreepsDotNet.Backend.Http/BotEndpoints.http` exercises the `/api/game/bot/*` routes (list/spawn/reload/remove).
 - `ScreepsDotNet.Backend.Http/StrongholdEndpoints.http` covers `/api/game/stronghold/*` (templates/spawn/expand) for quick smoke testing.
-- `ScreepsDotNet.Backend.Http/SystemEndpoints.http` hits `/api/game/system/*` (status, pause/resume, tick get/set, server message, reset with `confirm=RESET`) for admin verification.
+- `ScreepsDotNet.Backend.Http/SystemEndpoints.http` hits `/api/game/system/*` (status, pause/resume, tick get/set, server message, storage status, storage reseed/reset with `confirm=RESET`) for admin verification.
 - `ScreepsDotNet.Backend.Http/MapEndpoints.http` manages `/api/game/map/*` (generate, open/close, remove, assets update, terrain refresh).
 - `ScreepsDotNet.Backend.Http/IntentEndpoints.http` queues `/api/game/add-object-intent` and `/api/game/add-global-intent` payloads so you can verify manual intents without writing custom tooling.
 - `ScreepsDotNet.Backend.Http/PowerCreepEndpoints.http` hits `/api/game/power-creeps/*` (list/create/rename/upgrade/delete/cancel-delete/experimentation) for testing the new operator management surface.
@@ -123,7 +123,7 @@ dotnet run --project ScreepsDotNet.Backend.Cli -- strongholds spawn --room W5N3 
 | `system tick get [--json]` | Display the minimal tick duration stored in Redis. | |
 | `system tick set --ms <milliseconds>` | Update and broadcast the minimal tick duration. | |
 
-> HTTP automation can call the same maintenance flows via `/api/game/system/*`: `tick`, `tick-set`, and `message` mirror the CLI switches, and `POST /api/game/system/reset` requires `{"confirm":"RESET"}` (plus `"force": true` when resetting any non-default database).
+> HTTP automation can call the same maintenance flows via `/api/game/system/*`: `tick`, `tick-set`, `message`, and the new storage helpers all mirror the CLI switches. `POST /api/game/system/reset` or `/storage-reseed` requires `{"confirm":"RESET"}` (plus `"force": true` when resetting any non-default database).
 
 Example:
 

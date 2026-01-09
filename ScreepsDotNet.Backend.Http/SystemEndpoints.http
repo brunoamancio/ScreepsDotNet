@@ -44,8 +44,22 @@ Content-Type: application/json
     "message": "Server maintenance starting soon."
 }
 
+### Storage Status
+GET {{host}}/api/game/system/storage-status
+X-Token: {{auth_token}}
+
 ### Reset Storage (requires confirm=RESET; force optional for non-default DBs)
 POST {{host}}/api/game/system/reset
+X-Token: {{auth_token}}
+Content-Type: application/json
+
+{
+    "confirm": "RESET",
+    "force": false
+}
+
+### Storage Reseed (alternate route with same semantics)
+POST {{host}}/api/game/system/storage-reseed
 X-Token: {{auth_token}}
 Content-Type: application/json
 
