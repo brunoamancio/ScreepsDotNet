@@ -7,7 +7,8 @@ using ScreepsDotNet.Backend.Http.Serialization;
 
 internal sealed record MapStatsRequestModel(
     [property: JsonPropertyName("rooms")] IReadOnlyList<string>? Rooms,
-    [property: JsonPropertyName("statName")] string? StatName);
+    [property: JsonPropertyName("statName")] string? StatName,
+    [property: JsonPropertyName("shard")] string? Shard);
 
 internal sealed record MapStatsResponseModel(
     [property: JsonPropertyName("gameTime")] int GameTime,
@@ -72,7 +73,8 @@ internal sealed record TerrainTileResponse(
     [property: JsonConverter(typeof(TerrainTypeJsonConverter))] TerrainType Terrain);
 
 internal sealed record RoomsRequest(
-    [property: JsonPropertyName("rooms")] IReadOnlyList<string>? Rooms);
+    [property: JsonPropertyName("rooms")] IReadOnlyList<string>? Rooms,
+    [property: JsonPropertyName("shard")] string? Shard);
 
 internal sealed record RoomsResponse(
     [property: JsonPropertyName("rooms")] IReadOnlyList<RoomTerrainEncodedEntryResponse> Rooms);

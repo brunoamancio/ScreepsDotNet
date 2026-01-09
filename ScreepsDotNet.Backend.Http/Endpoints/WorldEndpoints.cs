@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Microsoft.AspNetCore.Mvc;
 using ScreepsDotNet.Backend.Core.Models;
 using ScreepsDotNet.Backend.Core.Repositories;
@@ -55,12 +56,13 @@ internal static class WorldEndpoints
     {
         app.MapGet(ApiRoutes.Game.World.RoomStatus,
                    async ([FromQuery(Name = "room")] string? room,
+                          [FromQuery(Name = "shard")] string? shard,
                           IRoomStatusRepository repository,
                           CancellationToken cancellationToken) => {
                               if (!IsValidRoomName(room))
                                   return Results.BadRequest(new ErrorResponse(InvalidParamsMessage));
 
-                              var status = await repository.GetRoomStatusAsync(room!, null, cancellationToken).ConfigureAwait(false);
+                              var status = await repository.GetRoomStatusAsync(room!, shard, cancellationToken).ConfigureAwait(false);
                               var payload = WorldResponseFactory.CreateRoomStatusResponse(status);
                               return Results.Ok(payload);
                           })
@@ -72,13 +74,14 @@ internal static class WorldEndpoints
     {
         app.MapGet(ApiRoutes.Game.World.RoomTerrain,
                    async ([FromQuery(Name = "room")] string? room,
+                          [FromQuery(Name = "shard")] string? shard,
                           [FromQuery(Name = "encoded")] string? encoded,
                           IRoomTerrainRepository repository,
                           CancellationToken cancellationToken) => {
                               if (!IsValidRoomName(room))
                                   return Results.BadRequest(new ErrorResponse(InvalidParamsMessage));
 
-                              var entries = await repository.GetTerrainEntriesAsync([RoomReference.Create(room!)], cancellationToken).ConfigureAwait(false);
+                              var entries = await repository.GetTerrainEntriesAsync([RoomReference.Create(room!, shard)], cancellationToken).ConfigureAwait(false);
                               var payload = string.IsNullOrEmpty(encoded)
                            ? WorldResponseFactory.CreateDecodedTerrainResponse(entries)
                            : WorldResponseFactory.CreateEncodedTerrainResponse(entries);
@@ -104,11 +107,12 @@ internal static class WorldEndpoints
                                if (rooms.Count == 0)
                                    return Results.BadRequest(new ErrorResponse(InvalidParamsMessage));
 
-                               var roomReferences = rooms.Select(static room => RoomReference.Create(room)).ToList();
+                               var roomReferences = rooms.Select(room => RoomReference.Create(room, request.Shard))
+                                                         .ToList();
                                var entries = await repository.GetTerrainEntriesAsync(roomReferences, cancellationToken).ConfigureAwait(false);
                                var payload = WorldResponseFactory.CreateRoomsResponse(entries);
                                return Results.Ok(payload);
-                           })
+                          })
            .WithName(RoomsEndpointName);
     }
 
@@ -155,7 +159,7 @@ internal static class WorldEndpoints
         var normalizedRooms = request.Rooms.Where(static name => !string.IsNullOrWhiteSpace(name))
                                            .Select(static name => name.Trim())
                                            .Distinct(StringComparer.OrdinalIgnoreCase)
-                                           .Select(static name => RoomReference.Create(name))
+                                           .Select(name => RoomReference.Create(name, request.Shard))
                                            .ToList();
 
         if (normalizedRooms.Count == 0 || string.IsNullOrWhiteSpace(request.StatName))
