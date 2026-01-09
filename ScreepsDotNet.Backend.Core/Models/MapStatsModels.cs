@@ -7,7 +7,7 @@ using System.Collections.Generic;
 /// </summary>
 /// <param name="Rooms">Rooms to inspect.</param>
 /// <param name="StatName">Legacy stat name (e.g., owners1, power5).</param>
-public sealed record MapStatsRequest(IReadOnlyCollection<string> Rooms, string StatName);
+public sealed record MapStatsRequest(IReadOnlyCollection<RoomReference> Rooms, string StatName);
 
 /// <summary>
 /// Aggregated map statistics payload returned to HTTP layer.

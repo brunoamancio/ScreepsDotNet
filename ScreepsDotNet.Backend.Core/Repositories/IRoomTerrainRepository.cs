@@ -5,5 +5,5 @@ using ScreepsDotNet.Backend.Core.Models;
 
 public interface IRoomTerrainRepository
 {
-    Task<IReadOnlyList<RoomTerrainData>> GetTerrainEntriesAsync(IEnumerable<string> roomNames, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<RoomTerrainData>> GetTerrainEntriesAsync(IEnumerable<RoomReference> rooms, CancellationToken cancellationToken = default);
 }

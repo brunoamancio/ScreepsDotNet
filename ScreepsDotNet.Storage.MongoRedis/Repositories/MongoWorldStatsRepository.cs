@@ -3,6 +3,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using MongoDB.Driver;
+using ScreepsDotNet.Backend.Core.Comparers;
 using ScreepsDotNet.Backend.Core.Constants;
 using ScreepsDotNet.Backend.Core.Models;
 using ScreepsDotNet.Backend.Core.Repositories;
@@ -22,19 +23,16 @@ public sealed class MongoWorldStatsRepository(IMongoDatabaseProvider databasePro
 
     public async Task<MapStatsResult> GetMapStatsAsync(MapStatsRequest request, CancellationToken cancellationToken = default)
     {
-        if (request.Rooms.Count == 0) {
-            return new MapStatsResult(await metadataRepository.GetGameTimeAsync(cancellationToken).ConfigureAwait(false),
+        var requestedRooms = NormalizeRooms(request.Rooms);
+        var gameTime = await metadataRepository.GetGameTimeAsync(cancellationToken).ConfigureAwait(false);
+
+        if (requestedRooms.Count == 0) {
+            return new MapStatsResult(gameTime,
                                       new Dictionary<string, MapStatsRoom>(StringComparer.OrdinalIgnoreCase),
                                       new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase),
                                       new Dictionary<string, MapStatsUser>(StringComparer.OrdinalIgnoreCase));
         }
 
-        var requestedRooms = request.Rooms.Where(name => !string.IsNullOrWhiteSpace(name))
-                                          .Select(name => name!.Trim())
-                                          .Distinct(StringComparer.OrdinalIgnoreCase)
-                                          .ToList();
-
-        var gameTime = await metadataRepository.GetGameTimeAsync(cancellationToken).ConfigureAwait(false);
         var stats = await LoadBaseRoomStatsAsync(requestedRooms, cancellationToken).ConfigureAwait(false);
         if (stats.Count == 0) {
             return new MapStatsResult(gameTime,
@@ -62,9 +60,12 @@ public sealed class MongoWorldStatsRepository(IMongoDatabaseProvider databasePro
                                   users);
     }
 
-    private async Task<IReadOnlyList<MapStatsRoom>> LoadBaseRoomStatsAsync(IReadOnlyCollection<string> roomNames, CancellationToken cancellationToken)
+    private async Task<IReadOnlyList<MapStatsRoom>> LoadBaseRoomStatsAsync(IReadOnlyCollection<RoomReference> rooms, CancellationToken cancellationToken)
     {
-        var filter = Builders<RoomDocument>.Filter.In(room => room.Id, roomNames);
+        var filter = BuildRoomDocumentFilter(rooms);
+        if (filter is null)
+            return [];
+
         var documents = await _roomsCollection.Find(filter)
                                               .ToListAsync(cancellationToken)
                                               .ConfigureAwait(false);
@@ -73,12 +74,15 @@ public sealed class MongoWorldStatsRepository(IMongoDatabaseProvider databasePro
                         .ToList();
     }
 
-    private async Task PopulateRoomObjectsAsync(IReadOnlyCollection<string> roomNames, IDictionary<string, MapStatsRoomBuilder> builders,
+    private async Task PopulateRoomObjectsAsync(IReadOnlyCollection<RoomReference> rooms, IDictionary<string, MapStatsRoomBuilder> builders,
                                                 ISet<string> userIds, int gameTime, CancellationToken cancellationToken)
     {
-        var filter = Builders<RoomObjectDocument>.Filter.And(
-            Builders<RoomObjectDocument>.Filter.In(obj => obj.Room, roomNames),
-            Builders<RoomObjectDocument>.Filter.In(obj => obj.Type, ObjectTypes));
+        var roomFilter = BuildRoomObjectFilter(rooms);
+        if (roomFilter is null)
+            return;
+
+        var filter = Builders<RoomObjectDocument>.Filter.And(roomFilter,
+                                                             Builders<RoomObjectDocument>.Filter.In(obj => obj.Type, ObjectTypes));
 
         var objects = await _roomObjectsCollection.Find(filter)
                                                   .ToListAsync(cancellationToken)
@@ -150,6 +154,81 @@ public sealed class MongoWorldStatsRepository(IMongoDatabaseProvider databasePro
         return documents.Where(user => !string.IsNullOrWhiteSpace(user.Id))
                         .Select(user => new MapStatsUser(user.Id!, user.Username ?? string.Empty, user.Badge))
                         .ToDictionary(user => user.Id, user => user, StringComparer.OrdinalIgnoreCase);
+    }
+
+    private static IReadOnlyList<RoomReference> NormalizeRooms(IEnumerable<RoomReference> rooms)
+        => rooms?.Where(reference => reference is not null && !string.IsNullOrWhiteSpace(reference.RoomName))
+                 .Select(reference => RoomReference.Create(reference.RoomName, reference.ShardName))
+                 .Distinct(RoomReferenceComparer.OrdinalIgnoreCase)
+                 .ToList()
+           ?? [];
+
+    private static FilterDefinition<RoomDocument>? BuildRoomDocumentFilter(IReadOnlyCollection<RoomReference> rooms)
+    {
+        if (rooms.Count == 0)
+            return null;
+
+        var filters = new List<FilterDefinition<RoomDocument>>();
+        foreach (var group in rooms.GroupBy(reference => reference.RoomName, StringComparer.OrdinalIgnoreCase)) {
+            if (group.Any(reference => string.IsNullOrWhiteSpace(reference.ShardName))) {
+                filters.Add(Builders<RoomDocument>.Filter.Eq(document => document.Id, group.Key));
+                continue;
+            }
+
+            var shards = group.Select(reference => reference.ShardName!)
+                              .Distinct(StringComparer.OrdinalIgnoreCase)
+                              .ToList();
+
+            if (shards.Count == 0) {
+                filters.Add(Builders<RoomDocument>.Filter.Eq(document => document.Id, group.Key));
+                continue;
+            }
+
+            var roomFilter = Builders<RoomDocument>.Filter.Eq(document => document.Id, group.Key);
+            var shardFilter = Builders<RoomDocument>.Filter.In(document => document.Shard, shards);
+            filters.Add(Builders<RoomDocument>.Filter.And(roomFilter, shardFilter));
+        }
+
+        return filters.Count switch
+        {
+            0 => null,
+            1 => filters[0],
+            _ => Builders<RoomDocument>.Filter.Or(filters)
+        };
+    }
+
+    private static FilterDefinition<RoomObjectDocument>? BuildRoomObjectFilter(IReadOnlyCollection<RoomReference> rooms)
+    {
+        if (rooms.Count == 0)
+            return null;
+
+        var filters = new List<FilterDefinition<RoomObjectDocument>>();
+        foreach (var group in rooms.GroupBy(reference => reference.RoomName, StringComparer.OrdinalIgnoreCase)) {
+            if (group.Any(reference => string.IsNullOrWhiteSpace(reference.ShardName))) {
+                filters.Add(Builders<RoomObjectDocument>.Filter.Eq(document => document.Room, group.Key));
+                continue;
+            }
+
+            var shards = group.Select(reference => reference.ShardName!)
+                              .Distinct(StringComparer.OrdinalIgnoreCase)
+                              .ToList();
+
+            if (shards.Count == 0) {
+                filters.Add(Builders<RoomObjectDocument>.Filter.Eq(document => document.Room, group.Key));
+                continue;
+            }
+
+            var roomFilter = Builders<RoomObjectDocument>.Filter.Eq(document => document.Room, group.Key);
+            var shardFilter = Builders<RoomObjectDocument>.Filter.In(document => document.Shard, shards);
+            filters.Add(Builders<RoomObjectDocument>.Filter.And(roomFilter, shardFilter));
+        }
+
+        return filters.Count switch
+        {
+            0 => null,
+            1 => filters[0],
+            _ => Builders<RoomObjectDocument>.Filter.Or(filters)
+        };
     }
 
     private sealed class MapStatsRoomBuilder(MapStatsRoom source)

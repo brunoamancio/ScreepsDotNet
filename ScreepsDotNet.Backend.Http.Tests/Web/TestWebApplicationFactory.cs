@@ -603,14 +603,15 @@ sealed file class FakeRoomStatusRepository : IRoomStatusRepository
 {
     private static readonly RoomStatusInfo Status = new("W1N1", "normal", false, false, null);
 
-    public Task<RoomStatusInfo?> GetRoomStatusAsync(string roomName, CancellationToken cancellationToken = default)
+    public Task<RoomStatusInfo?> GetRoomStatusAsync(string roomName, string? shardName = null, CancellationToken cancellationToken = default)
         => Task.FromResult(string.Equals(roomName, Status.RoomName, StringComparison.OrdinalIgnoreCase) ? Status : null);
 
-    public Task<IReadOnlyDictionary<string, RoomStatusInfo>> GetRoomStatusesAsync(IEnumerable<string> roomNames, CancellationToken cancellationToken = default)
+    public Task<IReadOnlyDictionary<string, RoomStatusInfo>> GetRoomStatusesAsync(IEnumerable<RoomReference> rooms, CancellationToken cancellationToken = default)
     {
-        var dictionary = roomNames.Where(name => string.Equals(name, Status.RoomName, StringComparison.OrdinalIgnoreCase))
-                                  .Distinct(StringComparer.OrdinalIgnoreCase)
-                                  .ToDictionary(name => name, _ => Status, StringComparer.OrdinalIgnoreCase);
+        var dictionary = rooms.Where(room => string.Equals(room.RoomName, Status.RoomName, StringComparison.OrdinalIgnoreCase))
+                              .Select(room => room.RoomName)
+                              .Distinct(StringComparer.OrdinalIgnoreCase)
+                              .ToDictionary(name => name, _ => Status, StringComparer.OrdinalIgnoreCase);
         return Task.FromResult<IReadOnlyDictionary<string, RoomStatusInfo>>(dictionary);
     }
 }
@@ -619,12 +620,14 @@ sealed file class FakeRoomTerrainRepository : IRoomTerrainRepository
 {
     private static readonly IReadOnlyList<RoomTerrainData> Entries =
     [
-        new("W1N1", "terrain", new string('0', 2500))
+        new("W1N1", null, "terrain", new string('0', 2500))
     ];
 
-    public Task<IReadOnlyList<RoomTerrainData>> GetTerrainEntriesAsync(IEnumerable<string> roomNames, CancellationToken cancellationToken = default)
+    public Task<IReadOnlyList<RoomTerrainData>> GetTerrainEntriesAsync(IEnumerable<RoomReference> rooms, CancellationToken cancellationToken = default)
     {
-        var requested = roomNames.ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var requested = rooms?.Select(room => room.RoomName)
+                              .ToHashSet(StringComparer.OrdinalIgnoreCase)
+                       ?? new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var result = requested.Count == 0
             ? Entries.ToList()
             : Entries.Where(entry => requested.Contains(entry.RoomName)).ToList();

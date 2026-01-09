@@ -60,7 +60,7 @@ internal static class WorldEndpoints
                               if (!IsValidRoomName(room))
                                   return Results.BadRequest(new ErrorResponse(InvalidParamsMessage));
 
-                              var status = await repository.GetRoomStatusAsync(room!, cancellationToken).ConfigureAwait(false);
+                              var status = await repository.GetRoomStatusAsync(room!, null, cancellationToken).ConfigureAwait(false);
                               var payload = WorldResponseFactory.CreateRoomStatusResponse(status);
                               return Results.Ok(payload);
                           })
@@ -78,7 +78,7 @@ internal static class WorldEndpoints
                               if (!IsValidRoomName(room))
                                   return Results.BadRequest(new ErrorResponse(InvalidParamsMessage));
 
-                              var entries = await repository.GetTerrainEntriesAsync([room!], cancellationToken).ConfigureAwait(false);
+                              var entries = await repository.GetTerrainEntriesAsync([RoomReference.Create(room!)], cancellationToken).ConfigureAwait(false);
                               var payload = string.IsNullOrEmpty(encoded)
                            ? WorldResponseFactory.CreateDecodedTerrainResponse(entries)
                            : WorldResponseFactory.CreateEncodedTerrainResponse(entries);
@@ -104,7 +104,8 @@ internal static class WorldEndpoints
                                if (rooms.Count == 0)
                                    return Results.BadRequest(new ErrorResponse(InvalidParamsMessage));
 
-                               var entries = await repository.GetTerrainEntriesAsync(rooms, cancellationToken).ConfigureAwait(false);
+                               var roomReferences = rooms.Select(static room => RoomReference.Create(room)).ToList();
+                               var entries = await repository.GetTerrainEntriesAsync(roomReferences, cancellationToken).ConfigureAwait(false);
                                var payload = WorldResponseFactory.CreateRoomsResponse(entries);
                                return Results.Ok(payload);
                            })
@@ -145,15 +146,16 @@ internal static class WorldEndpoints
     private static bool IsValidRoomName(string? room)
         => !string.IsNullOrWhiteSpace(room);
 
-    private static bool IsValidMapStatsRequest(MapStatsRequestModel? request, out IReadOnlyList<string> rooms)
+    private static bool IsValidMapStatsRequest(MapStatsRequestModel? request, out IReadOnlyList<RoomReference> rooms)
     {
-        rooms = Array.Empty<string>();
+        rooms = Array.Empty<RoomReference>();
         if (request?.Rooms is null || !MapStatsRequestValidator.IsValid(request))
             return false;
 
         var normalizedRooms = request.Rooms.Where(static name => !string.IsNullOrWhiteSpace(name))
                                            .Select(static name => name.Trim())
                                            .Distinct(StringComparer.OrdinalIgnoreCase)
+                                           .Select(static name => RoomReference.Create(name))
                                            .ToList();
 
         if (normalizedRooms.Count == 0 || string.IsNullOrWhiteSpace(request.StatName))

@@ -2,6 +2,7 @@
 
 using global::System.Linq;
 using global::System.Text.Json;
+using ScreepsDotNet.Backend.Core.Models;
 using ScreepsDotNet.Backend.Core.Repositories;
 using Spectre.Console;
 using Spectre.Console.Cli;
@@ -31,7 +32,8 @@ internal sealed class WorldDumpCommand(IRoomTerrainRepository terrainRepository)
 
     public override async Task<int> ExecuteAsync(CommandContext context, Settings settings, CancellationToken cancellationToken)
     {
-        var entries = await terrainRepository.GetTerrainEntriesAsync(settings.Rooms, cancellationToken).ConfigureAwait(false);
+        var references = settings.Rooms.Select(room => RoomReference.Create(room)).ToList();
+        var entries = await terrainRepository.GetTerrainEntriesAsync(references, cancellationToken).ConfigureAwait(false);
 
         if (settings.OutputJson) {
             if (settings.DecodeTiles) {
