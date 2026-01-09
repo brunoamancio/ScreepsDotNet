@@ -30,7 +30,7 @@ public sealed class MongoServerDataRepository(IMongoDatabaseProvider databasePro
 
     private static ServerData BuildFallback()
         => new(SeedDataDefaults.ServerData.WelcomeText,
-               new Dictionary<string, object>(SeedDataDefaults.ServerData.CreateCustomObjectTypes(), StringComparer.Ordinal),
+               new Dictionary<string, object?>(SeedDataDefaults.ServerData.CreateCustomObjectTypes(), StringComparer.Ordinal),
                SeedDataDefaults.ServerData.HistoryChunkSize,
                SeedDataDefaults.ServerData.SocketUpdateThrottle,
                new RendererData(new Dictionary<string, object>(SeedDataDefaults.ServerData.CreateRendererResources(), StringComparer.Ordinal),
@@ -39,7 +39,7 @@ public sealed class MongoServerDataRepository(IMongoDatabaseProvider databasePro
     private static ServerData ToModel(ServerDataDocument document)
     {
         return new ServerData(document.WelcomeText,
-                              new Dictionary<string, object>(document.CustomObjectTypes, StringComparer.Ordinal),
+                              new Dictionary<string, object?>(document.CustomObjectTypes, StringComparer.Ordinal),
                               document.HistoryChunkSize, document.SocketUpdateThrottle,
                               new RendererData(new Dictionary<string, object>(document.Renderer.Resources, StringComparer.Ordinal),
                                                new Dictionary<string, object>(document.Renderer.Metadata, StringComparer.Ordinal)));
@@ -49,7 +49,7 @@ public sealed class MongoServerDataRepository(IMongoDatabaseProvider databasePro
         => new()
         {
             WelcomeText = data.WelcomeText,
-            CustomObjectTypes = new Dictionary<string, object>(data.CustomObjectTypes, StringComparer.Ordinal),
+            CustomObjectTypes = new Dictionary<string, object?>(data.CustomObjectTypes, StringComparer.Ordinal),
             HistoryChunkSize = data.HistoryChunkSize,
             SocketUpdateThrottle = data.SocketUpdateThrottle,
             Renderer = new ServerRendererDocument

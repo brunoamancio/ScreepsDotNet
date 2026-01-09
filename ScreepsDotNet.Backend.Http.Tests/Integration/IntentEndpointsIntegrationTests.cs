@@ -117,6 +117,35 @@ public sealed class IntentEndpointsIntegrationTests(IntegrationTestHarness harne
         Assert.Equal(10, notify["groupInterval"].AsInt32);
     }
 
+    [Fact]
+    public async Task AddGlobalIntent_CustomIntent_UsesManifestSchema()
+    {
+        var token = await LoginAsync();
+        _client.DefaultRequestHeaders.Add("X-Token", token);
+
+        var request = new
+        {
+            name = "shieldRoom",
+            intent = new { roomName = "W9N9", duration = 25 }
+        };
+
+        var response = await _client.PostAsJsonAsync(ApiRoutes.Game.Intent.AddGlobal, request);
+        response.EnsureSuccessStatusCode();
+
+        var payload = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal(1, payload.GetProperty("ok").GetInt32());
+
+        var collection = harness.Database.GetCollection<BsonDocument>("users.intents");
+        var document = await collection.Find(new BsonDocument("user", SeedDataDefaults.User.Id))
+                                       .FirstOrDefaultAsync();
+
+        Assert.NotNull(document);
+        var intents = document["intents"].AsBsonDocument;
+        var custom = intents["shieldRoom"].AsBsonArray.Single().AsBsonDocument;
+        Assert.Equal("W9N9", custom["roomName"].AsString);
+        Assert.Equal(25, custom["duration"].AsInt32);
+    }
+
     private async Task<string> LoginAsync()
     {
         var response = await _client.PostAsJsonAsync(ApiRoutes.AuthSteamTicket, new { ticket = SeedDataDefaults.Auth.Ticket });

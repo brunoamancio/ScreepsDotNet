@@ -51,6 +51,7 @@ Modern .NET rewrite of the Screeps private server backend. The solution contains
 - `ScreepsDotNet.Backend.Http/PowerCreepEndpoints.http` hits `/api/game/power-creeps/*` (list/create/rename/upgrade/delete/cancel-delete/experimentation) for testing the new operator management surface.
 - `ScreepsDotNet.Backend.Http/WorldEndpoints.http` includes both default-room samples and new shard-aware requests (pass `shard=shard1` or include `"shard": "shard1"` in the JSON body) so you can exercise the secondary shard seeded by default.
 - All `/api/game/world/*` read routes also understand the legacy `shardName/RoomName` notation (e.g., `shard1/W21N20`). If you supply both a `shard` parameter and a prefixed room, the explicit `shard` parameter wins.
+- Any `customIntentTypes` / `customObjectTypes` declared in your `mods.json` are now honored automatically: `/api/game/add-*intent` uses the merged schemas, while `/api/server/info` and `/api/version` surface the mod-supplied object metadata so the official client can render custom assets.
 
 5. **Run automated tests (unit + integration):**
    ```powershell
@@ -77,10 +78,10 @@ dotnet run --project ScreepsDotNet.Backend.Cli/ScreepsDotNet.Backend.Cli.csproj 
 | `--connection-string`, `--mongo` | Override the MongoDB connection string (default `mongodb://localhost:27017/screeps`). |
 | `--cli_host`, `--cli_port` | Retain the legacy CLI listener flags (accepted for compatibility). |
 | `--host`, `--port`, `--password` | Legacy HTTP overrides accepted so the client launcher still works. |
-| `--modfile` / `SCREEPSCLI_modfile` / `MODFILE` | Path to the legacy `mods.json` manifest containing bot AI definitions. |
+| `--modfile` / `SCREEPSCLI_modfile` / `MODFILE` | Path to the legacy `mods.json` manifest containing bot AI directories plus any `customIntentTypes/customObjectTypes`. |
 
 Every option can also be supplied via `SCREEPSCLI_<option>` environment variables, e.g., `SCREEPSCLI_connection-string`.
-If you just need something to point at while experimenting, copy `ScreepsDotNet.Backend.Http/mods.sample.json` to a writable location and adjust the bot paths to the modules you want to load.
+If you just need something to point at while experimenting, copy `ScreepsDotNet.Backend.Http/mods.sample.json` to a writable location, adjust the bot paths, and edit the sample `customIntentTypes` / `customObjectTypes` entries as needed.
 
 ### Bot commands
 

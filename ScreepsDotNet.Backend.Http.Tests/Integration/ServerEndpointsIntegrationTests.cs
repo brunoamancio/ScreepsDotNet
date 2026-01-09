@@ -24,6 +24,11 @@ public sealed class ServerEndpointsIntegrationTests(IntegrationTestHarness harne
         Assert.Equal(SeedDataDefaults.ServerData.WelcomeText, root.GetProperty(ServerDataResponseFields.WelcomeText).GetString());
         Assert.Equal(SeedDataDefaults.ServerData.HistoryChunkSize, root.GetProperty(ServerDataResponseFields.HistoryChunkSize).GetInt32());
         Assert.Equal(SeedDataDefaults.ServerData.SocketUpdateThrottle, root.GetProperty(ServerDataResponseFields.SocketUpdateThrottle).GetInt32());
+        var customTypes = root.GetProperty(ServerDataResponseFields.CustomObjectTypes);
+        Assert.True(customTypes.TryGetProperty("shield", out var shield));
+        Assert.Equal("#00bfff", shield.GetProperty("color").GetString());
+        Assert.Equal(500, shield.GetProperty("decay").GetInt32());
+        Assert.Equal(500, shield.GetProperty("decay").GetInt32());
     }
 
     [Fact]
@@ -39,5 +44,8 @@ public sealed class ServerEndpointsIntegrationTests(IntegrationTestHarness harne
         var serverData = root.GetProperty(VersionResponseFields.ServerData);
         Assert.Equal(SeedDataDefaults.ServerData.WelcomeText, serverData.GetProperty(ServerDataResponseFields.WelcomeText).GetString());
         Assert.Equal(SeedDataDefaults.ServerData.HistoryChunkSize, serverData.GetProperty(ServerDataResponseFields.HistoryChunkSize).GetInt32());
+        var customTypes = serverData.GetProperty(ServerDataResponseFields.CustomObjectTypes);
+        Assert.True(customTypes.TryGetProperty("shield", out var shield));
+        Assert.Equal("#00bfff", shield.GetProperty("color").GetString());
     }
 }

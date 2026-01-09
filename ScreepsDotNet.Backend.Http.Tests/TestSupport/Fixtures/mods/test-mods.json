@@ -1,10 +1,6 @@
 {
   "bots": {
-    "alpha": "bots/alpha",
-    "beta": "bots/beta"
-  },
-  "common": {
-    "welcomeText": "<h4>Welcome to your own Screeps private server!</h4>"
+    "integration": "bots/integration"
   },
   "customIntentTypes": {
     "shieldRoom": {
@@ -15,7 +11,7 @@
   "customObjectTypes": {
     "shield": {
       "color": "#00bfff",
-      "decay": 1000
+      "decay": 500
     }
   }
 }

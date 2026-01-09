@@ -1,5 +1,6 @@
 ﻿using ScreepsDotNet.Backend.Core.Configuration;
 using ScreepsDotNet.Backend.Core.Context;
+using ScreepsDotNet.Backend.Core.Intents;
 using ScreepsDotNet.Backend.Core.Repositories;
 using ScreepsDotNet.Backend.Core.Services;
 using ScreepsDotNet.Backend.Core.Storage;
@@ -54,6 +55,8 @@ builder.Services.AddSingleton<IIntentService, MongoIntentService>();
 builder.Services.AddSingleton<IPowerCreepService, MongoPowerCreepService>();
 builder.Services.AddSingleton<IStrongholdTemplateProvider, EmbeddedStrongholdTemplateProvider>();
 builder.Services.AddSingleton<IStrongholdControlService, MongoStrongholdControlService>();
+builder.Services.AddSingleton<IModManifestProvider, FileSystemModManifestProvider>();
+builder.Services.AddSingleton<IIntentSchemaCatalog, ManifestIntentSchemaCatalog>();
 builder.Services.AddSingleton<IBotDefinitionProvider, FileSystemBotDefinitionProvider>();
 builder.Services.AddSingleton<IBotControlService, MongoBotControlService>();
 builder.Services.AddSingleton<ISystemControlService, RedisSystemControlService>();

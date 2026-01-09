@@ -38,14 +38,17 @@ public sealed class MongoIntentService : IIntentService
     private readonly IMongoCollection<RoomDocument> _roomsCollection;
     private readonly IMongoCollection<RoomObjectDocument> _roomObjectsCollection;
     private readonly IWorldMetadataRepository _worldMetadataRepository;
+    private readonly IIntentSchemaCatalog _intentSchemaCatalog;
     private readonly ILogger<MongoIntentService> _logger;
 
     public MongoIntentService(IMongoDatabaseProvider databaseProvider,
                               IWorldMetadataRepository worldMetadataRepository,
+                              IIntentSchemaCatalog intentSchemaCatalog,
                               ILogger<MongoIntentService> logger)
     {
         ArgumentNullException.ThrowIfNull(databaseProvider);
         ArgumentNullException.ThrowIfNull(worldMetadataRepository);
+        ArgumentNullException.ThrowIfNull(intentSchemaCatalog);
         ArgumentNullException.ThrowIfNull(logger);
 
         _roomIntentsCollection = databaseProvider.GetCollection<RoomIntentDocument>(databaseProvider.Settings.RoomsIntentsCollection);
@@ -53,6 +56,7 @@ public sealed class MongoIntentService : IIntentService
         _roomsCollection = databaseProvider.GetCollection<RoomDocument>(databaseProvider.Settings.RoomsCollection);
         _roomObjectsCollection = databaseProvider.GetCollection<RoomObjectDocument>(databaseProvider.Settings.RoomObjectsCollection);
         _worldMetadataRepository = worldMetadataRepository;
+        _intentSchemaCatalog = intentSchemaCatalog;
         _logger = logger;
     }
 
@@ -71,7 +75,8 @@ public sealed class MongoIntentService : IIntentService
         if (string.Equals(intentName, ActivateSafeModeIntent, StringComparison.Ordinal))
             await EnsureSafeModeAvailableAsync(userId, cancellationToken).ConfigureAwait(false);
 
-        var sanitized = SanitizeIntent(intentName, payload, forceArray: false);
+        var schemas = await _intentSchemaCatalog.GetSchemasAsync(cancellationToken).ConfigureAwait(false);
+        var sanitized = SanitizeIntent(schemas, intentName, payload, forceArray: false);
 
         var filter = Builders<RoomIntentDocument>.Filter.Eq(document => document.Room, normalizedRoom);
         var update = Builders<RoomIntentDocument>.Update
@@ -98,7 +103,8 @@ public sealed class MongoIntentService : IIntentService
         if (payload.ValueKind is JsonValueKind.Undefined or JsonValueKind.Null)
             throw new IntentValidationException("invalid params");
 
-        var sanitized = SanitizeIntent(intentName, payload, forceArray: true);
+        var schemas = await _intentSchemaCatalog.GetSchemasAsync(cancellationToken).ConfigureAwait(false);
+        var sanitized = SanitizeIntent(schemas, intentName, payload, forceArray: true);
 
         var document = new UserIntentDocument
         {
@@ -163,9 +169,12 @@ public sealed class MongoIntentService : IIntentService
             throw new IntentValidationException("unauthorized");
     }
 
-    private static BsonDocument SanitizeIntent(string intentName, JsonElement payload, bool forceArray)
+    private static BsonDocument SanitizeIntent(IReadOnlyDictionary<string, IntentDefinition> schemas,
+                                               string intentName,
+                                               JsonElement payload,
+                                               bool forceArray)
     {
-        if (!IntentSchemas.All.TryGetValue(intentName, out var definition))
+        if (!schemas.TryGetValue(intentName, out var definition))
             throw new IntentValidationException("invalid intent name");
 
         var value = SanitizeIntentValue(definition, payload, forceArray);

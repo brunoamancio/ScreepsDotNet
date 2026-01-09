@@ -1,10 +1,13 @@
 ﻿namespace ScreepsDotNet.Backend.Http.Tests.Integration;
 
+using System;
+using System.IO;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using ScreepsDotNet.Backend.Core.Configuration;
 using ScreepsDotNet.Backend.Core.Services;
 using ScreepsDotNet.Backend.Http.Tests.TestSupport;
 
@@ -27,6 +30,8 @@ internal sealed class IntegrationWebApplicationFactory(string mongoConnectionStr
     private const string TicketKey = TicketsSection + ":Ticket";
     private const string TicketUserIdKey = TicketsSection + ":UserId";
     private const string TicketSteamIdKey = TicketsSection + ":SteamId";
+    private const string ManifestFileKey = nameof(BotManifestOptions) + ":ManifestFile";
+    private static readonly string ModsManifestPath = Path.Combine(AppContext.BaseDirectory, "TestSupport", "Fixtures", "mods", "test-mods.json");
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
@@ -40,7 +45,8 @@ internal sealed class IntegrationWebApplicationFactory(string mongoConnectionStr
                 [UseNativeAuthKey] = "false",
                 [TicketKey] = ticket,
                 [TicketUserIdKey] = userId,
-                [TicketSteamIdKey] = steamId
+                [TicketSteamIdKey] = steamId,
+                [ManifestFileKey] = ModsManifestPath
             };
             configBuilder.AddInMemoryCollection(settings);
         });

@@ -16,7 +16,7 @@ public sealed class ServerDataDocument
     public string WelcomeText { get; set; } = string.Empty;
 
     [BsonElement("customObjectTypes")]
-    public Dictionary<string, object> CustomObjectTypes { get; set; } = new(StringComparer.Ordinal);
+    public Dictionary<string, object?> CustomObjectTypes { get; set; } = new(StringComparer.Ordinal);
 
     [BsonElement("historyChunkSize")]
     public int HistoryChunkSize { get; set; }

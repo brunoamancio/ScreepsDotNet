@@ -27,4 +27,10 @@
     <Compile Include="..\GlobalSuppressions.Tests.cs" Link="GlobalSuppressions.Tests.cs" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="TestSupport/Fixtures/mods/test-mods.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>

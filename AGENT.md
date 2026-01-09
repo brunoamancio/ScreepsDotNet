@@ -39,6 +39,7 @@
 - `/api/game/power-creeps/*` – legacy parity for list/create/delete/cancel-delete/upgrade/rename/experimentation, all backed by the new `MongoPowerCreepService` so the responses include `_id`, shard/room metadata, fatigue, store contents, and cooldown/delete timestamps exactly like `backend-local`.
 - `/api/game/add-object-intent` + `/api/game/add-global-intent` – new intent endpoints backed by `MongoIntentService`, reusing the legacy sanitization rules (string/number/boolean transforms, price scaling, body-part filtering) and enforcing the safe-mode guard before storing data in `rooms.intents` / `users.intents`.
 - `/api/game/bot/*`, `/api/game/stronghold/*`, `/api/game/system/*`, and `/api/game/map/*` – admin routes for bot AI management, stronghold templates/spawn/expand, system controls (pause/resume, tick duration, broadcast, reseed with `confirm=RESET`), and map generation/open/close/remove tasks reusing the shared Mongo/Redis services from the CLI.
+- `mods.json` plumbing – the new `FileSystemModManifestProvider` watches the manifest for bot directories and `customIntentTypes/customObjectTypes`, `ManifestIntentSchemaCatalog` merges them with the built-in schemas for `MongoIntentService`, and `/api/server/info` / `/api/version` surface the mod-defined object metadata so the official client renders custom assets just like backend-local.
 - Core abstractions defined for server info, users, rooms, CLI sessions, storage status, and engine ticks.
 - Mongo repositories implemented for server info, users, and owned rooms; ready for future endpoints.
 - Integration tests spin up disposable Mongo + Redis containers via Testcontainers to validate real storage behavior.
@@ -108,7 +109,7 @@
 
 - `appsettings.json` & `appsettings.Development.json`:
   - `Storage:MongoRedis` connection strings + collection names.
-- Sample bot manifest lives at `ScreepsDotNet.Backend.Http/mods.sample.json`. Copy it when you need a quick `mods.json` target for either the CLI (`--modfile`) or the HTTP host (`BotManifestOptions:ManifestFile` / `MODFILE`).
+- Sample manifest lives at `ScreepsDotNet.Backend.Http/mods.sample.json`. Copy it when you need a quick `mods.json` target for either the CLI (`--modfile`) or the HTTP host (`BotManifestOptions:ManifestFile` / `MODFILE`); it already includes example bot entries plus `customIntentTypes` / `customObjectTypes` so you can validate the new plumbing end-to-end.
 - Server metadata + version info now live in Mongo (`server.data` + `server.version`). Update `docker/mongo-init/seed-server-data.js` and `SeedDataDefaults` before changing these defaults so HTTP + CLI surfaces stay in sync.
 - `docker-compose.yml` uses volumes `mongo-data` / `redis-data`. Run `docker compose down -v` to reseed.
 
@@ -135,15 +136,15 @@
 
 ## Pending / Next Steps
 
-1. **Shard-aware helpers & remaining `/api/game/*` intent variants**
-   - With power creeps, bots, strongholds, map, invader, and intent flows online, the remaining backlog from `docs/specs/MarketWorldEndpoints.md` is the shard-specific helpers/custom intent types the legacy config enables. Tackling these will require new Mongo fixtures (both docker + Testcontainers) plus integration suites so multi-shard edge cases stay deterministic.
+1. **Shard-aware helpers & write-heavy `/api/game/*` mutations**
+   - With power creeps, mods, bots, strongholds, map, invader, and manual intent flows online, the outstanding backlog from `docs/specs/MarketWorldEndpoints.md` is the shard-scoped write APIs (spawn placement edge cases, construction batching, notify toggles, etc.). These require deterministic Mongo/Testcontainers fixtures plus HTTP integration suites mirroring the CLI coverage so shard behavior stays consistent.
 2. **CLI/HTTP polish**
    - Add optional `--json` output to any remaining CLI commands, extend the HTTP admin routes with structured responses/logging, and keep README/AGENT/manual `.http` files current whenever new management features land.
 
 ## Market & World API Spec Snapshot
 
-- `docs/specs/MarketWorldEndpoints.md` remains the canonical reference for legacy behavior, Mongo schemas, .NET repository contracts, and the integration test matrix. It now documents both the read-model endpoints and the manual intent routes (`add-object-intent`, `add-global-intent`, spawn/flag/invader helpers) so future tweaks stay consistent with backend-local.
-- Scope priorities (in order): CLI/HTTP admin parity + regression scaffolding, then the shard-specific helpers/custom intent variants once deterministic seeds/tests exist for those mutations.
+- `docs/specs/MarketWorldEndpoints.md` remains the canonical reference for legacy behavior, Mongo schemas, .NET repository contracts, and the integration test matrix. It now documents both the read-model endpoints and the manual intent routes (`add-object-intent`, `add-global-intent`, spawn/flag/invader helpers) plus the new mods manifest plumbing so future tweaks stay consistent with backend-local.
+- Scope priorities (in order): finish the shard-aware write-heavy endpoints with deterministic seeds/tests, then tackle any CLI/HTTP polish items that remain.
 
 ## Tips for Agents
 

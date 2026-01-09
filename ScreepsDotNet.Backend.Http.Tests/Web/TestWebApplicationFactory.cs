@@ -82,7 +82,7 @@ internal static class FakeServerDataFactory
 {
     public static ServerData Create()
         => new(VersionTestValues.WelcomeText,
-               new Dictionary<string, object>(),
+               new Dictionary<string, object?>(),
                VersionTestValues.HistoryChunkSize,
                VersionTestValues.SocketUpdateThrottle,
                new RendererData(new Dictionary<string, object>(), new Dictionary<string, object>()));

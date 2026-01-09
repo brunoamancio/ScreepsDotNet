@@ -87,7 +87,7 @@ public static class SeedDataDefaults
         public const int HistoryChunkSize = 42;
         public const int SocketUpdateThrottle = 250;
 
-        public static Dictionary<string, object> CreateCustomObjectTypes()
+        public static Dictionary<string, object?> CreateCustomObjectTypes()
             => new(StringComparer.Ordinal)
             {
                 ["testObject"] = "demo"

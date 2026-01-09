@@ -24,6 +24,8 @@ public sealed class SeedDataService : ISeedDataService
     private const string UsersPowerCreepsCollectionName = "users.power_creeps";
     private const string MarketOrdersCollectionName = "market.orders";
     private const string MarketStatsCollectionName = "market.stats";
+    private const string UsersIntentsCollectionName = "users.intents";
+    private const string RoomsIntentsCollectionName = "rooms.intents";
     private const string MongoNamespaceNotFoundCode = "NamespaceNotFound";
 
     private const int DefaultCpu = 100;
@@ -57,7 +59,9 @@ public sealed class SeedDataService : ISeedDataService
             MarketOrdersCollectionName,
             MarketStatsCollectionName,
             WorldInfoCollectionName,
-            UsersPowerCreepsCollectionName
+            UsersPowerCreepsCollectionName,
+            UsersIntentsCollectionName,
+            RoomsIntentsCollectionName
         };
 
         foreach (var name in collectionNames)

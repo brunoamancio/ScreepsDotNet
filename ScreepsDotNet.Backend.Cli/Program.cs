@@ -4,6 +4,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using ScreepsDotNet.Backend.Cli.Application;
 using ScreepsDotNet.Backend.Core.Configuration;
+using ScreepsDotNet.Backend.Core.Intents;
 using ScreepsDotNet.Backend.Core.Repositories;
 using ScreepsDotNet.Backend.Core.Services;
 using ScreepsDotNet.Backend.Core.Storage;
@@ -86,6 +87,8 @@ static void ConfigureServices(HostApplicationBuilder builder)
     builder.Services.AddSingleton<IInvaderService, MongoInvaderService>();
     builder.Services.AddSingleton<IIntentService, MongoIntentService>();
     builder.Services.AddSingleton<IPowerCreepService, MongoPowerCreepService>();
+    builder.Services.AddSingleton<IModManifestProvider, FileSystemModManifestProvider>();
+    builder.Services.AddSingleton<IIntentSchemaCatalog, ManifestIntentSchemaCatalog>();
 
     builder.Services.AddSingleton<ICliApplication, CliApplication>();
 }

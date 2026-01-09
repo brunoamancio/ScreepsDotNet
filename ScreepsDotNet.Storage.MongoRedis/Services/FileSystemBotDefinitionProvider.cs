@@ -1,20 +1,26 @@
 ﻿namespace ScreepsDotNet.Storage.MongoRedis.Services;
 
+using System;
 using System.Collections.Concurrent;
-using System.Text.Json;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
-using ScreepsDotNet.Backend.Core.Configuration;
 using ScreepsDotNet.Backend.Core.Models.Bots;
+using ScreepsDotNet.Backend.Core.Models.Mods;
 using ScreepsDotNet.Backend.Core.Services;
 
-public sealed class FileSystemBotDefinitionProvider(IOptions<BotManifestOptions> options, ILogger<FileSystemBotDefinitionProvider> logger) : IBotDefinitionProvider
+public sealed class FileSystemBotDefinitionProvider(IModManifestProvider manifestProvider,
+                                                    ILogger<FileSystemBotDefinitionProvider> logger)
+    : IBotDefinitionProvider
 {
-    private static readonly JsonSerializerOptions SerializerOptions = new(JsonSerializerDefaults.Web);
-
-    private readonly BotManifestOptions _options = options.Value;
+    private readonly IModManifestProvider _manifestProvider = manifestProvider;
+    private readonly ILogger<FileSystemBotDefinitionProvider> _logger = logger;
     private readonly SemaphoreSlim _refreshLock = new(1, 1);
     private IReadOnlyDictionary<string, BotDefinition> _cache = new Dictionary<string, BotDefinition>(StringComparer.OrdinalIgnoreCase);
+    private string? _cachedManifestPath;
     private DateTimeOffset _cacheTimestamp = DateTimeOffset.MinValue;
 
     public async Task<IReadOnlyList<BotDefinition>> GetDefinitionsAsync(CancellationToken cancellationToken = default)
@@ -31,86 +37,67 @@ public sealed class FileSystemBotDefinitionProvider(IOptions<BotManifestOptions>
 
     private async Task EnsureCacheAsync(CancellationToken cancellationToken)
     {
-        if (!NeedsReload())
+        var manifest = await _manifestProvider.GetManifestAsync(cancellationToken).ConfigureAwait(false);
+        if (!NeedsReload(manifest))
             return;
 
         await _refreshLock.WaitAsync(cancellationToken).ConfigureAwait(false);
         try {
-            if (!NeedsReload())
+            manifest = await _manifestProvider.GetManifestAsync(cancellationToken).ConfigureAwait(false);
+            if (!NeedsReload(manifest))
                 return;
 
-            var manifestPath = ResolveManifestPath();
-            if (manifestPath is null) {
-                _cache = new Dictionary<string, BotDefinition>(StringComparer.OrdinalIgnoreCase);
-                _cacheTimestamp = DateTimeOffset.UtcNow;
-                return;
-            }
-
-            var manifestDirectory = Path.GetDirectoryName(manifestPath)!;
-            using var stream = File.OpenRead(manifestPath);
-            var manifest = await JsonSerializer.DeserializeAsync<ModsManifest>(stream, SerializerOptions, cancellationToken).ConfigureAwait(false);
-
-            if (manifest?.Bots is not { Count: > 0 }) {
-                logger.LogWarning("Mods manifest '{Manifest}' does not define any bots.", manifestPath);
-                _cache = new Dictionary<string, BotDefinition>(StringComparer.OrdinalIgnoreCase);
-                _cacheTimestamp = DateTimeOffset.UtcNow;
-                return;
-            }
-
-            var definitions = new ConcurrentDictionary<string, BotDefinition>(StringComparer.OrdinalIgnoreCase);
-            Parallel.ForEach(manifest.Bots, botEntry => {
-                var botName = botEntry.Key;
-                try {
-                    var directory = Path.GetFullPath(Path.Combine(manifestDirectory, botEntry.Value));
-                    var modules = LoadModules(directory);
-                    var description = $"Bot AI loaded from {directory}";
-                    definitions[botName] = new BotDefinition(botName, description, modules);
-                }
-                catch (Exception ex) {
-                    logger.LogError(ex, "Failed to load bot \"{BotName}\" from {Path}.", botName, botEntry.Value);
-                }
-            });
-
+            var definitions = BuildDefinitions(manifest);
             _cache = definitions;
-            _cacheTimestamp = File.GetLastWriteTimeUtc(manifestPath);
+            _cachedManifestPath = manifest.SourcePath;
+            _cacheTimestamp = manifest.LastModifiedUtc;
         }
         finally {
             _refreshLock.Release();
         }
     }
 
-    private bool NeedsReload()
+    private bool NeedsReload(ModManifest manifest)
     {
-        var manifestPath = ResolveManifestPath();
-        if (manifestPath is null)
-            return _cache.Count != 0;
+        if (!string.Equals(_cachedManifestPath, manifest.SourcePath, StringComparison.OrdinalIgnoreCase))
+            return true;
 
-        var timestamp = File.GetLastWriteTimeUtc(manifestPath);
-        return timestamp > _cacheTimestamp;
+        if (manifest.LastModifiedUtc > _cacheTimestamp)
+            return true;
+
+        if (manifest.SourcePath is null && _cache.Count != 0)
+            return true;
+
+        return false;
     }
 
-    private string? ResolveManifestPath()
+    private IReadOnlyDictionary<string, BotDefinition> BuildDefinitions(ModManifest manifest)
     {
-        if (!string.IsNullOrWhiteSpace(_options.ManifestFile)) {
-            var path = Path.GetFullPath(_options.ManifestFile);
-            if (File.Exists(path))
-                return path;
-
-            logger.LogWarning("Mods manifest '{Path}' not found.", path);
-            return null;
+        if (manifest.SourcePath is null || manifest.Bots.Count == 0) {
+            if (manifest.SourcePath is not null)
+                _logger.LogWarning("Mods manifest '{Path}' does not define any bots.", manifest.SourcePath);
+            return new Dictionary<string, BotDefinition>(StringComparer.OrdinalIgnoreCase);
         }
 
-        var env = Environment.GetEnvironmentVariable("MODFILE");
-        if (string.IsNullOrWhiteSpace(env))
-            return null;
+        var manifestDirectory = Path.GetDirectoryName(manifest.SourcePath);
+        if (string.IsNullOrEmpty(manifestDirectory))
+            return new Dictionary<string, BotDefinition>(StringComparer.OrdinalIgnoreCase);
 
-        var envPath = Path.GetFullPath(env);
-        if (!File.Exists(envPath)) {
-            logger.LogWarning("Environment MODFILE='{Path}' does not exist.", envPath);
-            return null;
-        }
+        var definitions = new ConcurrentDictionary<string, BotDefinition>(StringComparer.OrdinalIgnoreCase);
+        Parallel.ForEach(manifest.Bots, botEntry => {
+            var botName = botEntry.Key;
+            try {
+                var directory = Path.GetFullPath(Path.Combine(manifestDirectory, botEntry.Value));
+                var modules = LoadModules(directory);
+                var description = $"Bot AI loaded from {directory}";
+                definitions[botName] = new BotDefinition(botName, description, modules);
+            }
+            catch (Exception ex) {
+                _logger.LogError(ex, "Failed to load bot \"{BotName}\" from {Path}.", botName, botEntry.Value);
+            }
+        });
 
-        return envPath;
+        return definitions;
     }
 
     private static IReadOnlyDictionary<string, string> LoadModules(string directory)
@@ -148,5 +135,4 @@ public sealed class FileSystemBotDefinitionProvider(IOptions<BotManifestOptions>
             : sanitized;
     }
 
-    private sealed record ModsManifest(Dictionary<string, string>? Bots);
 }
