@@ -1,4 +1,5 @@
-﻿using ScreepsDotNet.Backend.Cli.Commands.Bot;
+﻿using ScreepsDotNet.Backend.Cli.Commands.Auth;
+using ScreepsDotNet.Backend.Cli.Commands.Bot;
 using ScreepsDotNet.Backend.Cli.Commands.Flag;
 using ScreepsDotNet.Backend.Cli.Commands.Invader;
 using ScreepsDotNet.Backend.Cli.Commands.Map;
@@ -70,6 +71,12 @@ internal sealed class CliApplication(IServiceProvider serviceProvider, ILogger<C
                 branch.AddCommand<WorldDumpCommand>("dump")
                       .WithDescription("Dump room terrain data.")
                       .WithExample("world", "dump", "--room", "W1N1", "--decoded", "--json");
+                branch.AddCommand<WorldStatsCommand>("stats")
+                      .WithDescription("Query legacy map stats for rooms.")
+                      .WithExample("world", "stats", "--room", "W1N1", "--stat", "owners1", "--json");
+                branch.AddCommand<WorldOverviewCommand>("overview")
+                      .WithDescription("Show controller ownership for a room.")
+                      .WithExample("world", "overview", "--room", "W1N1", "--json");
             });
 
             config.AddBranch("bots", branch => {
@@ -178,6 +185,16 @@ internal sealed class CliApplication(IServiceProvider serviceProvider, ILogger<C
                 branch.AddCommand<InvaderRemoveCommand>("remove")
                       .WithDescription("Remove an invader.")
                       .WithExample("invader", "remove", "--username", "test-user", "--id", "60f1a2b3c4d5e6f7a8b9c0d1");
+            });
+
+            config.AddBranch("auth", branch => {
+                branch.SetDescription("Authentication helpers.");
+                branch.AddCommand<AuthIssueCommand>("issue")
+                      .WithDescription("Issue a server token for a user id.")
+                      .WithExample("auth", "issue", "--user-id", "test-user", "--json");
+                branch.AddCommand<AuthResolveCommand>("resolve")
+                      .WithDescription("Resolve a token back to its user id.")
+                      .WithExample("auth", "resolve", "--token", "abcdef", "--json");
             });
         });
 

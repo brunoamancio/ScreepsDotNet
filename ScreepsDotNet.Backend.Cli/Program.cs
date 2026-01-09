@@ -1,7 +1,5 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 using ScreepsDotNet.Backend.Cli.Application;
 using ScreepsDotNet.Backend.Core.Configuration;
 using ScreepsDotNet.Backend.Core.Intents;
@@ -49,6 +47,7 @@ static void ConfigureServices(HostApplicationBuilder builder)
 {
     builder.Services.Configure<ConsoleLifetimeOptions>(options => options.SuppressStatusMessages = true);
     builder.Services.Configure<MongoRedisStorageOptions>(builder.Configuration.GetSection(MongoRedisStorageOptions.SectionName));
+    builder.Services.Configure<AuthOptions>(builder.Configuration.GetSection(AuthOptions.SectionName));
     builder.Services.Configure<BotManifestOptions>(options => {
         options.ManifestFile = builder.Configuration["modfile"]
                                ?? builder.Configuration["MODFILE"]
@@ -69,6 +68,7 @@ static void ConfigureServices(HostApplicationBuilder builder)
     builder.Services.AddSingleton<IMarketOrderRepository, MongoMarketOrderRepository>();
     builder.Services.AddSingleton<IMarketStatsRepository, MongoMarketStatsRepository>();
     builder.Services.AddSingleton<IRoomStatusRepository, MongoRoomStatusRepository>();
+    builder.Services.AddSingleton<IRoomOverviewRepository, MongoRoomOverviewRepository>();
     builder.Services.AddSingleton<IRoomTerrainRepository, MongoRoomTerrainRepository>();
     builder.Services.AddSingleton<IWorldStatsRepository, MongoWorldStatsRepository>();
     builder.Services.AddSingleton<IWorldMetadataRepository, MongoWorldMetadataRepository>();
@@ -91,6 +91,7 @@ static void ConfigureServices(HostApplicationBuilder builder)
     builder.Services.AddSingleton<IUserMessageService, MongoUserMessageService>();
     builder.Services.AddSingleton<IModManifestProvider, FileSystemModManifestProvider>();
     builder.Services.AddSingleton<IIntentSchemaCatalog, ManifestIntentSchemaCatalog>();
+    builder.Services.AddSingleton<ITokenService, RedisTokenService>();
 
     builder.Services.AddSingleton<ICliApplication, CliApplication>();
 }
