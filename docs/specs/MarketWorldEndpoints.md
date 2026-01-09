@@ -26,7 +26,7 @@ The scope below covers both the read/management APIs that are consumed by the of
 | World  | `GET /api/game/time`                          | Public. Equivalent to `common.getGametime()`, response `{ time }`.                                                                                  |
 | World  | `GET /api/game/tick`                          | Public. Uses in-memory rolling min of last 30 tick durations. For parity we can proxy the node semantics via metrics captured from storage later.   |
 
-Remaining backlog (documented for future): shard-specific helpers and any custom intent types that the legacy config enables. These depend on additional storage + orchestration work and are tracked separately.
+Remaining backlog (detailed in §6): shard-scoped helper routes plus support for custom intent/object types declared via `mods.json`. These depend on extra storage seeds and configuration plumbing.
 
 ---
 
@@ -137,3 +137,23 @@ Every route must have:
 4. **Testing** – Unit + integration suites, ensuring docker compose + Testcontainers seeds stay in sync.
 
 Deliverables #2–#4 should be developed in small, reviewable increments (market first, then world). This reduces the blast radius and keeps parity verifiable at each checkpoint.
+
+---
+
+## 6. Outstanding backlog – shard helpers & mod-defined intents
+
+| Gap | Legacy behavior (Node reference) | Collections / config | Notes & action items |
+|-----|----------------------------------|----------------------|----------------------|
+| `GET /api/game/room-overview` | Returns `{ owner, stats, statsMax, totals }` for a room (see `backend-local/lib/game/api/game.js`, around the `router.get('/room-overview', …)` block). Currently only partially implemented in Node but the route exists and the client expects the owner badge + placeholder stats. | `rooms.objects`, `users` (resolve controller ownership) | Expose the route (even if stats remain empty) so the client stops erroring when it queries room overview panels. |
+| `POST /api/game/gen-unique-flag-name` | Generates the next `FlagN` name that does not collide with the user’s existing flags. | `rooms.flags` (via `getFlags`/`setFlags`) | Needed so the in-game UI can suggest flag names before calling `/create-flag`. Requires the same Redis/Mongo helpers already wired for the flag CRUD routes. |
+| `POST /api/game/check-unique-flag-name` | Validates that a proposed flag name is unused; returns `{}` or rejects with `name exists`. | `rooms.flags` | Used by the client before accepting manual names. Shares the same data path as `gen-unique-flag-name`. |
+| `POST /api/game/set-notify-when-attacked` | Toggles the `notifyWhenAttacked` flag on a structure, enforcing controller ownership (see the `router.post('/set-notify-when-attacked', …)` block). | `rooms.objects` | Required for the structure detail panel. Implementation mirrors the legacy checks: verify ownership/reservation for controllers in the same room, then update the target object document. |
+| Shard-scoped queries | Legacy comments call out “rooms terrain by shard”, and official clients send a `shard` field alongside `room` arrays. The Node route simply fetches `rooms.terrain` entries by name, but multi-shard setups expect us to honor the `shard` part of the payload (when prefixed as `shard/room`). | `rooms`, `rooms.terrain`, `rooms.objects` | Extend the existing world endpoints to accept optional `shard` parameters (or parse shard prefixes) and include `shard` in the repository filters. Update docker/Testcontainers seeds with a second shard to keep behavior deterministic. |
+| Mod-defined intent/object types | Mods can register additional sanitizers via `config.backend.customIntentTypes` / `customObjectTypes` (see `server/common/lib/system.js` and `backend-local/lib/game/server.js`). Node automatically merges definitions from every `mods/*.js`. ScreepsDotNet currently ignores these blocks. | `mods.json` + mod scripts, `system.sanitizeUserIntents` | Load custom intent/object definitions from `mods.json` (same file we already watch for bot manifests) and plumb them through the CLI + HTTP pipelines: <ul><li>`IntentEndpoints`, `MongoIntentService`, and CLI intent commands should pass the merged dictionary to the sanitizer.</li><li>Expose the definitions via `/api/server/info` so the client knows about custom objects.</li></ul> Add integration coverage using a sample mod directory that defines at least one faux intent. |
+
+### Next steps for this backlog
+
+1. **Seed data** – Add a second shard (e.g., `shard1`) to both docker and Testcontainers fixtures, including terrain/object documents so we can assert shard filtering.
+2. **Repository updates** – Plumb `shard` identifiers through `IRoomTerrainRepository`, `IWorldStatsRepository`, `IFlagService`, etc., so the HTTP layer can honor the optional filter without duplicating logic.
+3. **Endpoint work** – Implement the four missing routes plus shard-aware variants of the existing ones. Update `ApiRoutes`, `.http` scratch files, and AGENT docs accordingly.
+4. **Mod plumbing** – Extend the configuration bootstrapping (CLI + HTTP hosts) to read `mods.json`, load any `customIntentTypes/customObjectTypes`, and pass them into `MongoIntentService` / `UserResponseFactory`. Add tests that drop a sample mod under `tests/fixtures/mods` and assert that the new intent shows up in `/api/server/info` and gets sanitized correctly.
