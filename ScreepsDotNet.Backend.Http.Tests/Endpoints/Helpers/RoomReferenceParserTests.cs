@@ -1,12 +1,12 @@
 ﻿namespace ScreepsDotNet.Backend.Http.Tests.Endpoints.Helpers;
 
-using ScreepsDotNet.Backend.Http.Endpoints.Helpers;
+using ScreepsDotNet.Backend.Core.Parsing;
 using Xunit;
 
 public sealed class RoomReferenceParserTests
 {
-    private static readonly string[] DedupSample = ["shard1/W20N20", "W20N20", "W21N21"];
-    private static readonly string[] InvalidSample = ["valid", "/invalid"];
+    private static readonly string[] DedupSample = ["shard1/W20N20", "W20N20", "w21n21"];
+    private static readonly string[] InvalidSample = ["valid", "/invalid", "E10Q5", "shard#/W10N5"];
 
     [Theory]
     [InlineData("W10N5", null, "W10N5", null)]
@@ -14,6 +14,7 @@ public sealed class RoomReferenceParserTests
     [InlineData(" shard3 /W12N7 ", null, "W12N7", "shard3")]
     [InlineData("shard3/W13N8", "overrideShard", "W13N8", "overrideShard")]
     [InlineData("W14N9", "overrideShard", "W14N9", "overrideShard")]
+    [InlineData("shard4/w15s9", null, "W15S9", "shard4")]
     public void TryParse_ValidInputs_ReturnReference(string input, string? overrideShard, string expectedRoom, string? expectedShard)
     {
         var success = RoomReferenceParser.TryParse(input, overrideShard, out var reference);
@@ -29,6 +30,9 @@ public sealed class RoomReferenceParserTests
     [InlineData("   ")]
     [InlineData("/W10N5")]
     [InlineData("shard/")]
+    [InlineData("X10N5")]
+    [InlineData("W10Q5")]
+    [InlineData("shard!/W10N5")]
     public void TryParse_InvalidInputs_ReturnsFalse(string input)
     {
         var success = RoomReferenceParser.TryParse(input, null, out var reference);

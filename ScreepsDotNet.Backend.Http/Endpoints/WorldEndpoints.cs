@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using Microsoft.AspNetCore.Mvc;
 using ScreepsDotNet.Backend.Core.Context;
 using ScreepsDotNet.Backend.Core.Models;
+using ScreepsDotNet.Backend.Core.Parsing;
 using ScreepsDotNet.Backend.Core.Repositories;
 using ScreepsDotNet.Backend.Core.Services;
 using ScreepsDotNet.Backend.Http.Authentication;
@@ -97,7 +98,7 @@ internal static class WorldEndpoints
                               if (!RoomReferenceParser.TryParse(room, shard, out var reference) || reference is null)
                                   return Results.BadRequest(new ErrorResponse(InvalidParamsMessage));
 
-                              var entries = await repository.GetTerrainEntriesAsync(new[] { reference }, cancellationToken).ConfigureAwait(false);
+                              var entries = await repository.GetTerrainEntriesAsync([reference], cancellationToken).ConfigureAwait(false);
                               var payload = string.IsNullOrEmpty(encoded)
                            ? WorldResponseFactory.CreateDecodedTerrainResponse(entries)
                            : WorldResponseFactory.CreateEncodedTerrainResponse(entries);
