@@ -37,6 +37,10 @@ public static class ApiRoutes
             public const string RemoveFlag = $"{Base}/remove-flag";
             public const string CreateInvader = $"{Base}/create-invader";
             public const string RemoveInvader = $"{Base}/remove-invader";
+            public const string RoomOverview = $"{Base}/room-overview";
+            public const string GenerateUniqueFlagName = $"{Base}/gen-unique-flag-name";
+            public const string CheckUniqueFlagName = $"{Base}/check-unique-flag-name";
+            public const string SetNotifyWhenAttacked = $"{Base}/set-notify-when-attacked";
         }
 
         public static class Bot

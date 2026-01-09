@@ -19,4 +19,6 @@ public interface IFlagService
     Task<FlagResult> CreateFlagAsync(string userId, CreateFlagRequest request, CancellationToken cancellationToken = default);
     Task<FlagResult> ChangeFlagColorAsync(string userId, string room, string name, Color color, Color secondaryColor, CancellationToken cancellationToken = default);
     Task<FlagResult> RemoveFlagAsync(string userId, string room, string name, CancellationToken cancellationToken = default);
+    Task<string> GenerateUniqueFlagNameAsync(string userId, CancellationToken cancellationToken = default);
+    Task<bool> IsFlagNameUniqueAsync(string userId, string name, CancellationToken cancellationToken = default);
 }

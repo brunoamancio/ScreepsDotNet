@@ -1,5 +1,6 @@
 ﻿namespace ScreepsDotNet.Backend.Http.Tests.Integration;
 
+using System;
 using System.Net.Http.Json;
 using System.Text.Json;
 using MongoDB.Driver;
@@ -24,6 +25,38 @@ public sealed class FlagEndpointsIntegrationTests(IntegrationTestHarness harness
         response.EnsureSuccessStatusCode();
         var content = await response.Content.ReadFromJsonAsync<JsonElement>();
         return content.GetProperty("token").GetString()!;
+    }
+
+    [Fact]
+    public async Task GenerateUniqueFlagName_ReturnsAvailableName()
+    {
+        var token = await LoginAsync();
+        _client.DefaultRequestHeaders.Add("X-Token", token);
+
+        var response = await _client.PostAsync(ApiRoutes.Game.World.GenerateUniqueFlagName, null);
+
+        response.EnsureSuccessStatusCode();
+        var payload = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.StartsWith("Flag", payload.GetProperty("name").GetString()!, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task CheckUniqueFlagName_NameExists_ReturnsBadRequest()
+    {
+        var token = await LoginAsync();
+        var flagsCollection = harness.Database.GetCollection<RoomFlagDocument>("rooms.flags");
+        await flagsCollection.InsertOneAsync(new RoomFlagDocument
+        {
+            Id = "DuplicateFlag",
+            UserId = SeedDataDefaults.User.Id,
+            Room = "W1N1",
+            Data = "0|0|1|1"
+        });
+
+        _client.DefaultRequestHeaders.Add("X-Token", token);
+        var response = await _client.PostAsJsonAsync(ApiRoutes.Game.World.CheckUniqueFlagName, new { name = "DuplicateFlag" });
+
+        Assert.Equal(System.Net.HttpStatusCode.BadRequest, response.StatusCode);
     }
 
     [Fact]

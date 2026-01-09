@@ -42,11 +42,13 @@ builder.Services.AddSingleton<IRoomStatusRepository, MongoRoomStatusRepository>(
 builder.Services.AddSingleton<IRoomTerrainRepository, MongoRoomTerrainRepository>();
 builder.Services.AddSingleton<IWorldStatsRepository, MongoWorldStatsRepository>();
 builder.Services.AddSingleton<IWorldMetadataRepository, MongoWorldMetadataRepository>();
+builder.Services.AddSingleton<IRoomOverviewRepository, MongoRoomOverviewRepository>();
 builder.Services.AddSingleton<IVersionMetadataRepository, MongoVersionMetadataRepository>();
 builder.Services.AddSingleton<IUserRespawnService, MongoUserRespawnService>();
 builder.Services.AddSingleton<IPlayerSpawnService, MongoPlayerSpawnService>();
 builder.Services.AddSingleton<IConstructionService, MongoConstructionService>();
 builder.Services.AddSingleton<IFlagService, MongoFlagService>();
+builder.Services.AddSingleton<INotifyWhenAttackedService, MongoNotifyWhenAttackedService>();
 builder.Services.AddSingleton<IInvaderService, MongoInvaderService>();
 builder.Services.AddSingleton<IIntentService, MongoIntentService>();
 builder.Services.AddSingleton<IPowerCreepService, MongoPowerCreepService>();

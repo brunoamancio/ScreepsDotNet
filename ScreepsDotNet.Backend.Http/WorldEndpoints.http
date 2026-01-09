@@ -39,6 +39,18 @@ X-Token: {{token}}
 GET {{host}}/api/game/room-status?room=W21N20&shard=shard1
 X-Token: {{token}}
 
+### Room status (shard prefix)
+GET {{host}}/api/game/room-status?room=shard1/W21N20
+X-Token: {{token}}
+
+### Room overview (requires token)
+GET {{host}}/api/game/room-overview?room=W1N1
+X-Token: {{token}}
+
+### Room overview (shard prefix)
+GET {{host}}/api/game/room-overview?room=shard1/W21N20
+X-Token: {{token}}
+
 ### Room terrain (decoded)
 GET {{host}}/api/game/room-terrain?room=W1N1
 
@@ -66,6 +78,29 @@ Content-Type: application/json
 {
   "rooms": ["W21N20"],
   "shard": "shard1"
+}
+
+### Generate unique flag name
+POST {{host}}/api/game/gen-unique-flag-name
+X-Token: {{token}}
+
+### Check unique flag name
+POST {{host}}/api/game/check-unique-flag-name
+Content-Type: application/json
+X-Token: {{token}}
+
+{
+  "name": "Flag1"
+}
+
+### Set notify when attacked
+POST {{host}}/api/game/set-notify-when-attacked
+Content-Type: application/json
+X-Token: {{token}}
+
+{
+  "_id": "000000000000000000000000",
+  "enabled": true
 }
 
 ### World size

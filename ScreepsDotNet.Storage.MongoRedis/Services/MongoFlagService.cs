@@ -93,4 +93,30 @@ public sealed class MongoFlagService(IMongoDatabaseProvider databaseProvider, IL
         logger.LogInformation("User {UserId} removed flag {FlagName} in {Room}", userId, name, room);
         return new FlagResult(FlagResultStatus.Success);
     }
+
+    public async Task<string> GenerateUniqueFlagNameAsync(string userId, CancellationToken cancellationToken = default)
+    {
+        var names = await _flagsCollection.Find(flag => flag.UserId == userId)
+                                          .Project(flag => flag.Id)
+                                          .ToListAsync(cancellationToken)
+                                          .ConfigureAwait(false);
+
+        var existing = new HashSet<string>(names.Where(name => name is not null)!, StringComparer.OrdinalIgnoreCase);
+        var counter = 1;
+        string candidate;
+        do {
+            candidate = $"Flag{counter}";
+            counter++;
+        } while (existing.Contains(candidate) && counter < FlagsLimit * 2);
+
+        return candidate;
+    }
+
+    public async Task<bool> IsFlagNameUniqueAsync(string userId, string name, CancellationToken cancellationToken = default)
+    {
+        var exists = await _flagsCollection.Find(flag => flag.UserId == userId && flag.Id == name)
+                                           .AnyAsync(cancellationToken)
+                                           .ConfigureAwait(false);
+        return !exists;
+    }
 }

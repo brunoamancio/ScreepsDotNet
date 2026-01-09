@@ -53,6 +53,17 @@ internal sealed record RoomStatusDetailsResponse(
     [property: JsonPropertyName("respawnArea")] bool? IsRespawnArea,
     [property: JsonPropertyName("openTime")] long? OpenTime);
 
+internal sealed record RoomOverviewResponse(
+    [property: JsonPropertyName("owner")] RoomOverviewOwnerResponse? Owner,
+    [property: JsonPropertyName("stats")] IReadOnlyDictionary<string, object?> Stats,
+    [property: JsonPropertyName("statsMax")] IReadOnlyDictionary<string, object?> StatsMax,
+    [property: JsonPropertyName("totals")] IReadOnlyDictionary<string, object?> Totals);
+
+internal sealed record RoomOverviewOwnerResponse(
+    [property: JsonPropertyName("_id")] string Id,
+    [property: JsonPropertyName("username")] string Username,
+    [property: JsonPropertyName("badge")] IReadOnlyDictionary<string, object?>? Badge);
+
 internal sealed record RoomTerrainResponse(
     [property: JsonPropertyName("terrain")] IReadOnlyList<object> Terrain);
 
@@ -78,6 +89,16 @@ internal sealed record RoomsRequest(
 
 internal sealed record RoomsResponse(
     [property: JsonPropertyName("rooms")] IReadOnlyList<RoomTerrainEncodedEntryResponse> Rooms);
+
+internal sealed record UniqueFlagNameResponse(
+    [property: JsonPropertyName("name")] string Name);
+
+internal sealed record CheckFlagNameRequest(
+    [property: JsonPropertyName("name")] string? Name);
+
+internal sealed record SetNotifyWhenAttackedRequest(
+    [property: JsonPropertyName("_id")] string? StructureId,
+    [property: JsonPropertyName("enabled")] bool? Enabled);
 
 internal sealed record WorldSizeResponse(
     [property: JsonPropertyName("width")] int Width,

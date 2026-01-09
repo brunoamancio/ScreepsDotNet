@@ -195,3 +195,8 @@ If you add new endpoints or storage requirements, update:
 - `/api/game/power-creeps/list`, `/create`, `/delete`, `/cancel-delete`, `/upgrade`, `/rename`, and `/experimentation` now mirror the legacy maintenance routes using `MongoPowerCreepService`. They perform the same validation as `backend-local` (class gating, spawn/delete cooldowns, power budget math, experimentation cooldowns) while projecting room data (hits, fatigue, shard, coordinates) when a creep is spawned.
 - Integration coverage lives in `ScreepsDotNet.Backend.Http.Tests/Integration/PowerCreepEndpointsIntegrationTests`, which drives the HTTP host against Testcontainers Mongo/Redis to verify list/create/rename/delete/cancel/upgrade/experimentation flows.
 - The HTTP scratch file `PowerCreepEndpoints.http` matches the CLI defaults so you can manage creeps via REST without shelling into the host. These endpoints reuse the same storage-backed services, so anything you test here automatically benefits the CLI and future automation.
+
+## World helper endpoints
+
+- `/api/game/room-overview`, `/api/game/gen-unique-flag-name`, `/api/game/check-unique-flag-name`, and `/api/game/set-notify-when-attacked` match backend-local behavior so the official client’s room panels, flag dialogs, and structure toggles work out of the box. They reuse the same shard-aware parsing rules (`?shard=` or `shardName/RoomName`) introduced for the other world routes.
+- Coverage lives in `WorldEndpointsIntegrationTests`, `FlagEndpointsIntegrationTests`, and the new `StructureEndpointsIntegrationTests`, each running under the Testcontainers harness.
