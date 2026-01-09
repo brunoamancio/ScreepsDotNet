@@ -1,4 +1,5 @@
 ﻿using MongoDB.Driver;
+using ScreepsDotNet.Backend.Core.Comparers;
 using ScreepsDotNet.Backend.Core.Constants;
 using ScreepsDotNet.Backend.Core.Models;
 using ScreepsDotNet.Backend.Core.Repositories;
@@ -14,26 +15,14 @@ public sealed class MongoUserWorldRepository(IMongoDatabaseProvider databaseProv
 
     private readonly IMongoCollection<RoomObjectDocument> _collection = databaseProvider.GetCollection<RoomObjectDocument>(databaseProvider.Settings.RoomObjectsCollection);
 
-    public async Task<string?> GetRandomControllerRoomAsync(string userId, CancellationToken cancellationToken = default)
+    public async Task<RoomReference?> GetRandomControllerRoomAsync(string userId, CancellationToken cancellationToken = default)
     {
-        var filter = Builders<RoomObjectDocument>.Filter.And(
-            Builders<RoomObjectDocument>.Filter.Eq(document => document.UserId, userId),
-            Builders<RoomObjectDocument>.Filter.Eq(document => document.Type, ControllerType));
-
-        var rooms = await _collection.Find(filter)
-                                     .Project(document => document.Room)
-                                     .ToListAsync(cancellationToken)
-                                     .ConfigureAwait(false);
-
-        var filteredRooms = rooms.Where(room => !string.IsNullOrEmpty(room))
-                                 .Select(room => room!)
-                                 .ToList();
-
-        if (filteredRooms.Count == 0)
+        var rooms = await GetControllerRoomReferencesAsync(userId, sort: null, cancellationToken).ConfigureAwait(false);
+        if (rooms.Count == 0)
             return null;
 
-        var index = Random.Shared.Next(filteredRooms.Count);
-        return filteredRooms[index];
+        var index = Random.Shared.Next(rooms.Count);
+        return rooms[index];
     }
 
     public async Task<UserWorldStatus> GetWorldStatusAsync(string userId, CancellationToken cancellationToken = default)
@@ -62,22 +51,33 @@ public sealed class MongoUserWorldRepository(IMongoDatabaseProvider databaseProv
     }
 
     private sealed record RoomObject(string? Type, string? Room);
+    private sealed record RoomProjection(string? Room, string? Shard);
 
-    public async Task<IReadOnlyCollection<string>> GetControllerRoomsAsync(string userId, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyCollection<RoomReference>> GetControllerRoomsAsync(string userId, CancellationToken cancellationToken = default)
+    {
+        var sort = Builders<RoomObjectDocument>.Sort.Descending(document => document.Level);
+        return await GetControllerRoomReferencesAsync(userId, sort, cancellationToken).ConfigureAwait(false);
+    }
+
+    private async Task<List<RoomReference>> GetControllerRoomReferencesAsync(string userId,
+                                                                            SortDefinition<RoomObjectDocument>? sort,
+                                                                            CancellationToken cancellationToken)
     {
         var filter = Builders<RoomObjectDocument>.Filter.And(
             Builders<RoomObjectDocument>.Filter.Eq(document => document.UserId, userId),
             Builders<RoomObjectDocument>.Filter.Eq(document => document.Type, ControllerType));
 
-        var sort = Builders<RoomObjectDocument>.Sort.Descending(document => document.Level);
-        var rooms = await _collection.Find(filter)
-                                     .Sort(sort)
-                                     .Project(document => document.Room)
-                                     .ToListAsync(cancellationToken)
-                                     .ConfigureAwait(false);
+        var query = _collection.Find(filter);
+        if (sort is not null)
+            query = query.Sort(sort);
 
-        return rooms.Where(room => !string.IsNullOrEmpty(room))
-                    .Select(room => room!)
+        var rooms = await query.Project(document => new RoomProjection(document.Room, document.Shard))
+                               .ToListAsync(cancellationToken)
+                               .ConfigureAwait(false);
+
+        return rooms.Where(room => !string.IsNullOrWhiteSpace(room.Room))
+                    .Select(room => RoomReference.Create(room.Room!, room.Shard))
+                    .Distinct(RoomReferenceComparer.OrdinalIgnoreCase)
                     .ToList();
     }
 }

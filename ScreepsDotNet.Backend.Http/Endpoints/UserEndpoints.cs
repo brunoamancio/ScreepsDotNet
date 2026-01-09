@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using ScreepsDotNet.Backend.Core.Context;
 using ScreepsDotNet.Backend.Core.Models;
+using ScreepsDotNet.Backend.Core.Parsing;
 using ScreepsDotNet.Backend.Core.Repositories;
 using ScreepsDotNet.Backend.Core.Services;
 using ScreepsDotNet.Backend.Http.Authentication;
@@ -132,8 +133,9 @@ internal static class UserEndpoints
         app.MapGet(ApiRoutes.User.WorldStartRoom,
                    async (ICurrentUserAccessor userAccessor, IUserWorldRepository repository, CancellationToken cancellationToken) => {
                        var user = UserEndpointGuards.RequireUser(userAccessor, MissingUserContextMessage);
-                       var room = await repository.GetRandomControllerRoomAsync(user.Id, cancellationToken).ConfigureAwait(false)
-                                  ?? DefaultWorldStartRoom;
+                       var roomReference = await repository.GetRandomControllerRoomAsync(user.Id, cancellationToken).ConfigureAwait(false)
+                                          ?? RoomReference.Create(DefaultWorldStartRoom);
+                       var room = RoomReferenceParser.Format(roomReference);
                        return Results.Ok(new { room = new[] { room } });
                    })
            .RequireTokenAuthentication()
@@ -446,7 +448,9 @@ internal static class UserEndpoints
                               _ = string.IsNullOrWhiteSpace(statName) ? DefaultOverviewStatName : statName;
 
                               var controllerRooms = await userWorldRepository.GetControllerRoomsAsync(user.Id, cancellationToken).ConfigureAwait(false);
-                              var roomsPayload = controllerRooms.Count > 0 ? controllerRooms : [];
+                              var roomsPayload = controllerRooms.Count > 0
+                                  ? FormatRoomReferences(controllerRooms)
+                                  : Array.Empty<string>();
 
                               return Results.Ok(new Dictionary<string, object?>
                               {
@@ -608,9 +612,12 @@ internal static class UserEndpoints
                                   return Results.BadRequest(new ErrorResponse(MissingUserIdMessage));
 
                               var rooms = await userWorldRepository.GetControllerRoomsAsync(userId, cancellationToken).ConfigureAwait(false);
+                              var roomsPayload = rooms.Count > 0
+                                  ? FormatRoomReferences(rooms)
+                                  : Array.Empty<string>();
                               return Results.Ok(new Dictionary<string, object?>
                               {
-                                  [UserResponseFields.Rooms] = rooms
+                                  [UserResponseFields.Rooms] = roomsPayload
                               });
                           })
            .WithName(RoomsEndpointName);
@@ -700,4 +707,6 @@ internal static class UserEndpoints
            .WithName(RespawnEndpointName);
     }
 
+    private static IReadOnlyList<string> FormatRoomReferences(IEnumerable<RoomReference> references)
+        => references.Select(RoomReferenceParser.Format).ToList();
 }

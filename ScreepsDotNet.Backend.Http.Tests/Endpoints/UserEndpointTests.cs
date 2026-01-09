@@ -3,6 +3,7 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
 using ScreepsDotNet.Backend.Core.Models;
+using ScreepsDotNet.Backend.Core.Parsing;
 using ScreepsDotNet.Backend.Core.Repositories;
 using ScreepsDotNet.Backend.Core.Services;
 using ScreepsDotNet.Backend.Http.Constants;
@@ -18,11 +19,16 @@ public class UserEndpointTests : IClassFixture<TestWebApplicationFactory>
     private readonly FakeUserRepository _userRepository;
     private readonly FakeUserRespawnService _userRespawnService;
 
-    private const string CustomControllerRoom = "W12N3";
+    private static readonly RoomReference CustomControllerRoomReference = RoomReference.Create("W12N3", "shard2");
+    private static readonly string CustomControllerRoom = RoomReferenceParser.Format(CustomControllerRoomReference);
     private const string RoomsQueryUserId = "user-1";
     private const string StatsValidInterval = "8";
     private const string StatsInvalidInterval = "1";
-    private static readonly string[] SampleRooms = ["W1N1", "W2N2"];
+    private static readonly RoomReference[] SampleRooms =
+    [
+        RoomReference.Create("W1N1"),
+        RoomReference.Create("W2N2", "season1")
+    ];
     private const string UsernameQueryParameter = "?username=TestUser";
     private const string RoomsQueryParameter = "?id=" + RoomsQueryUserId;
     private const string StatsValidQueryParameter = "?interval=" + StatsValidInterval;
@@ -50,7 +56,7 @@ public class UserEndpointTests : IClassFixture<TestWebApplicationFactory>
     [Fact]
     public async Task WorldStartRoom_WithToken_ReturnsRoom()
     {
-        _userWorldRepository.ControllerRoom = CustomControllerRoom;
+        _userWorldRepository.ControllerRoom = CustomControllerRoomReference;
         var token = await AuthenticateAsync();
 
         var request = new HttpRequestMessage(HttpMethod.Get, ApiRoutes.User.WorldStartRoom);
@@ -212,7 +218,8 @@ public class UserEndpointTests : IClassFixture<TestWebApplicationFactory>
         using var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
         var root = payload.RootElement;
         var rooms = root.GetProperty(UserResponseFields.Rooms).EnumerateArray().Select(element => element.GetString()).ToList();
-        Assert.Equal(SampleRooms, rooms);
+        var expectedRooms = SampleRooms.Select(RoomReferenceParser.Format).ToList();
+        Assert.Equal(expectedRooms, rooms);
         Assert.Equal(JsonValueKind.Object, root.GetProperty(UserResponseFields.Stats).ValueKind);
         Assert.Equal(JsonValueKind.Object, root.GetProperty(UserResponseFields.Totals).ValueKind);
         Assert.Empty(root.GetProperty(UserResponseFields.GameTimes).EnumerateArray());
@@ -388,8 +395,8 @@ public class UserEndpointTests : IClassFixture<TestWebApplicationFactory>
         response.EnsureSuccessStatusCode();
         using var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
         var rooms = payload.RootElement.GetProperty(UserResponseFields.Rooms).EnumerateArray().Select(element => element.GetString()).ToList();
-        Assert.Contains(SampleRooms[0], rooms);
-        Assert.Contains(SampleRooms[1], rooms);
+        Assert.Contains(RoomReferenceParser.Format(SampleRooms[0]), rooms);
+        Assert.Contains(RoomReferenceParser.Format(SampleRooms[1]), rooms);
     }
 
     [Fact]

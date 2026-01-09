@@ -71,6 +71,11 @@ public static partial class RoomReferenceParser
         return rooms.Count > 0;
     }
 
+    public static string Format(RoomReference reference)
+        => reference.ShardName is null
+            ? reference.RoomName
+            : $"{reference.ShardName}/{reference.RoomName}";
+
     private static bool TryNormalizeRoomName(string? value, out string normalized)
     {
         normalized = string.Empty;

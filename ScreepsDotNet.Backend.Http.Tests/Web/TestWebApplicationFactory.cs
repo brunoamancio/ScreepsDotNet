@@ -231,18 +231,18 @@ sealed file class FakeRoomRepository : IRoomRepository
 
 internal sealed class FakeUserWorldRepository : IUserWorldRepository
 {
-    public string? ControllerRoom { get; set; } = "W10N10";
-    public IReadOnlyCollection<string> ControllerRooms { get; set; } = ["W10N10"];
+    public RoomReference? ControllerRoom { get; set; } = RoomReference.Create("W10N10");
+    public IReadOnlyCollection<RoomReference> ControllerRooms { get; set; } = [RoomReference.Create("W10N10")];
 
     public UserWorldStatus WorldStatus { get; set; } = UserWorldStatus.Normal;
 
-    public Task<string?> GetRandomControllerRoomAsync(string userId, CancellationToken cancellationToken = default)
+    public Task<RoomReference?> GetRandomControllerRoomAsync(string userId, CancellationToken cancellationToken = default)
         => Task.FromResult(ControllerRoom);
 
     public Task<UserWorldStatus> GetWorldStatusAsync(string userId, CancellationToken cancellationToken = default)
         => Task.FromResult(WorldStatus);
 
-    public Task<IReadOnlyCollection<string>> GetControllerRoomsAsync(string userId, CancellationToken cancellationToken = default)
+    public Task<IReadOnlyCollection<RoomReference>> GetControllerRoomsAsync(string userId, CancellationToken cancellationToken = default)
         => Task.FromResult(ControllerRooms);
 }
 
