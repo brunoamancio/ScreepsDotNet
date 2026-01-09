@@ -133,4 +133,11 @@ public static class SeedDataDefaults
         public const bool UseNativeAuth = false;
         public const string PackageVersion = "0.0.1-dev";
     }
+
+    public static class Messaging
+    {
+        public const string RespondentId = "integration-peer";
+        public const string RespondentUsername = "IntegrationPeer";
+        public const string SampleText = "Integration message payload";
+    }
 }

@@ -22,6 +22,8 @@ public sealed class SeedDataService : ISeedDataService
     private const string UserConsoleCollectionName = "users.console";
     private const string UserMemoryCollectionName = "users.memory";
     private const string UsersPowerCreepsCollectionName = "users.power_creeps";
+    private const string UsersMessagesCollectionName = "users.messages";
+    private const string UsersNotificationsCollectionName = "users.notifications";
     private const string MarketOrdersCollectionName = "market.orders";
     private const string MarketStatsCollectionName = "market.stats";
     private const string UsersIntentsCollectionName = "users.intents";
@@ -61,7 +63,9 @@ public sealed class SeedDataService : ISeedDataService
             WorldInfoCollectionName,
             UsersPowerCreepsCollectionName,
             UsersIntentsCollectionName,
-            RoomsIntentsCollectionName
+            RoomsIntentsCollectionName,
+            UsersMessagesCollectionName,
+            UsersNotificationsCollectionName
         };
 
         foreach (var name in collectionNames)
@@ -81,6 +85,7 @@ public sealed class SeedDataService : ISeedDataService
         await SeedWorldInfoAsync(database, cancellationToken).ConfigureAwait(false);
         await SeedRoomIntentsAsync(database, cancellationToken).ConfigureAwait(false);
         await SeedUserIntentsAsync(database, cancellationToken).ConfigureAwait(false);
+        await SeedUserMessagesAsync(database, cancellationToken).ConfigureAwait(false);
     }
 
     private static async Task DropCollectionIfExistsAsync(IMongoDatabase database, string name, CancellationToken cancellationToken)
@@ -96,7 +101,17 @@ public sealed class SeedDataService : ISeedDataService
     private static Task SeedUsersAsync(IMongoDatabase database, CancellationToken cancellationToken)
     {
         var users = database.GetCollection<UserDocument>(UsersCollectionName);
-        var document = new UserDocument
+        var badge = new Dictionary<string, object?>(StringComparer.Ordinal)
+        {
+            [BadgeDocumentFields.Type] = BadgeTypeValue,
+            [BadgeDocumentFields.Color1] = BadgePrimaryColor,
+            [BadgeDocumentFields.Color2] = BadgeSecondaryColor,
+            [BadgeDocumentFields.Color3] = BadgeTertiaryColor,
+            [BadgeDocumentFields.Param] = BadgeParamValue,
+            [BadgeDocumentFields.Flip] = false
+        };
+
+        var primaryUser = new UserDocument
         {
             Id = SeedDataDefaults.User.Id,
             Username = SeedDataDefaults.User.Username,
@@ -106,18 +121,20 @@ public sealed class SeedDataService : ISeedDataService
             Power = SeedDataDefaults.Power.Total,
             PowerExperimentations = SeedDataDefaults.Power.Experimentations,
             PowerExperimentationTime = 0,
-            Badge = new Dictionary<string, object?>(StringComparer.Ordinal)
-            {
-                [BadgeDocumentFields.Type] = BadgeTypeValue,
-                [BadgeDocumentFields.Color1] = BadgePrimaryColor,
-                [BadgeDocumentFields.Color2] = BadgeSecondaryColor,
-                [BadgeDocumentFields.Color3] = BadgeTertiaryColor,
-                [BadgeDocumentFields.Param] = BadgeParamValue,
-                [BadgeDocumentFields.Flip] = false
-            }
+            Badge = new Dictionary<string, object?>(badge, StringComparer.Ordinal)
         };
 
-        return users.InsertOneAsync(document, cancellationToken: cancellationToken);
+        var respondentUser = new UserDocument
+        {
+            Id = SeedDataDefaults.Messaging.RespondentId,
+            Username = SeedDataDefaults.Messaging.RespondentUsername,
+            UsernameLower = SeedDataDefaults.Messaging.RespondentUsername.ToLowerInvariant(),
+            Cpu = DefaultCpu,
+            Active = ActiveFlagValue,
+            Badge = new Dictionary<string, object?>(badge, StringComparer.Ordinal)
+        };
+
+        return users.InsertManyAsync([primaryUser, respondentUser], cancellationToken: cancellationToken);
     }
 
     private static Task SeedRoomObjectsAsync(IMongoDatabase database, CancellationToken cancellationToken)
@@ -560,6 +577,49 @@ public sealed class SeedDataService : ISeedDataService
         };
 
         return collection.InsertOneAsync(document, cancellationToken: cancellationToken);
+    }
+
+    private static async Task SeedUserMessagesAsync(IMongoDatabase database, CancellationToken cancellationToken)
+    {
+        var collection = database.GetCollection<UserMessageDocument>(UsersMessagesCollectionName);
+        var now = DateTime.UtcNow;
+        var outbound = new UserMessageDocument
+        {
+            Id = ObjectId.GenerateNewId(),
+            UserId = SeedDataDefaults.Messaging.RespondentId,
+            RespondentId = SeedDataDefaults.User.Id,
+            Date = now,
+            Type = "out",
+            Text = SeedDataDefaults.Messaging.SampleText,
+            Unread = false
+        };
+
+        var inbound = new UserMessageDocument
+        {
+            Id = ObjectId.GenerateNewId(),
+            UserId = SeedDataDefaults.User.Id,
+            RespondentId = SeedDataDefaults.Messaging.RespondentId,
+            Date = now,
+            Type = "in",
+            Text = SeedDataDefaults.Messaging.SampleText,
+            Unread = true,
+            OutMessageId = outbound.Id
+        };
+
+        await collection.InsertManyAsync([outbound, inbound], cancellationToken: cancellationToken).ConfigureAwait(false);
+
+        var notifications = database.GetCollection<UserNotificationDocument>(UsersNotificationsCollectionName);
+        var notification = new UserNotificationDocument
+        {
+            Id = ObjectId.GenerateNewId(),
+            UserId = SeedDataDefaults.User.Id,
+            Message = $"New message from {SeedDataDefaults.Messaging.RespondentUsername}",
+            Date = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+            Type = UserMessagingConstants.NotificationTypeMessage,
+            Count = 1
+        };
+
+        await notifications.InsertOneAsync(notification, cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 
     private static Task SeedMarketOrdersAsync(IMongoDatabase database, CancellationToken cancellationToken)

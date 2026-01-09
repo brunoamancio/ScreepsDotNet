@@ -7,6 +7,7 @@ using System.Text;
 using System.Text.Json;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using ScreepsDotNet.Backend.Core.Constants;
 using ScreepsDotNet.Backend.Core.Context;
 using ScreepsDotNet.Backend.Core.Models;
 using ScreepsDotNet.Backend.Core.Parsing;
@@ -40,6 +41,10 @@ internal static class UserEndpoints
     private const string BranchOperationFailedMessage = "branch operation failed";
     private const string InvalidRespawnStatusMessage = "invalid status";
     private const string EmailAlreadyExistsMessage = "email already exists";
+    private const string MessageTextTooLongMessage = "text too long";
+    private const string InvalidRespondentMessage = "invalid respondent";
+    private const string InvalidMessageIdMessage = "invalid id";
+    private const string RespondentParameterName = "respondentId";
     private const string DefaultWorldStartRoom = "W5N5";
 
     private const string ActiveWorldIdentifier = "$activeWorld";
@@ -69,6 +74,11 @@ internal static class UserEndpoints
     private const string StatsEndpointName = "GetUserStats";
     private const string RoomsEndpointName = "GetUserRooms";
     private const string BadgeSvgEndpointName = "GetUserBadgeSvg";
+    private const string SendUserMessageEndpointName = "PostUserMessageSend";
+    private const string ListUserMessagesEndpointName = "GetUserMessages";
+    private const string IndexUserMessagesEndpointName = "GetUserMessageIndex";
+    private const string MarkUserMessageReadEndpointName = "PostUserMessageMarkRead";
+    private const string UnreadMessageCountEndpointName = "GetUserMessageUnreadCount";
     private const string UsernameQueryName = "username";
     private const string UserIdQueryName = "id";
     private const string BorderQueryName = "border";
@@ -121,6 +131,7 @@ internal static class UserEndpoints
         MapProtectedEmail(app);
         MapProtectedMoneyHistory(app);
         MapProtectedSetSteamVisible(app);
+        MapProtectedMessages(app);
 
         MapPublicFind(app);
         MapPublicRooms(app);
@@ -541,6 +552,120 @@ internal static class UserEndpoints
                            })
            .RequireTokenAuthentication()
            .WithName(SetSteamVisibleEndpointName);
+    }
+
+    private static void MapProtectedMessages(WebApplication app)
+    {
+        MapSendUserMessage(app);
+        MapListUserMessages(app);
+        MapIndexUserMessages(app);
+        MapMarkUserMessageRead(app);
+        MapUnreadUserMessageCount(app);
+    }
+
+    private static void MapSendUserMessage(WebApplication app)
+    {
+        app.MapPost(ApiRoutes.User.Messages.Send,
+                    async ([FromBody] SendUserMessageRequest request,
+                           ICurrentUserAccessor userAccessor,
+                           IUserMessageService messageService,
+                           CancellationToken cancellationToken) => {
+                               var user = UserEndpointGuards.RequireUser(userAccessor, MissingUserContextMessage);
+                               if (string.IsNullOrWhiteSpace(request.Respondent))
+                                   return Results.BadRequest(new ErrorResponse(InvalidRespondentMessage));
+
+                               if (string.IsNullOrWhiteSpace(request.Text) || request.Text.Length > UserMessagingConstants.MaxMessageLength)
+                                   return Results.BadRequest(new ErrorResponse(MessageTextTooLongMessage));
+
+                               var respondentId = request.Respondent.Trim();
+                               var text = request.Text!;
+
+                               try {
+                                   await messageService.SendMessageAsync(user.Id, respondentId, text, cancellationToken).ConfigureAwait(false);
+                               }
+                               catch (ArgumentException ex) when (string.Equals(ex.ParamName, RespondentParameterName, StringComparison.Ordinal))
+                               {
+                                   return Results.BadRequest(new ErrorResponse(InvalidRespondentMessage));
+                               }
+
+                               return Results.Ok(UserResponseFactory.CreateEmpty());
+                           })
+           .RequireTokenAuthentication()
+           .WithName(SendUserMessageEndpointName);
+    }
+
+    private static void MapListUserMessages(WebApplication app)
+    {
+        app.MapGet(ApiRoutes.User.Messages.List,
+                   async ([FromQuery(Name = "respondent")] string? respondent,
+                          ICurrentUserAccessor userAccessor,
+                          IUserMessageService messageService,
+                          CancellationToken cancellationToken) => {
+                              if (string.IsNullOrWhiteSpace(respondent))
+                                  return Results.BadRequest(new ErrorResponse(InvalidRespondentMessage));
+
+                              var user = UserEndpointGuards.RequireUser(userAccessor, MissingUserContextMessage);
+                              var respondentId = respondent!.Trim();
+                              var result = await messageService.GetMessagesAsync(user.Id, respondentId, cancellationToken).ConfigureAwait(false);
+                              var payload = new Dictionary<string, object?>
+                              {
+                                  ["messages"] = UserMessageResponseFactory.CreateList(result.Messages)
+                              };
+                              return Results.Ok(payload);
+                          })
+           .RequireTokenAuthentication()
+           .WithName(ListUserMessagesEndpointName);
+    }
+
+    private static void MapIndexUserMessages(WebApplication app)
+    {
+        app.MapGet(ApiRoutes.User.Messages.Index,
+                   async (ICurrentUserAccessor userAccessor,
+                          IUserMessageService messageService,
+                          CancellationToken cancellationToken) => {
+                              var user = UserEndpointGuards.RequireUser(userAccessor, MissingUserContextMessage);
+                              var result = await messageService.GetMessageIndexAsync(user.Id, cancellationToken).ConfigureAwait(false);
+                              return Results.Ok(UserMessageResponseFactory.CreateIndex(result));
+                          })
+           .RequireTokenAuthentication()
+           .WithName(IndexUserMessagesEndpointName);
+    }
+
+    private static void MapMarkUserMessageRead(WebApplication app)
+    {
+        app.MapPost(ApiRoutes.User.Messages.MarkRead,
+                    async ([FromBody] MarkUserMessageReadRequest request,
+                           ICurrentUserAccessor userAccessor,
+                           IUserMessageService messageService,
+                           CancellationToken cancellationToken) => {
+                               if (string.IsNullOrWhiteSpace(request.MessageId))
+                                   return Results.BadRequest(new ErrorResponse(InvalidMessageIdMessage));
+
+                               var user = UserEndpointGuards.RequireUser(userAccessor, MissingUserContextMessage);
+                               var success = await messageService.MarkReadAsync(user.Id, request.MessageId!, cancellationToken).ConfigureAwait(false);
+                               return success
+                                   ? Results.Ok(UserResponseFactory.CreateEmpty())
+                                   : Results.BadRequest(new ErrorResponse(InvalidMessageIdMessage));
+                           })
+           .RequireTokenAuthentication()
+           .WithName(MarkUserMessageReadEndpointName);
+    }
+
+    private static void MapUnreadUserMessageCount(WebApplication app)
+    {
+        app.MapGet(ApiRoutes.User.Messages.UnreadCount,
+                   async (ICurrentUserAccessor userAccessor,
+                          IUserMessageService messageService,
+                          CancellationToken cancellationToken) => {
+                              var user = UserEndpointGuards.RequireUser(userAccessor, MissingUserContextMessage);
+                              var count = await messageService.GetUnreadCountAsync(user.Id, cancellationToken).ConfigureAwait(false);
+                              return Results.Ok(new Dictionary<string, object?>
+                              {
+                                  ["count"] = count
+                              });
+                          })
+           .RequireTokenAuthentication()
+           .WithName(UnreadMessageCountEndpointName);
     }
 
     private static void MapProtectedCode(WebApplication app)

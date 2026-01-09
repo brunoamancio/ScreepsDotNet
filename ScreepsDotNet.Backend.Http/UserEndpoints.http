@@ -198,3 +198,39 @@ Accept: application/json
 {
   "visible": true
 }
+
+### User - Send Message (protected)
+POST {{ScreepsDotNet_Backend_Http_HostAddress}}/api/user/messages/send
+X-Token: {{ScreepsDotNet_User_Token}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "respondent": "ally-user",
+  "text": "Hello from the HTTP scratch file"
+}
+
+### User - List Messages (protected)
+GET {{ScreepsDotNet_Backend_Http_HostAddress}}/api/user/messages/list?respondent=ally-user
+X-Token: {{ScreepsDotNet_User_Token}}
+Accept: application/json
+
+### User - Message Index (protected)
+GET {{ScreepsDotNet_Backend_Http_HostAddress}}/api/user/messages/index
+X-Token: {{ScreepsDotNet_User_Token}}
+Accept: application/json
+
+### User - Mark Message Read (protected)
+POST {{ScreepsDotNet_Backend_Http_HostAddress}}/api/user/messages/mark-read
+X-Token: {{ScreepsDotNet_User_Token}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "id": "replace-with-message-id"
+}
+
+### User - Unread Message Count (protected)
+GET {{ScreepsDotNet_Backend_Http_HostAddress}}/api/user/messages/unread-count
+X-Token: {{ScreepsDotNet_User_Token}}
+Accept: application/json

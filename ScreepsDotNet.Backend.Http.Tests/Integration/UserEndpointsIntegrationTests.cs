@@ -18,6 +18,8 @@ public sealed class UserEndpointsIntegrationTests(IntegrationTestHarness harness
     private const string UsersCollectionName = "users";
     private const string UserConsoleCollectionName = "users.console";
     private const string UserMemoryCollectionName = "users.memory";
+    private const string UserMessagesCollectionName = "users.messages";
+    private const string UserNotificationsCollectionName = "users.notifications";
 
     public Task InitializeAsync() => harness.ResetStateAsync();
 
@@ -162,6 +164,135 @@ public sealed class UserEndpointsIntegrationTests(IntegrationTestHarness harness
         });
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task UserMessages_List_ReturnsSeededMessage()
+    {
+        await harness.ResetStateAsync();
+        var token = await AuthenticateAsync();
+        var request = new HttpRequestMessage(HttpMethod.Get, $"{ApiRoutes.User.Messages.List}?respondent={SeedDataDefaults.Messaging.RespondentId}");
+        request.Headers.TryAddWithoutValidation(AuthHeaderNames.Token, token);
+
+        var response = await _client.SendAsync(request);
+
+        response.EnsureSuccessStatusCode();
+        using var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        var messages = payload.RootElement.GetProperty("messages").EnumerateArray().ToList();
+        Assert.Single(messages);
+        var inbound = messages[0];
+        Assert.Equal(SeedDataDefaults.Messaging.SampleText, inbound.GetProperty("text").GetString());
+        Assert.Equal("in", inbound.GetProperty("type").GetString());
+        Assert.True(inbound.GetProperty("unread").GetBoolean());
+    }
+
+    [Fact]
+    public async Task UserMessages_Index_ReturnsRespondentSummary()
+    {
+        await harness.ResetStateAsync();
+        var token = await AuthenticateAsync();
+        var request = new HttpRequestMessage(HttpMethod.Get, ApiRoutes.User.Messages.Index);
+        request.Headers.TryAddWithoutValidation(AuthHeaderNames.Token, token);
+
+        var response = await _client.SendAsync(request);
+
+        response.EnsureSuccessStatusCode();
+        using var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        var root = payload.RootElement;
+        var messages = root.GetProperty("messages").EnumerateArray().ToList();
+        Assert.NotEmpty(messages);
+        var summary = messages[0];
+        Assert.Equal(SeedDataDefaults.Messaging.RespondentId, summary.GetProperty("_id").GetString());
+        var users = root.GetProperty("users");
+        Assert.True(users.TryGetProperty(SeedDataDefaults.Messaging.RespondentId, out var userInfo));
+        Assert.Equal(SeedDataDefaults.Messaging.RespondentUsername, userInfo.GetProperty("username").GetString());
+    }
+
+    [Fact]
+    public async Task UserMessages_Send_CreatesDocumentsAndNotifications()
+    {
+        await harness.ResetStateAsync();
+        var token = await AuthenticateAsync();
+        var text = "Integration direct message";
+        var request = new HttpRequestMessage(HttpMethod.Post, ApiRoutes.User.Messages.Send);
+        request.Headers.TryAddWithoutValidation(AuthHeaderNames.Token, token);
+        request.Content = JsonContent.Create(new
+        {
+            respondent = SeedDataDefaults.Messaging.RespondentId,
+            text
+        });
+
+        var response = await _client.SendAsync(request);
+
+        response.EnsureSuccessStatusCode();
+
+        var messagesCollection = harness.Database.GetCollection<UserMessageDocument>(UserMessagesCollectionName);
+        var documents = await messagesCollection.Find(doc => doc.Text == text)
+                                                .ToListAsync();
+        Assert.Equal(2, documents.Count);
+        var outbound = Assert.Single(documents, doc => doc.UserId == SeedDataDefaults.User.Id);
+        Assert.Equal("out", outbound.Type);
+        var inbound = Assert.Single(documents, doc => doc.UserId == SeedDataDefaults.Messaging.RespondentId);
+        Assert.Equal("in", inbound.Type);
+        Assert.Equal(outbound.Id, inbound.OutMessageId);
+
+        var notifications = harness.Database.GetCollection<UserNotificationDocument>(UserNotificationsCollectionName);
+        var notification = await notifications.Find(doc => doc.UserId == SeedDataDefaults.Messaging.RespondentId)
+                                              .FirstOrDefaultAsync();
+        Assert.NotNull(notification);
+        Assert.Equal("msg", notification!.Type);
+        Assert.True(notification.Count >= 1);
+    }
+
+    [Fact]
+    public async Task UserMessages_MarkRead_ClearsUnreadState()
+    {
+        await harness.ResetStateAsync();
+        var messagesCollection = harness.Database.GetCollection<UserMessageDocument>(UserMessagesCollectionName);
+        var inbound = await messagesCollection.Find(doc => doc.UserId == SeedDataDefaults.User.Id && doc.Type == "in")
+                                              .FirstOrDefaultAsync();
+        Assert.NotNull(inbound);
+        Assert.True(inbound!.Unread);
+
+        var token = await AuthenticateAsync();
+        var request = new HttpRequestMessage(HttpMethod.Post, ApiRoutes.User.Messages.MarkRead)
+        {
+            Content = JsonContent.Create(new
+            {
+                id = inbound.Id.ToString()
+            })
+        };
+        request.Headers.TryAddWithoutValidation(AuthHeaderNames.Token, token);
+
+        var response = await _client.SendAsync(request);
+        response.EnsureSuccessStatusCode();
+
+        var updatedInbound = await messagesCollection.Find(doc => doc.Id == inbound.Id)
+                                                     .FirstOrDefaultAsync();
+        Assert.NotNull(updatedInbound);
+        Assert.False(updatedInbound!.Unread);
+
+        if (inbound.OutMessageId != default)
+        {
+            var counterpart = await messagesCollection.Find(doc => doc.Id == inbound.OutMessageId)
+                                                      .FirstOrDefaultAsync();
+            Assert.NotNull(counterpart);
+            Assert.False(counterpart!.Unread);
+        }
+    }
+
+    [Fact]
+    public async Task UserMessages_UnreadCount_ReturnsCurrentValue()
+    {
+        await harness.ResetStateAsync();
+        var token = await AuthenticateAsync();
+        var request = new HttpRequestMessage(HttpMethod.Get, ApiRoutes.User.Messages.UnreadCount);
+        request.Headers.TryAddWithoutValidation(AuthHeaderNames.Token, token);
+
+        var response = await _client.SendAsync(request);
+        response.EnsureSuccessStatusCode();
+        using var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        Assert.Equal(1, payload.RootElement.GetProperty("count").GetInt32());
     }
 
     private async Task<string> AuthenticateAsync()

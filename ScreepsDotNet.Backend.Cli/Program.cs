@@ -87,6 +87,7 @@ static void ConfigureServices(HostApplicationBuilder builder)
     builder.Services.AddSingleton<IInvaderService, MongoInvaderService>();
     builder.Services.AddSingleton<IIntentService, MongoIntentService>();
     builder.Services.AddSingleton<IPowerCreepService, MongoPowerCreepService>();
+    builder.Services.AddSingleton<IUserMessageService, MongoUserMessageService>();
     builder.Services.AddSingleton<IModManifestProvider, FileSystemModManifestProvider>();
     builder.Services.AddSingleton<IIntentSchemaCatalog, ManifestIntentSchemaCatalog>();
 

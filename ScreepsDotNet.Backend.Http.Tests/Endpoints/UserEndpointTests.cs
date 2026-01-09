@@ -217,7 +217,7 @@ public class UserEndpointTests : IClassFixture<TestWebApplicationFactory>
         response.EnsureSuccessStatusCode();
         using var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
         var root = payload.RootElement;
-        var rooms = root.GetProperty(UserResponseFields.Rooms).EnumerateArray().Select(element => element.GetString()).ToList();
+        var rooms = root.GetProperty(UserResponseFields.Rooms).EnumerateArray().Select(element => element.GetString()!).ToList();
         var expectedRooms = SampleRooms.Select(RoomReferenceParser.Format).ToList();
         Assert.Equal(expectedRooms, rooms);
         Assert.Equal(JsonValueKind.Object, root.GetProperty(UserResponseFields.Stats).ValueKind);

@@ -30,6 +30,10 @@ public sealed class MongoRedisStorageOptions
 
     public string UserMoneyCollection { get; init; } = "users.money";
 
+    public string UserMessagesCollection { get; init; } = "users.messages";
+
+    public string UserNotificationsCollection { get; init; } = "users.notifications";
+
     public string ServerDataCollection { get; init; } = "server.data";
 
     public string MarketOrdersCollection { get; init; } = "market.orders";

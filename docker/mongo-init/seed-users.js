@@ -72,6 +72,31 @@ db['rooms.objects'].updateOne(
     { upsert: true }
 );
 
+db.users.updateOne(
+    { _id: 'ally-user' },
+    {
+        $set: {
+            username: 'AllyUser',
+            usernameLower: 'allyuser',
+            email: 'ally@screeps.local',
+            emailDirty: false,
+            active: 1,
+            cpu: 100,
+            bot: null,
+            password: 'hashed-password',
+            notifyPrefs: {},
+            gcl: { level: 1, progress: 0, progressTotal: 1 },
+            lastRespawnDate: new Date(),
+            lastChargeTime: new Date(),
+            blocked: false,
+            power: 100000,
+            badge: null,
+            customBadge: null
+        }
+    },
+    { upsert: true }
+);
+
 const powerCreepActiveId = ObjectId('64d000000000000000000001');
 const powerCreepDormantId = ObjectId('64d000000000000000000002');
 
@@ -148,3 +173,37 @@ db['users.money'].insertMany([
         date: new Date(Date.now() - 3600 * 1000)
     }
 ]);
+
+const messageOutId = new ObjectId();
+const now = new Date();
+
+db['users.messages'].deleteMany({});
+db['users.messages'].insertMany([
+    {
+        _id: messageOutId,
+        user: 'ally-user',
+        respondent: 'test-user',
+        date: now,
+        type: 'out',
+        text: 'Welcome to the Screeps.NET rewrite!',
+        unread: false
+    },
+    {
+        user: 'test-user',
+        respondent: 'ally-user',
+        date: now,
+        type: 'in',
+        text: 'Welcome to the Screeps.NET rewrite!',
+        unread: true,
+        outMessage: messageOutId
+    }
+]);
+
+db['users.notifications'].deleteMany({});
+db['users.notifications'].insertOne({
+    user: 'test-user',
+    message: 'New message from AllyUser',
+    date: Date.now(),
+    type: 'msg',
+    count: 1
+});

@@ -136,5 +136,15 @@ public static class ApiRoutes
         public const string BadgeSvg = $"{Base}/badge-svg";
         public const string SetSteamVisible = $"{Base}/set-steam-visible";
         public const string MessagesBase = $"{Base}/messages";
+
+        public static class Messages
+        {
+            private const string MessagesRouteBase = MessagesBase;
+            public const string Send = $"{MessagesRouteBase}/send";
+            public const string List = $"{MessagesRouteBase}/list";
+            public const string Index = $"{MessagesRouteBase}/index";
+            public const string MarkRead = $"{MessagesRouteBase}/mark-read";
+            public const string UnreadCount = $"{MessagesRouteBase}/unread-count";
+        }
     }
 }

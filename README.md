@@ -167,6 +167,7 @@ dotnet run --project ScreepsDotNet.Backend.Cli -- map generate --room W10N5 --sh
   - `users` – canonical player documents (`seed-users.js` keeps `test-user` up-to-date).
   - `users.code`, `users.memory`, `users.console` – lazily created by the new repositories when the HTTP endpoints mutate state.
   - `users.money` – rolling credit transactions surfaced via `/api/user/money-history`.
+  - `users.messages` / `users.notifications` – private inbox threads and notification counters backing `/api/user/messages/*` (seed data inserts a sample exchange between the integration user and a peer for smoke tests).
   - `rooms.objects` – source of controller/spawn information for `/api/user/world-*` endpoints.
 - Server metadata (`server.data`) and version metadata (`server.version`) power `/api/server/info` and the `protocol/useNativeAuth/packageVersion` fields returned by `/api/version`. Adjust `seed-server-data.js` (and `SeedDataDefaults`) if you need to change these defaults.
 - Both the Testcontainers harness (`SeedDataService`) and the docker init scripts now seed a dedicated shard sample (`shard1` / `SeedDataDefaults.World.SecondaryShardRoom`) with matching `rooms`, `rooms.objects`, and `rooms.terrain` documents. Use it when exercising upcoming shard-aware world endpoints—each document carries a `shard` field so you can filter deterministically.
@@ -192,6 +193,7 @@ This wipes `mongo-data` / `redis-data`, reruns every script in `docker/mongo-ini
 - Protected routes (`/api/user/world-*`, `/api/user/branches`, `/api/user/code`, `/api/user/memory`, `/api/user/memory-segment`, `/api/user/console`, `/api/user/notify-prefs`, `/api/user/overview`, `/api/user/tutorial-done`, `/api/user/respawn`) operate against the Mongo repositories (`MongoUserCodeRepository`, `MongoUserMemoryRepository`, `MongoUserConsoleRepository`, `MongoUserWorldRepository`, `MongoUserRespawnService`).
 - Public routes (`/api/user/find`, `/api/user/rooms`, `/api/user/badge-svg`, `/api/user/stats`) return data seeded into Mongo.
 - Profile management routes (`/api/user/badge`, `/api/user/email`, `/api/user/set-steam-visible`) update the canonical `users` document with the same validation rules as the legacy backend.
+- Messaging routes (`/api/user/messages/send|list|index|mark-read|unread-count`) share `MongoUserMessageService`, which persists bi-directional threads in `users.messages`, upserts notifications in `users.notifications`, and enforces the same 100 KB payload limit + respondent validation as the legacy backend. Scratch samples live in `UserEndpoints.http`.
 
 If you add new endpoints or storage requirements, update:
 1. `docker/mongo-init/seed-users.js` (and document the change here).
