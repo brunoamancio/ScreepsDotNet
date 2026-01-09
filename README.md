@@ -112,6 +112,19 @@ Example:
 dotnet run --project ScreepsDotNet.Backend.Cli -- strongholds spawn --room W5N3 --shard shard1 --template bunker3 --deploy-delay 10
 ```
 
+### Invader commands
+
+| Command | Purpose | Key flags |
+| --- | --- | --- |
+| `invader create --room <name> [--shard <name>] (--user-id <id> \| --username <name>) --x <0-49> --y <0-49> [--type <Melee\|Ranged\|Healer>] [--size <Small\|Big>] [--boosted]` | Summon an NPC invader in an owned or reserved room. | Accepts either explicit `--shard` or the legacy `shard/Room` syntax. |
+| `invader remove --id <objectId> (--user-id <id> \| --username <name>)` | Remove a previously summoned invader (requires the original summoner). | |
+
+Example:
+
+```powershell
+dotnet run --project ScreepsDotNet.Backend.Cli -- invader create --username IntegrationUser --room W21N20 --shard shard1 --x 12 --y 18 --type Ranged
+```
+
 ### System commands
 
 | Command | Purpose | Key flags |

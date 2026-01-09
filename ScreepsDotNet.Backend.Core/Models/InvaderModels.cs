@@ -2,7 +2,7 @@
 
 using ScreepsDotNet.Backend.Core.Constants;
 
-public record CreateInvaderRequest(string Room, int X, int Y, InvaderType Type, InvaderSize Size, bool Boosted);
+public record CreateInvaderRequest(string Room, int X, int Y, InvaderType Type, InvaderSize Size, bool Boosted, string? Shard = null);
 
 public enum CreateInvaderResultStatus
 {

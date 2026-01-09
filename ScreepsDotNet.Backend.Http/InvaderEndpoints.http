@@ -29,6 +29,22 @@ Content-Type: application/json
 
 > {% client.global.set("invader_id", response.body._id); %}
 
+### Create Invader (shard-aware)
+# Optional shard parameter or shard/RoomName syntax is supported.
+POST {{host}}/api/game/create-invader
+X-Token: {{auth_token}}
+Content-Type: application/json
+
+{
+    "room": "W21N20",
+    "shard": "shard1",
+    "x": 12,
+    "y": 18,
+    "type": "Ranged",
+    "size": "Small",
+    "boosted": false
+}
+
 ### Remove Invader
 # Removes an NPC invader that was summoned by the caller.
 POST {{host}}/api/game/remove-invader

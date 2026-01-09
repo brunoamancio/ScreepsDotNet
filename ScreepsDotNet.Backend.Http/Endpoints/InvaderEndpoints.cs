@@ -3,6 +3,7 @@
 using Microsoft.AspNetCore.Mvc;
 using ScreepsDotNet.Backend.Core.Context;
 using ScreepsDotNet.Backend.Core.Models;
+using ScreepsDotNet.Backend.Core.Parsing;
 using ScreepsDotNet.Backend.Core.Services;
 using ScreepsDotNet.Backend.Http.Authentication;
 using ScreepsDotNet.Backend.Http.Endpoints.Models;
@@ -30,7 +31,16 @@ internal static class InvaderEndpoints
                                if (string.IsNullOrEmpty(userId))
                                    return Results.Unauthorized();
 
-                               var result = await invaderService.CreateInvaderAsync(userId, request, cancellationToken).ConfigureAwait(false);
+                               if (!RoomReferenceParser.TryParse(request.Room, request.Shard, out var roomReference) || roomReference is null)
+                                   return Results.BadRequest(new ErrorResponse("invalid params"));
+
+                               var normalizedRequest = request with
+                               {
+                                   Room = roomReference.RoomName,
+                                   Shard = roomReference.ShardName
+                               };
+
+                               var result = await invaderService.CreateInvaderAsync(userId, normalizedRequest, cancellationToken).ConfigureAwait(false);
 
                                return result.Status switch
                                {

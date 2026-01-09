@@ -64,11 +64,13 @@ public sealed class MongoInvaderService(IMongoDatabaseProvider databaseProvider,
         if (request.X < 0 || request.X > 49 || request.Y < 0 || request.Y > 49)
             return new CreateInvaderResult(CreateInvaderResultStatus.InvalidParams, ErrorMessage: "Invalid coordinates");
 
+        var roomName = request.Room.Trim();
+        var shardName = string.IsNullOrWhiteSpace(request.Shard) ? null : request.Shard.Trim();
+        var builder = Builders<RoomObjectDocument>.Filter;
+        var roomFilter = BuildRoomFilter(builder, roomName, shardName);
+
         // Limit check: max 5 invaders per room
-        var creepsFilter = Builders<RoomObjectDocument>.Filter.And(
-            Builders<RoomObjectDocument>.Filter.Eq(doc => doc.Type, StructureType.Creep.ToDocumentValue()),
-            Builders<RoomObjectDocument>.Filter.Eq(doc => doc.Room, request.Room)
-        );
+        var creepsFilter = roomFilter & builder.Eq(doc => doc.Type, StructureType.Creep.ToDocumentValue());
         var creeps = await _roomObjectsCollection.Find(creepsFilter).ToListAsync(cancellationToken).ConfigureAwait(false);
         var invadersCount = creeps.Count(c => c.UserId == SeedDataDefaults.World.InvaderUser);
         if (invadersCount >= 5)
@@ -79,10 +81,7 @@ public sealed class MongoInvaderService(IMongoDatabaseProvider databaseProvider,
             return new CreateInvaderResult(CreateInvaderResultStatus.HostilesPresent);
 
         // Ownership check
-        var controllerFilter = Builders<RoomObjectDocument>.Filter.And(
-            Builders<RoomObjectDocument>.Filter.Eq(doc => doc.Room, request.Room),
-            Builders<RoomObjectDocument>.Filter.Eq(doc => doc.Type, StructureType.Controller.ToDocumentValue())
-        );
+        var controllerFilter = roomFilter & builder.Eq(doc => doc.Type, StructureType.Controller.ToDocumentValue());
         var controller = await _roomObjectsCollection.Find(controllerFilter).FirstOrDefaultAsync(cancellationToken).ConfigureAwait(false);
         if (controller == null)
             return new CreateInvaderResult(CreateInvaderResultStatus.InvalidRoom, ErrorMessage: "Room has no controller");
@@ -92,6 +91,14 @@ public sealed class MongoInvaderService(IMongoDatabaseProvider databaseProvider,
 
         if (!isOwner && !isReserved)
             return new CreateInvaderResult(CreateInvaderResultStatus.NotOwned);
+
+        // Position availability
+        var positionFilter = roomFilter &
+                             builder.Eq(doc => doc.X, request.X) &
+                             builder.Eq(doc => doc.Y, request.Y);
+        var occupied = await _roomObjectsCollection.Find(positionFilter).AnyAsync(cancellationToken).ConfigureAwait(false);
+        if (occupied)
+            return new CreateInvaderResult(CreateInvaderResultStatus.InvalidParams, ErrorMessage: "Position occupied");
 
         // Body generation
         if (!BodyTemplates.TryGetValue((request.Size, request.Type), out var bodyParts))
@@ -120,19 +127,22 @@ public sealed class MongoInvaderService(IMongoDatabaseProvider databaseProvider,
             ["ticksToLive"] = 1500,
             ["x"] = request.X,
             ["y"] = request.Y,
-            ["room"] = request.Room,
+            ["room"] = roomName,
             ["fatigue"] = 0,
             ["store"] = new BsonDocument(),
             ["storeCapacity"] = 0,
-            ["name"] = $"invader_{request.Room}_{_random.Next(1000)}",
+            ["name"] = $"invader_{roomName}_{_random.Next(1000)}",
             ["userSummoned"] = userId
         };
+        if (!string.IsNullOrWhiteSpace(shardName))
+            invader["shard"] = shardName;
 
         await databaseProvider.GetCollection<BsonDocument>(databaseProvider.Settings.RoomObjectsCollection)
                               .InsertOneAsync(invader, cancellationToken: cancellationToken)
                               .ConfigureAwait(false);
 
-        logger.LogInformation("User {UserId} created invader {InvaderId} in {Room} at ({X}, {Y})", userId, invaderId, request.Room, request.X, request.Y);
+        var displayRoom = string.IsNullOrWhiteSpace(shardName) ? roomName : $"{shardName}/{roomName}";
+        logger.LogInformation("User {UserId} created invader {InvaderId} in {Room} at ({X}, {Y})", userId, invaderId, displayRoom, request.X, request.Y);
 
         return new CreateInvaderResult(CreateInvaderResultStatus.Success, Id: invaderId.ToString());
     }
@@ -158,5 +168,19 @@ public sealed class MongoInvaderService(IMongoDatabaseProvider databaseProvider,
         logger.LogInformation("User {UserId} removed invader {InvaderId}", userId, request.Id);
 
         return new RemoveInvaderResult(RemoveInvaderResultStatus.Success);
+    }
+
+    private static FilterDefinition<RoomObjectDocument> BuildRoomFilter(FilterDefinitionBuilder<RoomObjectDocument> builder, string room, string? shard)
+    {
+        var filter = builder.Eq(doc => doc.Room, room);
+        if (!string.IsNullOrWhiteSpace(shard))
+            return filter & builder.Eq(doc => doc.Shard, shard);
+
+        var nullShardFilter = builder.Or(
+            builder.Eq(doc => doc.Shard, null),
+            builder.Eq("shard", BsonNull.Value),
+            builder.Exists("shard", false));
+
+        return filter & nullShardFilter;
     }
 }

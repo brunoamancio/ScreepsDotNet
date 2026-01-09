@@ -43,16 +43,58 @@ public sealed class InvaderCommandsIntegrationTests(MongoMapIntegrationFixture f
         Assert.True(invaderExists);
     }
 
-    private async Task PrepareRoomWithControllerAsync(string room, string userId, int level)
+    [Fact]
+    public async Task InvaderCreateCommand_WithShard_PersistsShard()
     {
-        var roomsCollection = _fixture.Database.GetCollection<BsonDocument>("rooms");
-        await roomsCollection.ReplaceOneAsync(new BsonDocument { ["_id"] = room }, new BsonDocument { ["_id"] = room, ["status"] = "normal" }, new ReplaceOptions { IsUpsert = true });
+        await _fixture.ResetAsync();
+        var roomName = SeedDataDefaults.World.SecondaryShardRoom;
+        var shard = SeedDataDefaults.World.SecondaryShardName;
+        await PrepareRoomWithControllerAsync(roomName, SeedDataDefaults.User.Id, 3, shard);
 
-        var terrainCollection = _fixture.Database.GetCollection<BsonDocument>("rooms.terrain");
-        await terrainCollection.ReplaceOneAsync(new BsonDocument { ["room"] = room }, new BsonDocument { ["room"] = room, ["terrain"] = new string('0', 2500) }, new ReplaceOptions { IsUpsert = true });
+        var service = CreateInvaderService();
+        var command = new InvaderCreateCommand(service, _fixture.DatabaseProvider.GetCollection<UserDocument>("users").ToUserRepository());
+        var settings = new InvaderCreateCommand.Settings
+        {
+            UserId = SeedDataDefaults.User.Id,
+            RoomName = roomName,
+            Shard = shard,
+            X = 10,
+            Y = 10,
+            Type = InvaderType.Ranged,
+            Size = InvaderSize.Small,
+            Boosted = false
+        };
+
+        var exitCode = await command.ExecuteAsync(null!, settings, CancellationToken.None);
+
+        Assert.Equal(0, exitCode);
 
         var objectsCollection = _fixture.Database.GetCollection<BsonDocument>("rooms.objects");
-        await objectsCollection.InsertOneAsync(new BsonDocument
+        var invaderFilter = Builders<BsonDocument>.Filter.And(
+            Builders<BsonDocument>.Filter.Eq("room", roomName),
+            Builders<BsonDocument>.Filter.Eq("shard", shard),
+            Builders<BsonDocument>.Filter.Eq("type", StructureType.Creep.ToDocumentValue()));
+        var invader = await objectsCollection.Find(invaderFilter).FirstOrDefaultAsync();
+        Assert.NotNull(invader);
+        Assert.Equal(shard, invader["shard"].AsString);
+    }
+
+    private async Task PrepareRoomWithControllerAsync(string room, string userId, int level, string? shard = null)
+    {
+        var roomsCollection = _fixture.Database.GetCollection<BsonDocument>("rooms");
+        var roomDoc = new BsonDocument { ["_id"] = room, ["status"] = "normal" };
+        if (!string.IsNullOrWhiteSpace(shard))
+            roomDoc["shard"] = shard;
+        await roomsCollection.ReplaceOneAsync(new BsonDocument { ["_id"] = room }, roomDoc, new ReplaceOptions { IsUpsert = true });
+
+        var terrainCollection = _fixture.Database.GetCollection<BsonDocument>("rooms.terrain");
+        var terrainDoc = new BsonDocument { ["room"] = room, ["terrain"] = new string('0', 2500) };
+        if (!string.IsNullOrWhiteSpace(shard))
+            terrainDoc["shard"] = shard;
+        await terrainCollection.ReplaceOneAsync(new BsonDocument { ["room"] = room }, terrainDoc, new ReplaceOptions { IsUpsert = true });
+
+        var objectsCollection = _fixture.Database.GetCollection<BsonDocument>("rooms.objects");
+        var controllerDoc = new BsonDocument
         {
             ["type"] = "controller",
             ["room"] = room,
@@ -60,7 +102,10 @@ public sealed class InvaderCommandsIntegrationTests(MongoMapIntegrationFixture f
             ["y"] = 1,
             ["level"] = level,
             ["user"] = userId
-        });
+        };
+        if (!string.IsNullOrWhiteSpace(shard))
+            controllerDoc["shard"] = shard;
+        await objectsCollection.InsertOneAsync(controllerDoc);
     }
 
     private MongoInvaderService CreateInvaderService()

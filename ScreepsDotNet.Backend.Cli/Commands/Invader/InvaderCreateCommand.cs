@@ -3,6 +3,7 @@
 using global::System.ComponentModel;
 using ScreepsDotNet.Backend.Core.Constants;
 using ScreepsDotNet.Backend.Core.Models;
+using ScreepsDotNet.Backend.Core.Parsing;
 using ScreepsDotNet.Backend.Core.Repositories;
 using ScreepsDotNet.Backend.Core.Services;
 using Spectre.Console;
@@ -23,6 +24,10 @@ internal sealed class InvaderCreateCommand(IInvaderService invaderService, IUser
         [CommandOption("--room <NAME>")]
         [Description("Room name where to create invader.")]
         public string RoomName { get; init; } = string.Empty;
+
+        [CommandOption("--shard <NAME>")]
+        [Description("Optional shard name (legacy shard/RoomName notation is also accepted).")]
+        public string? Shard { get; init; }
 
         [CommandOption("--x <COORD>")]
         [Description("X coordinate (0-49).")]
@@ -54,6 +59,9 @@ internal sealed class InvaderCreateCommand(IInvaderService invaderService, IUser
             if (string.IsNullOrWhiteSpace(RoomName))
                 return ValidationResult.Error("Room name is required.");
 
+            if (!RoomReferenceParser.TryParse(RoomName, Shard, out _))
+                return ValidationResult.Error("Invalid room. Use W##N## or shard/W##N##.");
+
             if (X is < 0 or > 49)
                 return ValidationResult.Error("X must be between 0 and 49.");
 
@@ -76,7 +84,12 @@ internal sealed class InvaderCreateCommand(IInvaderService invaderService, IUser
             userId = publicProfile.Id;
         }
 
-        var request = new CreateInvaderRequest(settings.RoomName, settings.X, settings.Y, settings.Type, settings.Size, settings.Boosted);
+        if (!RoomReferenceParser.TryParse(settings.RoomName, settings.Shard, out var reference) || reference is null) {
+            AnsiConsole.MarkupLine("[red]Error:[/] Invalid room. Use W##N## or shard/W##N##.");
+            return 1;
+        }
+
+        var request = new CreateInvaderRequest(reference.RoomName, settings.X, settings.Y, settings.Type, settings.Size, settings.Boosted, reference.ShardName);
         var result = await invaderService.CreateInvaderAsync(userId, request, cancellationToken).ConfigureAwait(false);
 
         if (result.Status != CreateInvaderResultStatus.Success) {

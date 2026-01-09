@@ -108,16 +108,45 @@ public sealed class InvaderEndpointsIntegrationTests(IntegrationTestHarness harn
         Assert.Null(invader);
     }
 
-    private async Task PrepareRoomWithControllerAsync(string room, string userId, int level)
+    [Fact]
+    public async Task CreateInvader_WithShard_PersistsShardMetadata()
     {
-        var roomsCollection = harness.Database.GetCollection<BsonDocument>("rooms");
-        await roomsCollection.ReplaceOneAsync(new BsonDocument { ["_id"] = room }, new BsonDocument { ["_id"] = room, ["status"] = "normal" }, new ReplaceOptions { IsUpsert = true });
+        var token = await LoginAsync();
+        var room = SeedDataDefaults.World.SecondaryShardRoom;
+        var shard = SeedDataDefaults.World.SecondaryShardName;
+        await PrepareRoomWithControllerAsync(room, SeedDataDefaults.User.Id, 3, shard);
 
-        var terrainCollection = harness.Database.GetCollection<BsonDocument>("rooms.terrain");
-        await terrainCollection.ReplaceOneAsync(new BsonDocument { ["room"] = room }, new BsonDocument { ["room"] = room, ["terrain"] = new string('0', 2500) }, new ReplaceOptions { IsUpsert = true });
+        var request = new CreateInvaderRequest(room, 12, 18, InvaderType.Ranged, InvaderSize.Small, false, shard);
+        _client.DefaultRequestHeaders.Add("X-Token", token);
+
+        var response = await _client.PostAsJsonAsync(ApiRoutes.Game.World.CreateInvader, request);
+        response.EnsureSuccessStatusCode();
+
+        var payload = await response.Content.ReadFromJsonAsync<JsonElement>();
+        var invaderId = payload.GetProperty("_id").GetString()!;
 
         var objectsCollection = harness.Database.GetCollection<BsonDocument>("rooms.objects");
-        await objectsCollection.InsertOneAsync(new BsonDocument
+        var invader = await objectsCollection.Find(Builders<BsonDocument>.Filter.Eq("_id", ObjectId.Parse(invaderId))).FirstOrDefaultAsync();
+        Assert.NotNull(invader);
+        Assert.Equal(shard, invader.GetValue("shard", shard).AsString);
+    }
+
+    private async Task PrepareRoomWithControllerAsync(string room, string userId, int level, string? shard = null)
+    {
+        var roomsCollection = harness.Database.GetCollection<BsonDocument>("rooms");
+        var roomDoc = new BsonDocument { ["_id"] = room, ["status"] = "normal" };
+        if (!string.IsNullOrWhiteSpace(shard))
+            roomDoc["shard"] = shard;
+        await roomsCollection.ReplaceOneAsync(new BsonDocument { ["_id"] = room }, roomDoc, new ReplaceOptions { IsUpsert = true });
+
+        var terrainCollection = harness.Database.GetCollection<BsonDocument>("rooms.terrain");
+        var terrainDoc = new BsonDocument { ["room"] = room, ["terrain"] = new string('0', 2500) };
+        if (!string.IsNullOrWhiteSpace(shard))
+            terrainDoc["shard"] = shard;
+        await terrainCollection.ReplaceOneAsync(new BsonDocument { ["room"] = room }, terrainDoc, new ReplaceOptions { IsUpsert = true });
+
+        var objectsCollection = harness.Database.GetCollection<BsonDocument>("rooms.objects");
+        var controllerDoc = new BsonDocument
         {
             ["type"] = "controller",
             ["room"] = room,
@@ -125,6 +154,10 @@ public sealed class InvaderEndpointsIntegrationTests(IntegrationTestHarness harn
             ["y"] = 1,
             ["level"] = level,
             ["user"] = userId
-        });
+        };
+        if (!string.IsNullOrWhiteSpace(shard))
+            controllerDoc["shard"] = shard;
+
+        await objectsCollection.InsertOneAsync(controllerDoc);
     }
 }
