@@ -81,8 +81,9 @@ dotnet run --project ScreepsDotNet.Backend.Cli/ScreepsDotNet.Backend.Cli.csproj 
 | `--cli_host`, `--cli_port` | Retain the legacy CLI listener flags (accepted for compatibility). |
 | `--host`, `--port`, `--password` | Legacy HTTP overrides accepted so the client launcher still works. |
 | `--modfile` / `SCREEPSCLI_modfile` / `MODFILE` | Path to the legacy `mods.json` manifest containing bot AI directories plus any `customIntentTypes/customObjectTypes`. |
+| `--format <table\|markdown\|json>` | (Optional) Overrides the default formatting for status-style commands; JSON behaves the same as the traditional `--json` switches. |
 
-Every option can also be supplied via `SCREEPSCLI_<option>` environment variables, e.g., `SCREEPSCLI_connection-string`. For convenience we ship `.screepscli.sample`; copy or source it to preload the common Mongo/Redis/asset settings before running the CLI.
+Every option can also be supplied via `SCREEPSCLI_<option>` environment variables, e.g., `SCREEPSCLI_connection-string`. For convenience we ship `.screepscli.sample`; copy or source it to preload the common Mongo/Redis/asset settings before running the CLI. Commands that support formatted summaries (storage status, system status, etc.) honor `--format table|markdown|json` when not already emitting JSON.
 If you just need something to point at while experimenting, copy `ScreepsDotNet.Backend.Http/mods.sample.json` to a writable location, adjust the bot paths, and edit the sample `customIntentTypes` / `customObjectTypes` entries as needed.
 
 ### Bot commands
@@ -139,12 +140,12 @@ dotnet run --project ScreepsDotNet.Backend.Cli -- invader create --username Inte
 
 | Command | Purpose | Key flags |
 | --- | --- | --- |
-| `system status [--json]` | Show whether the simulation loop is paused and the current tick duration. | |
-| `system pause` / `system resume` | Toggle the simulation main loop. | |
-| `system message "<text>"` | Broadcast a server notification via Redis pub/sub. | |
-| `system reset --confirm RESET [--force]` | Reseed Mongo/Redis using the canonical seed data. | `--force` required when targeting non-default DBs. |
+| `system status [--json] [--format table\|markdown\|json]` | Show whether the simulation loop is paused and the current tick duration. | `--format` controls non-JSON output. |
+| `system pause [--json]` / `system resume [--json]` | Toggle the simulation main loop. | |
+| `system message "<text>" [--json]` | Broadcast a server notification via Redis pub/sub. | |
+| `system reset --confirm RESET [--force] [--json]` | Reseed Mongo/Redis using the canonical seed data. | `--force` required when targeting non-default DBs. |
 | `system tick get [--json]` | Display the minimal tick duration stored in Redis. | |
-| `system tick set --ms <milliseconds>` | Update and broadcast the minimal tick duration. | |
+| `system tick set --ms <milliseconds> [--json]` | Update and broadcast the minimal tick duration. | |
 
 > HTTP automation can call the same maintenance flows via `/api/game/system/*`: `tick`, `tick-set`, `message`, and the new storage helpers all mirror the CLI switches. `POST /api/game/system/reset` or `/storage-reseed` requires `{"confirm":"RESET"}` (plus `"force": true` when resetting any non-default database).
 

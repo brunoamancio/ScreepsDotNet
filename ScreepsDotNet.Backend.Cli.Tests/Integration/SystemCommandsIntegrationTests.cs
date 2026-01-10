@@ -24,11 +24,11 @@ public sealed class SystemCommandsIntegrationTests(SystemCommandsIntegrationFixt
         var pauseCommand = new SystemPauseCommand(service);
         var resumeCommand = new SystemResumeCommand(service);
 
-        await pauseCommand.ExecuteAsync(null!, new EmptySettings(), CancellationToken.None);
+        await pauseCommand.ExecuteAsync(null!, new SystemPauseCommand.Settings(), CancellationToken.None);
         var value = await _fixture.RedisConnection.GetDatabase().StringGetAsync(SystemControlConstants.MainLoopPausedKey);
         Assert.Equal("1", value.ToString());
 
-        await resumeCommand.ExecuteAsync(null!, new EmptySettings(), CancellationToken.None);
+        await resumeCommand.ExecuteAsync(null!, new SystemResumeCommand.Settings(), CancellationToken.None);
         value = await _fixture.RedisConnection.GetDatabase().StringGetAsync(SystemControlConstants.MainLoopPausedKey);
         Assert.Equal("0", value.ToString());
     }

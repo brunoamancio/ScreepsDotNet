@@ -113,6 +113,11 @@ public sealed class AuthCommandTests
     }
     private sealed class TestFormatter : ICommandOutputFormatter
     {
+        public OutputFormat PreferredFormat { get; private set; } = OutputFormat.Table;
+
+        public void SetPreferredFormat(OutputFormat format)
+            => PreferredFormat = format;
+
         public void WriteJson<T>(T payload)
         {
         }

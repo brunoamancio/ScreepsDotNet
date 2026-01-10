@@ -11,6 +11,9 @@ internal sealed class SystemTickSetCommand(ISystemControlService controlService,
         [CommandOption("--ms <MILLISECONDS>")]
         public int? DurationMilliseconds { get; init; }
 
+        [CommandOption("--json")]
+        public bool OutputJson { get; init; }
+
         public override ValidationResult Validate()
         {
             if (DurationMilliseconds is null or <= 0)
@@ -23,6 +26,12 @@ internal sealed class SystemTickSetCommand(ISystemControlService controlService,
     protected override async Task<int> ExecuteCommandAsync(CommandContext context, Settings settings, CancellationToken cancellationToken)
     {
         await controlService.SetTickDurationAsync(settings.DurationMilliseconds!.Value, cancellationToken).ConfigureAwait(false);
+
+        if (settings.OutputJson) {
+            OutputFormatter.WriteJson(new { tickDuration = settings.DurationMilliseconds });
+            return 0;
+        }
+
         OutputFormatter.WriteMarkupLine($"[green]Tick duration set to {settings.DurationMilliseconds} ms.[/]");
         return 0;
     }

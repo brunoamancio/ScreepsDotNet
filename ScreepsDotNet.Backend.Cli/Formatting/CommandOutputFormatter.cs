@@ -8,6 +8,10 @@ using Spectre.Console;
 
 internal interface ICommandOutputFormatter
 {
+    OutputFormat PreferredFormat { get; }
+
+    void SetPreferredFormat(OutputFormat format);
+
     void WriteJson<T>(T payload);
 
     void WriteTable(Table table);
@@ -24,6 +28,13 @@ internal interface ICommandOutputFormatter
 internal sealed class CommandOutputFormatter : ICommandOutputFormatter
 {
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
+    private static readonly string[] KeyValueHeaders = ["Key", "Value"];
+    private OutputFormat _preferredFormat = OutputFormat.Table;
+
+    public OutputFormat PreferredFormat => _preferredFormat;
+
+    public void SetPreferredFormat(OutputFormat format)
+        => _preferredFormat = format;
 
     public void WriteJson<T>(T payload)
     {
@@ -36,17 +47,32 @@ internal sealed class CommandOutputFormatter : ICommandOutputFormatter
 
     public void WriteKeyValueTable(IEnumerable<(string Key, string Value)> rows, string? title = null)
     {
-        var table = new Table();
-        if (!string.IsNullOrWhiteSpace(title))
-            table.Title = new TableTitle(title);
+        var rowList = rows.Select(tuple => (tuple.Key ?? string.Empty, tuple.Value ?? string.Empty)).ToList();
 
-        table.AddColumn("Key");
-        table.AddColumn("Value");
+        switch (_preferredFormat)
+        {
+            case OutputFormat.Json:
+                WriteJson(rowList.Select(row => new { key = row.Item1, value = row.Item2 }));
+                return;
+            case OutputFormat.Markdown:
+                WriteMarkdownTable(title,
+                                   KeyValueHeaders,
+                                   rowList.Select(row => (IReadOnlyList<string>)[row.Item1, row.Item2]));
+                return;
+            default:
+                var table = new Table();
+                if (!string.IsNullOrWhiteSpace(title))
+                    table.Title = new TableTitle(title);
 
-        foreach (var (key, value) in rows)
-            table.AddRow(key, value);
+                table.AddColumn("Key");
+                table.AddColumn("Value");
 
-        AnsiConsole.Write(table);
+                foreach (var (key, value) in rowList)
+                    table.AddRow(key, value);
+
+                AnsiConsole.Write(table);
+                return;
+        }
     }
 
     public void WriteMarkdownTable(string? title, IReadOnlyList<string> headers, IEnumerable<IReadOnlyList<string>> rows)

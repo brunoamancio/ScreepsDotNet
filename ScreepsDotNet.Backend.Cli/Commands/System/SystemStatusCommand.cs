@@ -1,6 +1,5 @@
 ﻿using System.Text.Json;
 using ScreepsDotNet.Backend.Core.Services;
-using Spectre.Console;
 using Spectre.Console.Cli;
 
 namespace ScreepsDotNet.Backend.Cli.Commands.System;
@@ -9,7 +8,7 @@ internal sealed class SystemStatusCommand(ISystemControlService controlService, 
 {
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
 
-    public sealed class Settings : CommandSettings
+    public sealed class Settings : FormattableCommandSettings
     {
         [CommandOption("--json")]
         public bool OutputJson { get; init; }
@@ -30,10 +29,11 @@ internal sealed class SystemStatusCommand(ISystemControlService controlService, 
             return 0;
         }
 
-        var table = new Table().AddColumn("Property").AddColumn("Value");
-        table.AddRow("Simulation paused", paused ? "yes" : "no");
-        table.AddRow("Tick duration (ms)", tickDuration?.ToString() ?? "not set");
-        OutputFormatter.WriteTable(table);
+        OutputFormatter.WriteKeyValueTable([
+                                               ("Simulation paused", paused ? "yes" : "no"),
+                                               ("Tick duration (ms)", tickDuration?.ToString() ?? "not set")
+                                           ],
+                                           "System status");
         return 0;
     }
 }

@@ -11,6 +11,9 @@ internal sealed class SystemMessageCommand(ISystemControlService controlService,
         [CommandArgument(0, "<MESSAGE>")]
         public string Message { get; init; } = string.Empty;
 
+        [CommandOption("--json")]
+        public bool OutputJson { get; init; }
+
         public override ValidationResult Validate()
         {
             if (string.IsNullOrWhiteSpace(Message))
@@ -23,6 +26,12 @@ internal sealed class SystemMessageCommand(ISystemControlService controlService,
     protected override async Task<int> ExecuteCommandAsync(CommandContext context, Settings settings, CancellationToken cancellationToken)
     {
         await controlService.PublishServerMessageAsync(settings.Message, cancellationToken).ConfigureAwait(false);
+
+        if (settings.OutputJson) {
+            OutputFormatter.WriteJson(new { message = settings.Message, dispatched = true });
+            return 0;
+        }
+
         OutputFormatter.WriteMarkupLine("[green]Server message dispatched.[/]");
         return 0;
     }

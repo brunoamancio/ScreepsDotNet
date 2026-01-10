@@ -4,6 +4,7 @@ using System.Diagnostics;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+using ScreepsDotNet.Backend.Cli.Formatting;
 using Spectre.Console.Cli;
 
 internal abstract class CommandHandler<TSettings>(ILogger? logger, IHostApplicationLifetime? lifetime, ICommandOutputFormatter? outputFormatter = null)
@@ -21,6 +22,10 @@ internal abstract class CommandHandler<TSettings>(ILogger? logger, IHostApplicat
         var stopwatch = Stopwatch.StartNew();
         Logger.LogInformation("Command {Command} starting.", GetType().Name);
 
+        var previousFormat = OutputFormatter.PreferredFormat;
+        if (settings is IFormattableCommandSettings { PreferredOutputFormat: { } format })
+            OutputFormatter.SetPreferredFormat(format);
+
         try {
             var exitCode = await ExecuteCommandAsync(context, settings, token).ConfigureAwait(false);
             stopwatch.Stop();
@@ -36,6 +41,10 @@ internal abstract class CommandHandler<TSettings>(ILogger? logger, IHostApplicat
             stopwatch.Stop();
             Logger.LogError(ex, "Command {Command} failed after {Elapsed}", GetType().Name, stopwatch.Elapsed);
             return -1;
+        }
+        finally {
+            if (OutputFormatter.PreferredFormat != previousFormat)
+                OutputFormatter.SetPreferredFormat(previousFormat);
         }
     }
 
