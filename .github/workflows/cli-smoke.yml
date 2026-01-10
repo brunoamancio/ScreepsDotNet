@@ -46,6 +46,15 @@ jobs:
       - name: CLI smoke - world stats
         run: dotnet run --project ScreepsDotNet.Backend.Cli/ScreepsDotNet.Backend.Cli.csproj -- world stats --room W1N1 --stat owners1 --json
 
+      - name: CLI smoke - world dump
+        run: dotnet run --project ScreepsDotNet.Backend.Cli/ScreepsDotNet.Backend.Cli.csproj -- world dump --room W1N1 --decoded --json
+
+      - name: CLI smoke - bots list
+        run: dotnet run --project ScreepsDotNet.Backend.Cli/ScreepsDotNet.Backend.Cli.csproj -- bots list --json
+
+      - name: CLI smoke - system status
+        run: dotnet run --project ScreepsDotNet.Backend.Cli/ScreepsDotNet.Backend.Cli.csproj -- system status --json
+
       - name: Tear down Mongo + Redis
         if: always()
         run: docker compose down -v
