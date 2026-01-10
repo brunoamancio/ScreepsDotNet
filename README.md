@@ -153,6 +153,8 @@ Example:
 
 ```powershell
 dotnet run --project ScreepsDotNet.Backend.Cli -- system tick set --ms 750
+dotnet run --project ScreepsDotNet.Backend.Cli -- system status --format markdown
+dotnet run --project ScreepsDotNet.Backend.Cli -- system reset --confirm RESET --force --json
 ```
 
 ### Map commands
@@ -180,6 +182,14 @@ dotnet run --project ScreepsDotNet.Backend.Cli -- map generate --room W10N5 --sh
 | `auth resolve --token <value> [--json] [--format table\|markdown\|json]` | Resolve an auth token back to its user id, matching the logic in the HTTP middleware. | Exit code `1` if the token is missing or expired. |
 | `auth token-list [--user-id <id>] [--json]` | Enumerate active tokens, optionally filtering by user id, to audit who currently has access. | Shows TTL countdown and exits `0` even when no tokens match. |
 | `auth revoke --token <value> [--json] [--format table\|markdown\|json]` | Delete a token immediately (returns `1` if the token does not exist). | Useful for revoking leaked/expired credentials without flushing Redis. |
+
+Example:
+
+```powershell
+dotnet run --project ScreepsDotNet.Backend.Cli -- auth issue --user-id test-user --format markdown
+dotnet run --project ScreepsDotNet.Backend.Cli -- auth resolve --token deadbeef --json
+dotnet run --project ScreepsDotNet.Backend.Cli -- auth revoke --token deadbeef --format table
+```
 
 ### CLI architecture notes
 
