@@ -82,9 +82,8 @@ internal sealed class FlagCreateCommand(IFlagService flagService, IUserRepositor
         if (string.IsNullOrWhiteSpace(userId)) {
             var profile = await userRepository.FindPublicProfileAsync(settings.Username, null, cancellationToken).ConfigureAwait(false);
             if (profile is null) {
-                if (settings.OutputJson) {
+                if (settings.OutputJson)
                     OutputFormatter.WriteJson(new { success = false, error = "User not found." });
-                }
                 else
                     OutputFormatter.WriteMarkupLine("[red]Error:[/] User not found.");
                 return 1;

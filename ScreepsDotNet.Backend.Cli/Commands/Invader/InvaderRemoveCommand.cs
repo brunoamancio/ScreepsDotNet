@@ -74,13 +74,11 @@ internal sealed class InvaderRemoveCommand(IInvaderService invaderService, IUser
             return 0;
         }
 
-        OutputFormatter.WriteKeyValueTable(
-            new[]
-            {
-                ("Invader ID", settings.InvaderId),
-                ("Removed", "yes")
-            },
-            "Invader removed");
+        OutputFormatter.WriteKeyValueTable([
+                                               ("Invader ID", settings.InvaderId),
+                                               ("Removed", "yes")
+                                           ],
+                                           "Invader removed");
         return 0;
     }
 }
