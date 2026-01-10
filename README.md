@@ -86,6 +86,33 @@ dotnet run --project ScreepsDotNet.Backend.Cli/ScreepsDotNet.Backend.Cli.csproj 
 Every option can also be supplied via `SCREEPSCLI_<option>` environment variables, e.g., `SCREEPSCLI_connection-string`. For convenience we ship `.screepscli.sample`; copy or source it to preload the common Mongo/Redis/asset settings before running the CLI. Commands that support formatted summaries (storage status, system status, etc.) honor `--format table|markdown|json` when not already emitting JSON.
 If you just need something to point at while experimenting, copy `ScreepsDotNet.Backend.Http/mods.sample.json` to a writable location, adjust the bot paths, and edit the sample `customIntentTypes` / `customObjectTypes` entries as needed.
 
+### Storage commands
+
+| Command | Purpose | Key flags |
+| --- | --- | --- |
+| `storage status [--json] [--format table\|markdown\|json]` | Pings Mongo + Redis and emits connection latency/status. | |
+| `storage reseed --confirm RESET [--force] [--json] [--format table\|markdown\|json]` | Drops and reseeds Mongo with the canonical fixtures. | `--force` required when targeting any DB other than the default. |
+
+```powershell
+dotnet run --project ScreepsDotNet.Backend.Cli -- storage status --format markdown
+dotnet run --project ScreepsDotNet.Backend.Cli -- storage reseed --confirm RESET --force --json
+```
+
+### User commands
+
+| Command | Purpose | Key flags |
+| --- | --- | --- |
+| `user show (--username <name> \| --user-id <id>) [--json] [--format table\|markdown\|json]` | Displays profile metadata, credits, and owned rooms. | |
+| `user console --user-id <id> --expression <js> [--hidden] [--json] [--format table\|markdown\|json]` | Queues a console expression for the player. | `--hidden` mirrors the legacy “silent” flag. |
+| `user memory get --user-id <id> [--path <path>] [--segment <0-99>] [--json] [--format table\|markdown\|json]` | Reads root memory, a nested path, or a memory segment. | |
+| `user memory set --user-id <id> (--path <path> --value <json> \| --segment <0-99> --value <json>) [--json] [--format table\|markdown\|json]` | Writes structured data into memory/segments (JSON validated). | |
+
+```powershell
+dotnet run --project ScreepsDotNet.Backend.Cli -- user show --username test-user --format markdown
+dotnet run --project ScreepsDotNet.Backend.Cli -- user console --user-id 57874d42d0ae911e3bd15bbc --expression "console.log(Game.time)" --json
+dotnet run --project ScreepsDotNet.Backend.Cli -- user memory set --user-id 57874d42d0ae911e3bd15bbc --path stats.logLevel --value "\"info\"" --format table
+```
+
 ### Bot commands
 
 | Command | Purpose | Key flags |
@@ -108,6 +135,11 @@ dotnet run --project ScreepsDotNet.Backend.Cli -- bots spawn --bot invader --roo
 | `world dump --room <name> [--room <name> ...] [--shard <name>] [--decoded] [--json]` | Export terrain documents (encoded or decoded) for one or more rooms. | Accepts repeated `--room` flags; `--decoded` expands 2 500 tiles. |
 | `world stats --room <name> [--room <name> ...] [--shard <name>] [--stat <owners1\|power5\|...>] [--json] [--format table\|markdown\|json]` | Query `/api/game/map-stats` for the requested rooms, including ownership, signs, safe-mode status, and mineral hints. | Validates the legacy `ownersN`/`powerN` suffix pattern before hitting storage. |
 | `world overview --room <name> [--shard <name>] [--json] [--format table\|markdown\|json]` | Display controller ownership for a single room (mirrors `/api/game/room-overview`). | Shows `(unowned)` when the controller has no owner/reservation. |
+
+```powershell
+dotnet run --project ScreepsDotNet.Backend.Cli -- world dump --room W1N1 --decoded --format markdown
+dotnet run --project ScreepsDotNet.Backend.Cli -- world stats --room shard1/W21N20 --stat owners1 --json
+```
 
 ### Stronghold commands
 
@@ -172,6 +204,19 @@ Example:
 
 ```powershell
 dotnet run --project ScreepsDotNet.Backend.Cli -- map generate --room W10N5 --shard shard1 --sources 3 --terrain swampHeavy --keeper-lairs --overwrite --json
+```
+
+### Flag commands
+
+| Command | Purpose | Key flags |
+| --- | --- | --- |
+| `flag create --username <name> --room <room> -x/--pos-x <0-49> -y/--pos-y <0-49> --name <flagName> [--color <primary>] [--secondary-color <secondary>] [--json] [--format table\|markdown\|json]` | Creates a flag at the chosen coordinate for the user. | Color names follow the legacy palette (`red`, `purple`, etc.). |
+| `flag change-color --username <name> --room <room> --name <flagName> --color <primary> [--secondary-color <secondary>] [--json] [--format table\|markdown\|json]` | Updates the primary/secondary colors without moving the flag. | |
+| `flag remove --username <name> --room <room> --name <flagName> [--json] [--format table\|markdown\|json]` | Deletes the flag. | |
+
+```powershell
+dotnet run --project ScreepsDotNet.Backend.Cli -- flag create --username test-user --room W1N1 -x 25 -y 23 --name AlphaFlag --color red --secondary-color white --json
+dotnet run --project ScreepsDotNet.Backend.Cli -- flag change-color --username test-user --room W1N1 --name AlphaFlag --color yellow --format markdown
 ```
 
 ### Auth commands
