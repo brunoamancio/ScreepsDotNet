@@ -59,7 +59,7 @@ internal sealed class CliApplication(IServiceProvider serviceProvider, ILogger<C
                 branch.AddBranch("memory", memory => {
                     memory.AddCommand<UserMemoryGetCommand>("get")
                           .WithDescription("Inspect user memory.")
-                          .WithExample("user", "memory", "get", "--user-id", "integration-user", "--path", "stats");
+                          .WithExample("user", "memory", "get", "--user-id", "integration-user", "--segment", "3");
                     memory.AddCommand<UserMemorySetCommand>("set")
                           .WithDescription("Update user memory or segments.")
                           .WithExample("user", "memory", "set", "--user-id", "integration-user", "--value", "{\"logLevel\":\"info\"}");
@@ -168,7 +168,7 @@ internal sealed class CliApplication(IServiceProvider serviceProvider, ILogger<C
                 branch.SetDescription("Flag management.");
                 branch.AddCommand<FlagCreateCommand>("create")
                       .WithDescription("Create a new flag.")
-                      .WithExample("flag", "create", "--username", "test-user", "--room", "W1N1", "--x", "25", "--y", "25", "--name", "Flag1");
+                      .WithExample("flag", "create", "--username", "test-user", "--room", "W1N1", "--pos-x", "25", "--pos-y", "25", "--name", "Flag1");
                 branch.AddCommand<FlagChangeColorCommand>("change-color")
                       .WithDescription("Change an existing flag's color.")
                       .WithExample("flag", "change-color", "--username", "test-user", "--room", "W1N1", "--name", "Flag1", "--color", "Red");
@@ -181,7 +181,7 @@ internal sealed class CliApplication(IServiceProvider serviceProvider, ILogger<C
                 branch.SetDescription("NPC invader management.");
                 branch.AddCommand<InvaderCreateCommand>("create")
                       .WithDescription("Create a new invader.")
-                      .WithExample("invader", "create", "--username", "test-user", "--room", "W1N1", "--x", "25", "--y", "25", "--type", "Melee", "--size", "Small");
+                      .WithExample("invader", "create", "--username", "test-user", "--room", "W1N1", "--pos-x", "25", "--pos-y", "25", "--type", "Melee", "--size", "Small");
                 branch.AddCommand<InvaderRemoveCommand>("remove")
                       .WithDescription("Remove an invader.")
                       .WithExample("invader", "remove", "--username", "test-user", "--id", "60f1a2b3c4d5e6f7a8b9c0d1");

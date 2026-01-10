@@ -26,11 +26,11 @@ internal sealed class FlagCreateCommand(IFlagService flagService, IUserRepositor
         [Description("Optional shard name (e.g., shard1).")]
         public string? Shard { get; init; }
 
-        [CommandOption("--x <COORD>")]
+        [CommandOption("-x|--pos-x <COORD>")]
         [Description("X coordinate (0-49).")]
         public int X { get; init; }
 
-        [CommandOption("--y <COORD>")]
+        [CommandOption("-y|--pos-y <COORD>")]
         [Description("Y coordinate (0-49).")]
         public int Y { get; init; }
 

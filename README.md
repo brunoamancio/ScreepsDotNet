@@ -90,7 +90,7 @@ If you just need something to point at while experimenting, copy `ScreepsDotNet.
 | Command | Purpose | Key flags |
 | --- | --- | --- |
 | `bots list [--json]` | Enumerate bot AI bundles discovered from `mods.json`. | `--json` returns structured metadata. |
-| `bots spawn --bot <name> --room <room> [--username <name>] [--cpu <int>] [--gcl <int>] [--x <0-49> --y <0-49>] [--json]` | Create a bot user, upload its modules, and place a spawn. | Coordinates default to a valid pad unless both `--x`/`--y` are provided. |
+| `bots spawn --bot <name> --room <room> [--username <name>] [--cpu <int>] [--gcl <int>] [-x/--spawn-x <0-49> -y/--spawn-y <0-49>] [--json]` | Create a bot user, upload its modules, and place a spawn. | Coordinates default to a valid pad unless both `-x`/`-y` (or their long forms) are provided. |
 | `bots reload --bot <name> [--json]` | Reload scripts for every user currently running the target AI. | Exit code `0` even when no users matched. |
 | `bots remove --username <name> [--json]` | Delete a bot-controlled user (with respawn/cleanup). | Exit code `1` if the user is missing or not a bot. |
 
@@ -113,7 +113,7 @@ dotnet run --project ScreepsDotNet.Backend.Cli -- bots spawn --bot invader --roo
 | Command | Purpose | Key flags |
 | --- | --- | --- |
 | `strongholds templates [--json]` | Display the embedded stronghold templates and deposit types. | |
-| `strongholds spawn --room <name> [--shard <name>] [--template <name>] [--x <0-49> --y <0-49>] [--owner <userId>] [--deploy-delay <ticks>] [--json]` | Place an NPC stronghold in the room, optionally forcing template/coords and shard. | Coordinates default to a valid placement if omitted. |
+| `strongholds spawn --room <name> [--shard <name>] [--template <name>] [-x/--pos-x <0-49> -y/--pos-y <0-49>] [--owner <userId>] [--deploy-delay <ticks>] [--json]` | Place an NPC stronghold in the room, optionally forcing template/coords and shard. | Coordinates default to a valid placement if omitted. |
 | `strongholds expand --room <name> [--shard <name>] [--json]` | Force the invader core in the room to queue its next expansion. | Exit code `1` if no eligible core exists. |
 
 Example:
@@ -126,13 +126,13 @@ dotnet run --project ScreepsDotNet.Backend.Cli -- strongholds spawn --room W5N3 
 
 | Command | Purpose | Key flags |
 | --- | --- | --- |
-| `invader create --room <name> [--shard <name>] (--user-id <id> \| --username <name>) --x <0-49> --y <0-49> [--type <Melee\|Ranged\|Healer>] [--size <Small\|Big>] [--boosted]` | Summon an NPC invader in an owned or reserved room. | Accepts either explicit `--shard` or the legacy `shard/Room` syntax. |
+| `invader create --room <name> [--shard <name>] (--user-id <id> \| --username <name>) -x/--pos-x <0-49> -y/--pos-y <0-49> [--type <Melee\|Ranged\|Healer>] [--size <Small\|Big>] [--boosted]` | Summon an NPC invader in an owned or reserved room. | Accepts either explicit `--shard` or the legacy `shard/Room` syntax. |
 | `invader remove --id <objectId> (--user-id <id> \| --username <name>)` | Remove a previously summoned invader (requires the original summoner). | |
 
 Example:
 
 ```powershell
-dotnet run --project ScreepsDotNet.Backend.Cli -- invader create --username IntegrationUser --room W21N20 --shard shard1 --x 12 --y 18 --type Ranged
+dotnet run --project ScreepsDotNet.Backend.Cli -- invader create --username IntegrationUser --room W21N20 --shard shard1 -x 12 -y 18 --type Ranged
 ```
 
 ### System commands

@@ -38,12 +38,12 @@ internal sealed class BotSpawnCommand(IBotControlService botControlService, ILog
         [Description("Initial Global Control Level (default: 1).")]
         public int? GlobalControlLevel { get; init; }
 
-        [CommandOption("--x <COORD>")]
-        [Description("Spawn X coordinate (0-49). Requires --y.")]
+        [CommandOption("-x|--spawn-x <COORD>")]
+        [Description("Spawn X coordinate (0-49). Requires -y/--spawn-y.")]
         public int? SpawnX { get; init; }
 
-        [CommandOption("--y <COORD>")]
-        [Description("Spawn Y coordinate (0-49). Requires --x.")]
+        [CommandOption("-y|--spawn-y <COORD>")]
+        [Description("Spawn Y coordinate (0-49). Requires -x/--spawn-x.")]
         public int? SpawnY { get; init; }
 
         [CommandOption("--json")]
@@ -58,7 +58,7 @@ internal sealed class BotSpawnCommand(IBotControlService botControlService, ILog
                 return ValidationResult.Error("Room name is required.");
 
             if (SpawnX.HasValue ^ SpawnY.HasValue)
-                return ValidationResult.Error("Both --x and --y must be set together.");
+                return ValidationResult.Error("Both -x/--spawn-x and -y/--spawn-y must be set together.");
 
             if (SpawnX is < 0 or > 49)
                 return ValidationResult.Error("Spawn X must be between 0 and 49.");

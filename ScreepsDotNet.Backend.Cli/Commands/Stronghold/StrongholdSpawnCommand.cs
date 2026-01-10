@@ -27,12 +27,12 @@ internal sealed class StrongholdSpawnCommand(IStrongholdControlService stronghol
         [Description("Optional shard (e.g., shard2).")]
         public string? Shard { get; init; }
 
-        [CommandOption("--x <COORD>")]
-        [Description("Origin X coordinate (0-49). Requires --y.")]
+        [CommandOption("-x|--pos-x <COORD>")]
+        [Description("Origin X coordinate (0-49). Requires -y/--pos-y.")]
         public int? X { get; init; }
 
-        [CommandOption("--y <COORD>")]
-        [Description("Origin Y coordinate (0-49). Requires --x.")]
+        [CommandOption("-y|--pos-y <COORD>")]
+        [Description("Origin Y coordinate (0-49). Requires -x/--pos-x.")]
         public int? Y { get; init; }
 
         [CommandOption("--owner <USERID>")]
@@ -52,7 +52,7 @@ internal sealed class StrongholdSpawnCommand(IStrongholdControlService stronghol
                 return ValidationResult.Error("Room name is required.");
 
             if (X.HasValue ^ Y.HasValue)
-                return ValidationResult.Error("Both --x and --y must be specified together.");
+                return ValidationResult.Error("Both -x/--pos-x and -y/--pos-y must be specified together.");
 
             if (X is < 0 or > 49)
                 return ValidationResult.Error("X must be within 0-49.");
