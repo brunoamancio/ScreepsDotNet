@@ -32,6 +32,11 @@
 - All operator-facing CLI commands (auth issue/resolve/revoke, user console/memory helpers, system/storage/bot/map tooling, and even the root command) run through `FormattableCommandSettings` + `ICommandOutputFormatter`. Non-JSON output honors `--format table|markdown|json`, so scripted runs can rely on markdown/JSON without breaking the legacy table defaults.
 - Setting `SCREEPSCLI_FORMAT` (e.g., `export SCREEPSCLI_FORMAT=markdown`) configures the default output style for every command; individual `--format` flags still override the environment.
 - Convenience wrappers live at the repo root: use `./cli.sh <args>` on Unix/macOS or `pwsh ./cli.ps1 <args>` on Windows to avoid retyping `dotnet run --project ... --`.
+- When seed data changes, follow this workflow so local + CI environments stay consistent:
+  1. `docker compose down -v && docker compose up -d` to reset Mongo/Redis.
+  2. Run `./cli.sh storage reseed --confirm RESET --force` (or the PowerShell wrapper) to replay seeds and prove the confirmation prompt wiring.
+  3. Execute `dotnet test ScreepsDotNet.slnx --filter WorldEndpointsIntegrationTests` (or the full suite) so fresh world data is verified via Testcontainers.
+  4. Spot-check via `./cli.sh world dump --room W1N1 --decoded --format markdown`.
 - `ScreepsDotNet.Storage.MongoRedis/` – MongoDB/Redis infrastructure (adapter + repositories) used by the HTTP host.
   - `.editorconfig`, `.globalconfig`, `.gitattributes`, `Directory.Build.props` – shared tooling settings.
   - `docker/` – supporting assets (Mongo init scripts, etc.).

@@ -77,6 +77,25 @@ Shortcuts:
 - **Unix/macOS:** `./cli.sh storage status`
 - **Windows PowerShell:** `pwsh ./cli.ps1 system status --json`
 
+### Common workflow: reset seed + rerun world tests
+
+Use this flow when you need a clean database, updated seed data, and a verification pass on the world endpoints:
+
+```powershell
+# 1. Reset the local Docker volumes (optional but recommended when seed data changes)
+docker compose down -v
+docker compose up -d
+
+# 2. Reseed Mongo via the CLI (ensures RESET confirmation is wired)
+./cli.sh storage reseed --confirm RESET --force
+
+# 3. Run the world integration tests (includes Testcontainers coverage)
+dotnet test ScreepsDotNet.slnx --filter WorldEndpointsIntegrationTests --nologo
+
+# 4. Use the CLI to spot-check world data
+./cli.sh world dump --room W1N1 --decoded --format markdown
+```
+
 ### Global switches
 
 | Option | Description |
