@@ -1,11 +1,11 @@
 ﻿namespace ScreepsDotNet.Backend.Cli.Commands.Version;
 
-using global::System.Text.Json;
+using global::System.Globalization;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using ScreepsDotNet.Backend.Cli.Formatting;
 using ScreepsDotNet.Backend.Cli.Infrastructure;
 using ScreepsDotNet.Backend.Core.Services;
-using Spectre.Console;
 using Spectre.Console.Cli;
 
 internal sealed class VersionCommand(
@@ -13,9 +13,7 @@ internal sealed class VersionCommand(
     ILogger<VersionCommand>? logger = null,
     IHostApplicationLifetime? lifetime = null, ICommandOutputFormatter? outputFormatter = null) : CommandHandler<VersionCommand.Settings>(logger, lifetime, outputFormatter)
 {
-    private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
-
-    public sealed class Settings : CommandSettings
+    public sealed class Settings : FormattableCommandSettings
     {
         [CommandOption("--json")]
         public bool OutputJson { get; init; }
@@ -26,18 +24,18 @@ internal sealed class VersionCommand(
         var info = await versionInfoProvider.GetAsync(cancellationToken).ConfigureAwait(false);
 
         if (settings.OutputJson) {
-            var payload = JsonSerializer.Serialize(info, JsonOptions);
-            OutputFormatter.WriteLine(payload);
+            OutputFormatter.WriteJson(info);
             return 0;
         }
 
-        var table = new Table().AddColumn("Field").AddColumn("Value");
-        table.AddRow("Protocol", info.Protocol.ToString());
-        table.AddRow("Use Native Auth", info.UseNativeAuth.ToString());
-        table.AddRow("Users", info.Users.ToString());
-        table.AddRow("Welcome Text", info.ServerData.WelcomeText);
-        table.AddRow("Package Version", info.PackageVersion ?? "n/a");
-        OutputFormatter.WriteTable(table);
+        OutputFormatter.WriteKeyValueTable([
+                                               ("Protocol", info.Protocol.ToString(CultureInfo.InvariantCulture)),
+                                               ("Use Native Auth", info.UseNativeAuth ? "true" : "false"),
+                                               ("Users", info.Users.ToString(CultureInfo.InvariantCulture)),
+                                               ("Welcome Text", info.ServerData.WelcomeText),
+                                               ("Package Version", info.PackageVersion ?? "n/a")
+                                           ],
+                                           "Version info");
         return 0;
     }
 }

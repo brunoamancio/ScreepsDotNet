@@ -2,13 +2,14 @@
 
 using global::System.Text.Json;
 using Microsoft.Extensions.Logging;
+using ScreepsDotNet.Backend.Cli.Formatting;
 using ScreepsDotNet.Backend.Core.Repositories;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
 internal sealed class UserMemorySetCommand(IUserMemoryRepository memoryRepository, ILogger<UserMemorySetCommand>? logger = null, IHostApplicationLifetime? lifetime = null, ICommandOutputFormatter? outputFormatter = null) : CommandHandler<UserMemorySetCommand.Settings>(logger, lifetime, outputFormatter)
 {
-    public sealed class Settings : CommandSettings
+    public sealed class Settings : FormattableCommandSettings
     {
         [CommandOption("--user-id <ID>")]
         public string? UserId { get; init; }
@@ -25,8 +26,15 @@ internal sealed class UserMemorySetCommand(IUserMemoryRepository memoryRepositor
         [CommandOption("--data <STRING>")]
         public string? SegmentData { get; init; }
 
+        [CommandOption("--json")]
+        public bool OutputJson { get; init; }
+
         public override ValidationResult Validate()
         {
+            var baseResult = base.Validate();
+            if (!baseResult.Successful)
+                return baseResult;
+
             if (string.IsNullOrWhiteSpace(UserId))
                 return ValidationResult.Error("Specify --user-id.");
 
@@ -51,7 +59,23 @@ internal sealed class UserMemorySetCommand(IUserMemoryRepository memoryRepositor
             await memoryRepository.SetMemorySegmentAsync(settings.UserId!, segment, settings.SegmentData, cancellationToken).ConfigureAwait(false);
             if (settings.UserId == null) return 0;
 
-            OutputFormatter.WriteMarkupLine("[green]Updated memory segment {0} for {1}.[/]", segment, settings.UserId);
+            if (settings.OutputJson) {
+                OutputFormatter.WriteJson(new
+                {
+                    success = true,
+                    settings.UserId,
+                    Segment = segment
+                });
+            }
+            else {
+                OutputFormatter.WriteKeyValueTable([
+                                                       ("User", settings.UserId),
+                                                       ("Segment", segment.ToString("D")),
+                                                       ("Updated", "yes")
+                                                   ],
+                                                   "Memory segment updated");
+            }
+
             Logger.LogInformation("Updated segment {Segment} for {UserId}.", segment, settings.UserId);
             return 0;
         }
@@ -60,7 +84,23 @@ internal sealed class UserMemorySetCommand(IUserMemoryRepository memoryRepositor
         await memoryRepository.UpdateMemoryAsync(settings.UserId!, settings.Path, json, cancellationToken).ConfigureAwait(false);
         if (settings.UserId == null) return 0;
 
-        OutputFormatter.WriteMarkupLine("[green]Updated memory for {0} at path '{1}'.[/]", settings.UserId, settings.Path ?? "(root)");
+        if (settings.OutputJson) {
+            OutputFormatter.WriteJson(new
+            {
+                success = true,
+                settings.UserId,
+                Path = settings.Path ?? "(root)"
+            });
+        }
+        else {
+            OutputFormatter.WriteKeyValueTable([
+                                                   ("User", settings.UserId),
+                                                   ("Path", settings.Path ?? "(root)"),
+                                                   ("Updated", "yes")
+                                               ],
+                                               "User memory updated");
+        }
+
         Logger.LogInformation("Updated memory for {UserId} at path {Path}.", settings.UserId, settings.Path ?? "(root)");
         return 0;
     }

@@ -3,17 +3,20 @@
 using global::System;
 using global::System.Collections.Generic;
 using global::System.Linq;
-using global::System.Text.Json;
 using ScreepsDotNet.Backend.Core.Models;
 using ScreepsDotNet.Backend.Core.Parsing;
 using ScreepsDotNet.Backend.Core.Repositories;
+using ScreepsDotNet.Backend.Cli.Formatting;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
-internal sealed class WorldDumpCommand(IRoomTerrainRepository terrainRepository, ILogger<WorldDumpCommand>? logger = null, IHostApplicationLifetime? lifetime = null, ICommandOutputFormatter? outputFormatter = null) : CommandHandler<WorldDumpCommand.Settings>(logger, lifetime, outputFormatter)
+internal sealed class WorldDumpCommand(IRoomTerrainRepository terrainRepository, ILogger<WorldDumpCommand>? logger = null, IHostApplicationLifetime? lifetime = null, ICommandOutputFormatter? outputFormatter = null)
+    : CommandHandler<WorldDumpCommand.Settings>(logger, lifetime, outputFormatter)
 {
-    private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
-    public sealed class Settings : CommandSettings
+    private static readonly string[] EncodedHeaders = ["Room", "Type", "Terrain"];
+    private static readonly string[] DecodedHeaders = ["Room", "Type", "Tiles"];
+
+    public sealed class Settings : FormattableCommandSettings
     {
         [CommandOption("--room <NAME>")]
         public string[] Rooms { get; init; } = [];
@@ -29,6 +32,10 @@ internal sealed class WorldDumpCommand(IRoomTerrainRepository terrainRepository,
 
         public override ValidationResult Validate()
         {
+            var baseResult = base.Validate();
+            if (!baseResult.Successful)
+                return baseResult;
+
             if (Rooms.Length == 0)
                 return ValidationResult.Error("Specify at least one --room.");
 
@@ -57,44 +64,55 @@ internal sealed class WorldDumpCommand(IRoomTerrainRepository terrainRepository,
                 var decoded = entries.Select(e => new
                 {
                     e.RoomName,
+                    e.ShardName,
                     e.Type,
                     Tiles = DecodeTerrain(e.Terrain)
                 });
-                OutputFormatter.WriteLine(JsonSerializer.Serialize(decoded, JsonOptions));
+                OutputFormatter.WriteJson(decoded);
                 return 0;
             }
 
-            OutputFormatter.WriteLine(JsonSerializer.Serialize(entries, JsonOptions));
+            OutputFormatter.WriteJson(entries);
             return 0;
         }
 
-        foreach (var entry in entries) {
-            OutputFormatter.WriteMarkupLine($"[bold]{entry.RoomName}[/] ({entry.Type ?? "terrain"})");
-            if (settings.DecodeTiles) {
-                var tiles = DecodeTerrain(entry.Terrain);
-                OutputFormatter.WriteMarkupLine($"Tiles: {tiles.Count}");
-            }
-            else
-                OutputFormatter.WriteMarkupLine(entry.Terrain ?? "(empty)");
-
-            OutputFormatter.WriteLine(string.Empty);
-        }
-
+        var rows = BuildRows(entries, settings.DecodeTiles);
+        var headers = settings.DecodeTiles ? DecodedHeaders : EncodedHeaders;
+        OutputFormatter.WriteTabularData("Room terrain", headers, rows);
         return 0;
     }
 
-    private static IReadOnlyList<object> DecodeTerrain(string? encoded)
+    private static IReadOnlyList<IReadOnlyList<string>> BuildRows(IReadOnlyList<RoomTerrainData> entries, bool decoded)
+    {
+        var rows = new List<IReadOnlyList<string>>(entries.Count);
+        foreach (var entry in entries) {
+            var displayRoom = FormatRoom(entry.RoomName, entry.ShardName);
+            var type = entry.Type ?? "terrain";
+
+            if (decoded) {
+                var tiles = DecodeTerrain(entry.Terrain);
+                rows.Add([displayRoom, type, $"{tiles.Count} tiles"]);
+                continue;
+            }
+
+            rows.Add([displayRoom, type, entry.Terrain ?? "(empty)"]);
+        }
+
+        return rows;
+    }
+
+    private static IReadOnlyList<TerrainTile> DecodeTerrain(string? encoded)
     {
         if (string.IsNullOrEmpty(encoded))
             return [];
 
-        var tiles = new List<object>(encoded.Length);
+        var tiles = new List<TerrainTile>(encoded.Length);
         for (var index = 0; index < encoded.Length && index < 2500; index++) {
             var value = DecodeChar(encoded[index]);
             var x = index % 50;
             var y = index / 50;
             var terrain = ResolveTerrain(value);
-            tiles.Add(new { x, y, terrain });
+            tiles.Add(new TerrainTile(x, y, terrain));
         }
 
         return tiles;
@@ -119,4 +137,9 @@ internal sealed class WorldDumpCommand(IRoomTerrainRepository terrainRepository,
             return "swamp";
         return "plain";
     }
+
+    private static string FormatRoom(string roomName, string? shardName)
+        => string.IsNullOrWhiteSpace(shardName) ? roomName : $"{shardName}/{roomName}";
+
+    private sealed record TerrainTile(int X, int Y, string Terrain);
 }

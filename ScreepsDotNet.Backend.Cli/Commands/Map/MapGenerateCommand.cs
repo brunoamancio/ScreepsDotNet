@@ -3,7 +3,6 @@
 using global::System;
 using global::System.ComponentModel;
 using global::System.Globalization;
-using global::System.Text.Json;
 using ScreepsDotNet.Backend.Cli.Formatting;
 using ScreepsDotNet.Backend.Core.Models.Map;
 using ScreepsDotNet.Backend.Core.Parsing;
@@ -13,8 +12,6 @@ using Spectre.Console.Cli;
 
 internal sealed class MapGenerateCommand(IMapControlService mapControlService, ILogger<MapGenerateCommand>? logger = null, IHostApplicationLifetime? lifetime = null, ICommandOutputFormatter? outputFormatter = null) : CommandHandler<MapGenerateCommand.Settings>(logger, lifetime, outputFormatter)
 {
-    private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
-
     public sealed class Settings : FormattableCommandSettings
     {
         [CommandOption("--room <NAME>")]
@@ -96,7 +93,7 @@ internal sealed class MapGenerateCommand(IMapControlService mapControlService, I
         var result = await mapControlService.GenerateRoomAsync(options, cancellationToken).ConfigureAwait(false);
 
         if (settings.OutputJson) {
-            OutputFormatter.WriteLine(JsonSerializer.Serialize(result, JsonOptions));
+            OutputFormatter.WriteJson(result);
             return 0;
         }
 
