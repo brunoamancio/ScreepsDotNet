@@ -1,12 +1,14 @@
-﻿using ScreepsDotNet.Backend.Core.Services;
+﻿using System.Globalization;
+using ScreepsDotNet.Backend.Core.Services;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
 namespace ScreepsDotNet.Backend.Cli.Commands.System;
 
-internal sealed class SystemTickSetCommand(ISystemControlService controlService, ILogger<SystemTickSetCommand>? logger = null, IHostApplicationLifetime? lifetime = null, ICommandOutputFormatter? outputFormatter = null) : CommandHandler<SystemTickSetCommand.Settings>(logger, lifetime, outputFormatter)
+internal sealed class SystemTickSetCommand(ISystemControlService controlService, ILogger<SystemTickSetCommand>? logger = null, IHostApplicationLifetime? lifetime = null, ICommandOutputFormatter? outputFormatter = null)
+    : CommandHandler<SystemTickSetCommand.Settings>(logger, lifetime, outputFormatter)
 {
-    public sealed class Settings : CommandSettings
+    public sealed class Settings : FormattableCommandSettings
     {
         [CommandOption("--ms <MILLISECONDS>")]
         public int? DurationMilliseconds { get; init; }
@@ -32,7 +34,10 @@ internal sealed class SystemTickSetCommand(ISystemControlService controlService,
             return 0;
         }
 
-        OutputFormatter.WriteMarkupLine($"[green]Tick duration set to {settings.DurationMilliseconds} ms.[/]");
+        OutputFormatter.WriteKeyValueTable([
+                                               ("Tick Duration (ms)", settings.DurationMilliseconds.Value.ToString(CultureInfo.InvariantCulture))
+                                           ],
+                                           "Tick duration updated");
         return 0;
     }
 }

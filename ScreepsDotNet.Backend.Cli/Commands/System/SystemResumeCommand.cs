@@ -1,11 +1,13 @@
-﻿using ScreepsDotNet.Backend.Core.Services;
+﻿using System.Globalization;
+using ScreepsDotNet.Backend.Core.Services;
 using Spectre.Console.Cli;
 
 namespace ScreepsDotNet.Backend.Cli.Commands.System;
 
-internal sealed class SystemResumeCommand(ISystemControlService controlService, ILogger<SystemResumeCommand>? logger = null, IHostApplicationLifetime? lifetime = null, ICommandOutputFormatter? outputFormatter = null) : CommandHandler<SystemResumeCommand.Settings>(logger, lifetime, outputFormatter)
+internal sealed class SystemResumeCommand(ISystemControlService controlService, ILogger<SystemResumeCommand>? logger = null, IHostApplicationLifetime? lifetime = null, ICommandOutputFormatter? outputFormatter = null)
+    : CommandHandler<SystemResumeCommand.Settings>(logger, lifetime, outputFormatter)
 {
-    public sealed class Settings : CommandSettings
+    public sealed class Settings : FormattableCommandSettings
     {
         [CommandOption("--json")]
         public bool OutputJson { get; init; }
@@ -19,7 +21,11 @@ internal sealed class SystemResumeCommand(ISystemControlService controlService, 
             return 0;
         }
 
-        OutputFormatter.WriteMarkupLine("[green]Simulation loop resumed.[/]");
+        OutputFormatter.WriteKeyValueTable([
+                                               ("Simulation", "resumed"),
+                                               ("Timestamp", DateTimeOffset.UtcNow.ToString("u", CultureInfo.InvariantCulture))
+                                           ],
+                                           "System resume");
         return 0;
     }
 }

@@ -4,9 +4,10 @@ using Spectre.Console.Cli;
 
 namespace ScreepsDotNet.Backend.Cli.Commands.System;
 
-internal sealed class SystemMessageCommand(ISystemControlService controlService, ILogger<SystemMessageCommand>? logger = null, IHostApplicationLifetime? lifetime = null, ICommandOutputFormatter? outputFormatter = null) : CommandHandler<SystemMessageCommand.Settings>(logger, lifetime, outputFormatter)
+internal sealed class SystemMessageCommand(ISystemControlService controlService, ILogger<SystemMessageCommand>? logger = null, IHostApplicationLifetime? lifetime = null, ICommandOutputFormatter? outputFormatter = null)
+    : CommandHandler<SystemMessageCommand.Settings>(logger, lifetime, outputFormatter)
 {
-    public sealed class Settings : CommandSettings
+    public sealed class Settings : FormattableCommandSettings
     {
         [CommandArgument(0, "<MESSAGE>")]
         public string Message { get; init; } = string.Empty;
@@ -32,7 +33,11 @@ internal sealed class SystemMessageCommand(ISystemControlService controlService,
             return 0;
         }
 
-        OutputFormatter.WriteMarkupLine("[green]Server message dispatched.[/]");
+        OutputFormatter.WriteKeyValueTable([
+                                               ("Message", settings.Message),
+                                               ("Dispatched", "yes")
+                                           ],
+                                           "System message");
         return 0;
     }
 }
