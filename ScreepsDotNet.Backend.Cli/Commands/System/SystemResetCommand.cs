@@ -7,10 +7,14 @@ using Spectre.Console.Cli;
 
 namespace ScreepsDotNet.Backend.Cli.Commands.System;
 
-internal sealed class SystemResetCommand(ISeedDataService seedDataService, IOptions<MongoRedisStorageOptions> storageOptions, ILogger<SystemResetCommand>? logger = null, IHostApplicationLifetime? lifetime = null, ICommandOutputFormatter? outputFormatter = null)
+internal sealed class SystemResetCommand(ISeedDataService seedDataService,
+    IOptions<MongoRedisStorageOptions> storageOptions,
+    ILogger<SystemResetCommand>? logger = null,
+    IHostApplicationLifetime? lifetime = null,
+    ICommandOutputFormatter? outputFormatter = null)
     : CommandHandler<SystemResetCommand.Settings>(logger, lifetime, outputFormatter)
 {
-    public sealed class Settings : FormattableCommandSettings
+    public sealed class Settings : FormattableCommandSettings, IConfirmationSettings
     {
         [CommandOption("--force")]
         public bool Force { get; init; }
@@ -21,15 +25,16 @@ internal sealed class SystemResetCommand(ISeedDataService seedDataService, IOpti
 
         [CommandOption("--json")]
         public bool OutputJson { get; init; }
+
+        string? IConfirmationSettings.ConfirmationValue => Confirm;
+
+        string IConfirmationSettings.RequiredConfirmationToken => "RESET";
+
+        string IConfirmationSettings.ConfirmationHelpText => "Confirmation required. Re-run with --confirm RESET to proceed.";
     }
 
     protected override async Task<int> ExecuteCommandAsync(CommandContext context, Settings settings, CancellationToken cancellationToken)
     {
-        if (!string.Equals(settings.Confirm, "RESET", StringComparison.OrdinalIgnoreCase)) {
-            Logger.LogError("Confirmation required. Re-run with --confirm RESET to proceed.");
-            return 1;
-        }
-
         var options = storageOptions.Value;
         if (string.IsNullOrWhiteSpace(options.MongoConnectionString) || string.IsNullOrWhiteSpace(options.MongoDatabase)) {
             Logger.LogError("Mongo connection information is missing.");

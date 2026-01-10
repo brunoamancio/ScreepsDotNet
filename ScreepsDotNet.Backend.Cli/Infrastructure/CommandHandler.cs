@@ -1,5 +1,6 @@
 namespace ScreepsDotNet.Backend.Cli.Infrastructure;
 
+using System;
 using System.Diagnostics;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -20,26 +21,42 @@ internal abstract class CommandHandler<TSettings>(ILogger? logger, IHostApplicat
         using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, Lifetime.ApplicationStopping);
         var token = linkedCts.Token;
         var stopwatch = Stopwatch.StartNew();
-        Logger.LogInformation("Command {Command} starting.", GetType().Name);
+        var commandName = context?.Name ?? GetType().Name;
+        Logger.LogInformation("Command {Command} starting.", commandName);
 
         var previousFormat = OutputFormatter.PreferredFormat;
         if (settings is IFormattableCommandSettings { PreferredOutputFormat: { } format })
             OutputFormatter.SetPreferredFormat(format);
 
+        if (settings is IConfirmationSettings confirmationSettings) {
+            if (!string.Equals(confirmationSettings.ConfirmationValue,
+                               confirmationSettings.RequiredConfirmationToken,
+                               StringComparison.OrdinalIgnoreCase)) {
+                stopwatch.Stop();
+                Logger.LogError("Command {Command} requires confirmation token '{Token}'.",
+                                commandName,
+                                confirmationSettings.RequiredConfirmationToken);
+                OutputFormatter.WriteLine(confirmationSettings.ConfirmationHelpText);
+                if (OutputFormatter.PreferredFormat != previousFormat)
+                    OutputFormatter.SetPreferredFormat(previousFormat);
+                return 1;
+            }
+        }
+
         try {
-            var exitCode = await ExecuteCommandAsync(context, settings, token).ConfigureAwait(false);
+            var exitCode = await ExecuteCommandAsync(context!, settings, token).ConfigureAwait(false);
             stopwatch.Stop();
-            Logger.LogInformation("Command {Command} finished in {Elapsed}", GetType().Name, stopwatch.Elapsed);
+            Logger.LogInformation("Command {Command} finished in {Elapsed}", commandName, stopwatch.Elapsed);
             return exitCode;
         }
         catch (OperationCanceledException) when (token.IsCancellationRequested) {
             stopwatch.Stop();
-            Logger.LogWarning("Command {Command} cancelled after {Elapsed}", GetType().Name, stopwatch.Elapsed);
+            Logger.LogWarning("Command {Command} cancelled after {Elapsed}", commandName, stopwatch.Elapsed);
             return -2;
         }
         catch (Exception ex) {
             stopwatch.Stop();
-            Logger.LogError(ex, "Command {Command} failed after {Elapsed}", GetType().Name, stopwatch.Elapsed);
+            Logger.LogError(ex, "Command {Command} failed after {Elapsed}", commandName, stopwatch.Elapsed);
             return -1;
         }
         finally {

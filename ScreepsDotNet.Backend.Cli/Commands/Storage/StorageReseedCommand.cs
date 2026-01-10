@@ -3,6 +3,7 @@
 using global::System.ComponentModel;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using ScreepsDotNet.Backend.Cli.Infrastructure;
 using ScreepsDotNet.Backend.Cli.Formatting;
 using ScreepsDotNet.Backend.Core.Seeding;
 using ScreepsDotNet.Storage.MongoRedis.Options;
@@ -16,7 +17,7 @@ internal sealed class StorageReseedCommand(ISeedDataService seedDataService,
     ICommandOutputFormatter? outputFormatter = null)
     : CommandHandler<StorageReseedCommand.Settings>(logger, lifetime, outputFormatter)
 {
-    public sealed class Settings : FormattableCommandSettings
+    public sealed class Settings : FormattableCommandSettings, IConfirmationSettings
     {
         [CommandOption("--force")]
         public bool Force { get; init; }
@@ -27,15 +28,16 @@ internal sealed class StorageReseedCommand(ISeedDataService seedDataService,
 
         [CommandOption("--json")]
         public bool OutputJson { get; init; }
+
+        string? IConfirmationSettings.ConfirmationValue => Confirm;
+
+        string IConfirmationSettings.RequiredConfirmationToken => "RESET";
+
+        string IConfirmationSettings.ConfirmationHelpText => "Confirmation required. Re-run with --confirm RESET to proceed.";
     }
 
     protected override async Task<int> ExecuteCommandAsync(CommandContext context, Settings settings, CancellationToken cancellationToken)
     {
-        if (!string.Equals(settings.Confirm, "RESET", StringComparison.OrdinalIgnoreCase)) {
-            Logger.LogError("Confirmation required. Re-run with --confirm RESET to proceed.");
-            return 1;
-        }
-
         var options = storageOptions.Value;
         if (string.IsNullOrWhiteSpace(options.MongoConnectionString) || string.IsNullOrWhiteSpace(options.MongoDatabase)) {
             Logger.LogError("Mongo connection information is missing.");
