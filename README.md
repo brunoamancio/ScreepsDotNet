@@ -91,9 +91,9 @@ If you just need something to point at while experimenting, copy `ScreepsDotNet.
 | Command | Purpose | Key flags |
 | --- | --- | --- |
 | `bots list [--json] [--format table\|markdown\|json]` | Enumerate bot AI bundles discovered from `mods.json`. | Non-JSON runs default to a Spectre table; `--format markdown/json` helps automation. |
-| `bots spawn --bot <name> --room <room> [--username <name>] [--cpu <int>] [--gcl <int>] [-x/--spawn-x <0-49> -y/--spawn-y <0-49>] [--json]` | Create a bot user, upload its modules, and place a spawn. | Coordinates default to a valid pad unless both `-x`/`-y` (or their long forms) are provided. |
-| `bots reload --bot <name> [--json]` | Reload scripts for every user currently running the target AI. | Exit code `0` even when no users matched. |
-| `bots remove --username <name> [--json]` | Delete a bot-controlled user (with respawn/cleanup). | Exit code `1` if the user is missing or not a bot. |
+| `bots spawn --bot <name> --room <room> [--username <name>] [--cpu <int>] [--gcl <int>] [-x/--spawn-x <0-49> -y/--spawn-y <0-49>] [--json] [--format table\|markdown\|json]` | Create a bot user, upload its modules, and place a spawn. | Coordinates default to a valid pad unless both `-x`/`-y` (or their long forms) are provided. |
+| `bots reload --bot <name> [--json] [--format table\|markdown\|json]` | Reload scripts for every user currently running the target AI. | Exit code `0` even when no users matched. |
+| `bots remove --username <name> [--json] [--format table\|markdown\|json]` | Delete a bot-controlled user (with respawn/cleanup). | Exit code `1` if the user is missing or not a bot. |
 
 Example:
 
@@ -114,8 +114,8 @@ dotnet run --project ScreepsDotNet.Backend.Cli -- bots spawn --bot invader --roo
 | Command | Purpose | Key flags |
 | --- | --- | --- |
 | `strongholds templates [--json] [--format table\|markdown\|json]` | Display the embedded stronghold templates and deposit types. | |
-| `strongholds spawn --room <name> [--shard <name>] [--template <name>] [-x/--pos-x <0-49> -y/--pos-y <0-49>] [--owner <userId>] [--deploy-delay <ticks>] [--json]` | Place an NPC stronghold in the room, optionally forcing template/coords and shard. | Coordinates default to a valid placement if omitted. |
-| `strongholds expand --room <name> [--shard <name>] [--json]` | Force the invader core in the room to queue its next expansion. | Exit code `1` if no eligible core exists. |
+| `strongholds spawn --room <name> [--shard <name>] [--template <name>] [-x/--pos-x <0-49> -y/--pos-y <0-49>] [--owner <userId>] [--deploy-delay <ticks>] [--json] [--format table\|markdown\|json]` | Place an NPC stronghold in the room, optionally forcing template/coords and shard. | Coordinates default to a valid placement if omitted. |
+| `strongholds expand --room <name> [--shard <name>] [--json] [--format table\|markdown\|json]` | Force the invader core in the room to queue its next expansion. | Exit code `1` if no eligible core exists. |
 
 Example:
 

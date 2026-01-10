@@ -3,6 +3,7 @@
 using global::System;
 using global::System.ComponentModel;
 using global::System.Text.Json;
+using ScreepsDotNet.Backend.Cli.Formatting;
 using ScreepsDotNet.Backend.Core.Models.Strongholds;
 using ScreepsDotNet.Backend.Core.Parsing;
 using ScreepsDotNet.Backend.Core.Services;
@@ -13,7 +14,7 @@ internal sealed class StrongholdSpawnCommand(IStrongholdControlService stronghol
 {
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
 
-    public sealed class Settings : CommandSettings
+    public sealed class Settings : FormattableCommandSettings
     {
         [CommandOption("--room <NAME>")]
         [Description("Room to deploy the stronghold (e.g., W5N3).")]
@@ -88,11 +89,12 @@ internal sealed class StrongholdSpawnCommand(IStrongholdControlService stronghol
             return 0;
         }
 
-        var table = new Table().AddColumn("Property").AddColumn("Value");
-        table.AddRow("Room", string.IsNullOrWhiteSpace(result.ShardName) ? result.RoomName : $"{result.ShardName}/{result.RoomName}");
-        table.AddRow("Template", result.TemplateName);
-        table.AddRow("Stronghold ID", result.InvaderCoreId);
-        OutputFormatter.WriteTable(table);
+        OutputFormatter.WriteKeyValueTable([
+                                               ("Room", string.IsNullOrWhiteSpace(result.ShardName) ? result.RoomName : $"{result.ShardName}/{result.RoomName}"),
+                                               ("Template", result.TemplateName),
+                                               ("Stronghold ID", result.InvaderCoreId)
+                                           ],
+                                           "Stronghold spawn");
 
         return 0;
     }

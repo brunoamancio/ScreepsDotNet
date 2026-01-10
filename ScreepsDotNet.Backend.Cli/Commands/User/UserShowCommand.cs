@@ -1,6 +1,7 @@
 ﻿namespace ScreepsDotNet.Backend.Cli.Commands.User;
 
 using Microsoft.Extensions.Logging;
+using ScreepsDotNet.Backend.Cli.Formatting;
 using ScreepsDotNet.Backend.Core.Repositories;
 using Spectre.Console;
 using Spectre.Console.Cli;
@@ -8,7 +9,7 @@ using Spectre.Console.Cli;
 internal sealed class UserShowCommand(IUserRepository userRepository, ILogger<UserShowCommand>? logger = null, IHostApplicationLifetime? lifetime = null, ICommandOutputFormatter? outputFormatter = null) : CommandHandler<UserShowCommand.Settings>(logger, lifetime, outputFormatter)
 {
     private static readonly global::System.Text.Json.JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
-    public sealed class Settings : CommandSettings
+    public sealed class Settings : FormattableCommandSettings
     {
         [CommandOption("--user-id <ID>")]
         public string? UserId { get; init; }
@@ -53,17 +54,20 @@ internal sealed class UserShowCommand(IUserRepository userRepository, ILogger<Us
             return 0;
         }
 
-        var table = new Table().AddColumn("Field").AddColumn("Value");
-        table.AddRow("User Id", result.Id);
-        table.AddRow("Username", result.Username ?? "(unknown)");
-        table.AddRow("Email", string.IsNullOrWhiteSpace(result.Email) ? "(hidden)" : result.Email);
-        table.AddRow("CPU", result.Cpu.ToString("F0"));
-        table.AddRow("Power", result.Power.ToString("F0"));
-        table.AddRow("Money", result.Money.ToString("F0"));
-        table.AddRow("Last Respawn", result.LastRespawnDate?.ToString("u") ?? "n/a");
         var steamVisibility = result.Steam?.SteamProfileLinkHidden is true ? "Hidden" : "Visible";
-        table.AddRow("Steam Visible", steamVisibility);
-        OutputFormatter.WriteTable(table);
+        OutputFormatter.WriteKeyValueTable(
+            new[]
+            {
+                ("User Id", result.Id),
+                ("Username", result.Username ?? "(unknown)"),
+                ("Email", string.IsNullOrWhiteSpace(result.Email) ? "(hidden)" : result.Email),
+                ("CPU", result.Cpu.ToString("F0")),
+                ("Power", result.Power.ToString("F0")),
+                ("Money", result.Money.ToString("F0")),
+                ("Last Respawn", result.LastRespawnDate?.ToString("u") ?? "n/a"),
+                ("Steam Visible", steamVisibility)
+            },
+            "User profile");
 
         return 0;
     }

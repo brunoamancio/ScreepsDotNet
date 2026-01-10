@@ -1,6 +1,7 @@
 ﻿namespace ScreepsDotNet.Backend.Cli.Commands.Auth;
 
 using global::System.ComponentModel;
+using ScreepsDotNet.Backend.Cli.Formatting;
 using ScreepsDotNet.Backend.Core.Services;
 using Spectre.Console;
 using Spectre.Console.Cli;
@@ -12,7 +13,7 @@ internal sealed class AuthIssueCommand(
     ICommandOutputFormatter? outputFormatter = null)
     : CommandHandler<AuthIssueCommand.Settings>(logger, lifetime, outputFormatter)
 {
-    public sealed class Settings : CommandSettings
+    public sealed class Settings : FormattableCommandSettings
     {
         [CommandOption("--user-id <ID>")]
         [Description("User id to mint a token for.")]

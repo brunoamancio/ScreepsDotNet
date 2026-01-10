@@ -3,6 +3,7 @@
 using global::System;
 using global::System.ComponentModel;
 using global::System.Text.Json;
+using ScreepsDotNet.Backend.Cli.Formatting;
 using ScreepsDotNet.Backend.Core.Parsing;
 using ScreepsDotNet.Backend.Core.Services;
 using Spectre.Console;
@@ -12,7 +13,7 @@ internal sealed class StrongholdExpandCommand(IStrongholdControlService strongho
 {
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
 
-    public sealed class Settings : CommandSettings
+    public sealed class Settings : FormattableCommandSettings
     {
         [CommandOption("--room <NAME>")]
         [Description("Room containing the stronghold core to expand.")]
@@ -54,13 +55,12 @@ internal sealed class StrongholdExpandCommand(IStrongholdControlService strongho
             return expanded ? 0 : 1;
         }
 
-        if (!expanded) {
-            OutputFormatter.WriteMarkupLine("[yellow]No expandable stronghold core was found in that room.[/]");
-            return 1;
-        }
-
         var displayRoom = string.IsNullOrWhiteSpace(reference.ShardName) ? reference.RoomName : $"{reference.ShardName}/{reference.RoomName}";
-        OutputFormatter.WriteMarkupLine($"[green]Expansion queued for stronghold in {displayRoom}.[/]");
-        return 0;
+        OutputFormatter.WriteKeyValueTable([
+                                               ("Room", displayRoom),
+                                               ("Expanded", expanded ? "yes" : "no")
+                                           ],
+                                           "Stronghold expand");
+        return expanded ? 0 : 1;
     }
 }

@@ -1,10 +1,11 @@
 ﻿namespace ScreepsDotNet.Backend.Cli.Commands.Auth;
 
+using global::System.Collections.Generic;
 using global::System.ComponentModel;
 using global::System.Globalization;
 using global::System.Linq;
+using ScreepsDotNet.Backend.Cli.Formatting;
 using ScreepsDotNet.Backend.Core.Services;
-using Spectre.Console;
 using Spectre.Console.Cli;
 
 internal sealed class AuthTokenListCommand(
@@ -14,7 +15,7 @@ internal sealed class AuthTokenListCommand(
     ICommandOutputFormatter? outputFormatter = null)
     : CommandHandler<AuthTokenListCommand.Settings>(logger, lifetime, outputFormatter)
 {
-    public sealed class Settings : CommandSettings
+    public sealed class Settings : FormattableCommandSettings
     {
         [CommandOption("--user-id <ID>")]
         [Description("Filter tokens to a specific user id.")]
@@ -47,13 +48,12 @@ internal sealed class AuthTokenListCommand(
             return 0;
         }
 
-        var table = new Table().AddColumn("Token").AddColumn("User").AddColumn("TTL (hh:mm:ss)");
-        foreach (var token in tokens) {
-            var ttlText = token.TimeToLive?.ToString(@"hh\:mm\:ss", CultureInfo.InvariantCulture) ?? "unknown";
-            table.AddRow(token.Token, token.UserId, ttlText);
-        }
-
-        OutputFormatter.WriteTable(table);
+        var rows = tokens.Select(token => (IReadOnlyList<string>)[
+            token.Token,
+            token.UserId,
+            token.TimeToLive?.ToString(@"hh\:mm\:ss", CultureInfo.InvariantCulture) ?? "unknown"
+        ]);
+        OutputFormatter.WriteTabularData("Active tokens", ["Token", "User", "TTL (hh:mm:ss)"], rows);
         return 0;
     }
 }

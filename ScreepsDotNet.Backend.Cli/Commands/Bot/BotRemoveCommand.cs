@@ -2,6 +2,7 @@
 
 using global::System.ComponentModel;
 using global::System.Text.Json;
+using ScreepsDotNet.Backend.Cli.Formatting;
 using ScreepsDotNet.Backend.Core.Services;
 using Spectre.Console;
 using Spectre.Console.Cli;
@@ -10,7 +11,7 @@ internal sealed class BotRemoveCommand(IBotControlService botControlService, ILo
 {
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
 
-    public sealed class Settings : CommandSettings
+    public sealed class Settings : FormattableCommandSettings
     {
         [CommandOption("--username <NAME>")]
         [Description("Bot username to remove.")]
@@ -39,12 +40,11 @@ internal sealed class BotRemoveCommand(IBotControlService botControlService, ILo
             return removed ? 0 : 1;
         }
 
-        if (!removed) {
-            OutputFormatter.WriteMarkupLine("[yellow]User not found or not a bot account.[/]");
-            return 1;
-        }
-
-        OutputFormatter.WriteMarkupLine($"[green]Bot user {settings.Username} removed.[/]");
-        return 0;
+        OutputFormatter.WriteKeyValueTable([
+                                               ("Username", settings.Username),
+                                               ("Removed", removed ? "yes" : "no")
+                                           ],
+                                           "Bot removal");
+        return removed ? 0 : 1;
     }
 }

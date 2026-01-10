@@ -1,7 +1,9 @@
 ﻿namespace ScreepsDotNet.Backend.Cli.Commands.Bot;
 
 using global::System.ComponentModel;
+using global::System.Globalization;
 using global::System.Text.Json;
+using ScreepsDotNet.Backend.Cli.Formatting;
 using ScreepsDotNet.Backend.Core.Services;
 using Spectre.Console;
 using Spectre.Console.Cli;
@@ -10,7 +12,7 @@ internal sealed class BotReloadCommand(IBotControlService botControlService, ILo
 {
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
 
-    public sealed class Settings : CommandSettings
+    public sealed class Settings : FormattableCommandSettings
     {
         [CommandOption("--bot <NAME>")]
         [Description("Bot AI definition name.")]
@@ -39,12 +41,13 @@ internal sealed class BotReloadCommand(IBotControlService botControlService, ILo
             return 0;
         }
 
-        if (count == 0) {
-            OutputFormatter.WriteMarkupLine("[yellow]No users were using this bot AI.[/]");
-            return 0;
-        }
-
-        OutputFormatter.WriteMarkupLine($"[green]{count}[/] user(s) reloaded for bot [cyan]{settings.BotName}[/].");
+        OutputFormatter.WriteKeyValueTable(
+            new[]
+            {
+                ("Bot", settings.BotName),
+                ("Users Reloaded", count.ToString(CultureInfo.InvariantCulture))
+            },
+            "Bot reload");
         return 0;
     }
 }

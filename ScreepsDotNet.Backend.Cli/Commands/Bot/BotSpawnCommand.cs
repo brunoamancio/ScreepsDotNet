@@ -3,6 +3,7 @@
 using global::System.ComponentModel;
 using global::System.Globalization;
 using global::System.Text.Json;
+using ScreepsDotNet.Backend.Cli.Formatting;
 using ScreepsDotNet.Backend.Core.Models.Bots;
 using ScreepsDotNet.Backend.Core.Services;
 using Spectre.Console;
@@ -12,7 +13,7 @@ internal sealed class BotSpawnCommand(IBotControlService botControlService, ILog
 {
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
 
-    public sealed class Settings : CommandSettings
+    public sealed class Settings : FormattableCommandSettings
     {
         [CommandOption("--bot <NAME>")]
         [Description("Bot AI definition name (from mods.json).")]
@@ -99,13 +100,14 @@ internal sealed class BotSpawnCommand(IBotControlService botControlService, ILog
             return 0;
         }
 
-        var table = new Table().AddColumn("Property").AddColumn("Value");
-        table.AddRow("User ID", result.UserId);
-        table.AddRow("Username", result.Username);
-        table.AddRow("Room", result.RoomName);
-        table.AddRow("Shard", result.ShardName ?? "default");
-        table.AddRow("Spawn", $"({result.SpawnX.ToString(CultureInfo.InvariantCulture)},{result.SpawnY.ToString(CultureInfo.InvariantCulture)})");
-        OutputFormatter.WriteTable(table);
+        OutputFormatter.WriteKeyValueTable([
+                                               ("User ID", result.UserId),
+                                               ("Username", result.Username),
+                                               ("Room", result.RoomName),
+                                               ("Shard", result.ShardName ?? "default"),
+                                               ("Spawn", $"({result.SpawnX.ToString(CultureInfo.InvariantCulture)},{result.SpawnY.ToString(CultureInfo.InvariantCulture)})")
+                                           ],
+                                           "Bot spawn result");
 
         return 0;
     }

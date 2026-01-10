@@ -1,6 +1,7 @@
 ﻿namespace ScreepsDotNet.Backend.Cli.Commands.User;
 
 using global::System.Text.Json;
+using ScreepsDotNet.Backend.Cli.Formatting;
 using ScreepsDotNet.Backend.Core.Repositories;
 using Spectre.Console;
 using Spectre.Console.Cli;
@@ -9,7 +10,7 @@ internal sealed class UserMemoryGetCommand(IUserMemoryRepository memoryRepositor
 {
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
 
-    public sealed class Settings : CommandSettings
+    public sealed class Settings : FormattableCommandSettings
     {
         [CommandOption("--user-id <ID>")]
         public string? UserId { get; init; }
@@ -40,8 +41,11 @@ internal sealed class UserMemoryGetCommand(IUserMemoryRepository memoryRepositor
                 var payload = new { segment, data };
                 OutputFormatter.WriteLine(JsonSerializer.Serialize(payload, JsonOptions));
             }
-            else
-                OutputFormatter.WriteMarkupLine("[bold]Segment {0}[/]: {1}", segment, data ?? "(null)");
+            else {
+                OutputFormatter.WriteKeyValueTable(
+                    new[] { ($"Segment {segment}", data ?? "(null)") },
+                    "Memory segment");
+            }
 
             return 0;
         }
@@ -53,11 +57,8 @@ internal sealed class UserMemoryGetCommand(IUserMemoryRepository memoryRepositor
             return 0;
         }
 
-        var table = new Table().AddColumn("Key").AddColumn("Value");
-        foreach (var kvp in memory)
-            table.AddRow(kvp.Key, JsonSerializer.Serialize(kvp.Value, JsonOptions));
-
-        OutputFormatter.WriteTable(table);
+        var rows = memory.Select(entry => (IReadOnlyList<string>)[entry.Key, JsonSerializer.Serialize(entry.Value, JsonOptions)]);
+        OutputFormatter.WriteTabularData("User memory", ["Key", "Value"], rows);
         return 0;
     }
 }

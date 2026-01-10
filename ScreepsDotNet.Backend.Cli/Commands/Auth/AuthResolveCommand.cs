@@ -1,6 +1,7 @@
 ﻿namespace ScreepsDotNet.Backend.Cli.Commands.Auth;
 
 using global::System.ComponentModel;
+using ScreepsDotNet.Backend.Cli.Formatting;
 using ScreepsDotNet.Backend.Core.Services;
 using Spectre.Console;
 using Spectre.Console.Cli;
@@ -12,7 +13,7 @@ internal sealed class AuthResolveCommand(
     ICommandOutputFormatter? outputFormatter = null)
     : CommandHandler<AuthResolveCommand.Settings>(logger, lifetime, outputFormatter)
 {
-    public sealed class Settings : CommandSettings
+    public sealed class Settings : FormattableCommandSettings
     {
         [CommandOption("--token <VALUE>")]
         [Description("Auth token issued via /api/auth/me or screeps-cli auth issue.")]
