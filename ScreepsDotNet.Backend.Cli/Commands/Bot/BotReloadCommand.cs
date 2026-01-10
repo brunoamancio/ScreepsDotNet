@@ -41,13 +41,11 @@ internal sealed class BotReloadCommand(IBotControlService botControlService, ILo
             return 0;
         }
 
-        OutputFormatter.WriteKeyValueTable(
-            new[]
-            {
-                ("Bot", settings.BotName),
-                ("Users Reloaded", count.ToString(CultureInfo.InvariantCulture))
-            },
-            "Bot reload");
+        OutputFormatter.WriteKeyValueTable([
+                                               ("Bot", settings.BotName),
+                                               ("Users Reloaded", count.ToString(CultureInfo.InvariantCulture))
+                                           ],
+                                           "Bot reload");
         return 0;
     }
 }

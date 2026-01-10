@@ -55,19 +55,17 @@ internal sealed class UserShowCommand(IUserRepository userRepository, ILogger<Us
         }
 
         var steamVisibility = result.Steam?.SteamProfileLinkHidden is true ? "Hidden" : "Visible";
-        OutputFormatter.WriteKeyValueTable(
-            new[]
-            {
-                ("User Id", result.Id),
-                ("Username", result.Username ?? "(unknown)"),
-                ("Email", string.IsNullOrWhiteSpace(result.Email) ? "(hidden)" : result.Email),
-                ("CPU", result.Cpu.ToString("F0")),
-                ("Power", result.Power.ToString("F0")),
-                ("Money", result.Money.ToString("F0")),
-                ("Last Respawn", result.LastRespawnDate?.ToString("u") ?? "n/a"),
-                ("Steam Visible", steamVisibility)
-            },
-            "User profile");
+        OutputFormatter.WriteKeyValueTable([
+                                               ("User Id", result.Id),
+                                               ("Username", result.Username ?? "(unknown)"),
+                                               ("Email", string.IsNullOrWhiteSpace(result.Email) ? "(hidden)" : result.Email),
+                                               ("CPU", result.Cpu.ToString("F0")),
+                                               ("Power", result.Power.ToString("F0")),
+                                               ("Money", result.Money.ToString("F0")),
+                                               ("Last Respawn", result.LastRespawnDate?.ToString("u") ?? "n/a"),
+                                               ("Steam Visible", steamVisibility)
+                                           ],
+                                           "User profile");
 
         return 0;
     }

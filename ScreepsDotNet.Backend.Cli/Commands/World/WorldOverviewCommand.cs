@@ -1,6 +1,5 @@
 ﻿namespace ScreepsDotNet.Backend.Cli.Commands.World;
 
-using global::System.Collections.Generic;
 using global::System.ComponentModel;
 using ScreepsDotNet.Backend.Cli.Formatting;
 using ScreepsDotNet.Backend.Core.Models;

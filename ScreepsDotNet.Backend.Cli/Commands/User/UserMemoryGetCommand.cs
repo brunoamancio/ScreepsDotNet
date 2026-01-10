@@ -42,9 +42,8 @@ internal sealed class UserMemoryGetCommand(IUserMemoryRepository memoryRepositor
                 OutputFormatter.WriteLine(JsonSerializer.Serialize(payload, JsonOptions));
             }
             else {
-                OutputFormatter.WriteKeyValueTable(
-                    new[] { ($"Segment {segment}", data ?? "(null)") },
-                    "Memory segment");
+                OutputFormatter.WriteKeyValueTable([($"Segment {segment}", data ?? "(null)")],
+                                                   "Memory segment");
             }
 
             return 0;
