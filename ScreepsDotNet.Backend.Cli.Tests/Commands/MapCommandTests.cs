@@ -111,6 +111,38 @@ public sealed class MapCommandTests
     }
 
     [Fact]
+    public async Task MapOpenCommand_InvokesService()
+    {
+        var service = new FakeMapControlService();
+        var command = new MapOpenCommand(service);
+        var settings = new MapOpenCommand.Settings
+        {
+            RoomName = "W1N1"
+        };
+
+        var exitCode = await command.ExecuteAsync(null!, settings, CancellationToken.None);
+
+        Assert.Equal(0, exitCode);
+        Assert.Equal("W1N1", service.OpenedRoom);
+    }
+
+    [Fact]
+    public async Task MapCloseCommand_InvokesService()
+    {
+        var service = new FakeMapControlService();
+        var command = new MapCloseCommand(service);
+        var settings = new MapCloseCommand.Settings
+        {
+            RoomName = "W1N1"
+        };
+
+        var exitCode = await command.ExecuteAsync(null!, settings, CancellationToken.None);
+
+        Assert.Equal(0, exitCode);
+        Assert.Equal("W1N1", service.ClosedRoom);
+    }
+
+    [Fact]
     public void MapOpenCommand_RequiresRoomName()
     {
         var command = new MapOpenCommand(new FakeMapControlService());
@@ -133,6 +165,8 @@ public sealed class MapCommandTests
         public string? AssetShard { get; private set; }
         public bool? AssetFull { get; private set; }
         public bool TerrainRefreshed { get; private set; }
+        public string? OpenedRoom { get; private set; }
+        public string? ClosedRoom { get; private set; }
 
         public Task<MapGenerationResult> GenerateRoomAsync(MapRoomGenerationOptions options, CancellationToken cancellationToken = default)
         {
@@ -142,10 +176,16 @@ public sealed class MapCommandTests
         }
 
         public Task OpenRoomAsync(string roomName, string? shardName, CancellationToken cancellationToken = default)
-            => Task.CompletedTask;
+        {
+            OpenedRoom = roomName;
+            return Task.CompletedTask;
+        }
 
         public Task CloseRoomAsync(string roomName, string? shardName, CancellationToken cancellationToken = default)
-            => Task.CompletedTask;
+        {
+            ClosedRoom = roomName;
+            return Task.CompletedTask;
+        }
 
         public Task RemoveRoomAsync(string roomName, string? shardName, bool purgeObjects, CancellationToken cancellationToken = default)
         {
