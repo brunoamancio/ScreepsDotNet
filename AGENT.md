@@ -24,7 +24,7 @@
   - `strongholds templates|spawn|expand` (all accept either `shard/Room` syntax or `--shard <name>` just like the HTTP endpoints).
   - `flag create|change-color|remove`
   - `invader create|remove`
-  - `auth issue|resolve`
+  - `auth issue|resolve|token-list|revoke`
 - Implementation rules:
   - Derive every verb from `CommandHandler<TSettings>` (for logging + cancellation) and always request `ICommandOutputFormatter` in the constructor. `OutputFormatter` exposes `WriteJson`, `WriteTable`, `WriteKeyValueTable`, `WriteMarkdownTable`, `WriteLine`, and `WriteMarkupLine`; direct `AnsiConsole` calls are no longer allowed.
   - Commands that support `--json` should short-circuit by calling `OutputFormatter.WriteJson(...)` before any table rendering, matching the behavior documented in README.

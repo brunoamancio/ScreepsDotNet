@@ -48,11 +48,8 @@ internal static class ObjectNameEndpoints
                            ICurrentUserAccessor accessor,
                            IObjectNameService objectNameService,
                            CancellationToken cancellationToken) => {
-                               if (!string.Equals(request.Type, SpawnType, StringComparison.OrdinalIgnoreCase) ||
-                                   string.IsNullOrWhiteSpace(request.Name))
-                               {
+                               if (!string.Equals(request.Type, SpawnType, StringComparison.OrdinalIgnoreCase) || string.IsNullOrWhiteSpace(request.Name))
                                    return Results.BadRequest(new ErrorResponse(InvalidParamsMessage));
-                               }
 
                                var user = UserEndpointGuards.RequireUser(accessor, "User context is not available.");
                                var unique = await objectNameService.IsSpawnNameUniqueAsync(user.Id, request.Name, cancellationToken).ConfigureAwait(false);

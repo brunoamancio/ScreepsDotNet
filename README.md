@@ -177,6 +177,8 @@ dotnet run --project ScreepsDotNet.Backend.Cli -- map generate --room W10N5 --sh
 | --- | --- | --- |
 | `auth issue --user-id <id> [--json]` | Mint a token for the specified user via the shared Redis token service (handy for HTTP smoke tests). | Token prints as JSON or a key/value table. |
 | `auth resolve --token <value> [--json]` | Resolve an auth token back to its user id, matching the logic in the HTTP middleware. | Exit code `1` if the token is missing or expired. |
+| `auth token-list [--user-id <id>] [--json]` | Enumerate active tokens, optionally filtering by user id, to audit who currently has access. | Shows TTL countdown and exits `0` even when no tokens match. |
+| `auth revoke --token <value> [--json]` | Delete a token immediately (returns `1` if the token does not exist). | Useful for revoking leaked/expired credentials without flushing Redis. |
 
 ### CLI architecture notes
 

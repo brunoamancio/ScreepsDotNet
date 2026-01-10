@@ -195,6 +195,12 @@ internal sealed class CliApplication(IServiceProvider serviceProvider, ILogger<C
                 branch.AddCommand<AuthResolveCommand>("resolve")
                       .WithDescription("Resolve a token back to its user id.")
                       .WithExample("auth", "resolve", "--token", "abcdef", "--json");
+                branch.AddCommand<AuthTokenListCommand>("token-list")
+                      .WithDescription("List active auth tokens (optionally filtered by user).")
+                      .WithExample("auth", "token-list", "--json");
+                branch.AddCommand<AuthRevokeCommand>("revoke")
+                      .WithDescription("Revoke an auth token immediately.")
+                      .WithExample("auth", "revoke", "--token", "abcdef");
             });
         });
 

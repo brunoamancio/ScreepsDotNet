@@ -1,8 +1,10 @@
 ﻿namespace ScreepsDotNet.Backend.Cli.Tests.Commands;
 
+using System;
 using System.Collections.Generic;
 using ScreepsDotNet.Backend.Cli.Commands.Auth;
 using ScreepsDotNet.Backend.Cli.Formatting;
+using ScreepsDotNet.Backend.Core.Models;
 using ScreepsDotNet.Backend.Core.Services;
 using Spectre.Console;
 
@@ -41,12 +43,49 @@ public sealed class AuthCommandTests
         Assert.Equal("missing-token", service.LastResolvedToken);
     }
 
+    [Fact]
+    public async Task AuthTokenListCommand_PassesFilterToService()
+    {
+        var service = new FakeTokenService();
+        var command = new AuthTokenListCommand(service, null, null, new TestFormatter());
+        var settings = new AuthTokenListCommand.Settings
+        {
+            UserId = "user-2"
+        };
+
+        var exitCode = await command.ExecuteAsync(null!, settings, CancellationToken.None);
+
+        Assert.Equal(0, exitCode);
+        Assert.Equal("user-2", service.LastListedUserId);
+    }
+
+    [Fact]
+    public async Task AuthRevokeCommand_ReturnsFailureWhenTokenMissing()
+    {
+        var service = new FakeTokenService { RevokeResult = false };
+        var command = new AuthRevokeCommand(service, null, null, new TestFormatter());
+        var settings = new AuthRevokeCommand.Settings
+        {
+            Token = "token-xyz"
+        };
+
+        var exitCode = await command.ExecuteAsync(null!, settings, CancellationToken.None);
+
+        Assert.Equal(1, exitCode);
+        Assert.Equal("token-xyz", service.LastRevokedToken);
+    }
+
     private sealed class FakeTokenService : ITokenService
     {
         public string? LastIssuedUserId { get; private set; }
         public string? LastResolvedToken { get; private set; }
+        public string? LastListedUserId { get; private set; }
+        public string? LastRevokedToken { get; private set; }
         public string IssueResult { get; init; } = "token-123";
         public string? ResolveResult { get; set; } = "user-1";
+        public IReadOnlyList<AuthTokenInfo> ListResult { get; init; } =
+            new List<AuthTokenInfo> { new("token-123", "user-1", TimeSpan.FromMinutes(5)) };
+        public bool RevokeResult { get; set; } = true;
 
         public Task<string> IssueTokenAsync(string userId, CancellationToken cancellationToken = default)
         {
@@ -58,6 +97,18 @@ public sealed class AuthCommandTests
         {
             LastResolvedToken = token;
             return Task.FromResult(ResolveResult);
+        }
+
+        public Task<IReadOnlyList<AuthTokenInfo>> ListTokensAsync(string? userId = null, CancellationToken cancellationToken = default)
+        {
+            LastListedUserId = userId;
+            return Task.FromResult(ListResult);
+        }
+
+        public Task<bool> RevokeTokenAsync(string token, CancellationToken cancellationToken = default)
+        {
+            LastRevokedToken = token;
+            return Task.FromResult(RevokeResult);
         }
     }
     private sealed class TestFormatter : ICommandOutputFormatter

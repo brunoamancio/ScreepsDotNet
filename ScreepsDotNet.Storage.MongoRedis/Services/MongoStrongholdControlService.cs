@@ -244,8 +244,7 @@ public sealed class MongoStrongholdControlService(IMongoDatabaseProvider databas
         if (!string.IsNullOrWhiteSpace(shardName))
             filters.Add(builder.Eq(doc => doc.Shard, shardName));
         else
-            filters.Add(builder.Or(builder.Eq(doc => doc.Shard, null),
-                                   builder.Exists(nameof(RoomObjectDocument.Shard), false)));
+            filters.Add(builder.Or(builder.Eq(doc => doc.Shard, null), builder.Exists(nameof(RoomObjectDocument.Shard), false)));
 
         return builder.And(filters);
     }
@@ -257,8 +256,7 @@ public sealed class MongoStrongholdControlService(IMongoDatabaseProvider databas
         if (!string.IsNullOrWhiteSpace(shardName))
             filters.Add(builder.Eq(doc => doc.Shard, shardName));
         else
-            filters.Add(builder.Or(builder.Eq(doc => doc.Shard, null),
-                                   builder.Exists(nameof(RoomTerrainDocument.Shard), false)));
+            filters.Add(builder.Or(builder.Eq(doc => doc.Shard, null), builder.Exists(nameof(RoomTerrainDocument.Shard), false)));
 
         return builder.And(filters);
     }
