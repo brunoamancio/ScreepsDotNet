@@ -4,6 +4,7 @@ using global::System;
 using global::System.ComponentModel;
 using global::System.Globalization;
 using global::System.Text.Json;
+using ScreepsDotNet.Backend.Cli.Formatting;
 using ScreepsDotNet.Backend.Core.Models.Map;
 using ScreepsDotNet.Backend.Core.Parsing;
 using ScreepsDotNet.Backend.Core.Services;
@@ -14,7 +15,7 @@ internal sealed class MapGenerateCommand(IMapControlService mapControlService, I
 {
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
 
-    public sealed class Settings : CommandSettings
+    public sealed class Settings : FormattableCommandSettings
     {
         [CommandOption("--room <NAME>")]
         [Description("Room name (e.g., W1N1).")]
@@ -60,6 +61,10 @@ internal sealed class MapGenerateCommand(IMapControlService mapControlService, I
 
         public override ValidationResult Validate()
         {
+            var baseResult = base.Validate();
+            if (!baseResult.Successful)
+                return baseResult;
+
             if (string.IsNullOrWhiteSpace(RoomName))
                 return ValidationResult.Error("Room name is required.");
 
@@ -96,14 +101,15 @@ internal sealed class MapGenerateCommand(IMapControlService mapControlService, I
         }
 
         var displayName = string.IsNullOrWhiteSpace(reference.ShardName) ? result.RoomName : $"{reference.ShardName}/{result.RoomName}";
-        var table = new Table().AddColumn("Property").AddColumn("Value");
-        table.AddRow("Room", displayName);
-        table.AddRow("Objects", result.ObjectCount.ToString(CultureInfo.InvariantCulture));
-        table.AddRow("Sources", result.SourceCount.ToString(CultureInfo.InvariantCulture));
-        table.AddRow("Controller", result.ControllerCreated ? "yes" : "no");
-        table.AddRow("Keeper Lairs", result.KeeperLairsCreated ? "yes" : "no");
-        table.AddRow("Mineral", result.MineralType ?? "random");
-        OutputFormatter.WriteTable(table);
+        OutputFormatter.WriteKeyValueTable([
+                                               ("Room", displayName),
+                                               ("Objects", result.ObjectCount.ToString(CultureInfo.InvariantCulture)),
+                                               ("Sources", result.SourceCount.ToString(CultureInfo.InvariantCulture)),
+                                               ("Controller", result.ControllerCreated ? "yes" : "no"),
+                                               ("Keeper Lairs", result.KeeperLairsCreated ? "yes" : "no"),
+                                               ("Mineral", result.MineralType ?? "random")
+                                           ],
+                                           "Generated room");
 
         return 0;
     }

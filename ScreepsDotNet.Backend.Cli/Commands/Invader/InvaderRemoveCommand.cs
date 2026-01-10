@@ -1,6 +1,7 @@
 ﻿namespace ScreepsDotNet.Backend.Cli.Commands.Invader;
 
 using global::System.ComponentModel;
+using ScreepsDotNet.Backend.Cli.Formatting;
 using ScreepsDotNet.Backend.Core.Models;
 using ScreepsDotNet.Backend.Core.Repositories;
 using ScreepsDotNet.Backend.Core.Services;
@@ -9,7 +10,7 @@ using Spectre.Console.Cli;
 
 internal sealed class InvaderRemoveCommand(IInvaderService invaderService, IUserRepository userRepository, ILogger<InvaderRemoveCommand>? logger = null, IHostApplicationLifetime? lifetime = null, ICommandOutputFormatter? outputFormatter = null) : CommandHandler<InvaderRemoveCommand.Settings>(logger, lifetime, outputFormatter)
 {
-    public sealed class Settings : CommandSettings
+    public sealed class Settings : FormattableCommandSettings
     {
         [CommandOption("--user-id <ID>")]
         [Description("Caller user ID (for summoner tracking).")]
@@ -23,8 +24,15 @@ internal sealed class InvaderRemoveCommand(IInvaderService invaderService, IUser
         [Description("The ID of the invader to remove.")]
         public string InvaderId { get; init; } = string.Empty;
 
+        [CommandOption("--json")]
+        public bool OutputJson { get; init; }
+
         public override ValidationResult Validate()
         {
+            var formatResult = base.Validate();
+            if (!formatResult.Successful)
+                return formatResult;
+
             if (string.IsNullOrWhiteSpace(UserId) && string.IsNullOrWhiteSpace(Username))
                 return ValidationResult.Error("Either --user-id or --username must be provided.");
 
@@ -41,7 +49,10 @@ internal sealed class InvaderRemoveCommand(IInvaderService invaderService, IUser
         if (string.IsNullOrWhiteSpace(userId)) {
             var publicProfile = await userRepository.FindPublicProfileAsync(settings.Username, null, cancellationToken).ConfigureAwait(false);
             if (publicProfile is null) {
-                OutputFormatter.WriteMarkupLine($"[red]Error:[/] User '{settings.Username}' not found.");
+                if (settings.OutputJson)
+                    OutputFormatter.WriteJson(new { success = false, error = $"User '{settings.Username}' not found." });
+                else
+                    OutputFormatter.WriteMarkupLine($"[red]Error:[/] User '{settings.Username}' not found.");
                 return 1;
             }
             userId = publicProfile.Id;
@@ -51,11 +62,25 @@ internal sealed class InvaderRemoveCommand(IInvaderService invaderService, IUser
         var result = await invaderService.RemoveInvaderAsync(userId, request, cancellationToken).ConfigureAwait(false);
 
         if (result.Status != RemoveInvaderResultStatus.Success) {
-            OutputFormatter.WriteMarkupLine($"[red]Error:[/] {result.Status}");
+            if (settings.OutputJson)
+                OutputFormatter.WriteJson(new { success = false, error = result.Status.ToString() });
+            else
+                OutputFormatter.WriteMarkupLine($"[red]Error:[/] {result.Status}");
             return 1;
         }
 
-        OutputFormatter.WriteMarkupLine($"[green]Success:[/] Invader removed.");
+        if (settings.OutputJson) {
+            OutputFormatter.WriteJson(new { success = true, settings.InvaderId });
+            return 0;
+        }
+
+        OutputFormatter.WriteKeyValueTable(
+            new[]
+            {
+                ("Invader ID", settings.InvaderId),
+                ("Removed", "yes")
+            },
+            "Invader removed");
         return 0;
     }
 }

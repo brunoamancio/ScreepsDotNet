@@ -2,6 +2,7 @@
 
 using global::System;
 using global::System.ComponentModel;
+using ScreepsDotNet.Backend.Cli.Formatting;
 using ScreepsDotNet.Backend.Core.Parsing;
 using ScreepsDotNet.Backend.Core.Services;
 using Spectre.Console;
@@ -9,7 +10,7 @@ using Spectre.Console.Cli;
 
 internal sealed class MapAssetsUpdateCommand(IMapControlService mapControlService, ILogger<MapAssetsUpdateCommand>? logger = null, IHostApplicationLifetime? lifetime = null, ICommandOutputFormatter? outputFormatter = null) : CommandHandler<MapAssetsUpdateCommand.Settings>(logger, lifetime, outputFormatter)
 {
-    public sealed class Settings : CommandSettings
+    public sealed class Settings : FormattableCommandSettings
     {
         [CommandOption("--room <NAME>")]
         [Description("Room whose assets should be regenerated.")]
@@ -23,8 +24,15 @@ internal sealed class MapAssetsUpdateCommand(IMapControlService mapControlServic
         [Description("Optional shard override (e.g., shard3).")]
         public string? Shard { get; init; }
 
+        [CommandOption("--json")]
+        public bool OutputJson { get; init; }
+
         public override ValidationResult Validate()
         {
+            var formatResult = base.Validate();
+            if (!formatResult.Successful)
+                return formatResult;
+
             if (string.IsNullOrWhiteSpace(RoomName))
                 return ValidationResult.Error("Room name is required.");
 
@@ -42,7 +50,18 @@ internal sealed class MapAssetsUpdateCommand(IMapControlService mapControlServic
 
         await mapControlService.UpdateRoomAssetsAsync(reference.RoomName, reference.ShardName, settings.Full, cancellationToken).ConfigureAwait(false);
         var displayName = string.IsNullOrWhiteSpace(reference.ShardName) ? reference.RoomName : $"{reference.ShardName}/{reference.RoomName}";
-        OutputFormatter.WriteMarkupLine($"[blue]Queued asset refresh for {displayName} (full={settings.Full}).[/]");
+
+        if (settings.OutputJson) {
+            OutputFormatter.WriteJson(new { Room = reference.RoomName, reference.ShardName, Full = settings.Full, queued = true });
+            return 0;
+        }
+
+        OutputFormatter.WriteKeyValueTable([
+                                               ("Room", displayName),
+                                               ("Full Refresh", settings.Full ? "yes" : "no"),
+                                               ("Queued", "yes")
+                                           ],
+                                           "Map assets");
         return 0;
     }
 }

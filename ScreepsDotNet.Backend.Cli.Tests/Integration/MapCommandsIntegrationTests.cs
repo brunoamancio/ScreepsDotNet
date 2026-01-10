@@ -124,12 +124,11 @@ public sealed class MapCommandsIntegrationTests(MongoMapIntegrationFixture fixtu
                                      Builders<RoomTerrainDocument>.Update.Unset(document => document.Type));
 
         var refreshCommand = new MapTerrainRefreshCommand(service);
-        await refreshCommand.ExecuteAsync(null!, new EmptySettings(), CancellationToken.None);
+        await refreshCommand.ExecuteAsync(null!, new MapTerrainRefreshCommand.Settings(), CancellationToken.None);
 
         var refreshed = await terrain.Find(document => document.Room == roomName).FirstOrDefaultAsync();
         Assert.NotNull(refreshed);
         Assert.Equal("terrain", refreshed!.Type);
     }
 
-    private sealed class EmptySettings : CommandSettings;
 }

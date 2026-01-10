@@ -2,6 +2,7 @@
 
 using global::System;
 using global::System.ComponentModel;
+using ScreepsDotNet.Backend.Cli.Formatting;
 using ScreepsDotNet.Backend.Core.Parsing;
 using ScreepsDotNet.Backend.Core.Services;
 using Spectre.Console;
@@ -9,7 +10,7 @@ using Spectre.Console.Cli;
 
 internal sealed class MapRemoveCommand(IMapControlService mapControlService, ILogger<MapRemoveCommand>? logger = null, IHostApplicationLifetime? lifetime = null, ICommandOutputFormatter? outputFormatter = null) : CommandHandler<MapRemoveCommand.Settings>(logger, lifetime, outputFormatter)
 {
-    public sealed class Settings : CommandSettings
+    public sealed class Settings : FormattableCommandSettings
     {
         [CommandOption("--room <NAME>")]
         [Description("Room to remove.")]
@@ -23,8 +24,15 @@ internal sealed class MapRemoveCommand(IMapControlService mapControlService, ILo
         [Description("Optional shard override (e.g., shard3).")]
         public string? Shard { get; init; }
 
+        [CommandOption("--json")]
+        public bool OutputJson { get; init; }
+
         public override ValidationResult Validate()
         {
+            var formatResult = base.Validate();
+            if (!formatResult.Successful)
+                return formatResult;
+
             if (string.IsNullOrWhiteSpace(RoomName))
                 return ValidationResult.Error("Room name is required.");
 
@@ -42,7 +50,18 @@ internal sealed class MapRemoveCommand(IMapControlService mapControlService, ILo
 
         await mapControlService.RemoveRoomAsync(reference.RoomName, reference.ShardName, settings.PurgeObjects, cancellationToken).ConfigureAwait(false);
         var displayName = string.IsNullOrWhiteSpace(reference.ShardName) ? reference.RoomName : $"{reference.ShardName}/{reference.RoomName}";
-        OutputFormatter.WriteMarkupLine($"[red]Room {displayName} removed (purge={settings.PurgeObjects}).[/]");
+
+        if (settings.OutputJson) {
+            OutputFormatter.WriteJson(new { Room = reference.RoomName, reference.ShardName, removed = true, settings.PurgeObjects });
+            return 0;
+        }
+
+        OutputFormatter.WriteKeyValueTable([
+                                               ("Room", displayName),
+                                               ("Removed", "yes"),
+                                               ("Purged Objects", settings.PurgeObjects ? "yes" : "no")
+                                           ],
+                                           "Map remove");
         return 0;
     }
 }

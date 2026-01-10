@@ -1,6 +1,7 @@
 ﻿namespace ScreepsDotNet.Backend.Cli.Commands.Flag;
 
 using global::System.ComponentModel;
+using ScreepsDotNet.Backend.Cli.Formatting;
 using ScreepsDotNet.Backend.Core.Repositories;
 using ScreepsDotNet.Backend.Core.Services;
 using Spectre.Console;
@@ -8,7 +9,7 @@ using Spectre.Console.Cli;
 
 internal sealed class FlagCreateCommand(IFlagService flagService, IUserRepository userRepository, ILogger<FlagCreateCommand>? logger = null, IHostApplicationLifetime? lifetime = null, ICommandOutputFormatter? outputFormatter = null) : CommandHandler<FlagCreateCommand.Settings>(logger, lifetime, outputFormatter)
 {
-    public sealed class Settings : CommandSettings
+    public sealed class Settings : FormattableCommandSettings
     {
         [CommandOption("--user-id <ID>")]
         [Description("The ID of the user creating the flag.")]
@@ -47,8 +48,15 @@ internal sealed class FlagCreateCommand(IFlagService flagService, IUserRepositor
         [Description("Secondary color (defaults to primary color).")]
         public Core.Constants.Color? SecondaryColor { get; init; }
 
+        [CommandOption("--json")]
+        public bool OutputJson { get; init; }
+
         public override ValidationResult Validate()
         {
+            var formatResult = base.Validate();
+            if (!formatResult.Successful)
+                return formatResult;
+
             if (string.IsNullOrWhiteSpace(UserId) && string.IsNullOrWhiteSpace(Username))
                 return ValidationResult.Error("Either --user-id or --username must be provided.");
 
@@ -74,7 +82,11 @@ internal sealed class FlagCreateCommand(IFlagService flagService, IUserRepositor
         if (string.IsNullOrWhiteSpace(userId)) {
             var profile = await userRepository.FindPublicProfileAsync(settings.Username, null, cancellationToken).ConfigureAwait(false);
             if (profile is null) {
-                OutputFormatter.WriteMarkupLine("[red]Error:[/] User not found.");
+                if (settings.OutputJson) {
+                    OutputFormatter.WriteJson(new { success = false, error = "User not found." });
+                }
+                else
+                    OutputFormatter.WriteMarkupLine("[red]Error:[/] User not found.");
                 return 1;
             }
             userId = profile.Id;
@@ -93,12 +105,33 @@ internal sealed class FlagCreateCommand(IFlagService flagService, IUserRepositor
         var result = await flagService.CreateFlagAsync(userId, request, cancellationToken).ConfigureAwait(false);
 
         if (result.Status != FlagResultStatus.Success) {
-            OutputFormatter.WriteMarkupLine($"[red]Error:[/] {result.ErrorMessage ?? result.Status.ToString()}");
+            if (settings.OutputJson)
+                OutputFormatter.WriteJson(new { success = false, error = result.ErrorMessage ?? result.Status.ToString() });
+            else
+                OutputFormatter.WriteMarkupLine($"[red]Error:[/] {result.ErrorMessage ?? result.Status.ToString()}");
             return 1;
         }
 
         var shardLabel = string.IsNullOrWhiteSpace(settings.Shard) ? "default shard" : settings.Shard;
-        OutputFormatter.WriteMarkupLine($"[green]Success:[/] Flag [yellow]{settings.Name}[/] created in [blue]{settings.RoomName}[/] ({Markup.Escape(shardLabel)}) at ({settings.X}, {settings.Y}).");
+        if (settings.OutputJson) {
+            OutputFormatter.WriteJson(new
+            {
+                success = true,
+                settings.Name,
+                settings.RoomName,
+                Shard = settings.Shard,
+                settings.X,
+                settings.Y
+            });
+            return 0;
+        }
+
+        OutputFormatter.WriteKeyValueTable([
+                                               ("Flag", settings.Name),
+                                               ("Room", $"{settings.RoomName} ({shardLabel})"),
+                                               ("Position", $"({settings.X}, {settings.Y})")
+                                           ],
+                                           "Flag created");
         return 0;
     }
 }

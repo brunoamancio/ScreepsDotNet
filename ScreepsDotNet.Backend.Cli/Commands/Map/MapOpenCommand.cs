@@ -2,6 +2,7 @@
 
 using global::System;
 using global::System.ComponentModel;
+using ScreepsDotNet.Backend.Cli.Formatting;
 using ScreepsDotNet.Backend.Core.Parsing;
 using ScreepsDotNet.Backend.Core.Services;
 using Spectre.Console;
@@ -9,7 +10,7 @@ using Spectre.Console.Cli;
 
 internal sealed class MapOpenCommand(IMapControlService mapControlService, ILogger<MapOpenCommand>? logger = null, IHostApplicationLifetime? lifetime = null, ICommandOutputFormatter? outputFormatter = null) : CommandHandler<MapOpenCommand.Settings>(logger, lifetime, outputFormatter)
 {
-    public sealed class Settings : CommandSettings
+    public sealed class Settings : FormattableCommandSettings
     {
         [CommandOption("--room <NAME>")]
         [Description("Room to open.")]
@@ -19,8 +20,15 @@ internal sealed class MapOpenCommand(IMapControlService mapControlService, ILogg
         [Description("Optional shard override (e.g., shard3).")]
         public string? Shard { get; init; }
 
+        [CommandOption("--json")]
+        public bool OutputJson { get; init; }
+
         public override ValidationResult Validate()
         {
+            var formatResult = base.Validate();
+            if (!formatResult.Successful)
+                return formatResult;
+
             if (string.IsNullOrWhiteSpace(RoomName))
                 return ValidationResult.Error("Room name is required.");
 
@@ -38,7 +46,17 @@ internal sealed class MapOpenCommand(IMapControlService mapControlService, ILogg
 
         await mapControlService.OpenRoomAsync(reference.RoomName, reference.ShardName, cancellationToken).ConfigureAwait(false);
         var displayName = string.IsNullOrWhiteSpace(reference.ShardName) ? reference.RoomName : $"{reference.ShardName}/{reference.RoomName}";
-        OutputFormatter.WriteMarkupLine($"[green]Room {displayName} opened.[/]");
+
+        if (settings.OutputJson) {
+            OutputFormatter.WriteJson(new { Room = reference.RoomName, reference.ShardName, opened = true });
+            return 0;
+        }
+
+        OutputFormatter.WriteKeyValueTable([
+                                               ("Room", displayName),
+                                               ("Opened", "yes")
+                                           ],
+                                           "Map open");
         return 0;
     }
 }

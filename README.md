@@ -127,8 +127,8 @@ dotnet run --project ScreepsDotNet.Backend.Cli -- strongholds spawn --room W5N3 
 
 | Command | Purpose | Key flags |
 | --- | --- | --- |
-| `invader create --room <name> [--shard <name>] (--user-id <id> \| --username <name>) -x/--pos-x <0-49> -y/--pos-y <0-49> [--type <Melee\|Ranged\|Healer>] [--size <Small\|Big>] [--boosted]` | Summon an NPC invader in an owned or reserved room. | Accepts either explicit `--shard` or the legacy `shard/Room` syntax. |
-| `invader remove --id <objectId> (--user-id <id> \| --username <name>)` | Remove a previously summoned invader (requires the original summoner). | |
+| `invader create --room <name> [--shard <name>] (--user-id <id> \| --username <name>) -x/--pos-x <0-49> -y/--pos-y <0-49> [--type <Melee\|Ranged\|Healer>] [--size <Small\|Big>] [--boosted] [--json] [--format table\|markdown\|json]` | Summon an NPC invader in an owned or reserved room. | Accepts either explicit `--shard` or the legacy `shard/Room` syntax. |
+| `invader remove --id <objectId> (--user-id <id> \| --username <name>) [--json] [--format table\|markdown\|json]` | Remove a previously summoned invader (requires the original summoner). | |
 
 Example:
 
@@ -159,12 +159,12 @@ dotnet run --project ScreepsDotNet.Backend.Cli -- system tick set --ms 750
 
 | Command | Purpose | Key flags |
 | --- | --- | --- |
-| `map generate --room <name> [--shard <name>] [--sources <1-5>] [--terrain <preset>] [--no-controller] [--keeper-lairs] [--mineral <type>] [--overwrite] [--seed <int>] [--json]` | Procedurally create or overwrite a room with deterministic options. | Terrain presets follow `plain`, `swampLow`, `swampHeavy`, `checker`, `mixed`. |
-| `map open --room <name> [--shard <name>]` | Mark a room as active/accessible. | |
-| `map close --room <name> [--shard <name>]` | Disable a room (legacy “bus” flag). | |
-| `map remove --room <name> [--shard <name>] [--purge-objects]` | Delete the room entry (optionally wipe room objects). | |
-| `map assets update --room <name> [--shard <name>] [--full]` | Regenerate cached renderer assets for a room. | `--full` performs a complete rebuild instead of incremental. |
-| `map terrain refresh` | Rebuild the global terrain cache (no parameters). | |
+| `map generate --room <name> [--shard <name>] [--sources <1-5>] [--terrain <preset>] [--no-controller] [--keeper-lairs] [--mineral <type>] [--overwrite] [--seed <int>] [--json] [--format table\|markdown\|json]` | Procedurally create or overwrite a room with deterministic options. | Terrain presets follow `plain`, `swampLow`, `swampHeavy`, `checker`, `mixed`. |
+| `map open --room <name> [--shard <name>] [--json] [--format table\|markdown\|json]` | Mark a room as active/accessible. | |
+| `map close --room <name> [--shard <name>] [--json] [--format table\|markdown\|json]` | Disable a room (legacy “bus” flag). | |
+| `map remove --room <name> [--shard <name>] [--purge-objects] [--json] [--format table\|markdown\|json]` | Delete the room entry (optionally wipe room objects). | |
+| `map assets update --room <name> [--shard <name>] [--full] [--json] [--format table\|markdown\|json]` | Regenerate cached renderer assets for a room. | `--full` performs a complete rebuild instead of incremental. |
+| `map terrain refresh [--json] [--format table\|markdown\|json]` | Rebuild the global terrain cache (no parameters). | |
 
 Example:
 

@@ -1,6 +1,7 @@
 ﻿namespace ScreepsDotNet.Backend.Cli.Commands.Invader;
 
 using global::System.ComponentModel;
+using ScreepsDotNet.Backend.Cli.Formatting;
 using ScreepsDotNet.Backend.Core.Constants;
 using ScreepsDotNet.Backend.Core.Models;
 using ScreepsDotNet.Backend.Core.Parsing;
@@ -11,7 +12,7 @@ using Spectre.Console.Cli;
 
 internal sealed class InvaderCreateCommand(IInvaderService invaderService, IUserRepository userRepository, ILogger<InvaderCreateCommand>? logger = null, IHostApplicationLifetime? lifetime = null, ICommandOutputFormatter? outputFormatter = null) : CommandHandler<InvaderCreateCommand.Settings>(logger, lifetime, outputFormatter)
 {
-    public sealed class Settings : CommandSettings
+    public sealed class Settings : FormattableCommandSettings
     {
         [CommandOption("--user-id <ID>")]
         [Description("Caller user ID (for summoner tracking).")]
@@ -51,8 +52,15 @@ internal sealed class InvaderCreateCommand(IInvaderService invaderService, IUser
         [Description("Whether the invader should be boosted.")]
         public bool Boosted { get; init; }
 
+        [CommandOption("--json")]
+        public bool OutputJson { get; init; }
+
         public override ValidationResult Validate()
         {
+            var formatResult = base.Validate();
+            if (!formatResult.Successful)
+                return formatResult;
+
             if (string.IsNullOrWhiteSpace(UserId) && string.IsNullOrWhiteSpace(Username))
                 return ValidationResult.Error("Either --user-id or --username must be provided.");
 
@@ -78,14 +86,20 @@ internal sealed class InvaderCreateCommand(IInvaderService invaderService, IUser
         if (string.IsNullOrWhiteSpace(userId)) {
             var publicProfile = await userRepository.FindPublicProfileAsync(settings.Username, null, cancellationToken).ConfigureAwait(false);
             if (publicProfile is null) {
-                OutputFormatter.WriteMarkupLine($"[red]Error:[/] User '{settings.Username}' not found.");
+                if (settings.OutputJson)
+                    OutputFormatter.WriteJson(new { success = false, error = $"User '{settings.Username}' not found." });
+                else
+                    OutputFormatter.WriteMarkupLine($"[red]Error:[/] User '{settings.Username}' not found.");
                 return 1;
             }
             userId = publicProfile.Id;
         }
 
         if (!RoomReferenceParser.TryParse(settings.RoomName, settings.Shard, out var reference) || reference is null) {
-            OutputFormatter.WriteMarkupLine("[red]Error:[/] Invalid room. Use W##N## or shard/W##N##.");
+            if (settings.OutputJson)
+                OutputFormatter.WriteJson(new { success = false, error = "Invalid room. Use W##N## or shard/W##N##." });
+            else
+                OutputFormatter.WriteMarkupLine("[red]Error:[/] Invalid room. Use W##N## or shard/W##N##.");
             return 1;
         }
 
@@ -93,11 +107,38 @@ internal sealed class InvaderCreateCommand(IInvaderService invaderService, IUser
         var result = await invaderService.CreateInvaderAsync(userId, request, cancellationToken).ConfigureAwait(false);
 
         if (result.Status != CreateInvaderResultStatus.Success) {
-            OutputFormatter.WriteMarkupLine($"[red]Error:[/] {result.Status} {result.ErrorMessage}");
+            if (settings.OutputJson)
+                OutputFormatter.WriteJson(new { success = false, error = result.ErrorMessage ?? result.Status.ToString() });
+            else
+                OutputFormatter.WriteMarkupLine($"[red]Error:[/] {result.Status} {result.ErrorMessage}");
             return 1;
         }
 
-        OutputFormatter.WriteMarkupLine($"[green]Success:[/] Invader created with ID: [yellow]{result.Id}[/]");
+        if (settings.OutputJson) {
+            OutputFormatter.WriteJson(new
+            {
+                success = true,
+                result.Id,
+                Room = reference.RoomName,
+                reference.ShardName,
+                settings.X,
+                settings.Y,
+                settings.Type,
+                settings.Size,
+                settings.Boosted
+            });
+            return 0;
+        }
+
+        OutputFormatter.WriteKeyValueTable([
+                                               ("Invader ID", result.Id ?? "(unknown)"),
+                                               ("Room", reference.ShardName is null ? reference.RoomName : $"{reference.ShardName}/{reference.RoomName}"),
+                                               ("Position", $"({settings.X}, {settings.Y})"),
+                                               ("Type", settings.Type.ToString()),
+                                               ("Size", settings.Size.ToString()),
+                                               ("Boosted", settings.Boosted ? "yes" : "no")
+                                           ],
+                                           "Invader created");
         return 0;
     }
 }

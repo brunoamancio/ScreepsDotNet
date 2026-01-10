@@ -3,7 +3,6 @@
 using ScreepsDotNet.Backend.Cli.Commands.Map;
 using ScreepsDotNet.Backend.Core.Models.Map;
 using ScreepsDotNet.Backend.Core.Services;
-using Spectre.Console.Cli;
 
 public sealed class MapCommandTests
 {
@@ -105,7 +104,7 @@ public sealed class MapCommandTests
     {
         var service = new FakeMapControlService();
         var command = new MapTerrainRefreshCommand(service);
-        var exitCode = await command.ExecuteAsync(null!, new EmptySettings(), CancellationToken.None);
+        var exitCode = await command.ExecuteAsync(null!, new MapTerrainRefreshCommand.Settings(), CancellationToken.None);
 
         Assert.Equal(0, exitCode);
         Assert.True(service.TerrainRefreshed);
@@ -170,5 +169,4 @@ public sealed class MapCommandTests
             return Task.CompletedTask;
         }
     }
-    private sealed class EmptySettings : CommandSettings;
 }

@@ -723,7 +723,7 @@ sealed file class FakeTokenService : ITokenService
         => Task.FromResult(token == ValidToken ? AuthTestValues.UserId : null);
 
     public Task<IReadOnlyList<AuthTokenInfo>> ListTokensAsync(string? userId = null, CancellationToken cancellationToken = default)
-        => Task.FromResult<IReadOnlyList<AuthTokenInfo>>(Array.Empty<AuthTokenInfo>());
+        => Task.FromResult<IReadOnlyList<AuthTokenInfo>>([]);
 
     public Task<bool> RevokeTokenAsync(string token, CancellationToken cancellationToken = default)
         => Task.FromResult(true);
