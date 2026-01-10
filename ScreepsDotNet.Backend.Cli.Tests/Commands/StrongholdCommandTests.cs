@@ -64,7 +64,7 @@ public sealed class StrongholdCommandTests
         var result = settings.Validate();
 
         Assert.False(result.Successful);
-        Assert.Contains("Both --x and --y", result.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Both -x/--pos-x and -y/--pos-y", result.Message, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
