@@ -5,7 +5,7 @@ using global::System.ComponentModel;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
-internal sealed class RootCommandSettings : CommandSettings
+internal sealed class RootCommandSettings : FormattableCommandSettings
 {
     [CommandOption("--db|--storage|--storage-backend <BACKEND>")]
     [Description("Selects the storage backend (default: mongodb).")]
@@ -62,6 +62,10 @@ internal sealed class RootCommandSettings : CommandSettings
 
     public override ValidationResult Validate()
     {
+        var baseResult = base.Validate();
+        if (!baseResult.Successful)
+            return baseResult;
+
         if (!string.Equals(StorageBackend, "mongodb", StringComparison.OrdinalIgnoreCase))
             return ValidationResult.Error("Only the 'mongodb' storage backend is supported.");
 
