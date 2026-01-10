@@ -24,9 +24,15 @@ internal sealed class AuthResolveCommand(
         public bool OutputJson { get; init; }
 
         public override ValidationResult Validate()
-            => string.IsNullOrWhiteSpace(Token)
-                   ? ValidationResult.Error("Specify --token.")
-                   : ValidationResult.Success();
+        {
+            var baseResult = base.Validate();
+            if (!baseResult.Successful)
+                return baseResult;
+
+            return string.IsNullOrWhiteSpace(Token)
+                ? ValidationResult.Error("Specify --token.")
+                : ValidationResult.Success();
+        }
     }
 
     protected override async Task<int> ExecuteCommandAsync(CommandContext context, Settings settings, CancellationToken cancellationToken)

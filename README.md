@@ -141,11 +141,11 @@ dotnet run --project ScreepsDotNet.Backend.Cli -- invader create --username Inte
 | Command | Purpose | Key flags |
 | --- | --- | --- |
 | `system status [--json] [--format table\|markdown\|json]` | Show whether the simulation loop is paused and the current tick duration. | `--format` controls non-JSON output. |
-| `system pause [--json]` / `system resume [--json]` | Toggle the simulation main loop. | |
-| `system message "<text>" [--json]` | Broadcast a server notification via Redis pub/sub. | |
-| `system reset --confirm RESET [--force] [--json]` | Reseed Mongo/Redis using the canonical seed data. | `--force` required when targeting non-default DBs. |
-| `system tick get [--json]` | Display the minimal tick duration stored in Redis. | |
-| `system tick set --ms <milliseconds> [--json]` | Update and broadcast the minimal tick duration. | |
+| `system pause [--json] [--format table\|markdown\|json]` / `system resume [--json] [--format ...]` | Toggle the simulation main loop. | `--format` only applies to non-JSON output. |
+| `system message "<text>" [--json] [--format table\|markdown\|json]` | Broadcast a server notification via Redis pub/sub. | |
+| `system reset --confirm RESET [--force] [--json] [--format table\|markdown\|json]` | Reseed Mongo/Redis using the canonical seed data. | `--force` required when targeting non-default DBs. |
+| `system tick get [--json] [--format table\|markdown\|json]` | Display the minimal tick duration stored in Redis. | |
+| `system tick set --ms <milliseconds> [--json] [--format table\|markdown\|json]` | Update and broadcast the minimal tick duration. | |
 
 > HTTP automation can call the same maintenance flows via `/api/game/system/*`: `tick`, `tick-set`, `message`, and the new storage helpers all mirror the CLI switches. `POST /api/game/system/reset` or `/storage-reseed` requires `{"confirm":"RESET"}` (plus `"force": true` when resetting any non-default database).
 
@@ -176,10 +176,10 @@ dotnet run --project ScreepsDotNet.Backend.Cli -- map generate --room W10N5 --sh
 
 | Command | Purpose | Key flags |
 | --- | --- | --- |
-| `auth issue --user-id <id> [--json]` | Mint a token for the specified user via the shared Redis token service (handy for HTTP smoke tests). | Token prints as JSON or a key/value table. |
-| `auth resolve --token <value> [--json]` | Resolve an auth token back to its user id, matching the logic in the HTTP middleware. | Exit code `1` if the token is missing or expired. |
+| `auth issue --user-id <id> [--json] [--format table\|markdown\|json]` | Mint a token for the specified user via the shared Redis token service (handy for HTTP smoke tests). | Token prints as JSON or a key/value table. |
+| `auth resolve --token <value> [--json] [--format table\|markdown\|json]` | Resolve an auth token back to its user id, matching the logic in the HTTP middleware. | Exit code `1` if the token is missing or expired. |
 | `auth token-list [--user-id <id>] [--json]` | Enumerate active tokens, optionally filtering by user id, to audit who currently has access. | Shows TTL countdown and exits `0` even when no tokens match. |
-| `auth revoke --token <value> [--json]` | Delete a token immediately (returns `1` if the token does not exist). | Useful for revoking leaked/expired credentials without flushing Redis. |
+| `auth revoke --token <value> [--json] [--format table\|markdown\|json]` | Delete a token immediately (returns `1` if the token does not exist). | Useful for revoking leaked/expired credentials without flushing Redis. |
 
 ### CLI architecture notes
 
@@ -201,6 +201,7 @@ dotnet run --project ScreepsDotNet.Backend.Cli -- map generate --room W10N5 --sh
       }
   }
   ```
+- Running `screeps-cli` without a subcommand emits the same configuration summary through the formatter, so even `--format markdown` at the root level produces predictable output for automation.
 
 ## Storage Notes
 

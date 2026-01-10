@@ -24,9 +24,15 @@ internal sealed class AuthIssueCommand(
         public bool OutputJson { get; init; }
 
         public override ValidationResult Validate()
-            => string.IsNullOrWhiteSpace(UserId)
-                   ? ValidationResult.Error("Specify --user-id.")
-                   : ValidationResult.Success();
+        {
+            var baseResult = base.Validate();
+            if (!baseResult.Successful)
+                return baseResult;
+
+            return string.IsNullOrWhiteSpace(UserId)
+                ? ValidationResult.Error("Specify --user-id.")
+                : ValidationResult.Success();
+        }
     }
 
     protected override async Task<int> ExecuteCommandAsync(CommandContext context, Settings settings, CancellationToken cancellationToken)
