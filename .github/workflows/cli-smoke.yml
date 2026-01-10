@@ -1,0 +1,47 @@
+name: CLI Smoke Tests
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 6 * * *" # 06:00 UTC daily
+
+jobs:
+  cli-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Start Docker service
+        run: |
+          sudo systemctl start docker
+          docker info
+
+      - name: Launch Mongo + Redis
+        run: docker compose up -d
+
+      - name: Wait for Mongo + Redis to initialize
+        run: sleep 15
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Restore solution
+        run: dotnet restore ScreepsDotNet.slnx
+
+      - name: Run unit and integration tests
+        run: dotnet test ScreepsDotNet.slnx --nologo
+
+      - name: CLI smoke - storage status
+        run: dotnet run --project ScreepsDotNet.Backend.Cli/ScreepsDotNet.Backend.Cli.csproj -- storage status --json
+
+      - name: CLI smoke - world stats
+        run: dotnet run --project ScreepsDotNet.Backend.Cli/ScreepsDotNet.Backend.Cli.csproj -- world stats --room W1N1 --stat owners1 --json
+
+      - name: Tear down Mongo + Redis
+        if: always()
+        run: docker compose down -v
