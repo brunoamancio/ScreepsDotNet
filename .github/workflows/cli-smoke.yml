@@ -52,6 +52,12 @@ jobs:
       - name: CLI smoke - bots list
         run: dotnet run --project ScreepsDotNet.Backend.Cli/ScreepsDotNet.Backend.Cli.csproj -- bots list --json
 
+      - name: CLI smoke - user show
+        run: dotnet run --project ScreepsDotNet.Backend.Cli/ScreepsDotNet.Backend.Cli.csproj -- user show --username test-user --format markdown
+
+      - name: CLI smoke - auth token list
+        run: dotnet run --project ScreepsDotNet.Backend.Cli/ScreepsDotNet.Backend.Cli.csproj -- auth token-list --json
+
       - name: CLI smoke - system status
         run: dotnet run --project ScreepsDotNet.Backend.Cli/ScreepsDotNet.Backend.Cli.csproj -- system status --json
 
