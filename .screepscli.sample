@@ -1,0 +1,27 @@
+# Sample environment overrides for screeps-cli.
+# Source this file (e.g., `source .screepscli.sample`) before running `dotnet run --project ScreepsDotNet.Backend.Cli`.
+
+export SCREEPSCLI_DB=mongodb
+export SCREEPSCLI_CONNECTION_STRING="mongodb://localhost:27017"
+
+# Redis defaults to 16379 to align with docker-compose.
+export SCREEPSCLI_REDIS_CONNECTION_STRING="localhost:16379"
+
+# CLI listener placeholders (unused today, reserved for future TCP host support).
+export SCREEPSCLI_CLI_HOST="127.0.0.1"
+export SCREEPSCLI_CLI_PORT=21026
+
+# Backend host credentials (mirrors legacy --host/--port/--password switches).
+export SCREEPSCLI_HOST="0.0.0.0"
+export SCREEPSCLI_PORT=21025
+export SCREEPSCLI_PASSWORD="dev-password"
+export SCREEPSCLI_STEAM_API_KEY=""
+
+# Worker sizing and asset locations.
+export SCREEPSCLI_RUNNERS_CNT=1
+export SCREEPSCLI_PROCESSORS_CNT=1
+export SCREEPSCLI_ASSETDIR="./assets"
+export SCREEPSCLI_LOGDIR="./logs"
+
+# Optional mods manifest path (matches --modfile).
+export SCREEPSCLI_MODFILE="./mods.json"

@@ -82,7 +82,7 @@ dotnet run --project ScreepsDotNet.Backend.Cli/ScreepsDotNet.Backend.Cli.csproj 
 | `--host`, `--port`, `--password` | Legacy HTTP overrides accepted so the client launcher still works. |
 | `--modfile` / `SCREEPSCLI_modfile` / `MODFILE` | Path to the legacy `mods.json` manifest containing bot AI directories plus any `customIntentTypes/customObjectTypes`. |
 
-Every option can also be supplied via `SCREEPSCLI_<option>` environment variables, e.g., `SCREEPSCLI_connection-string`.
+Every option can also be supplied via `SCREEPSCLI_<option>` environment variables, e.g., `SCREEPSCLI_connection-string`. For convenience we ship `.screepscli.sample`; copy or source it to preload the common Mongo/Redis/asset settings before running the CLI.
 If you just need something to point at while experimenting, copy `ScreepsDotNet.Backend.Http/mods.sample.json` to a writable location, adjust the bot paths, and edit the sample `customIntentTypes` / `customObjectTypes` entries as needed.
 
 ### Bot commands

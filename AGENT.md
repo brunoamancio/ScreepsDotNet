@@ -93,12 +93,13 @@
    - `ScreepsDotNet.Backend.Http/RegisterEndpoints.http` covers `/api/register/*` (check email, check username, set username) to validate onboarding parity quickly.
    - `ScreepsDotNet.Backend.Http/SpawnEndpoints.http` now includes `/api/game/gen-unique-object-name` and `/api/game/check-unique-object-name` samples alongside the spawn/construction flows.
    - `ScreepsDotNet.Backend.Http/UserEndpoints.http` now includes the `/api/user/messages/*` flows (send/list/index/mark-read/unread-count) using the seeded `ally-user` respondent so you can smoke test the inbox endpoints without crafting payloads from scratch.
-   - CLI quick checks (run from `ScreepsDotNet`):
-     - `dotnet run --project ScreepsDotNet.Backend.Cli -- version --json`
-     - `dotnet run --project ScreepsDotNet.Backend.Cli -- storage status --json`
-     - `dotnet run --project ScreepsDotNet.Backend.Cli -- system status --json`
-     - `dotnet run --project ScreepsDotNet.Backend.Cli -- bots list --json`
-    - `dotnet run --project ScreepsDotNet.Backend.Cli -- map generate --room W10N5 --shard shard1 --overwrite --json`
+- CLI quick checks (run from `ScreepsDotNet`):
+  - `dotnet run --project ScreepsDotNet.Backend.Cli -- version --json`
+  - `dotnet run --project ScreepsDotNet.Backend.Cli -- storage status --json`
+  - `dotnet run --project ScreepsDotNet.Backend.Cli -- system status --json`
+  - `dotnet run --project ScreepsDotNet.Backend.Cli -- bots list --json`
+  - `dotnet run --project ScreepsDotNet.Backend.Cli -- map generate --room W10N5 --shard shard1 --overwrite --json`
+  - When you need to reuse the same CLI configuration across runs, copy `.screepscli.sample` to `.screepscli`, adjust the exports, and `source` it so the `SCREEPSCLI_*` environment variables are in place.
 7. **Build:** ensure no running `dotnet run` locks DLLs before invoking `dotnet build`.
 
 ### Resetting / Updating Seed Data
