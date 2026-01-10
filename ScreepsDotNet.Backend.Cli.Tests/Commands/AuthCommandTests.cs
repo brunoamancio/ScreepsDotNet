@@ -12,7 +12,7 @@ public sealed class AuthCommandTests
     public async Task AuthIssueCommand_IssuesTokenForUser()
     {
         var service = new FakeTokenService();
-        var command = new AuthIssueCommand(service, new TestFormatter());
+        var command = new AuthIssueCommand(service, null, null, new TestFormatter());
         var settings = new AuthIssueCommand.Settings
         {
             UserId = "user-1",
@@ -29,7 +29,7 @@ public sealed class AuthCommandTests
     public async Task AuthResolveCommand_ReturnsErrorWhenTokenMissing()
     {
         var service = new FakeTokenService { ResolveResult = null };
-        var command = new AuthResolveCommand(service, new TestFormatter());
+        var command = new AuthResolveCommand(service, null, null, new TestFormatter());
         var settings = new AuthResolveCommand.Settings
         {
             Token = "missing-token"
@@ -75,6 +75,14 @@ public sealed class AuthCommandTests
         }
 
         public void WriteMarkdownTable(string? title, IReadOnlyList<string> headers, IEnumerable<IReadOnlyList<string>> rows)
+        {
+        }
+
+        public void WriteLine(string message)
+        {
+        }
+
+        public void WriteMarkupLine(string markup, params object[] args)
         {
         }
     }

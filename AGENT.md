@@ -25,7 +25,9 @@
   - `flag create|change-color|remove`
   - `invader create|remove`
   - `auth issue|resolve`
-- All CLI handlers derive from `CommandHandler<TSettings>` and write output through `ICommandOutputFormatter`, so new commands get consistent logging, cancellation, and JSON/table rendering by default. Inject the formatter instead of writing directly to `AnsiConsole` unless you truly need custom output.
+- Implementation rules:
+  - Derive every verb from `CommandHandler<TSettings>` (for logging + cancellation) and always request `ICommandOutputFormatter` in the constructor. `OutputFormatter` exposes `WriteJson`, `WriteTable`, `WriteKeyValueTable`, `WriteMarkdownTable`, `WriteLine`, and `WriteMarkupLine`; direct `AnsiConsole` calls are no longer allowed.
+  - Commands that support `--json` should short-circuit by calling `OutputFormatter.WriteJson(...)` before any table rendering, matching the behavior documented in README.
 - Every CLI verb that accepts a room identifier now shares the same shard-aware parser as the HTTP surface: operators can specify either the legacy inline form (`shard2/W20N20`) or pass `--shard shard2` alongside the room name. The parser trims/uppercases room names, rejects malformed identifiers, and keeps CLI + HTTP behavior in sync.
 - `ScreepsDotNet.Storage.MongoRedis/` – MongoDB/Redis infrastructure (adapter + repositories) used by the HTTP host.
   - `.editorconfig`, `.globalconfig`, `.gitattributes`, `Directory.Build.props` – shared tooling settings.

@@ -15,6 +15,10 @@ internal interface ICommandOutputFormatter
     void WriteKeyValueTable(IEnumerable<(string Key, string Value)> rows, string? title = null);
 
     void WriteMarkdownTable(string? title, IReadOnlyList<string> headers, IEnumerable<IReadOnlyList<string>> rows);
+
+    void WriteLine(string message);
+
+    void WriteMarkupLine(string markup, params object[] args);
 }
 
 internal sealed class CommandOutputFormatter : ICommandOutputFormatter
@@ -66,4 +70,10 @@ internal sealed class CommandOutputFormatter : ICommandOutputFormatter
 
         AnsiConsole.WriteLine(builder.ToString());
     }
+
+    public void WriteLine(string message)
+        => AnsiConsole.WriteLine(message);
+
+    public void WriteMarkupLine(string markup, params object[] args)
+        => AnsiConsole.MarkupLine(markup, args);
 }

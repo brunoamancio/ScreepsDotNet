@@ -7,10 +7,10 @@ using Spectre.Console.Cli;
 
 internal sealed class AuthResolveCommand(
     ITokenService tokenService,
-    ICommandOutputFormatter outputFormatter,
     ILogger<AuthResolveCommand>? logger = null,
-    IHostApplicationLifetime? lifetime = null)
-    : CommandHandler<AuthResolveCommand.Settings>(logger, lifetime)
+    IHostApplicationLifetime? lifetime = null,
+    ICommandOutputFormatter? outputFormatter = null)
+    : CommandHandler<AuthResolveCommand.Settings>(logger, lifetime, outputFormatter)
 {
     public sealed class Settings : CommandSettings
     {
@@ -33,16 +33,16 @@ internal sealed class AuthResolveCommand(
         var userId = await tokenService.ResolveUserIdAsync(settings.Token!, cancellationToken).ConfigureAwait(false);
         if (string.IsNullOrWhiteSpace(userId)) {
             Logger.LogWarning("Token could not be resolved.");
-            outputFormatter.WriteKeyValueTable([("Token", settings.Token!), ("Status", "not found / expired")]);
+            OutputFormatter.WriteKeyValueTable([("Token", settings.Token!), ("Status", "not found / expired")]);
             return 1;
         }
 
         if (settings.OutputJson) {
-            outputFormatter.WriteJson(new { userId });
+            OutputFormatter.WriteJson(new { userId });
             return 0;
         }
 
-        outputFormatter.WriteKeyValueTable([("Token", settings.Token!), ("User Id", userId)], "Token owner");
+        OutputFormatter.WriteKeyValueTable([("Token", settings.Token!), ("User Id", userId)], "Token owner");
         return 0;
     }
 }

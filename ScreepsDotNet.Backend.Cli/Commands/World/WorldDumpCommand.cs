@@ -10,7 +10,7 @@ using ScreepsDotNet.Backend.Core.Repositories;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
-internal sealed class WorldDumpCommand(IRoomTerrainRepository terrainRepository, ILogger<WorldDumpCommand>? logger = null, IHostApplicationLifetime? lifetime = null) : CommandHandler<WorldDumpCommand.Settings>(logger, lifetime)
+internal sealed class WorldDumpCommand(IRoomTerrainRepository terrainRepository, ILogger<WorldDumpCommand>? logger = null, IHostApplicationLifetime? lifetime = null, ICommandOutputFormatter? outputFormatter = null) : CommandHandler<WorldDumpCommand.Settings>(logger, lifetime, outputFormatter)
 {
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
     public sealed class Settings : CommandSettings
@@ -60,24 +60,24 @@ internal sealed class WorldDumpCommand(IRoomTerrainRepository terrainRepository,
                     e.Type,
                     Tiles = DecodeTerrain(e.Terrain)
                 });
-                AnsiConsole.WriteLine(JsonSerializer.Serialize(decoded, JsonOptions));
+                OutputFormatter.WriteLine(JsonSerializer.Serialize(decoded, JsonOptions));
                 return 0;
             }
 
-            AnsiConsole.WriteLine(JsonSerializer.Serialize(entries, JsonOptions));
+            OutputFormatter.WriteLine(JsonSerializer.Serialize(entries, JsonOptions));
             return 0;
         }
 
         foreach (var entry in entries) {
-            AnsiConsole.MarkupLine($"[bold]{entry.RoomName}[/] ({entry.Type ?? "terrain"})");
+            OutputFormatter.WriteMarkupLine($"[bold]{entry.RoomName}[/] ({entry.Type ?? "terrain"})");
             if (settings.DecodeTiles) {
                 var tiles = DecodeTerrain(entry.Terrain);
-                AnsiConsole.MarkupLine($"Tiles: {tiles.Count}");
+                OutputFormatter.WriteMarkupLine($"Tiles: {tiles.Count}");
             }
             else
-                AnsiConsole.MarkupLine(entry.Terrain ?? "(empty)");
+                OutputFormatter.WriteMarkupLine(entry.Terrain ?? "(empty)");
 
-            AnsiConsole.WriteLine();
+            OutputFormatter.WriteLine(string.Empty);
         }
 
         return 0;

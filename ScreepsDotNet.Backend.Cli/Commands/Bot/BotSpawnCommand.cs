@@ -8,7 +8,7 @@ using ScreepsDotNet.Backend.Core.Services;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
-internal sealed class BotSpawnCommand(IBotControlService botControlService, ILogger<BotSpawnCommand>? logger = null, IHostApplicationLifetime? lifetime = null) : CommandHandler<BotSpawnCommand.Settings>(logger, lifetime)
+internal sealed class BotSpawnCommand(IBotControlService botControlService, ILogger<BotSpawnCommand>? logger = null, IHostApplicationLifetime? lifetime = null, ICommandOutputFormatter? outputFormatter = null) : CommandHandler<BotSpawnCommand.Settings>(logger, lifetime, outputFormatter)
 {
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
 
@@ -95,7 +95,7 @@ internal sealed class BotSpawnCommand(IBotControlService botControlService, ILog
                 result.ShardName,
                 Spawn = new { result.SpawnX, result.SpawnY }
             };
-            AnsiConsole.WriteLine(JsonSerializer.Serialize(payload, JsonOptions));
+            OutputFormatter.WriteLine(JsonSerializer.Serialize(payload, JsonOptions));
             return 0;
         }
 
@@ -105,7 +105,7 @@ internal sealed class BotSpawnCommand(IBotControlService botControlService, ILog
         table.AddRow("Room", result.RoomName);
         table.AddRow("Shard", result.ShardName ?? "default");
         table.AddRow("Spawn", $"({result.SpawnX.ToString(CultureInfo.InvariantCulture)},{result.SpawnY.ToString(CultureInfo.InvariantCulture)})");
-        AnsiConsole.Write(table);
+        OutputFormatter.WriteTable(table);
 
         return 0;
     }

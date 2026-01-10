@@ -6,7 +6,7 @@ using ScreepsDotNet.Backend.Core.Services;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
-internal sealed class FlagCreateCommand(IFlagService flagService, IUserRepository userRepository, ILogger<FlagCreateCommand>? logger = null, IHostApplicationLifetime? lifetime = null) : CommandHandler<FlagCreateCommand.Settings>(logger, lifetime)
+internal sealed class FlagCreateCommand(IFlagService flagService, IUserRepository userRepository, ILogger<FlagCreateCommand>? logger = null, IHostApplicationLifetime? lifetime = null, ICommandOutputFormatter? outputFormatter = null) : CommandHandler<FlagCreateCommand.Settings>(logger, lifetime, outputFormatter)
 {
     public sealed class Settings : CommandSettings
     {
@@ -74,7 +74,7 @@ internal sealed class FlagCreateCommand(IFlagService flagService, IUserRepositor
         if (string.IsNullOrWhiteSpace(userId)) {
             var profile = await userRepository.FindPublicProfileAsync(settings.Username, null, cancellationToken).ConfigureAwait(false);
             if (profile is null) {
-                AnsiConsole.MarkupLine("[red]Error:[/] User not found.");
+                OutputFormatter.WriteMarkupLine("[red]Error:[/] User not found.");
                 return 1;
             }
             userId = profile.Id;
@@ -93,12 +93,12 @@ internal sealed class FlagCreateCommand(IFlagService flagService, IUserRepositor
         var result = await flagService.CreateFlagAsync(userId, request, cancellationToken).ConfigureAwait(false);
 
         if (result.Status != FlagResultStatus.Success) {
-            AnsiConsole.MarkupLine($"[red]Error:[/] {result.ErrorMessage ?? result.Status.ToString()}");
+            OutputFormatter.WriteMarkupLine($"[red]Error:[/] {result.ErrorMessage ?? result.Status.ToString()}");
             return 1;
         }
 
         var shardLabel = string.IsNullOrWhiteSpace(settings.Shard) ? "default shard" : settings.Shard;
-        AnsiConsole.MarkupLine($"[green]Success:[/] Flag [yellow]{settings.Name}[/] created in [blue]{settings.RoomName}[/] ({Markup.Escape(shardLabel)}) at ({settings.X}, {settings.Y}).");
+        OutputFormatter.WriteMarkupLine($"[green]Success:[/] Flag [yellow]{settings.Name}[/] created in [blue]{settings.RoomName}[/] ({Markup.Escape(shardLabel)}) at ({settings.X}, {settings.Y}).");
         return 0;
     }
 }

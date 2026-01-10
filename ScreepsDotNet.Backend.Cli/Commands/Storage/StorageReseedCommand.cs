@@ -9,8 +9,7 @@ using ScreepsDotNet.Storage.MongoRedis.Seeding;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
-internal sealed class StorageReseedCommand(ISeedDataService seedDataService, IOptions<MongoRedisStorageOptions> storageOptions, ILogger<StorageReseedCommand>? logger = null, IHostApplicationLifetime? lifetime = null)
-    : CommandHandler<StorageReseedCommand.Settings>(logger, lifetime)
+internal sealed class StorageReseedCommand(ISeedDataService seedDataService, IOptions<MongoRedisStorageOptions> storageOptions, ILogger<StorageReseedCommand>? logger = null, IHostApplicationLifetime? lifetime = null, ICommandOutputFormatter? outputFormatter = null) : CommandHandler<StorageReseedCommand.Settings>(logger, lifetime, outputFormatter)
 {
     public sealed class Settings : CommandSettings
     {
@@ -40,9 +39,9 @@ internal sealed class StorageReseedCommand(ISeedDataService seedDataService, IOp
             return 1;
         }
 
-        AnsiConsole.MarkupLine("[yellow]Reseeding Mongo database '{0}'...[/]", options.MongoDatabase);
+        OutputFormatter.WriteMarkupLine("[yellow]Reseeding Mongo database '{0}'...[/]", options.MongoDatabase);
         await seedDataService.ReseedAsync(options.MongoConnectionString, options.MongoDatabase, cancellationToken).ConfigureAwait(false);
-        AnsiConsole.MarkupLine("[green]Reseed complete.[/]");
+        OutputFormatter.WriteMarkupLine("[green]Reseed complete.[/]");
         return 0;
     }
 }

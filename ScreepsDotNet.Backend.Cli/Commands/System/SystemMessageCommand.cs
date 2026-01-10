@@ -4,7 +4,7 @@ using Spectre.Console.Cli;
 
 namespace ScreepsDotNet.Backend.Cli.Commands.System;
 
-internal sealed class SystemMessageCommand(ISystemControlService controlService, ILogger<SystemMessageCommand>? logger = null, IHostApplicationLifetime? lifetime = null) : CommandHandler<SystemMessageCommand.Settings>(logger, lifetime)
+internal sealed class SystemMessageCommand(ISystemControlService controlService, ILogger<SystemMessageCommand>? logger = null, IHostApplicationLifetime? lifetime = null, ICommandOutputFormatter? outputFormatter = null) : CommandHandler<SystemMessageCommand.Settings>(logger, lifetime, outputFormatter)
 {
     public sealed class Settings : CommandSettings
     {
@@ -23,7 +23,7 @@ internal sealed class SystemMessageCommand(ISystemControlService controlService,
     protected override async Task<int> ExecuteCommandAsync(CommandContext context, Settings settings, CancellationToken cancellationToken)
     {
         await controlService.PublishServerMessageAsync(settings.Message, cancellationToken).ConfigureAwait(false);
-        AnsiConsole.MarkupLine("[green]Server message dispatched.[/]");
+        OutputFormatter.WriteMarkupLine("[green]Server message dispatched.[/]");
         return 0;
     }
 }

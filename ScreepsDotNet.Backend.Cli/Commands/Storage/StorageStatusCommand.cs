@@ -6,7 +6,7 @@ using ScreepsDotNet.Backend.Core.Storage;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
-internal sealed class StorageStatusCommand(IStorageAdapter storageAdapter, ILogger<StorageStatusCommand>? logger = null, IHostApplicationLifetime? lifetime = null) : CommandHandler<StorageStatusCommand.Settings>(logger, lifetime)
+internal sealed class StorageStatusCommand(IStorageAdapter storageAdapter, ILogger<StorageStatusCommand>? logger = null, IHostApplicationLifetime? lifetime = null, ICommandOutputFormatter? outputFormatter = null) : CommandHandler<StorageStatusCommand.Settings>(logger, lifetime, outputFormatter)
 {
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
 
@@ -27,7 +27,7 @@ internal sealed class StorageStatusCommand(IStorageAdapter storageAdapter, ILogg
                 status.LastSynchronizationUtc,
                 status.Details
             };
-            AnsiConsole.WriteLine(JsonSerializer.Serialize(payload, JsonOptions));
+            OutputFormatter.WriteLine(JsonSerializer.Serialize(payload, JsonOptions));
             return status.IsConnected ? 0 : 1;
         }
 
@@ -35,7 +35,7 @@ internal sealed class StorageStatusCommand(IStorageAdapter storageAdapter, ILogg
         table.AddRow("Connected", status.IsConnected.ToString());
         table.AddRow("Last Sync (UTC)", status.LastSynchronizationUtc?.ToString("u") ?? "unknown");
         table.AddRow("Details", status.Details ?? "none");
-        AnsiConsole.Write(table);
+        OutputFormatter.WriteTable(table);
 
         if (!status.IsConnected)
             Logger.LogWarning("Storage status reported disconnected: {Details}", status.Details);

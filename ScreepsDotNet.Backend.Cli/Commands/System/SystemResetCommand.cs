@@ -8,8 +8,7 @@ using Spectre.Console.Cli;
 
 namespace ScreepsDotNet.Backend.Cli.Commands.System;
 
-internal sealed class SystemResetCommand(ISeedDataService seedDataService, IOptions<MongoRedisStorageOptions> storageOptions, ILogger<SystemResetCommand>? logger = null, IHostApplicationLifetime? lifetime = null)
-    : CommandHandler<SystemResetCommand.Settings>(logger, lifetime)
+internal sealed class SystemResetCommand(ISeedDataService seedDataService, IOptions<MongoRedisStorageOptions> storageOptions, ILogger<SystemResetCommand>? logger = null, IHostApplicationLifetime? lifetime = null, ICommandOutputFormatter? outputFormatter = null) : CommandHandler<SystemResetCommand.Settings>(logger, lifetime, outputFormatter)
 {
     public sealed class Settings : CommandSettings
     {
@@ -39,9 +38,9 @@ internal sealed class SystemResetCommand(ISeedDataService seedDataService, IOpti
             return 1;
         }
 
-        AnsiConsole.MarkupLine("[red]Resetting world data in database '{0}'. This wipes all user/world state.[/]", options.MongoDatabase);
+        OutputFormatter.WriteMarkupLine("[red]Resetting world data in database '{0}'. This wipes all user/world state.[/]", options.MongoDatabase);
         await seedDataService.ReseedAsync(options.MongoConnectionString, options.MongoDatabase, cancellationToken).ConfigureAwait(false);
-        AnsiConsole.MarkupLine("[green]Reset complete.[/]");
+        OutputFormatter.WriteMarkupLine("[green]Reset complete.[/]");
         return 0;
     }
 }

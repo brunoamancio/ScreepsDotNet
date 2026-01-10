@@ -7,7 +7,7 @@ using ScreepsDotNet.Backend.Core.Services;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
-internal sealed class MapAssetsUpdateCommand(IMapControlService mapControlService, ILogger<MapAssetsUpdateCommand>? logger = null, IHostApplicationLifetime? lifetime = null) : CommandHandler<MapAssetsUpdateCommand.Settings>(logger, lifetime)
+internal sealed class MapAssetsUpdateCommand(IMapControlService mapControlService, ILogger<MapAssetsUpdateCommand>? logger = null, IHostApplicationLifetime? lifetime = null, ICommandOutputFormatter? outputFormatter = null) : CommandHandler<MapAssetsUpdateCommand.Settings>(logger, lifetime, outputFormatter)
 {
     public sealed class Settings : CommandSettings
     {
@@ -42,7 +42,7 @@ internal sealed class MapAssetsUpdateCommand(IMapControlService mapControlServic
 
         await mapControlService.UpdateRoomAssetsAsync(reference.RoomName, reference.ShardName, settings.Full, cancellationToken).ConfigureAwait(false);
         var displayName = string.IsNullOrWhiteSpace(reference.ShardName) ? reference.RoomName : $"{reference.ShardName}/{reference.RoomName}";
-        AnsiConsole.MarkupLine($"[blue]Queued asset refresh for {displayName} (full={settings.Full}).[/]");
+        OutputFormatter.WriteMarkupLine($"[blue]Queued asset refresh for {displayName} (full={settings.Full}).[/]");
         return 0;
     }
 }

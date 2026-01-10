@@ -6,7 +6,7 @@ using ScreepsDotNet.Backend.Core.Services;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
-internal sealed class FlagRemoveCommand(IFlagService flagService, IUserRepository userRepository, ILogger<FlagRemoveCommand>? logger = null, IHostApplicationLifetime? lifetime = null) : CommandHandler<FlagRemoveCommand.Settings>(logger, lifetime)
+internal sealed class FlagRemoveCommand(IFlagService flagService, IUserRepository userRepository, ILogger<FlagRemoveCommand>? logger = null, IHostApplicationLifetime? lifetime = null, ICommandOutputFormatter? outputFormatter = null) : CommandHandler<FlagRemoveCommand.Settings>(logger, lifetime, outputFormatter)
 {
     public sealed class Settings : CommandSettings
     {
@@ -51,7 +51,7 @@ internal sealed class FlagRemoveCommand(IFlagService flagService, IUserRepositor
         if (string.IsNullOrWhiteSpace(userId)) {
             var profile = await userRepository.FindPublicProfileAsync(settings.Username, null, cancellationToken).ConfigureAwait(false);
             if (profile is null) {
-                AnsiConsole.MarkupLine("[red]Error:[/] User not found.");
+                OutputFormatter.WriteMarkupLine("[red]Error:[/] User not found.");
                 return 1;
             }
             userId = profile.Id;
@@ -66,12 +66,12 @@ internal sealed class FlagRemoveCommand(IFlagService flagService, IUserRepositor
         );
 
         if (result.Status != FlagResultStatus.Success) {
-            AnsiConsole.MarkupLine($"[red]Error:[/] {result.ErrorMessage ?? result.Status.ToString()}");
+            OutputFormatter.WriteMarkupLine($"[red]Error:[/] {result.ErrorMessage ?? result.Status.ToString()}");
             return 1;
         }
 
         var shardLabel = string.IsNullOrWhiteSpace(settings.Shard) ? string.Empty : $" ({Markup.Escape(settings.Shard)})";
-        AnsiConsole.MarkupLine($"[green]Success:[/] Flag [yellow]{settings.Name}[/] removed from [blue]{settings.RoomName}[/]{shardLabel}.");
+        OutputFormatter.WriteMarkupLine($"[green]Success:[/] Flag [yellow]{settings.Name}[/] removed from [blue]{settings.RoomName}[/]{shardLabel}.");
         return 0;
     }
 }

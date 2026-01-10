@@ -7,10 +7,10 @@ using Spectre.Console.Cli;
 
 internal sealed class AuthIssueCommand(
     ITokenService tokenService,
-    ICommandOutputFormatter outputFormatter,
     ILogger<AuthIssueCommand>? logger = null,
-    IHostApplicationLifetime? lifetime = null)
-    : CommandHandler<AuthIssueCommand.Settings>(logger, lifetime)
+    IHostApplicationLifetime? lifetime = null,
+    ICommandOutputFormatter? outputFormatter = null)
+    : CommandHandler<AuthIssueCommand.Settings>(logger, lifetime, outputFormatter)
 {
     public sealed class Settings : CommandSettings
     {
@@ -33,11 +33,11 @@ internal sealed class AuthIssueCommand(
         var token = await tokenService.IssueTokenAsync(settings.UserId!, cancellationToken).ConfigureAwait(false);
 
         if (settings.OutputJson) {
-            outputFormatter.WriteJson(new { token });
+            OutputFormatter.WriteJson(new { token });
             return 0;
         }
 
-        outputFormatter.WriteKeyValueTable([("Token", token)], "Issued token");
+        OutputFormatter.WriteKeyValueTable([("Token", token)], "Issued token");
         return 0;
     }
 }

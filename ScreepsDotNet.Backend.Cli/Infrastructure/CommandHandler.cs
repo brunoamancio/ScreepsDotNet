@@ -6,11 +6,12 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Spectre.Console.Cli;
 
-internal abstract class CommandHandler<TSettings>(ILogger? logger, IHostApplicationLifetime? lifetime)
+internal abstract class CommandHandler<TSettings>(ILogger? logger, IHostApplicationLifetime? lifetime, ICommandOutputFormatter? outputFormatter = null)
     : AsyncCommand<TSettings>
     where TSettings : CommandSettings
 {
     protected ILogger Logger { get; } = logger ?? NullLogger.Instance;
+    protected ICommandOutputFormatter OutputFormatter { get; } = outputFormatter ?? new CommandOutputFormatter();
     private IHostApplicationLifetime Lifetime { get; } = lifetime ?? NullHostApplicationLifetime.Instance;
 
     public sealed override async Task<int> ExecuteAsync(CommandContext context, TSettings settings, CancellationToken cancellationToken)

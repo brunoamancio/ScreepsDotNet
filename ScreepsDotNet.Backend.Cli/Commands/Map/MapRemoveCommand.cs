@@ -7,7 +7,7 @@ using ScreepsDotNet.Backend.Core.Services;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
-internal sealed class MapRemoveCommand(IMapControlService mapControlService, ILogger<MapRemoveCommand>? logger = null, IHostApplicationLifetime? lifetime = null) : CommandHandler<MapRemoveCommand.Settings>(logger, lifetime)
+internal sealed class MapRemoveCommand(IMapControlService mapControlService, ILogger<MapRemoveCommand>? logger = null, IHostApplicationLifetime? lifetime = null, ICommandOutputFormatter? outputFormatter = null) : CommandHandler<MapRemoveCommand.Settings>(logger, lifetime, outputFormatter)
 {
     public sealed class Settings : CommandSettings
     {
@@ -42,7 +42,7 @@ internal sealed class MapRemoveCommand(IMapControlService mapControlService, ILo
 
         await mapControlService.RemoveRoomAsync(reference.RoomName, reference.ShardName, settings.PurgeObjects, cancellationToken).ConfigureAwait(false);
         var displayName = string.IsNullOrWhiteSpace(reference.ShardName) ? reference.RoomName : $"{reference.ShardName}/{reference.RoomName}";
-        AnsiConsole.MarkupLine($"[red]Room {displayName} removed (purge={settings.PurgeObjects}).[/]");
+        OutputFormatter.WriteMarkupLine($"[red]Room {displayName} removed (purge={settings.PurgeObjects}).[/]");
         return 0;
     }
 }

@@ -7,7 +7,7 @@ using ScreepsDotNet.Backend.Core.Services;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
-internal sealed class InvaderRemoveCommand(IInvaderService invaderService, IUserRepository userRepository, ILogger<InvaderRemoveCommand>? logger = null, IHostApplicationLifetime? lifetime = null) : CommandHandler<InvaderRemoveCommand.Settings>(logger, lifetime)
+internal sealed class InvaderRemoveCommand(IInvaderService invaderService, IUserRepository userRepository, ILogger<InvaderRemoveCommand>? logger = null, IHostApplicationLifetime? lifetime = null, ICommandOutputFormatter? outputFormatter = null) : CommandHandler<InvaderRemoveCommand.Settings>(logger, lifetime, outputFormatter)
 {
     public sealed class Settings : CommandSettings
     {
@@ -41,7 +41,7 @@ internal sealed class InvaderRemoveCommand(IInvaderService invaderService, IUser
         if (string.IsNullOrWhiteSpace(userId)) {
             var publicProfile = await userRepository.FindPublicProfileAsync(settings.Username, null, cancellationToken).ConfigureAwait(false);
             if (publicProfile is null) {
-                AnsiConsole.MarkupLine($"[red]Error:[/] User '{settings.Username}' not found.");
+                OutputFormatter.WriteMarkupLine($"[red]Error:[/] User '{settings.Username}' not found.");
                 return 1;
             }
             userId = publicProfile.Id;
@@ -51,11 +51,11 @@ internal sealed class InvaderRemoveCommand(IInvaderService invaderService, IUser
         var result = await invaderService.RemoveInvaderAsync(userId, request, cancellationToken).ConfigureAwait(false);
 
         if (result.Status != RemoveInvaderResultStatus.Success) {
-            AnsiConsole.MarkupLine($"[red]Error:[/] {result.Status}");
+            OutputFormatter.WriteMarkupLine($"[red]Error:[/] {result.Status}");
             return 1;
         }
 
-        AnsiConsole.MarkupLine($"[green]Success:[/] Invader removed.");
+        OutputFormatter.WriteMarkupLine($"[green]Success:[/] Invader removed.");
         return 0;
     }
 }

@@ -8,7 +8,7 @@ using ScreepsDotNet.Backend.Core.Services;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
-internal sealed class BotListCommand(IBotDefinitionProvider definitionProvider, ILogger<BotListCommand>? logger = null, IHostApplicationLifetime? lifetime = null) : CommandHandler<BotListCommand.Settings>(logger, lifetime)
+internal sealed class BotListCommand(IBotDefinitionProvider definitionProvider, ILogger<BotListCommand>? logger = null, IHostApplicationLifetime? lifetime = null, ICommandOutputFormatter? outputFormatter = null) : CommandHandler<BotListCommand.Settings>(logger, lifetime, outputFormatter)
 {
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
 
@@ -32,12 +32,12 @@ internal sealed class BotListCommand(IBotDefinitionProvider definitionProvider, 
                               ModuleCount = definition.Modules.Count
                           });
 
-            AnsiConsole.WriteLine(JsonSerializer.Serialize(payload, JsonOptions));
+            OutputFormatter.WriteLine(JsonSerializer.Serialize(payload, JsonOptions));
             return 0;
         }
 
         if (definitions.Count == 0) {
-            AnsiConsole.MarkupLine("[yellow]No bot AI definitions were found. Use --modfile to point at mods.json.[/]");
+            OutputFormatter.WriteMarkupLine("[yellow]No bot AI definitions were found. Use --modfile to point at mods.json.[/]");
             return 0;
         }
 
@@ -45,7 +45,7 @@ internal sealed class BotListCommand(IBotDefinitionProvider definitionProvider, 
         foreach (var definition in definitions.OrderBy(def => def.Name, StringComparer.OrdinalIgnoreCase))
             table.AddRow(definition.Name, definition.Description, definition.Modules.Count.ToString(CultureInfo.InvariantCulture));
 
-        AnsiConsole.Write(table);
+        OutputFormatter.WriteTable(table);
         return 0;
     }
 }

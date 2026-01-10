@@ -9,7 +9,7 @@ using ScreepsDotNet.Backend.Core.Services;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
-internal sealed class StrongholdSpawnCommand(IStrongholdControlService strongholdControlService, ILogger<StrongholdSpawnCommand>? logger = null, IHostApplicationLifetime? lifetime = null) : CommandHandler<StrongholdSpawnCommand.Settings>(logger, lifetime)
+internal sealed class StrongholdSpawnCommand(IStrongholdControlService strongholdControlService, ILogger<StrongholdSpawnCommand>? logger = null, IHostApplicationLifetime? lifetime = null, ICommandOutputFormatter? outputFormatter = null) : CommandHandler<StrongholdSpawnCommand.Settings>(logger, lifetime, outputFormatter)
 {
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
 
@@ -84,7 +84,7 @@ internal sealed class StrongholdSpawnCommand(IStrongholdControlService stronghol
         var result = await strongholdControlService.SpawnAsync(reference.RoomName, reference.ShardName, options, cancellationToken).ConfigureAwait(false);
 
         if (settings.OutputJson) {
-            AnsiConsole.WriteLine(JsonSerializer.Serialize(result, JsonOptions));
+            OutputFormatter.WriteLine(JsonSerializer.Serialize(result, JsonOptions));
             return 0;
         }
 
@@ -92,7 +92,7 @@ internal sealed class StrongholdSpawnCommand(IStrongholdControlService stronghol
         table.AddRow("Room", string.IsNullOrWhiteSpace(result.ShardName) ? result.RoomName : $"{result.ShardName}/{result.RoomName}");
         table.AddRow("Template", result.TemplateName);
         table.AddRow("Stronghold ID", result.InvaderCoreId);
-        AnsiConsole.Write(table);
+        OutputFormatter.WriteTable(table);
 
         return 0;
     }

@@ -8,7 +8,7 @@ using ScreepsDotNet.Backend.Core.Services;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
-internal sealed class StrongholdTemplatesCommand(IStrongholdTemplateProvider templateProvider, ILogger<StrongholdTemplatesCommand>? logger = null, IHostApplicationLifetime? lifetime = null) : CommandHandler<StrongholdTemplatesCommand.Settings>(logger, lifetime)
+internal sealed class StrongholdTemplatesCommand(IStrongholdTemplateProvider templateProvider, ILogger<StrongholdTemplatesCommand>? logger = null, IHostApplicationLifetime? lifetime = null, ICommandOutputFormatter? outputFormatter = null) : CommandHandler<StrongholdTemplatesCommand.Settings>(logger, lifetime, outputFormatter)
 {
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
 
@@ -35,12 +35,12 @@ internal sealed class StrongholdTemplatesCommand(IStrongholdTemplateProvider tem
                 }),
                 DepositTypes = depositTypes
             };
-            AnsiConsole.WriteLine(JsonSerializer.Serialize(payload, JsonOptions));
+            OutputFormatter.WriteLine(JsonSerializer.Serialize(payload, JsonOptions));
             return 0;
         }
 
         if (templates.Count == 0) {
-            AnsiConsole.MarkupLine("[yellow]No stronghold templates are available.[/]");
+            OutputFormatter.WriteMarkupLine("[yellow]No stronghold templates are available.[/]");
             return 0;
         }
 
@@ -48,10 +48,10 @@ internal sealed class StrongholdTemplatesCommand(IStrongholdTemplateProvider tem
         foreach (var template in templates.OrderBy(t => t.RewardLevel).ThenBy(t => t.Name, StringComparer.OrdinalIgnoreCase))
             table.AddRow(template.Name, template.RewardLevel.ToString(CultureInfo.InvariantCulture), template.Structures.Count.ToString(CultureInfo.InvariantCulture));
 
-        AnsiConsole.Write(table);
+        OutputFormatter.WriteTable(table);
 
         if (depositTypes.Count > 0)
-            AnsiConsole.MarkupLine($"\nDeposit types: [cyan]{string.Join(", ", depositTypes)}[/]");
+            OutputFormatter.WriteMarkupLine($"\nDeposit types: [cyan]{string.Join(", ", depositTypes)}[/]");
 
         return 0;
     }

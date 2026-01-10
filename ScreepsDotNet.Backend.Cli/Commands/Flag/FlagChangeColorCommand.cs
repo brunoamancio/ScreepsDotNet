@@ -6,7 +6,7 @@ using ScreepsDotNet.Backend.Core.Services;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
-internal sealed class FlagChangeColorCommand(IFlagService flagService, IUserRepository userRepository, ILogger<FlagChangeColorCommand>? logger = null, IHostApplicationLifetime? lifetime = null) : CommandHandler<FlagChangeColorCommand.Settings>(logger, lifetime)
+internal sealed class FlagChangeColorCommand(IFlagService flagService, IUserRepository userRepository, ILogger<FlagChangeColorCommand>? logger = null, IHostApplicationLifetime? lifetime = null, ICommandOutputFormatter? outputFormatter = null) : CommandHandler<FlagChangeColorCommand.Settings>(logger, lifetime, outputFormatter)
 {
     public sealed class Settings : CommandSettings
     {
@@ -59,7 +59,7 @@ internal sealed class FlagChangeColorCommand(IFlagService flagService, IUserRepo
         if (string.IsNullOrWhiteSpace(userId)) {
             var profile = await userRepository.FindPublicProfileAsync(settings.Username, null, cancellationToken).ConfigureAwait(false);
             if (profile is null) {
-                AnsiConsole.MarkupLine("[red]Error:[/] User not found.");
+                OutputFormatter.WriteMarkupLine("[red]Error:[/] User not found.");
                 return 1;
             }
             userId = profile.Id;
@@ -76,11 +76,11 @@ internal sealed class FlagChangeColorCommand(IFlagService flagService, IUserRepo
         );
 
         if (result.Status != FlagResultStatus.Success) {
-            AnsiConsole.MarkupLine($"[red]Error:[/] {result.ErrorMessage ?? result.Status.ToString()}");
+            OutputFormatter.WriteMarkupLine($"[red]Error:[/] {result.ErrorMessage ?? result.Status.ToString()}");
             return 1;
         }
 
-        AnsiConsole.MarkupLine($"[green]Success:[/] Flag [yellow]{settings.Name}[/] color updated to [blue]{settings.Color}/{settings.SecondaryColor ?? settings.Color}[/].");
+        OutputFormatter.WriteMarkupLine($"[green]Success:[/] Flag [yellow]{settings.Name}[/] color updated to [blue]{settings.Color}/{settings.SecondaryColor ?? settings.Color}[/].");
         return 0;
     }
 }

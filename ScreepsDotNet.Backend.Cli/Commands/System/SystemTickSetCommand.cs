@@ -4,7 +4,7 @@ using Spectre.Console.Cli;
 
 namespace ScreepsDotNet.Backend.Cli.Commands.System;
 
-internal sealed class SystemTickSetCommand(ISystemControlService controlService, ILogger<SystemTickSetCommand>? logger = null, IHostApplicationLifetime? lifetime = null) : CommandHandler<SystemTickSetCommand.Settings>(logger, lifetime)
+internal sealed class SystemTickSetCommand(ISystemControlService controlService, ILogger<SystemTickSetCommand>? logger = null, IHostApplicationLifetime? lifetime = null, ICommandOutputFormatter? outputFormatter = null) : CommandHandler<SystemTickSetCommand.Settings>(logger, lifetime, outputFormatter)
 {
     public sealed class Settings : CommandSettings
     {
@@ -23,7 +23,7 @@ internal sealed class SystemTickSetCommand(ISystemControlService controlService,
     protected override async Task<int> ExecuteCommandAsync(CommandContext context, Settings settings, CancellationToken cancellationToken)
     {
         await controlService.SetTickDurationAsync(settings.DurationMilliseconds!.Value, cancellationToken).ConfigureAwait(false);
-        AnsiConsole.MarkupLine($"[green]Tick duration set to {settings.DurationMilliseconds} ms.[/]");
+        OutputFormatter.WriteMarkupLine($"[green]Tick duration set to {settings.DurationMilliseconds} ms.[/]");
         return 0;
     }
 }

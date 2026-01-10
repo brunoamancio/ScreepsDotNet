@@ -7,7 +7,7 @@ using ScreepsDotNet.Backend.Core.Services;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
-internal sealed class MapOpenCommand(IMapControlService mapControlService, ILogger<MapOpenCommand>? logger = null, IHostApplicationLifetime? lifetime = null) : CommandHandler<MapOpenCommand.Settings>(logger, lifetime)
+internal sealed class MapOpenCommand(IMapControlService mapControlService, ILogger<MapOpenCommand>? logger = null, IHostApplicationLifetime? lifetime = null, ICommandOutputFormatter? outputFormatter = null) : CommandHandler<MapOpenCommand.Settings>(logger, lifetime, outputFormatter)
 {
     public sealed class Settings : CommandSettings
     {
@@ -38,7 +38,7 @@ internal sealed class MapOpenCommand(IMapControlService mapControlService, ILogg
 
         await mapControlService.OpenRoomAsync(reference.RoomName, reference.ShardName, cancellationToken).ConfigureAwait(false);
         var displayName = string.IsNullOrWhiteSpace(reference.ShardName) ? reference.RoomName : $"{reference.ShardName}/{reference.RoomName}";
-        AnsiConsole.MarkupLine($"[green]Room {displayName} opened.[/]");
+        OutputFormatter.WriteMarkupLine($"[green]Room {displayName} opened.[/]");
         return 0;
     }
 }

@@ -180,8 +180,24 @@ dotnet run --project ScreepsDotNet.Backend.Cli -- map generate --room W10N5 --sh
 
 ### CLI architecture notes
 
-- All commands derive from `CommandHandler<TSettings>`, which logs start/finish events, links cancellation tokens to `ConsoleLifetime`, and normalizes cancellation/failure exit codes.
-- Use `ICommandOutputFormatter` (registered as `CommandOutputFormatter`) for `--json`, table, or Markdown output instead of sprinkling `AnsiConsole` calls across commands. This keeps formatting consistent for both operators and tests.
+- Every command derives from `CommandHandler<TSettings>`, which logs start/finish events, links cancellation tokens to `ConsoleLifetime`, and normalizes cancellation/failure exit codes.
+- All output flows through `ICommandOutputFormatter` (the `CommandOutputFormatter` DI registration). The formatter exposes `WriteJson`, `WriteTable`, `WriteKeyValueTable`, `WriteMarkdownTable`, `WriteLine`, and `WriteMarkupLine`, so operators and tests see consistent results. To add a new command, inject the formatter via the handler constructor and use `OutputFormatter` inside `ExecuteCommandAsync`:
+
+  ```csharp
+  internal sealed class ExampleCommand(IMyService service,
+                                      ILogger<ExampleCommand>? logger = null,
+                                      IHostApplicationLifetime? lifetime = null,
+                                      ICommandOutputFormatter? outputFormatter = null)
+      : CommandHandler<ExampleCommand.Settings>(logger, lifetime, outputFormatter)
+  {
+      protected override async Task<int> ExecuteCommandAsync(CommandContext context, Settings settings, CancellationToken token)
+      {
+          var payload = await service.GetAsync(token);
+          OutputFormatter.WriteJson(payload);
+          return 0;
+      }
+  }
+  ```
 
 ## Storage Notes
 

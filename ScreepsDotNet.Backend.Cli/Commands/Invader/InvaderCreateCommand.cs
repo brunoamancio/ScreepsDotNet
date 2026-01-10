@@ -9,7 +9,7 @@ using ScreepsDotNet.Backend.Core.Services;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
-internal sealed class InvaderCreateCommand(IInvaderService invaderService, IUserRepository userRepository, ILogger<InvaderCreateCommand>? logger = null, IHostApplicationLifetime? lifetime = null) : CommandHandler<InvaderCreateCommand.Settings>(logger, lifetime)
+internal sealed class InvaderCreateCommand(IInvaderService invaderService, IUserRepository userRepository, ILogger<InvaderCreateCommand>? logger = null, IHostApplicationLifetime? lifetime = null, ICommandOutputFormatter? outputFormatter = null) : CommandHandler<InvaderCreateCommand.Settings>(logger, lifetime, outputFormatter)
 {
     public sealed class Settings : CommandSettings
     {
@@ -78,14 +78,14 @@ internal sealed class InvaderCreateCommand(IInvaderService invaderService, IUser
         if (string.IsNullOrWhiteSpace(userId)) {
             var publicProfile = await userRepository.FindPublicProfileAsync(settings.Username, null, cancellationToken).ConfigureAwait(false);
             if (publicProfile is null) {
-                AnsiConsole.MarkupLine($"[red]Error:[/] User '{settings.Username}' not found.");
+                OutputFormatter.WriteMarkupLine($"[red]Error:[/] User '{settings.Username}' not found.");
                 return 1;
             }
             userId = publicProfile.Id;
         }
 
         if (!RoomReferenceParser.TryParse(settings.RoomName, settings.Shard, out var reference) || reference is null) {
-            AnsiConsole.MarkupLine("[red]Error:[/] Invalid room. Use W##N## or shard/W##N##.");
+            OutputFormatter.WriteMarkupLine("[red]Error:[/] Invalid room. Use W##N## or shard/W##N##.");
             return 1;
         }
 
@@ -93,11 +93,11 @@ internal sealed class InvaderCreateCommand(IInvaderService invaderService, IUser
         var result = await invaderService.CreateInvaderAsync(userId, request, cancellationToken).ConfigureAwait(false);
 
         if (result.Status != CreateInvaderResultStatus.Success) {
-            AnsiConsole.MarkupLine($"[red]Error:[/] {result.Status} {result.ErrorMessage}");
+            OutputFormatter.WriteMarkupLine($"[red]Error:[/] {result.Status} {result.ErrorMessage}");
             return 1;
         }
 
-        AnsiConsole.MarkupLine($"[green]Success:[/] Invader created with ID: [yellow]{result.Id}[/]");
+        OutputFormatter.WriteMarkupLine($"[green]Success:[/] Invader created with ID: [yellow]{result.Id}[/]");
         return 0;
     }
 }

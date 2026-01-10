@@ -11,8 +11,7 @@ using Spectre.Console.Cli;
 internal sealed class VersionCommand(
     IVersionInfoProvider versionInfoProvider,
     ILogger<VersionCommand>? logger = null,
-    IHostApplicationLifetime? lifetime = null)
-    : CommandHandler<VersionCommand.Settings>(logger, lifetime)
+    IHostApplicationLifetime? lifetime = null, ICommandOutputFormatter? outputFormatter = null) : CommandHandler<VersionCommand.Settings>(logger, lifetime, outputFormatter)
 {
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
 
@@ -28,7 +27,7 @@ internal sealed class VersionCommand(
 
         if (settings.OutputJson) {
             var payload = JsonSerializer.Serialize(info, JsonOptions);
-            AnsiConsole.WriteLine(payload);
+            OutputFormatter.WriteLine(payload);
             return 0;
         }
 
@@ -38,7 +37,7 @@ internal sealed class VersionCommand(
         table.AddRow("Users", info.Users.ToString());
         table.AddRow("Welcome Text", info.ServerData.WelcomeText);
         table.AddRow("Package Version", info.PackageVersion ?? "n/a");
-        AnsiConsole.Write(table);
+        OutputFormatter.WriteTable(table);
         return 0;
     }
 }

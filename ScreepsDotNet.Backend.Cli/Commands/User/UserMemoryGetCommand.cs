@@ -5,8 +5,7 @@ using ScreepsDotNet.Backend.Core.Repositories;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
-internal sealed class UserMemoryGetCommand(IUserMemoryRepository memoryRepository, ILogger<UserMemoryGetCommand>? logger = null, IHostApplicationLifetime? lifetime = null)
-    : CommandHandler<UserMemoryGetCommand.Settings>(logger, lifetime)
+internal sealed class UserMemoryGetCommand(IUserMemoryRepository memoryRepository, ILogger<UserMemoryGetCommand>? logger = null, IHostApplicationLifetime? lifetime = null, ICommandOutputFormatter? outputFormatter = null) : CommandHandler<UserMemoryGetCommand.Settings>(logger, lifetime, outputFormatter)
 {
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
 
@@ -39,10 +38,10 @@ internal sealed class UserMemoryGetCommand(IUserMemoryRepository memoryRepositor
             var data = await memoryRepository.GetMemorySegmentAsync(settings.UserId!, segment, cancellationToken).ConfigureAwait(false);
             if (settings.OutputJson) {
                 var payload = new { segment, data };
-                AnsiConsole.WriteLine(JsonSerializer.Serialize(payload, JsonOptions));
+                OutputFormatter.WriteLine(JsonSerializer.Serialize(payload, JsonOptions));
             }
             else
-                AnsiConsole.MarkupLine("[bold]Segment {0}[/]: {1}", segment, data ?? "(null)");
+                OutputFormatter.WriteMarkupLine("[bold]Segment {0}[/]: {1}", segment, data ?? "(null)");
 
             return 0;
         }
@@ -50,7 +49,7 @@ internal sealed class UserMemoryGetCommand(IUserMemoryRepository memoryRepositor
         var memory = await memoryRepository.GetMemoryAsync(settings.UserId!, cancellationToken).ConfigureAwait(false);
 
         if (settings.OutputJson) {
-            AnsiConsole.WriteLine(JsonSerializer.Serialize(memory, JsonOptions));
+            OutputFormatter.WriteLine(JsonSerializer.Serialize(memory, JsonOptions));
             return 0;
         }
 
@@ -58,7 +57,7 @@ internal sealed class UserMemoryGetCommand(IUserMemoryRepository memoryRepositor
         foreach (var kvp in memory)
             table.AddRow(kvp.Key, JsonSerializer.Serialize(kvp.Value, JsonOptions));
 
-        AnsiConsole.Write(table);
+        OutputFormatter.WriteTable(table);
         return 0;
     }
 }

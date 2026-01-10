@@ -6,8 +6,7 @@ using ScreepsDotNet.Backend.Core.Repositories;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
-internal sealed class UserMemorySetCommand(IUserMemoryRepository memoryRepository, ILogger<UserMemorySetCommand>? logger = null, IHostApplicationLifetime? lifetime = null)
-    : CommandHandler<UserMemorySetCommand.Settings>(logger, lifetime)
+internal sealed class UserMemorySetCommand(IUserMemoryRepository memoryRepository, ILogger<UserMemorySetCommand>? logger = null, IHostApplicationLifetime? lifetime = null, ICommandOutputFormatter? outputFormatter = null) : CommandHandler<UserMemorySetCommand.Settings>(logger, lifetime, outputFormatter)
 {
     public sealed class Settings : CommandSettings
     {
@@ -52,7 +51,7 @@ internal sealed class UserMemorySetCommand(IUserMemoryRepository memoryRepositor
             await memoryRepository.SetMemorySegmentAsync(settings.UserId!, segment, settings.SegmentData, cancellationToken).ConfigureAwait(false);
             if (settings.UserId == null) return 0;
 
-            AnsiConsole.MarkupLine("[green]Updated memory segment {0} for {1}.[/]", segment, settings.UserId);
+            OutputFormatter.WriteMarkupLine("[green]Updated memory segment {0} for {1}.[/]", segment, settings.UserId);
             Logger.LogInformation("Updated segment {Segment} for {UserId}.", segment, settings.UserId);
             return 0;
         }
@@ -61,7 +60,7 @@ internal sealed class UserMemorySetCommand(IUserMemoryRepository memoryRepositor
         await memoryRepository.UpdateMemoryAsync(settings.UserId!, settings.Path, json, cancellationToken).ConfigureAwait(false);
         if (settings.UserId == null) return 0;
 
-        AnsiConsole.MarkupLine("[green]Updated memory for {0} at path '{1}'.[/]", settings.UserId, settings.Path ?? "(root)");
+        OutputFormatter.WriteMarkupLine("[green]Updated memory for {0} at path '{1}'.[/]", settings.UserId, settings.Path ?? "(root)");
         Logger.LogInformation("Updated memory for {UserId} at path {Path}.", settings.UserId, settings.Path ?? "(root)");
         return 0;
     }

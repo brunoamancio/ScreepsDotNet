@@ -13,7 +13,7 @@ public sealed class WorldCommandTests
     public async Task WorldStatsCommand_ForwardsRoomsAndStat()
     {
         var repository = new FakeWorldStatsRepository();
-        var command = new WorldStatsCommand(repository, new TestFormatter());
+        var command = new WorldStatsCommand(repository, null, null, new TestFormatter());
         var settings = new WorldStatsCommand.Settings
         {
             Rooms = ["W1N1", "shard2/W2N2"],
@@ -35,7 +35,7 @@ public sealed class WorldCommandTests
     public async Task WorldOverviewCommand_PassesNormalizedReference()
     {
         var repository = new FakeRoomOverviewRepository();
-        var command = new WorldOverviewCommand(repository, new TestFormatter());
+        var command = new WorldOverviewCommand(repository, null, null, new TestFormatter());
         var settings = new WorldOverviewCommand.Settings
         {
             RoomName = "shard3/W7S2",
@@ -90,6 +90,14 @@ public sealed class WorldCommandTests
         }
 
         public void WriteMarkdownTable(string? title, IReadOnlyList<string> headers, IEnumerable<IReadOnlyList<string>> rows)
+        {
+        }
+
+        public void WriteLine(string message)
+        {
+        }
+
+        public void WriteMarkupLine(string markup, params object[] args)
         {
         }
     }

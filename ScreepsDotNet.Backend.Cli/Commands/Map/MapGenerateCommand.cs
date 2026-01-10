@@ -10,7 +10,7 @@ using ScreepsDotNet.Backend.Core.Services;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
-internal sealed class MapGenerateCommand(IMapControlService mapControlService, ILogger<MapGenerateCommand>? logger = null, IHostApplicationLifetime? lifetime = null) : CommandHandler<MapGenerateCommand.Settings>(logger, lifetime)
+internal sealed class MapGenerateCommand(IMapControlService mapControlService, ILogger<MapGenerateCommand>? logger = null, IHostApplicationLifetime? lifetime = null, ICommandOutputFormatter? outputFormatter = null) : CommandHandler<MapGenerateCommand.Settings>(logger, lifetime, outputFormatter)
 {
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
 
@@ -91,7 +91,7 @@ internal sealed class MapGenerateCommand(IMapControlService mapControlService, I
         var result = await mapControlService.GenerateRoomAsync(options, cancellationToken).ConfigureAwait(false);
 
         if (settings.OutputJson) {
-            AnsiConsole.WriteLine(JsonSerializer.Serialize(result, JsonOptions));
+            OutputFormatter.WriteLine(JsonSerializer.Serialize(result, JsonOptions));
             return 0;
         }
 
@@ -103,7 +103,7 @@ internal sealed class MapGenerateCommand(IMapControlService mapControlService, I
         table.AddRow("Controller", result.ControllerCreated ? "yes" : "no");
         table.AddRow("Keeper Lairs", result.KeeperLairsCreated ? "yes" : "no");
         table.AddRow("Mineral", result.MineralType ?? "random");
-        AnsiConsole.Write(table);
+        OutputFormatter.WriteTable(table);
 
         return 0;
     }

@@ -6,7 +6,7 @@ using ScreepsDotNet.Backend.Core.Services;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
-internal sealed class BotReloadCommand(IBotControlService botControlService, ILogger<BotReloadCommand>? logger = null, IHostApplicationLifetime? lifetime = null) : CommandHandler<BotReloadCommand.Settings>(logger, lifetime)
+internal sealed class BotReloadCommand(IBotControlService botControlService, ILogger<BotReloadCommand>? logger = null, IHostApplicationLifetime? lifetime = null, ICommandOutputFormatter? outputFormatter = null) : CommandHandler<BotReloadCommand.Settings>(logger, lifetime, outputFormatter)
 {
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
 
@@ -35,16 +35,16 @@ internal sealed class BotReloadCommand(IBotControlService botControlService, ILo
                 settings.BotName,
                 UsersReloaded = count
             };
-            AnsiConsole.WriteLine(JsonSerializer.Serialize(payload, JsonOptions));
+            OutputFormatter.WriteLine(JsonSerializer.Serialize(payload, JsonOptions));
             return 0;
         }
 
         if (count == 0) {
-            AnsiConsole.MarkupLine("[yellow]No users were using this bot AI.[/]");
+            OutputFormatter.WriteMarkupLine("[yellow]No users were using this bot AI.[/]");
             return 0;
         }
 
-        AnsiConsole.MarkupLine($"[green]{count}[/] user(s) reloaded for bot [cyan]{settings.BotName}[/].");
+        OutputFormatter.WriteMarkupLine($"[green]{count}[/] user(s) reloaded for bot [cyan]{settings.BotName}[/].");
         return 0;
     }
 }

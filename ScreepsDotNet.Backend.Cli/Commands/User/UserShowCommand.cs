@@ -5,7 +5,7 @@ using ScreepsDotNet.Backend.Core.Repositories;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
-internal sealed class UserShowCommand(IUserRepository userRepository, ILogger<UserShowCommand>? logger = null, IHostApplicationLifetime? lifetime = null) : CommandHandler<UserShowCommand.Settings>(logger, lifetime)
+internal sealed class UserShowCommand(IUserRepository userRepository, ILogger<UserShowCommand>? logger = null, IHostApplicationLifetime? lifetime = null, ICommandOutputFormatter? outputFormatter = null) : CommandHandler<UserShowCommand.Settings>(logger, lifetime, outputFormatter)
 {
     private static readonly global::System.Text.Json.JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
     public sealed class Settings : CommandSettings
@@ -49,7 +49,7 @@ internal sealed class UserShowCommand(IUserRepository userRepository, ILogger<Us
 
         if (settings.OutputJson) {
             var payload = global::System.Text.Json.JsonSerializer.Serialize(result, JsonOptions);
-            AnsiConsole.WriteLine(payload);
+            OutputFormatter.WriteLine(payload);
             return 0;
         }
 
@@ -63,7 +63,7 @@ internal sealed class UserShowCommand(IUserRepository userRepository, ILogger<Us
         table.AddRow("Last Respawn", result.LastRespawnDate?.ToString("u") ?? "n/a");
         var steamVisibility = result.Steam?.SteamProfileLinkHidden is true ? "Hidden" : "Visible";
         table.AddRow("Steam Visible", steamVisibility);
-        AnsiConsole.Write(table);
+        OutputFormatter.WriteTable(table);
 
         return 0;
     }

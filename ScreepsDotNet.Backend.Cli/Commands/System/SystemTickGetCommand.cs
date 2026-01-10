@@ -5,7 +5,7 @@ using Spectre.Console.Cli;
 
 namespace ScreepsDotNet.Backend.Cli.Commands.System;
 
-internal sealed class SystemTickGetCommand(ISystemControlService controlService, ILogger<SystemTickGetCommand>? logger = null, IHostApplicationLifetime? lifetime = null) : CommandHandler<SystemTickGetCommand.Settings>(logger, lifetime)
+internal sealed class SystemTickGetCommand(ISystemControlService controlService, ILogger<SystemTickGetCommand>? logger = null, IHostApplicationLifetime? lifetime = null, ICommandOutputFormatter? outputFormatter = null) : CommandHandler<SystemTickGetCommand.Settings>(logger, lifetime, outputFormatter)
 {
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
 
@@ -21,16 +21,16 @@ internal sealed class SystemTickGetCommand(ISystemControlService controlService,
 
         if (settings.OutputJson) {
             var payload = new { tickDuration = duration };
-            AnsiConsole.WriteLine(JsonSerializer.Serialize(payload, JsonOptions));
+            OutputFormatter.WriteLine(JsonSerializer.Serialize(payload, JsonOptions));
             return 0;
         }
 
         if (duration is null) {
-            AnsiConsole.MarkupLine("[yellow]Tick duration is not configured.[/]");
+            OutputFormatter.WriteMarkupLine("[yellow]Tick duration is not configured.[/]");
             return 0;
         }
 
-        AnsiConsole.MarkupLine($"Current minimal tick duration: [green]{duration} ms[/]");
+        OutputFormatter.WriteMarkupLine($"Current minimal tick duration: [green]{duration} ms[/]");
         return 0;
     }
 }

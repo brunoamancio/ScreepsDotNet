@@ -7,7 +7,7 @@ using ScreepsDotNet.Backend.Core.Services;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
-internal sealed class MapCloseCommand(IMapControlService mapControlService, ILogger<MapCloseCommand>? logger = null, IHostApplicationLifetime? lifetime = null) : CommandHandler<MapCloseCommand.Settings>(logger, lifetime)
+internal sealed class MapCloseCommand(IMapControlService mapControlService, ILogger<MapCloseCommand>? logger = null, IHostApplicationLifetime? lifetime = null, ICommandOutputFormatter? outputFormatter = null) : CommandHandler<MapCloseCommand.Settings>(logger, lifetime, outputFormatter)
 {
     public sealed class Settings : CommandSettings
     {
@@ -38,7 +38,7 @@ internal sealed class MapCloseCommand(IMapControlService mapControlService, ILog
 
         await mapControlService.CloseRoomAsync(reference.RoomName, reference.ShardName, cancellationToken).ConfigureAwait(false);
         var displayName = string.IsNullOrWhiteSpace(reference.ShardName) ? reference.RoomName : $"{reference.ShardName}/{reference.RoomName}";
-        AnsiConsole.MarkupLine($"[yellow]Room {displayName} closed.[/]");
+        OutputFormatter.WriteMarkupLine($"[yellow]Room {displayName} closed.[/]");
         return 0;
     }
 }

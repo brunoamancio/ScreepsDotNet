@@ -6,7 +6,7 @@ using ScreepsDotNet.Backend.Core.Services;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
-internal sealed class BotRemoveCommand(IBotControlService botControlService, ILogger<BotRemoveCommand>? logger = null, IHostApplicationLifetime? lifetime = null) : CommandHandler<BotRemoveCommand.Settings>(logger, lifetime)
+internal sealed class BotRemoveCommand(IBotControlService botControlService, ILogger<BotRemoveCommand>? logger = null, IHostApplicationLifetime? lifetime = null, ICommandOutputFormatter? outputFormatter = null) : CommandHandler<BotRemoveCommand.Settings>(logger, lifetime, outputFormatter)
 {
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
 
@@ -35,16 +35,16 @@ internal sealed class BotRemoveCommand(IBotControlService botControlService, ILo
                 settings.Username,
                 Removed = removed
             };
-            AnsiConsole.WriteLine(JsonSerializer.Serialize(payload, JsonOptions));
+            OutputFormatter.WriteLine(JsonSerializer.Serialize(payload, JsonOptions));
             return removed ? 0 : 1;
         }
 
         if (!removed) {
-            AnsiConsole.MarkupLine("[yellow]User not found or not a bot account.[/]");
+            OutputFormatter.WriteMarkupLine("[yellow]User not found or not a bot account.[/]");
             return 1;
         }
 
-        AnsiConsole.MarkupLine($"[green]Bot user {settings.Username} removed.[/]");
+        OutputFormatter.WriteMarkupLine($"[green]Bot user {settings.Username} removed.[/]");
         return 0;
     }
 }

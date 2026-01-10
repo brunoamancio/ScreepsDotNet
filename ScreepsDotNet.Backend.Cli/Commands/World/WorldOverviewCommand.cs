@@ -9,10 +9,10 @@ using Spectre.Console.Cli;
 
 internal sealed class WorldOverviewCommand(
     IRoomOverviewRepository overviewRepository,
-    ICommandOutputFormatter outputFormatter,
     ILogger<WorldOverviewCommand>? logger = null,
-    IHostApplicationLifetime? lifetime = null)
-    : CommandHandler<WorldOverviewCommand.Settings>(logger, lifetime)
+    IHostApplicationLifetime? lifetime = null,
+    ICommandOutputFormatter? outputFormatter = null)
+    : CommandHandler<WorldOverviewCommand.Settings>(logger, lifetime, outputFormatter)
 {
     public sealed class Settings : CommandSettings
     {
@@ -48,7 +48,7 @@ internal sealed class WorldOverviewCommand(
         var overview = await overviewRepository.GetRoomOverviewAsync(reference, cancellationToken).ConfigureAwait(false);
 
         if (settings.OutputJson) {
-            outputFormatter.WriteJson(new
+            OutputFormatter.WriteJson(new
             {
                 room = new { reference.RoomName, reference.ShardName },
                 overview?.Owner
@@ -57,13 +57,13 @@ internal sealed class WorldOverviewCommand(
         }
 
         if (overview?.Owner is null) {
-            outputFormatter.WriteKeyValueTable([("Room", FormatRoom(reference)), ("Owner", "(unowned)")]);
+            OutputFormatter.WriteKeyValueTable([("Room", FormatRoom(reference)), ("Owner", "(unowned)")]);
             return 0;
         }
 
         var table = new Table().AddColumns("Room", "Owner", "User Id");
         table.AddRow(FormatRoom(reference), overview.Owner.Username, overview.Owner.Id);
-        outputFormatter.WriteTable(table);
+        OutputFormatter.WriteTable(table);
         return 0;
     }
 

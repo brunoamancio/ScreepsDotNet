@@ -8,7 +8,7 @@ using ScreepsDotNet.Backend.Core.Services;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
-internal sealed class StrongholdExpandCommand(IStrongholdControlService strongholdControlService, ILogger<StrongholdExpandCommand>? logger = null, IHostApplicationLifetime? lifetime = null) : CommandHandler<StrongholdExpandCommand.Settings>(logger, lifetime)
+internal sealed class StrongholdExpandCommand(IStrongholdControlService strongholdControlService, ILogger<StrongholdExpandCommand>? logger = null, IHostApplicationLifetime? lifetime = null, ICommandOutputFormatter? outputFormatter = null) : CommandHandler<StrongholdExpandCommand.Settings>(logger, lifetime, outputFormatter)
 {
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
 
@@ -50,17 +50,17 @@ internal sealed class StrongholdExpandCommand(IStrongholdControlService strongho
                 Shard = reference.ShardName,
                 Expanded = expanded
             };
-            AnsiConsole.WriteLine(JsonSerializer.Serialize(payload, JsonOptions));
+            OutputFormatter.WriteLine(JsonSerializer.Serialize(payload, JsonOptions));
             return expanded ? 0 : 1;
         }
 
         if (!expanded) {
-            AnsiConsole.MarkupLine("[yellow]No expandable stronghold core was found in that room.[/]");
+            OutputFormatter.WriteMarkupLine("[yellow]No expandable stronghold core was found in that room.[/]");
             return 1;
         }
 
         var displayRoom = string.IsNullOrWhiteSpace(reference.ShardName) ? reference.RoomName : $"{reference.ShardName}/{reference.RoomName}";
-        AnsiConsole.MarkupLine($"[green]Expansion queued for stronghold in {displayRoom}.[/]");
+        OutputFormatter.WriteMarkupLine($"[green]Expansion queued for stronghold in {displayRoom}.[/]");
         return 0;
     }
 }

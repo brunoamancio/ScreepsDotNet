@@ -14,10 +14,10 @@ using Spectre.Console.Cli;
 
 internal sealed partial class WorldStatsCommand(
     IWorldStatsRepository statsRepository,
-    ICommandOutputFormatter outputFormatter,
     ILogger<WorldStatsCommand>? logger = null,
-    IHostApplicationLifetime? lifetime = null)
-    : CommandHandler<WorldStatsCommand.Settings>(logger, lifetime)
+    IHostApplicationLifetime? lifetime = null,
+    ICommandOutputFormatter? outputFormatter = null)
+    : CommandHandler<WorldStatsCommand.Settings>(logger, lifetime, outputFormatter)
 {
     public sealed class Settings : CommandSettings
     {
@@ -70,20 +70,20 @@ internal sealed partial class WorldStatsCommand(
         var result = await statsRepository.GetMapStatsAsync(request, cancellationToken).ConfigureAwait(false);
 
         if (settings.OutputJson) {
-            outputFormatter.WriteJson(result);
+            OutputFormatter.WriteJson(result);
             return 0;
         }
 
-        RenderTable(result, outputFormatter);
+        RenderTable(result);
         return 0;
     }
 
-    private static void RenderTable(MapStatsResult result, ICommandOutputFormatter outputFormatter)
+    private void RenderTable(MapStatsResult result)
     {
-        outputFormatter.WriteKeyValueTable([("Game time", result.GameTime.ToString(CultureInfo.InvariantCulture))]);
+        OutputFormatter.WriteKeyValueTable([("Game time", result.GameTime.ToString(CultureInfo.InvariantCulture))]);
 
         if (result.Stats.Count == 0) {
-            outputFormatter.WriteKeyValueTable([("Status", "No stats returned for requested rooms")]);
+            OutputFormatter.WriteKeyValueTable([("Status", "No stats returned for requested rooms")]);
             return;
         }
 
@@ -97,7 +97,7 @@ internal sealed partial class WorldStatsCommand(
             table.AddRow(room.RoomName, room.Status ?? "unknown", ownerLabel, level, safeMode, mineral);
         }
 
-        outputFormatter.WriteTable(table);
+        OutputFormatter.WriteTable(table);
     }
 
     private static string ResolveOwner(RoomOwnershipInfo? ownership, IReadOnlyDictionary<string, MapStatsUser> users)
