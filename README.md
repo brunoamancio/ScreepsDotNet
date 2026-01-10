@@ -72,6 +72,11 @@ Run the CLI with:
 dotnet run --project ScreepsDotNet.Backend.Cli/ScreepsDotNet.Backend.Cli.csproj -- --help
 ```
 
+Shortcuts:
+
+- **Unix/macOS:** `./cli.sh storage status`
+- **Windows PowerShell:** `pwsh ./cli.ps1 system status --json`
+
 ### Global switches
 
 | Option | Description |
