@@ -30,6 +30,7 @@
 - Commands that support `--json` should short-circuit by calling `OutputFormatter.WriteJson(...)` before any table rendering, matching the behavior documented in README. When emitting tabular/key-value output, honor the shared `--format table|markdown|json` option by relying on `FormattableCommandSettings` and `ICommandOutputFormatter.SetPreferredFormat(...)`.
 - Every CLI verb that accepts a room identifier now shares the same shard-aware parser as the HTTP surface: operators can specify either the legacy inline form (`shard2/W20N20`) or pass `--shard shard2` alongside the room name. The parser trims/uppercases room names, rejects malformed identifiers, and keeps CLI + HTTP behavior in sync.
 - All operator-facing CLI commands (auth issue/resolve/revoke, user console/memory helpers, system/storage/bot/map tooling, and even the root command) run through `FormattableCommandSettings` + `ICommandOutputFormatter`. Non-JSON output honors `--format table|markdown|json`, so scripted runs can rely on markdown/JSON without breaking the legacy table defaults.
+- Setting `SCREEPSCLI_FORMAT` (e.g., `export SCREEPSCLI_FORMAT=markdown`) configures the default output style for every command; individual `--format` flags still override the environment.
 - `ScreepsDotNet.Storage.MongoRedis/` – MongoDB/Redis infrastructure (adapter + repositories) used by the HTTP host.
   - `.editorconfig`, `.globalconfig`, `.gitattributes`, `Directory.Build.props` – shared tooling settings.
   - `docker/` – supporting assets (Mongo init scripts, etc.).

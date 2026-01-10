@@ -25,3 +25,6 @@ export SCREEPSCLI_LOGDIR="./logs"
 
 # Optional mods manifest path (matches --modfile).
 export SCREEPSCLI_MODFILE="./mods.json"
+
+# Default CLI formatter (table|markdown|json). Commands can override with --format.
+export SCREEPSCLI_FORMAT="table"

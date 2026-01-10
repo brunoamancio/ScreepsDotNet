@@ -85,6 +85,7 @@ dotnet run --project ScreepsDotNet.Backend.Cli/ScreepsDotNet.Backend.Cli.csproj 
 
 Every option can also be supplied via `SCREEPSCLI_<option>` environment variables, e.g., `SCREEPSCLI_connection-string`. For convenience we ship `.screepscli.sample`; copy or source it to preload the common Mongo/Redis/asset settings before running the CLI. Commands that support formatted summaries (storage status, system status, etc.) honor `--format table|markdown|json` when not already emitting JSON.
 If you just need something to point at while experimenting, copy `ScreepsDotNet.Backend.Http/mods.sample.json` to a writable location, adjust the bot paths, and edit the sample `customIntentTypes` / `customObjectTypes` entries as needed.
+To set a default formatter globally, export `SCREEPSCLI_FORMAT=markdown` (or `json`/`table`); the CLI uses that value whenever `--format` isn’t specified.
 
 ### Storage commands
 
