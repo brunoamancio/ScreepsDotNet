@@ -1,14 +1,14 @@
 ﻿namespace ScreepsDotNet.Backend.Cli.Commands.User;
 
 using Microsoft.Extensions.Logging;
-using ScreepsDotNet.Backend.Cli.Formatting;
 using ScreepsDotNet.Backend.Core.Repositories;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
-internal sealed class UserConsoleExecCommand(IUserConsoleRepository consoleRepository, ILogger<UserConsoleExecCommand>? logger = null, IHostApplicationLifetime? lifetime = null, ICommandOutputFormatter? outputFormatter = null) : CommandHandler<UserConsoleExecCommand.Settings>(logger, lifetime, outputFormatter)
+internal sealed class UserConsoleExecCommand(IUserConsoleRepository consoleRepository, ILogger<UserConsoleExecCommand>? logger = null, IHostApplicationLifetime? lifetime = null, ICommandOutputFormatter? outputFormatter = null)
+    : CommandHandler<UserConsoleExecCommand.Settings>(logger, lifetime, outputFormatter)
 {
-    public sealed class Settings : CommandSettings
+    public sealed class Settings : FormattableCommandSettings
     {
         [CommandOption("--user-id <ID>")]
         public string? UserId { get; init; }
@@ -41,7 +41,6 @@ internal sealed class UserConsoleExecCommand(IUserConsoleRepository consoleRepos
     {
         await consoleRepository.EnqueueExpressionAsync(settings.UserId!, settings.Expression!, settings.Hidden, cancellationToken)
                                 .ConfigureAwait(false);
-        if (settings.UserId == null) return 0;
 
         if (settings.OutputJson) {
             OutputFormatter.WriteJson(new
@@ -53,7 +52,7 @@ internal sealed class UserConsoleExecCommand(IUserConsoleRepository consoleRepos
         }
         else {
             OutputFormatter.WriteKeyValueTable([
-                                                   ("User", settings.UserId),
+                                                   ("User", settings.UserId!),
                                                    ("Hidden", settings.Hidden ? "yes" : "no")
                                                ],
                                                "Console expression queued");

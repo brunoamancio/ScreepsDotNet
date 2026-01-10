@@ -12,7 +12,7 @@ internal sealed class AuthRevokeCommand(
     ICommandOutputFormatter? outputFormatter = null)
     : CommandHandler<AuthRevokeCommand.Settings>(logger, lifetime, outputFormatter)
 {
-    public sealed class Settings : CommandSettings
+    public sealed class Settings : FormattableCommandSettings
     {
         [CommandOption("--token <VALUE>")]
         [Description("Auth token value to revoke.")]
@@ -23,23 +23,32 @@ internal sealed class AuthRevokeCommand(
         public bool OutputJson { get; init; }
 
         public override ValidationResult Validate()
-            => string.IsNullOrWhiteSpace(Token)
-                   ? ValidationResult.Error("Specify --token.")
-                   : ValidationResult.Success();
+        {
+            var baseResult = base.Validate();
+            if (!baseResult.Successful)
+                return baseResult;
+
+            return string.IsNullOrWhiteSpace(Token)
+                ? ValidationResult.Error("Specify --token.")
+                : ValidationResult.Success();
+        }
     }
 
     protected override async Task<int> ExecuteCommandAsync(CommandContext context, Settings settings, CancellationToken cancellationToken)
     {
         var success = await tokenService.RevokeTokenAsync(settings.Token!, cancellationToken).ConfigureAwait(false);
 
-        if (settings.OutputJson)
-            OutputFormatter.WriteJson(new { revoked = success });
-        else {
-            if (success)
-                OutputFormatter.WriteMarkupLine("[green]Revoked token {0}.[/]", settings.Token!);
-            else
-                OutputFormatter.WriteMarkupLine("[yellow]Token {0} was not found.[/]", settings.Token!);
+        if (settings.OutputJson) {
+            OutputFormatter.WriteJson(new { revoked = success, settings.Token });
+            return success ? 0 : 1;
         }
+
+        var state = success ? "revoked" : "not found";
+        OutputFormatter.WriteKeyValueTable([
+                                               ("Token", settings.Token!),
+                                               ("Status", state)
+                                           ],
+                                           "Auth revoke");
 
         return success ? 0 : 1;
     }
