@@ -1,18 +1,19 @@
 ﻿namespace ScreepsDotNet.Backend.Cli.Commands.Stronghold;
 
 using global::System;
+using global::System.Collections.Generic;
 using global::System.Globalization;
 using global::System.Linq;
 using global::System.Text.Json;
+using ScreepsDotNet.Backend.Cli.Formatting;
 using ScreepsDotNet.Backend.Core.Services;
-using Spectre.Console;
 using Spectre.Console.Cli;
 
 internal sealed class StrongholdTemplatesCommand(IStrongholdTemplateProvider templateProvider, ILogger<StrongholdTemplatesCommand>? logger = null, IHostApplicationLifetime? lifetime = null, ICommandOutputFormatter? outputFormatter = null) : CommandHandler<StrongholdTemplatesCommand.Settings>(logger, lifetime, outputFormatter)
 {
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
 
-    public sealed class Settings : CommandSettings
+    public sealed class Settings : FormattableCommandSettings
     {
         [CommandOption("--json")]
         public bool OutputJson { get; init; }
@@ -44,11 +45,16 @@ internal sealed class StrongholdTemplatesCommand(IStrongholdTemplateProvider tem
             return 0;
         }
 
-        var table = new Table().AddColumn("Template").AddColumn("Reward").AddColumn("Structures");
-        foreach (var template in templates.OrderBy(t => t.RewardLevel).ThenBy(t => t.Name, StringComparer.OrdinalIgnoreCase))
-            table.AddRow(template.Name, template.RewardLevel.ToString(CultureInfo.InvariantCulture), template.Structures.Count.ToString(CultureInfo.InvariantCulture));
+        var rows = templates.OrderBy(t => t.RewardLevel).ThenBy(t => t.Name, StringComparer.OrdinalIgnoreCase)
+                            .Select(template => (IReadOnlyList<string>)[
+                                template.Name,
+                                template.RewardLevel.ToString(CultureInfo.InvariantCulture),
+                                template.Structures.Count.ToString(CultureInfo.InvariantCulture)
+                            ]);
 
-        OutputFormatter.WriteTable(table);
+        OutputFormatter.WriteTabularData("Stronghold templates",
+                                         ["Template", "Reward", "Structures"],
+                                         rows);
 
         if (depositTypes.Count > 0)
             OutputFormatter.WriteMarkupLine($"\nDeposit types: [cyan]{string.Join(", ", depositTypes)}[/]");

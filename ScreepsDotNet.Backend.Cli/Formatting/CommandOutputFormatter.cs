@@ -16,6 +16,8 @@ internal interface ICommandOutputFormatter
 
     void WriteTable(Table table);
 
+    void WriteTabularData(string? title, IReadOnlyList<string> headers, IEnumerable<IReadOnlyList<string>> rows);
+
     void WriteKeyValueTable(IEnumerable<(string Key, string Value)> rows, string? title = null);
 
     void WriteMarkdownTable(string? title, IReadOnlyList<string> headers, IEnumerable<IReadOnlyList<string>> rows);
@@ -45,34 +47,42 @@ internal sealed class CommandOutputFormatter : ICommandOutputFormatter
     public void WriteTable(Table table)
         => AnsiConsole.Write(table);
 
-    public void WriteKeyValueTable(IEnumerable<(string Key, string Value)> rows, string? title = null)
+    public void WriteTabularData(string? title, IReadOnlyList<string> headers, IEnumerable<IReadOnlyList<string>> rows)
     {
-        var rowList = rows.Select(tuple => (tuple.Key ?? string.Empty, tuple.Value ?? string.Empty)).ToList();
-
         switch (_preferredFormat)
         {
             case OutputFormat.Json:
-                WriteJson(rowList.Select(row => new { key = row.Item1, value = row.Item2 }));
+                var jsonRows = rows.Select(row => headers.Zip(row, (header, value) => (header, value))
+                                                         .ToDictionary(pair => pair.header, pair => pair.value))
+                                   .ToList();
+                WriteJson(jsonRows);
                 return;
             case OutputFormat.Markdown:
-                WriteMarkdownTable(title,
-                                   KeyValueHeaders,
-                                   rowList.Select(row => (IReadOnlyList<string>)[row.Item1, row.Item2]));
+                WriteMarkdownTable(title, headers, rows);
                 return;
             default:
                 var table = new Table();
                 if (!string.IsNullOrWhiteSpace(title))
                     table.Title = new TableTitle(title);
 
-                table.AddColumn("Key");
-                table.AddColumn("Value");
+                foreach (var header in headers)
+                    table.AddColumn(header);
 
-                foreach (var (key, value) in rowList)
-                    table.AddRow(key, value);
+                foreach (var row in rows)
+                    table.AddRow(row.ToArray());
 
                 AnsiConsole.Write(table);
                 return;
         }
+    }
+
+    public void WriteKeyValueTable(IEnumerable<(string Key, string Value)> rows, string? title = null)
+    {
+        var rowList = rows.Select(tuple => (tuple.Key ?? string.Empty, tuple.Value ?? string.Empty)).ToList();
+
+        WriteTabularData(title,
+                         KeyValueHeaders,
+                         rowList.Select(row => (IReadOnlyList<string>)[row.Item1, row.Item2]));
     }
 
     public void WriteMarkdownTable(string? title, IReadOnlyList<string> headers, IEnumerable<IReadOnlyList<string>> rows)

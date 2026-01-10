@@ -4,15 +4,15 @@ using global::System;
 using global::System.Globalization;
 using global::System.Linq;
 using global::System.Text.Json;
+using ScreepsDotNet.Backend.Cli.Formatting;
 using ScreepsDotNet.Backend.Core.Services;
-using Spectre.Console;
 using Spectre.Console.Cli;
 
 internal sealed class BotListCommand(IBotDefinitionProvider definitionProvider, ILogger<BotListCommand>? logger = null, IHostApplicationLifetime? lifetime = null, ICommandOutputFormatter? outputFormatter = null) : CommandHandler<BotListCommand.Settings>(logger, lifetime, outputFormatter)
 {
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
 
-    public sealed class Settings : CommandSettings
+    public sealed class Settings : FormattableCommandSettings
     {
         [CommandOption("--json")]
         public bool OutputJson { get; init; }
@@ -41,11 +41,13 @@ internal sealed class BotListCommand(IBotDefinitionProvider definitionProvider, 
             return 0;
         }
 
-        var table = new Table().AddColumn("Bot").AddColumn("Description").AddColumn("Modules");
-        foreach (var definition in definitions.OrderBy(def => def.Name, StringComparer.OrdinalIgnoreCase))
-            table.AddRow(definition.Name, definition.Description, definition.Modules.Count.ToString(CultureInfo.InvariantCulture));
-
-        OutputFormatter.WriteTable(table);
+        var rows = definitions.OrderBy(def => def.Name, StringComparer.OrdinalIgnoreCase)
+                              .Select(definition => (IReadOnlyList<string>)[
+                                  definition.Name,
+                                  definition.Description,
+                                  definition.Modules.Count.ToString(CultureInfo.InvariantCulture)
+                              ]);
+        OutputFormatter.WriteTabularData("Bot definitions", ["Bot", "Description", "Modules"], rows);
         return 0;
     }
 }

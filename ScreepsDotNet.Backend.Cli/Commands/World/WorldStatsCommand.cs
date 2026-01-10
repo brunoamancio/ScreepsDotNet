@@ -9,6 +9,7 @@ using global::System.Text.RegularExpressions;
 using ScreepsDotNet.Backend.Core.Models;
 using ScreepsDotNet.Backend.Core.Parsing;
 using ScreepsDotNet.Backend.Core.Repositories;
+using ScreepsDotNet.Backend.Cli.Formatting;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
@@ -19,7 +20,7 @@ internal sealed partial class WorldStatsCommand(
     ICommandOutputFormatter? outputFormatter = null)
     : CommandHandler<WorldStatsCommand.Settings>(logger, lifetime, outputFormatter)
 {
-    public sealed class Settings : CommandSettings
+    public sealed class Settings : FormattableCommandSettings
     {
         [CommandOption("--room <NAME>")]
         [Description("Room identifier (e.g., W1N1). Repeat for multiple rooms.")]
@@ -87,17 +88,20 @@ internal sealed partial class WorldStatsCommand(
             return;
         }
 
-        var table = new Table().AddColumns("Room", "Status", "Owner", "Level", "Safe Mode", "Primary Mineral");
+        var rows = result.Stats.Values
+                              .OrderBy(r => r.RoomName, StringComparer.OrdinalIgnoreCase)
+                              .Select(room => (IReadOnlyList<string>)[
+                                  room.RoomName,
+                                  room.Status ?? "unknown",
+                                  ResolveOwner(room.Ownership, result.Users),
+                                  room.Ownership?.Level.ToString(CultureInfo.InvariantCulture) ?? "-",
+                                  room.IsSafeMode ? "yes" : "no",
+                                  room.PrimaryMineral?.Type ?? "-"
+                              ]);
 
-        foreach (var room in result.Stats.Values.OrderBy(r => r.RoomName, StringComparer.OrdinalIgnoreCase)) {
-            var ownerLabel = ResolveOwner(room.Ownership, result.Users);
-            var level = room.Ownership?.Level.ToString(CultureInfo.InvariantCulture) ?? "-";
-            var safeMode = room.IsSafeMode ? "yes" : "no";
-            var mineral = room.PrimaryMineral?.Type ?? "-";
-            table.AddRow(room.RoomName, room.Status ?? "unknown", ownerLabel, level, safeMode, mineral);
-        }
-
-        OutputFormatter.WriteTable(table);
+        OutputFormatter.WriteTabularData("Room stats",
+                                         ["Room", "Status", "Owner", "Level", "Safe Mode", "Primary Mineral"],
+                                         rows);
     }
 
     private static string ResolveOwner(RoomOwnershipInfo? ownership, IReadOnlyDictionary<string, MapStatsUser> users)

@@ -1,6 +1,8 @@
 ﻿namespace ScreepsDotNet.Backend.Cli.Commands.World;
 
+using global::System.Collections.Generic;
 using global::System.ComponentModel;
+using ScreepsDotNet.Backend.Cli.Formatting;
 using ScreepsDotNet.Backend.Core.Models;
 using ScreepsDotNet.Backend.Core.Parsing;
 using ScreepsDotNet.Backend.Core.Repositories;
@@ -14,7 +16,7 @@ internal sealed class WorldOverviewCommand(
     ICommandOutputFormatter? outputFormatter = null)
     : CommandHandler<WorldOverviewCommand.Settings>(logger, lifetime, outputFormatter)
 {
-    public sealed class Settings : CommandSettings
+    public sealed class Settings : FormattableCommandSettings
     {
         [CommandOption("--room <NAME>")]
         [Description("Room identifier (e.g., W1N1).")]
@@ -61,9 +63,9 @@ internal sealed class WorldOverviewCommand(
             return 0;
         }
 
-        var table = new Table().AddColumns("Room", "Owner", "User Id");
-        table.AddRow(FormatRoom(reference), overview.Owner.Username, overview.Owner.Id);
-        OutputFormatter.WriteTable(table);
+        OutputFormatter.WriteTabularData("Room overview",
+                                         ["Room", "Owner", "User Id"],
+                                         [[FormatRoom(reference), overview.Owner.Username, overview.Owner.Id]]);
         return 0;
     }
 

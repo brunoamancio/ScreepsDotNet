@@ -89,6 +89,10 @@ public sealed class WorldCommandTests
         {
         }
 
+        public void WriteTabularData(string? title, IReadOnlyList<string> headers, IEnumerable<IReadOnlyList<string>> rows)
+        {
+        }
+
         public void WriteKeyValueTable(IEnumerable<(string Key, string Value)> rows, string? title = null)
         {
         }
