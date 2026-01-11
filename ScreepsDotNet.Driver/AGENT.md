@@ -25,20 +25,21 @@ Track the strategy and status for porting the legacy Screeps Node.js driver into
 | D6 | Implement pathfinder integration (reuse native algorithm or wrap existing Node addon through interop). Seed terrain data cache and expose `driver.pathFinder`. | `docs/Pathfinder.md` | Plan completed (implementation pending) ◐ |
 | D7 | Wire global config and events (`config.engine.emit`, tick scheduling knobs, custom object prototypes). | `docs/ConfigAndEvents.md` | Plan completed (implementation pending) ◐ |
 | D8 | Provide runtime lifecycle endpoints (make runtime, send console messages, save memory/segments/intents, notify errors). | `docs/RuntimeLifecycle.md` | Plan completed (implementation pending) ◐ |
-| D9 | Build history/map view writers and notification helpers (`activateRoom`, `updateAccessibleRoomsList`, `notifyRoomsDone`, etc.). | `docs/HistoryAndNotifications.md` | Plan completed (implementation pending) ◐ |
+| D9 | Build history/map view writers and notification helpers (`activateRoom`, `updateAccessibleRoomsList`, `notifyRoomsDone`, etc.). | `docs/HistoryAndNotifications.md` | History + notification services implemented (remaining wiring TBD) ◐ |
 | D10 | Integration phase: run the legacy Node engine against the new driver via a compatibility shim to validate parity before attempting the .NET engine rewrite. | _TBD_ | Pending ☐ |
 
 _Progress Legend:_ ☐ not started, ◐ in progress, ✔ complete. Update this table as work advances.
 
 ## Next Up
-- Implement notification & history services (console fan-out, `notifyRoomsDone`, map view/event log persistence) so D9 can move from planning into code.
-- Start runtime lifecycle plumbing (runner coordinator, memory/intent persistence wiring) now that the room/user data services are in place.
-- Sandbox/pathfinder prototyping (D3/D6) remains open once storage-facing services are validated.
+- Wire the new history/notification services into the driver host (emitters, runtime hooks) and add unit coverage for their diff/throttling helpers.
+- Start runtime lifecycle plumbing (runner coordinator, sandbox integration) now that queues + storage services exist.
+- Sandbox/pathfinder prototyping (D3/D6) remains open once the runtime scaffolding begins.
 
 ## Notes for Future Agents
 - Keep cross-cutting settings in `Directory.Build.props`; avoid duplicating target framework info inside this project.
 - Record meaningful decisions (e.g., sandbox tech, storage schema tweaks) in this file so new agents don’t repeat discovery work.
 - Prefer relying on implicit/usings inherited from `Directory.Build.props`. Only add explicit `using` directives when a file needs a namespace that isn’t already imported; redundant `System.*` usings make future cleanups harder.
 - Match the existing style conventions: declare locks with the `Lock` type, use collection expressions (`[]`) for empty initializers, favor primary constructors when possible, convert one-line methods to expression-bodied members, and drop braces for single-line `if` statements.
-- Bulk writer infrastructure (`Services/Bulk`) powers the new `RoomDataService` and `UserDataService`; prefer going through `IBulkWriterFactory` for collection mutations.
+- Bulk writer infrastructure (`Services/Bulk`) powers the new `RoomDataService`, `UserDataService`, and downstream services; prefer going through `IBulkWriterFactory` for collection mutations.
+- History snapshots live under `Services/History` (Redis-backed hashes + diff builder) and raise `RoomHistorySaved` via `IDriverConfig`. Notification fan-out (`Services/Notifications`) publishes console/rooms-done events and manages `users.notifications`.
 - Outstanding TODOs: connect queue scheduler error handling to the shared logging infrastructure once it exists.

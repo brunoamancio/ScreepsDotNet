@@ -22,6 +22,7 @@ internal sealed class DriverConfig : IDriverConfig
     public event EventHandler<LoopStageEventArgs>? ProcessorLoopStage;
     public event EventHandler<PlayerSandboxEventArgs>? PlayerSandbox;
     public event EventHandler<DriverInitEventArgs>? Initialized;
+    public event EventHandler<RoomHistorySavedEventArgs>? RoomHistorySaved;
 
     public int MainLoopMinDurationMs { get; set; } = 1000;
     public int MainLoopResetIntervalMs { get; set; } = 5000;
@@ -70,4 +71,7 @@ internal sealed class DriverConfig : IDriverConfig
 
     public void EmitInitialized(DriverProcessType processType) =>
         Initialized?.Invoke(this, new DriverInitEventArgs(processType));
+
+    public void EmitRoomHistorySaved(RoomHistorySavedEventArgs args) =>
+        RoomHistorySaved?.Invoke(this, args);
 }

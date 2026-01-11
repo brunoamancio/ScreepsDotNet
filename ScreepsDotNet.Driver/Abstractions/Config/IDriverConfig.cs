@@ -10,6 +10,7 @@ public interface IDriverConfig
     event EventHandler<LoopStageEventArgs>? ProcessorLoopStage;
     event EventHandler<PlayerSandboxEventArgs>? PlayerSandbox;
     event EventHandler<DriverInitEventArgs>? Initialized;
+    event EventHandler<RoomHistorySavedEventArgs>? RoomHistorySaved;
 
     int MainLoopMinDurationMs { get; set; }
     int MainLoopResetIntervalMs { get; set; }
@@ -30,4 +31,5 @@ public interface IDriverConfig
     void EmitProcessorLoopStage(string stage, object? payload = null);
     void EmitPlayerSandbox(PlayerSandboxEventArgs args);
     void EmitInitialized(DriverProcessType processType);
+    void EmitRoomHistorySaved(RoomHistorySavedEventArgs args);
 }
