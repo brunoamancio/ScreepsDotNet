@@ -36,9 +36,13 @@ public sealed class MongoRedisStorageOptions
 
     public string ServerDataCollection { get; init; } = "server.data";
 
+    public string TransactionsCollection { get; init; } = "transactions";
+
     public string MarketOrdersCollection { get; init; } = "market.orders";
 
     public string MarketStatsCollection { get; init; } = "market.stats";
+
+    public string UsersResourcesCollection { get; init; } = "users.resources";
 
     public string WorldInfoCollection { get; init; } = "world.info";
 
