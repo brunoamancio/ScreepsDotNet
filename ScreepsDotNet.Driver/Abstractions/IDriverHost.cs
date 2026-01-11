@@ -2,6 +2,7 @@ using ScreepsDotNet.Driver.Abstractions.Bulk;
 using ScreepsDotNet.Driver.Abstractions.Config;
 using ScreepsDotNet.Driver.Abstractions.Environment;
 using ScreepsDotNet.Driver.Abstractions.History;
+using ScreepsDotNet.Driver.Abstractions.Loops;
 using ScreepsDotNet.Driver.Abstractions.Notifications;
 using ScreepsDotNet.Driver.Abstractions.Pathfinding;
 using ScreepsDotNet.Driver.Abstractions.Queues;
@@ -28,6 +29,7 @@ public interface IDriverHost
     INotificationService Notifications { get; }
     IHistoryService History { get; }
     IEnvironmentService Environment { get; }
+    IDriverLoopHooks Loops { get; }
 
     /// <summary>
     /// Establish underlying connections (Mongo, Redis, native modules) and raise

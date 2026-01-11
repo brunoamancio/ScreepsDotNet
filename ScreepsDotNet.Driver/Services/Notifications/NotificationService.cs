@@ -12,12 +12,10 @@ namespace ScreepsDotNet.Driver.Services.Notifications;
 internal sealed class NotificationService(IMongoDatabaseProvider databaseProvider, IRedisConnectionProvider redisProvider, ILogger<NotificationService>? logger = null) : INotificationService
 {
     private const int DefaultErrorIntervalMinutes = 30;
-    private const int MaxMessageLength = 500;
     private const string ErrorNotificationType = "error";
 
     private readonly IMongoCollection<UserNotificationDocument> _notifications = databaseProvider.GetCollection<UserNotificationDocument>(databaseProvider.Settings.UserNotificationsCollection);
     private readonly ISubscriber _subscriber = redisProvider.GetConnection().GetSubscriber();
-    private readonly IDatabase _redis = redisProvider.GetConnection().GetDatabase();
     private readonly ILogger<NotificationService>? _logger = logger;
 
     public Task PublishConsoleMessagesAsync(string userId, ConsoleMessagesPayload payload, CancellationToken token = default)
@@ -66,19 +64,10 @@ internal sealed class NotificationService(IMongoDatabaseProvider databaseProvide
 
     private async Task UpsertNotificationAsync(string userId, string message, NotificationOptions options, CancellationToken token)
     {
-        var clampedMessage = message.Length > MaxMessageLength ? message[..MaxMessageLength] : message;
-        var intervalMilliseconds = Math.Clamp(options.GroupIntervalMinutes, 0, 1440) * 60_000L;
-
-        if (intervalMilliseconds > 0)
-        {
-            var bucket = (long)(Math.Ceiling(DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() / (double)intervalMilliseconds) * intervalMilliseconds);
-            await SaveNotificationAsync(userId, clampedMessage, options.Type, bucket, token).ConfigureAwait(false);
-        }
-        else
-        {
-            var timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-            await SaveNotificationAsync(userId, clampedMessage, options.Type, timestamp, token).ConfigureAwait(false);
-        }
+        var now = DateTimeOffset.UtcNow;
+        var bucket = NotificationThrottler.CalculateBucketTimestamp(now, options.GroupIntervalMinutes);
+        var normalizedMessage = NotificationThrottler.NormalizeMessage(message);
+        await SaveNotificationAsync(userId, normalizedMessage, options.Type, bucket, token).ConfigureAwait(false);
     }
 
     private async Task SaveNotificationAsync(string userId, string message, string type, long timestamp, CancellationToken token)

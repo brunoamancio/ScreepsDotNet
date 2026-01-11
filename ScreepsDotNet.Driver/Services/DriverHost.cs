@@ -4,6 +4,7 @@ using ScreepsDotNet.Driver.Abstractions.Bulk;
 using ScreepsDotNet.Driver.Abstractions.Config;
 using ScreepsDotNet.Driver.Abstractions.Environment;
 using ScreepsDotNet.Driver.Abstractions.History;
+using ScreepsDotNet.Driver.Abstractions.Loops;
 using ScreepsDotNet.Driver.Abstractions.Notifications;
 using ScreepsDotNet.Driver.Abstractions.Pathfinding;
 using ScreepsDotNet.Driver.Abstractions.Queues;
@@ -24,6 +25,7 @@ internal sealed class DriverHost(IServiceProvider serviceProvider) : IDriverHost
     public IUserDataService Users => GetRequired<IUserDataService>();
     public INotificationService Notifications => GetRequired<INotificationService>();
     public IHistoryService History => GetRequired<IHistoryService>();
+    public IDriverLoopHooks Loops => GetRequired<IDriverLoopHooks>();
     public IEnvironmentService Environment => serviceProvider.GetRequiredService<IEnvironmentService>();
 
     public Task ConnectAsync(DriverProcessType processType, CancellationToken token = default)

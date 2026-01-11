@@ -26,7 +26,7 @@ internal sealed class HistoryService(
 
         var key = $"{RedisKeys.RoomHistory}{roomName}";
         var entry = new HashEntry(gameTime.ToString(), serializedObjects);
-        return _redis.HashSetAsync(key, new[] { entry });
+        return _redis.HashSetAsync(key, [entry]);
     }
 
     public async Task UploadRoomHistoryChunkAsync(string roomName, int baseGameTime, CancellationToken token = default)
@@ -38,35 +38,25 @@ internal sealed class HistoryService(
         if (entries.Length == 0)
             return;
 
-        var tickMap = entries
-            .Select(ParseTick)
-            .Where(tuple => tuple.Tick.HasValue && !string.IsNullOrWhiteSpace(tuple.Payload))
-            .ToDictionary(tuple => tuple.Tick!.Value, tuple => tuple.Payload!, EqualityComparer<int>.Default);
-
-        if (!tickMap.TryGetValue(baseGameTime, out var basePayload))
-            return;
-
-        var ticks = new SortedDictionary<int, JsonNode?>(Comparer<int>.Default);
-        JsonNode? previous = null;
-        var currentTick = baseGameTime;
-
-        while (tickMap.TryGetValue(currentTick, out var payload))
+        var parsedTicks = new Dictionary<int, JsonNode?>(entries.Length);
+        foreach (var entry in entries)
         {
-            var currentNode = ParseNode(payload);
-            var valueToStore = currentTick == baseGameTime
-                ? currentNode?.DeepClone()
-                : CreateDiff(previous, currentNode);
+            var (tick, payload) = ParseTick(entry);
+            if (!tick.HasValue || string.IsNullOrWhiteSpace(payload))
+                continue;
 
-            ticks[currentTick] = valueToStore;
-            previous = currentNode;
-            currentTick++;
+            parsedTicks[tick.Value] = ParseNode(payload);
         }
+
+        var chunkTicks = HistoryDiffBuilder.BuildChunk(parsedTicks, baseGameTime);
+        if (chunkTicks is null || chunkTicks.Count == 0)
+            return;
 
         var chunk = new RoomHistoryChunk(
             roomName,
             baseGameTime,
             DateTimeOffset.UtcNow,
-            new Dictionary<int, JsonNode?>(ticks));
+            chunkTicks);
 
         _driverConfig.EmitRoomHistorySaved(new RoomHistorySavedEventArgs(roomName, baseGameTime, chunk));
 
@@ -97,58 +87,6 @@ internal sealed class HistoryService(
         {
             return null;
         }
-    }
-
-    private static JsonNode? CreateDiff(JsonNode? previous, JsonNode? current)
-    {
-        if (previous is null || current is null)
-            return current?.DeepClone();
-
-        if (previous.GetType() != current.GetType())
-            return current.DeepClone();
-
-        if (current is JsonValue)
-            return current.DeepClone();
-
-        if (current is JsonArray)
-            return current.DeepClone();
-
-        if (current is JsonObject currentObject && previous is JsonObject previousObject)
-        {
-            var result = new JsonObject();
-            var keys = new HashSet<string>(StringComparer.Ordinal);
-            foreach (var property in currentObject)
-                keys.Add(property.Key);
-            foreach (var property in previousObject)
-                keys.Add(property.Key);
-
-            foreach (var key in keys)
-            {
-                var previousChild = previousObject[key];
-                var currentChild = currentObject[key];
-
-                if (currentChild is null)
-                {
-                    result[key] = null;
-                    continue;
-                }
-
-                if (previousChild is null)
-                {
-                    result[key] = currentChild.DeepClone();
-                    continue;
-                }
-
-                if (JsonNode.DeepEquals(previousChild, currentChild))
-                    continue;
-
-                result[key] = CreateDiff(previousChild, currentChild);
-            }
-
-            return result;
-        }
-
-        return current.DeepClone();
     }
 
     private sealed class RoomStatsUpdater(string roomName, IDriverConfig config) : IRoomStatsUpdater

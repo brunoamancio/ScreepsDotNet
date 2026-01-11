@@ -4,12 +4,14 @@ using ScreepsDotNet.Driver.Abstractions.Bulk;
 using ScreepsDotNet.Driver.Abstractions.Config;
 using ScreepsDotNet.Driver.Abstractions.Environment;
 using ScreepsDotNet.Driver.Abstractions.History;
+using ScreepsDotNet.Driver.Abstractions.Loops;
 using ScreepsDotNet.Driver.Abstractions.Notifications;
 using ScreepsDotNet.Driver.Abstractions.Queues;
 using ScreepsDotNet.Driver.Abstractions.Rooms;
 using ScreepsDotNet.Driver.Abstractions.Users;
 using ScreepsDotNet.Driver.Services.Bulk;
 using ScreepsDotNet.Driver.Services.History;
+using ScreepsDotNet.Driver.Services.Loops;
 using ScreepsDotNet.Driver.Services.Notifications;
 using ScreepsDotNet.Driver.Services.Queues;
 using ScreepsDotNet.Driver.Services.Rooms;
@@ -29,6 +31,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IUserDataService, UserDataService>();
         services.AddSingleton<IHistoryService, HistoryService>();
         services.AddSingleton<INotificationService, NotificationService>();
+        services.AddSingleton<IDriverLoopHooks, DriverLoopHooks>();
         services.AddSingleton<IDriverHost, DriverHost>();
         return services;
     }
