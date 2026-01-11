@@ -3,6 +3,7 @@
 using MongoDB.Driver;
 using ScreepsDotNet.Backend.Cli.Commands.Map;
 using ScreepsDotNet.Backend.Core.Constants;
+using ScreepsDotNet.Backend.Core.Seeding;
 using ScreepsDotNet.Storage.MongoRedis.Repositories.Documents;
 
 public sealed class MapCommandsIntegrationTests(MongoMapIntegrationFixture fixture) : IClassFixture<MongoMapIntegrationFixture>
@@ -128,6 +129,24 @@ public sealed class MapCommandsIntegrationTests(MongoMapIntegrationFixture fixtu
         var refreshed = await terrain.Find(document => document.Room == roomName).FirstOrDefaultAsync();
         Assert.NotNull(refreshed);
         Assert.Equal("terrain", refreshed!.Type);
+    }
+
+    [Fact]
+    public async Task MapAssetsUpdateCommand_Completes()
+    {
+        await _fixture.ResetAsync();
+        var service = _fixture.CreateService();
+
+        var command = new MapAssetsUpdateCommand(service);
+        var settings = new MapAssetsUpdateCommand.Settings
+        {
+            RoomName = SeedDataDefaults.World.StartRoom,
+            Full = true
+        };
+
+        var exitCode = await command.ExecuteAsync(null!, settings, CancellationToken.None);
+
+        Assert.Equal(0, exitCode);
     }
 
 }
