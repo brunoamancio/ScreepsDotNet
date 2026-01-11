@@ -1,4 +1,4 @@
-namespace ScreepsDotNet.Driver.Abstractions.Shared;
+namespace ScreepsDotNet.Driver.Abstractions.Customization;
 
 public sealed record CustomObjectPrototype(
     string ObjectType,

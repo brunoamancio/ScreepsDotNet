@@ -1,5 +1,5 @@
+using ScreepsDotNet.Driver.Abstractions.Customization;
 using ScreepsDotNet.Driver.Abstractions.Eventing;
-using ScreepsDotNet.Driver.Abstractions.Shared;
 
 namespace ScreepsDotNet.Driver.Abstractions.Config;
 
