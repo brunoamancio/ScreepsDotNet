@@ -4,8 +4,8 @@
 Track the strategy and status for porting the legacy Screeps Node.js driver into the new .NET solution. This document is a shared hand-off point for every agent touching the driver work.
 
 ## Current Snapshot (January 11, 2026)
-- `ScreepsDotNet.Driver` class library scaffold exists and is referenced from `ScreepsDotNet.slnx`.
-- No interfaces or code yet beyond the empty project file.
+- `ScreepsDotNet.Driver` now has queue infrastructure, scheduler helpers, bulk-writer plumbing, plus `RoomDataService`/`UserDataService` for Mongo/Redis access.
+- Remaining driver entry points (runtime host, notifications/history, sandbox/pathfinder) are still pending implementation.
 - Engine still consumes the legacy Node driver (via `@screeps/core`).
 
 ## Guiding Objectives
@@ -31,14 +31,14 @@ Track the strategy and status for porting the legacy Screeps Node.js driver into
 _Progress Legend:_ ☐ not started, ◐ in progress, ✔ complete. Update this table as work advances.
 
 ## Next Up
-- Flesh out the room/user data services on top of the new `IBulkWriterFactory` (intents, room objects, memory persistence).
-- Implement notification & history services (console fan-out, `notifyRoomsDone`, map view/event log persistence).
-- Continue sandbox/runtime work once storage adapters are exercised by the services above.
+- Implement notification & history services (console fan-out, `notifyRoomsDone`, map view/event log persistence) so D9 can move from planning into code.
+- Start runtime lifecycle plumbing (runner coordinator, memory/intent persistence wiring) now that the room/user data services are in place.
+- Sandbox/pathfinder prototyping (D3/D6) remains open once storage-facing services are validated.
 
 ## Notes for Future Agents
 - Keep cross-cutting settings in `Directory.Build.props`; avoid duplicating target framework info inside this project.
 - Record meaningful decisions (e.g., sandbox tech, storage schema tweaks) in this file so new agents don’t repeat discovery work.
 - Prefer relying on implicit/usings inherited from `Directory.Build.props`. Only add explicit `using` directives when a file needs a namespace that isn’t already imported; redundant `System.*` usings make future cleanups harder.
 - Match the existing style conventions: declare locks with the `Lock` type, use collection expressions (`[]`) for empty initializers, favor primary constructors when possible, convert one-line methods to expression-bodied members, and drop braces for single-line `if` statements.
-- Bulk writer infrastructure (`BulkWriter`, `BulkWriterFactory`, and `BulkWriterIdAccessor`) now lives under `Services/Bulk`; use `IBulkWriterFactory` instead of accessing Mongo collections directly.
+- Bulk writer infrastructure (`Services/Bulk`) powers the new `RoomDataService` and `UserDataService`; prefer going through `IBulkWriterFactory` for collection mutations.
 - Outstanding TODOs: connect queue scheduler error handling to the shared logging infrastructure once it exists.
