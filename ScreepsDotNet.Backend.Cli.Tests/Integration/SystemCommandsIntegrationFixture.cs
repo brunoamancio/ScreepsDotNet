@@ -26,9 +26,12 @@ public sealed class SystemCommandsIntegrationFixture : IAsyncLifetime
     private MongoClient? _mongoClient;
     private MongoRedisStorageOptions _options = null!;
     private RedisConnectionProvider _redisProvider = null!;
+    private IMongoDatabaseProvider _databaseProvider = null!;
 
     public IMongoDatabase Database { get; private set; } = null!;
     public MongoRedisStorageOptions StorageOptions => _options;
+    public IMongoDatabaseProvider DatabaseProvider => _databaseProvider;
+    public IRedisConnectionProvider RedisProvider => _redisProvider;
     public IConnectionMultiplexer RedisConnection => _redisProvider.GetConnection();
 
     public async Task InitializeAsync()
@@ -45,6 +48,7 @@ public sealed class SystemCommandsIntegrationFixture : IAsyncLifetime
 
         _mongoClient = new MongoClient(_options.MongoConnectionString);
         Database = _mongoClient.GetDatabase(_options.MongoDatabase);
+        _databaseProvider = new MongoDatabaseProvider(Options.Create(_options));
 
         _redisProvider = new RedisConnectionProvider(Options.Create(_options));
 
