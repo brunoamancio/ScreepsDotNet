@@ -36,3 +36,4 @@ _Progress Legend:_ ☐ not started, ◐ in progress, ✔ complete. Update this t
 ## Notes for Future Agents
 - Keep cross-cutting settings in `Directory.Build.props`; avoid duplicating target framework info inside this project.
 - Record meaningful decisions (e.g., sandbox tech, storage schema tweaks) in this file so new agents don’t repeat discovery work.
+- Prefer relying on implicit/usings inherited from `Directory.Build.props`. Only add explicit `using` directives when a file needs a namespace that isn’t already imported; redundant `System.*` usings make future cleanups harder.

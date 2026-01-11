@@ -1,4 +1,4 @@
-namespace ScreepsDotNet.Driver.Abstractions.Shared;
+namespace ScreepsDotNet.Driver.Abstractions.Eventing;
 
 public sealed class DriverInitEventArgs(DriverProcessType processType) : EventArgs
 {
