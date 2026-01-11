@@ -6,5 +6,6 @@
     <Project Path="ScreepsDotNet.Storage.MongoRedis/ScreepsDotNet.Storage.MongoRedis.csproj" />
     <Project Path="ScreepsDotNet.Backend.Cli/ScreepsDotNet.Backend.Cli.csproj" />
     <Project Path="ScreepsDotNet.Backend.Cli.Tests/ScreepsDotNet.Backend.Cli.Tests.csproj" />
+    <Project Path="ScreepsDotNet.Driver/ScreepsDotNet.Driver.csproj" />
   </Folder>
 </Solution>
