@@ -17,10 +17,10 @@ Track the strategy and status for porting the legacy Screeps Node.js driver into
 ## Work Plan & Status
 | Step | Description | Owner | Status |
 |------|-------------|-------|--------|
-| D1 | Enumerate the complete driver API surface by scanning `ScreepsNodeJs/engine` for `driver.*` usage and documenting the method signatures + behavior. Turn this into a C# interface (e.g., `IScreepsDriver`). | Completed | ✔ |
-| D2 | Design storage adapters for Mongo/Redis that cover bulk writes, env keys, queues, pub/sub, history storage, map view persistence. Leverage existing `ScreepsDotNet.Storage.MongoRedis` types where possible. (See `docs/StorageAdapters.md`.) | Completed | ✔ |
-| D3 | Choose and prototype the JavaScript sandbox (ClearScript + V8). Implement module/require plumbing, runtime bootstrap, memory/CPU quotas, and host bridges (intent collector, console logging). (See `docs/SandboxOptions.md`.) | Completed | ✔ |
-| D4 | Implement queue + scheduler services (room/user queues, add/fetch/mark-done/reset, rate limiting). Ensure graceful shutdown semantics. (See `docs/QueueAndScheduler.md`.) | Completed | ✔ |
+| D1 | Enumerate the complete driver API surface by scanning `ScreepsNodeJs/engine` for `driver.*` usage and documenting the method signatures + behavior. Turn this into a C# interface (e.g., `IScreepsDriver`). | Plan completed (implementation pending) | ◐ |
+| D2 | Design storage adapters for Mongo/Redis that cover bulk writes, env keys, queues, pub/sub, history storage, map view persistence. Leverage existing `ScreepsDotNet.Storage.MongoRedis` types where possible. (See `docs/StorageAdapters.md`.) | Plan completed (implementation pending) | ◐ |
+| D3 | Choose and prototype the JavaScript sandbox (ClearScript + V8). Implement module/require plumbing, runtime bootstrap, memory/CPU quotas, and host bridges (intent collector, console logging). (See `docs/SandboxOptions.md`.) | Plan completed (implementation pending) | ◐ |
+| D4 | Implement queue + scheduler services (room/user queues, add/fetch/mark-done/reset, rate limiting). Ensure graceful shutdown semantics. (See `docs/QueueAndScheduler.md`.) | Plan completed (implementation pending) | ◐ |
 | D5 | Port bulk writer abstractions (`BulkObjects`, `BulkUsers`, `BulkFlags`, `BulkTransactions`, etc.) so the processor can stage batched updates before committing. | Pending | ☐ |
 | D6 | Implement pathfinder integration (reuse native algorithm or wrap existing Node addon through interop). Seed terrain data cache and expose `driver.pathFinder`. | Pending | ☐ |
 | D7 | Wire global config and events (`config.engine.emit`, tick scheduling knobs, custom object prototypes). Provide managed equivalents for `registerCustomObjectPrototype`, `mainLoopMinDuration`, etc. | Pending | ☐ |
