@@ -2,6 +2,8 @@ using Microsoft.Extensions.DependencyInjection;
 using ScreepsDotNet.Driver.Abstractions;
 using ScreepsDotNet.Driver.Abstractions.Config;
 using ScreepsDotNet.Driver.Abstractions.Environment;
+using ScreepsDotNet.Driver.Abstractions.Queues;
+using ScreepsDotNet.Driver.Services.Queues;
 
 namespace ScreepsDotNet.Driver.Services;
 
@@ -11,6 +13,7 @@ public static class ServiceCollectionExtensions
     {
         services.AddSingleton<IDriverConfig, DriverConfig>();
         services.AddSingleton<IEnvironmentService, EnvironmentService>();
+        services.AddSingleton<IQueueService, QueueService>();
         services.AddSingleton<IDriverHost, DriverHost>();
         return services;
     }
