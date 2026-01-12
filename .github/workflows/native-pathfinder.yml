@@ -62,7 +62,11 @@ jobs:
           VCVARS: ${{ matrix.vcvars }}
         run: |
           if (-not $Env:VCVARS) { $Env:VCVARS = "x64" }
-          $vcvarsPath = Join-Path $Env:VSINSTALLDIR "VC\Auxiliary\Build\vcvarsall.bat"
+          $vswhere = "${Env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+          if (-not (Test-Path $vswhere)) { throw "vswhere.exe not found at $vswhere" }
+          $vsPath = & $vswhere -latest -prerelease -requires Microsoft.Component.MSBuild -property installationPath
+          if (-not $vsPath) { throw "Unable to locate Visual Studio installation via vswhere.exe" }
+          $vcvarsPath = Join-Path $vsPath "VC\Auxiliary\Build\vcvarsall.bat"
           if (-not (Test-Path $vcvarsPath)) { throw "vcvarsall.bat not found at $vcvarsPath" }
           & cmd.exe /c "`"$vcvarsPath`" $Env:VCVARS && bash ./build.sh $Env:RID"
 
