@@ -62,6 +62,43 @@
     <NativePathfinderSupported>true</NativePathfinderSupported>
   </PropertyGroup>
 
+  <UsingTask TaskName="VerifyNativePathfinderHash" TaskFactory="RoslynCodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)/Microsoft.Build.Tasks.Core.dll">
+    <ParameterGroup>
+      <FilePath ParameterType="System.String" Required="true" />
+      <HashFilePath ParameterType="System.String" Required="true" />
+    </ParameterGroup>
+    <Task>
+      <Code Type="Fragment" Language="cs"><![CDATA[
+        if (!System.IO.File.Exists(FilePath))
+        {
+          Log.LogError($"Native pathfinder archive '{FilePath}' not found for hash verification.");
+          return false;
+        }
+        if (!System.IO.File.Exists(HashFilePath))
+        {
+          Log.LogError($"Hash file '{HashFilePath}' not found.");
+          return false;
+        }
+        string hashLine = System.Linq.Enumerable.FirstOrDefault(System.IO.File.ReadLines(HashFilePath)) ?? string.Empty;
+        string expected = System.Text.RegularExpressions.Regex.Match(hashLine, "^[0-9A-Fa-f]+").Value;
+        if (string.IsNullOrWhiteSpace(expected))
+        {
+          Log.LogError($"Hash file '{HashFilePath}' is empty or invalid.");
+          return false;
+        }
+        using var stream = System.IO.File.OpenRead(FilePath);
+        using var sha = System.Security.Cryptography.SHA256.Create();
+        string actualString = System.BitConverter.ToString(sha.ComputeHash(stream)).Replace("-", string.Empty);
+        if (!string.Equals(actualString, expected, StringComparison.OrdinalIgnoreCase))
+        {
+          Log.LogError($"Hash verification failed for '{FilePath}'. Expected {expected}, got {actualString}.");
+          return false;
+        }
+        Log.LogMessage(MessageImportance.High, $"Verified native pathfinder archive hash ({expected}).");
+      ]]></Code>
+    </Task>
+  </UsingTask>
+
   <Target Name="EnsureNativePathfinder" BeforeTargets="ResolveReferences"
           Condition="'$(RuntimeIdentifier)' != '' and '$(NativePathfinderSkipDownload)' != 'true' and $(NativePathfinderSupported) and '$(NativePathfinderLibExtension)' != '' and !Exists('$(NativePathfinderBinary)')">
     <Message Importance="high" Text="Downloading native pathfinder binary for $(RuntimeIdentifier)..." />
@@ -69,18 +106,9 @@
     <MakeDir Directories="$(NativePathfinderRuntimeDir)" />
     <DownloadFile SourceUrl="$(NativePathfinderBaseUrl)/$(NativePathfinderPackageName)" DestinationFolder="$(NativePathfinderIntermediateDir)" />
     <DownloadFile SourceUrl="$(NativePathfinderBaseUrl)/$(NativePathfinderPackageName).sha256" DestinationFolder="$(NativePathfinderIntermediateDir)" />
-    
-    <ReadLinesFromFile File="$(NativePathfinderHashFile)" Condition="'$(NativePathfinderSkipHashCheck)' != 'true'">
-      <Output TaskParameter="Lines" ItemName="_NativePathfinderHashLines" />
-    </ReadLinesFromFile>
-      
-    <PropertyGroup Condition="'$(NativePathfinderSkipHashCheck)' != 'true'">
-      <NativePathfinderHashLine>$([System.String]::Copy('@(_NativePathfinderHashLines->'%(Identity)', ';')').Split(';')[0])</NativePathfinderHashLine>
-      <NativePathfinderExpectedHash>$([System.Text.RegularExpressions.Regex]::Match('$(NativePathfinderHashLine)', '^[0-9A-Fa-f]+').Value)</NativePathfinderExpectedHash>
-    </PropertyGroup>
-      
-    <Error Condition="'$(NativePathfinderSkipHashCheck)' != 'true' and '$(NativePathfinderExpectedHash)' == ''" Text="Hash file '$(NativePathfinderHashFile)' is empty or invalid." />
-    <VerifyFileHash Condition="'$(NativePathfinderSkipHashCheck)' != 'true'" Files="$(NativePathfinderPackageFile)" HashAlgorithm="SHA256" Hash="$(NativePathfinderExpectedHash)" />
+    <VerifyNativePathfinderHash Condition="'$(NativePathfinderSkipHashCheck)' != 'true'"
+                                 FilePath="$(NativePathfinderPackageFile)"
+                                 HashFilePath="$(NativePathfinderHashFile)" />
     <RemoveDir Directories="$(NativePathfinderRuntimeDir)" />
     <MakeDir Directories="$(NativePathfinderRuntimeDir)" />
     <Unzip SourceFiles="$(NativePathfinderPackageFile)" DestinationFolder="$(NativePathfinderRuntimeDir)" />
