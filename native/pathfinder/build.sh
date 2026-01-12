@@ -64,8 +64,12 @@ case "${RID}" in
         ;;
 esac
 
-cmake -S "${SCRIPT_DIR}" -B "${BUILD_DIR}" \
-    "${GENERATOR_ARGS[@]}" \
-    "${CMAKE_ARGS[@]}"
+cmake_cmd=(cmake -S "${SCRIPT_DIR}" -B "${BUILD_DIR}")
+if ((${#GENERATOR_ARGS[@]})); then
+    cmake_cmd+=("${GENERATOR_ARGS[@]}")
+fi
+cmake_cmd+=("${CMAKE_ARGS[@]}")
+
+"${cmake_cmd[@]}"
 
 cmake --build "${BUILD_DIR}" --config "${CONFIG}"
