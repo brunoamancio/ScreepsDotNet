@@ -37,7 +37,7 @@ internal sealed class ProcessorLoopWorker(
         var intents = await _rooms.GetRoomIntentsAsync(roomName, token).ConfigureAwait(false);
 
         if (intents is not null)
-            await ApplyRoomIntentsAsync(roomName, intents, token).ConfigureAwait(false);
+            await ApplyRoomIntentsAsync(roomName, roomObjects.Objects, intents, token).ConfigureAwait(false);
 
         await _rooms.ClearRoomIntentsAsync(roomName, token).ConfigureAwait(false);
 
@@ -58,7 +58,7 @@ internal sealed class ProcessorLoopWorker(
         }
     }
 
-    private async Task ApplyRoomIntentsAsync(string roomName, RoomIntentDocument intents, CancellationToken token)
+    private async Task ApplyRoomIntentsAsync(string roomName, IReadOnlyDictionary<string, RoomObjectDocument> objects, RoomIntentDocument intents, CancellationToken token)
     {
         if (intents.Users is null || intents.Users.Count == 0)
             return;
@@ -80,12 +80,19 @@ internal sealed class ProcessorLoopWorker(
                 if (string.IsNullOrWhiteSpace(objectId))
                     continue;
 
-                writer.Update(objectId, new
+                var intentMetadata = new Dictionary<string, object?>
                 {
-                    lastIntentUser = userId,
-                    lastIntent = payload ?? new BsonDocument(),
-                    lastIntentTime = timestamp
-                });
+                    ["lastIntentUser"] = userId,
+                    ["lastIntentTime"] = timestamp
+                };
+
+                if (payload is not null && payload.ElementCount > 0)
+                    intentMetadata["lastIntent"] = ConvertPayload(payload);
+
+                writer.Update(objectId, intentMetadata);
+
+                if (payload is not null)
+                    ApplyMutations(writer, objectId, objects, payload);
 
                 events.Add(new RoomIntentEvent(
                     userId,
@@ -121,13 +128,96 @@ internal sealed class ProcessorLoopWorker(
         }
     }
 
+    private static void ApplyMutations(IBulkWriter<RoomObjectDocument> writer, string objectId, IReadOnlyDictionary<string, RoomObjectDocument> objects, BsonDocument payload)
+    {
+        objects.TryGetValue(objectId, out var target);
+        var update = new Dictionary<string, object?>(StringComparer.Ordinal);
+
+        if (payload.TryGetValue("remove", out var removeValue) && IsTruthy(removeValue))
+        {
+            writer.Remove(objectId);
+            return;
+        }
+
+        if (payload.TryGetValue("damage", out var damageValue) && target is not null)
+        {
+            var damage = damageValue.ToInt32();
+            if (damage > 0 && target.Hits.HasValue)
+            {
+                var newHits = Math.Max(0, target.Hits!.Value - damage);
+                update["hits"] = newHits;
+                target.Hits = newHits;
+                if (newHits == 0)
+                {
+                    writer.Remove(objectId);
+                    return;
+                }
+            }
+        }
+
+        if (payload.TryGetValue("set", out var setValue) && setValue is BsonDocument setDoc)
+        {
+            foreach (var element in setDoc.Elements)
+                update[element.Name] = ConvertBsonValue(element.Value);
+        }
+
+        if (payload.TryGetValue("patch", out var patchValue) && patchValue is BsonDocument patchDoc) {
+            foreach (var element in patchDoc.Elements)
+                update[element.Name] = ConvertBsonValue(element.Value);
+        }
+
+        foreach (var element in payload.Elements)
+        {
+            if (element.Name is "damage" or "remove" or "set" or "patch")
+                continue;
+            update[element.Name] = ConvertBsonValue(element.Value);
+        }
+
+        if (update.Count > 0)
+            writer.Update(objectId, update);
+    }
+
     private static object? ConvertPayload(BsonDocument? payload)
     {
         if (payload is null || payload.ElementCount == 0)
             return null;
 
-        var json = payload.ToJson();
-        return JsonSerializer.Deserialize<object>(json, JsonOptions);
+        return ConvertBsonValue(payload);
+    }
+
+    private static object? ConvertBsonValue(BsonValue value)
+    {
+        if (value.IsBsonNull)
+            return null;
+
+        return value.BsonType switch
+        {
+            BsonType.Boolean => value.AsBoolean,
+            BsonType.Int32 => value.AsInt32,
+            BsonType.Int64 => value.AsInt64,
+            BsonType.Double => value.AsDouble,
+            BsonType.Decimal128 => Decimal128.ToDouble(value.AsDecimal128),
+            BsonType.String => value.AsString,
+            BsonType.Document => value.AsBsonDocument.Elements.ToDictionary(
+                element => element.Name,
+                element => ConvertBsonValue(element.Value),
+                StringComparer.Ordinal),
+            BsonType.Array => value.AsBsonArray.Select(ConvertBsonValue).ToArray(),
+            _ => value.ToString()
+        };
+    }
+
+    private static bool IsTruthy(BsonValue value)
+    {
+        return value.BsonType switch
+        {
+            BsonType.Boolean => value.AsBoolean,
+            BsonType.Int32 => value.AsInt32 != 0,
+            BsonType.Int64 => value.AsInt64 != 0,
+            BsonType.Double => Math.Abs(value.AsDouble) > double.Epsilon,
+            BsonType.String => !string.IsNullOrWhiteSpace(value.AsString),
+            _ => !value.IsBsonNull
+        };
     }
 
     private sealed record RoomIntentEvent(string UserId, string ObjectId, object? Payload);
