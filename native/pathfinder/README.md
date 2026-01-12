@@ -23,6 +23,7 @@ The script:
 1. Configures CMake with `-DRUNTIME_IDENTIFIER=<RID>` (defaults exist, but explicit values keep artifacts organized).
 2. Builds the shared library (`libscreepspathfinder.{so|dylib|dll}`).
 3. Copies the result to `ScreepsDotNet.Driver/runtimes/<RID>/native/`.
+4. Emits a matching SHA-256 file (`native-pathfinder-<rid>.zip.sha256`) so consumers can verify downloads.
 
 Run the script once per platform to populate every RID the .NET driver targets (linux-x64/linux-arm64/win-x64/osx-x64/osx-arm64). CI can invoke it on each runner type before packaging releases.
 
@@ -36,15 +37,16 @@ Run the script once per platform to populate every RID the .NET driver targets (
 - `macos-latest` (`osx-x64`)
 - `macos-14` (`osx-arm64`)
 
-Each job packages `native-pathfinder-<rid>.zip`. When the workflow runs on `main`, the `release-native` job publishes (or updates) the GitHub release tagged `native-latest` with those ZIPs. This gives the .NET driver (and any developer) a stable download URL per RID without checking binaries into git.
+Each job packages `native-pathfinder-<rid>.zip` plus `native-pathfinder-<rid>.zip.sha256`. When the workflow runs on `main`, the `release-native` job publishes (or updates) the GitHub release tagged `native-latest` with both files for every RID.
 
 ### Consumption from the .NET Driver
 
 `ScreepsDotNet.Driver` now contains an MSBuild target (`EnsureNativePathfinder`) that runs before the build resolves references. For supported runtime identifiers (linux-x64/linux-arm64/win-x64/win-arm64/osx-x64/osx-arm64), the target:
 
 1. Checks if `runtimes/<rid>/native/libscreepspathfinder.*` exists.
-2. If missing, downloads `native-pathfinder-<rid>.zip` from `https://github.com/th3b0y/screeps-rewrite/releases/download/native-latest/`.
-3. Extracts the archive into the correct `runtimes/<rid>/` directory so P/Invoke can load the native solver.
+2. If missing, downloads `native-pathfinder-<rid>.zip` **and** its `.sha256` manifest from `https://github.com/th3b0y/screeps-rewrite/releases/download/native-latest/`.
+3. Verifies the downloaded archive’s SHA-256 hash matches the manifest (set `NativePathfinderSkipHashCheck=true` to bypass).
+4. Extracts the archive into the correct `runtimes/<rid>/` directory so P/Invoke can load the native solver.
 
 You can override or skip this behavior by setting `NativePathfinderBaseUrl`/`NativePathfinderPackageName` (to point at a different feed) or `NativePathfinderSkipDownload=true` (useful when testing local builds).
 

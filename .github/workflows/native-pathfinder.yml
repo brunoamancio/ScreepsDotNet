@@ -126,6 +126,7 @@ jobs:
           zip_path="$dist_dir/native-pathfinder-${{ matrix.rid }}.zip"
           rm -f "$zip_path"
           (cd "$native_dir" && zip -r "$zip_path" .)
+          shasum -a 256 "$zip_path" > "${zip_path}.sha256"
 
       - name: Package native artifact (Windows)
         if: matrix.disabled != true && runner.os == 'Windows'
@@ -142,13 +143,17 @@ jobs:
             exit 1
           }
           Compress-Archive -Path "$nativePath\*" -DestinationPath $dest -Force
+          $hash = Get-FileHash -Path $dest -Algorithm SHA256
+          "$($hash.Hash)  $(Split-Path -Leaf $dest)" | Out-File -FilePath "$dest.sha256" -Encoding ascii
           Pop-Location
 
       - name: Upload native artifact
         uses: actions/upload-artifact@v6
         with:
           name: native-pathfinder-${{ matrix.rid }}
-          path: ${{ env.workdir }}/dist/native-pathfinder-${{ matrix.rid }}.zip
+          path: |
+            ${{ env.workdir }}/dist/native-pathfinder-${{ matrix.rid }}.zip
+            ${{ env.workdir }}/dist/native-pathfinder-${{ matrix.rid }}.zip.sha256
         if: matrix.disabled != true
 
   release-native:
@@ -175,7 +180,9 @@ jobs:
           name: Native Pathfinder (latest)
           prerelease: true
           draft: false
-          files: native-artifacts/**/native-pathfinder-*.zip
+          files: |
+            native-artifacts/**/native-pathfinder-*.zip
+            native-artifacts/**/native-pathfinder-*.zip.sha256
           make_latest: true
           overwrite_files: true
           body: "Automated native pathfinder binaries built from ${{ github.sha }}."
