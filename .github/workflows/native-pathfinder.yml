@@ -166,7 +166,16 @@ jobs:
       - name: List artifacts
         run: ls -R native-artifacts
 
-      - name: Upload artifacts summary
-        run: |
-          echo "Artifacts produced for linux-x64 build:" >> $GITHUB_STEP_SUMMARY
-          ls -1 native-artifacts | sed 's/^/- /' >> $GITHUB_STEP_SUMMARY
+      - name: Publish GitHub release
+        uses: softprops/action-gh-release@v2.5.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: native-latest
+          name: Native Pathfinder (latest)
+          prerelease: true
+          draft: false
+          files: native-artifacts/**/native-pathfinder-*.zip
+          make_latest: true
+          overwrite_files: true
+          body: "Automated native pathfinder binaries built from ${{ github.sha }}."
