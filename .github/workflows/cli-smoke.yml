@@ -1,16 +1,68 @@
 name: CLI Smoke Tests
 
 on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
   workflow_dispatch:
 
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      native: ${{ steps.filter.outputs.native }}
+    steps:
+      - uses: actions/checkout@v6
+      - id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            native:
+              - 'src/native/pathfinder/**'
+              - 'src/ScreepsDotNet.Driver/**'
+
+  build-native:
+    runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.native == 'true'
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Build native pathfinder (linux-x64)
+        run: |
+          set -euo pipefail
+          ./src/native/pathfinder/build.sh linux-x64
+
+      - name: Upload native linux-x64 artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: native-linux-x64
+          path: src/ScreepsDotNet.Driver/runtimes/linux-x64/native
+
   cli-smoke:
+    needs: [changes, build-native]
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+
+      - name: Download native linux-x64 artifact
+        if: needs.build-native.result == 'success'
+        uses: actions/download-artifact@v6
+        with:
+          name: native-linux-x64
+          path: native-artifacts/linux-x64
+
+      - name: Install native linux-x64 artifact
+        if: needs.build-native.result == 'success'
+        run: |
+          set -euo pipefail
+          rm -rf src/ScreepsDotNet.Driver/runtimes/linux-x64/native
+          mkdir -p src/ScreepsDotNet.Driver/runtimes/linux-x64/native
+          cp -R native-artifacts/linux-x64/. src/ScreepsDotNet.Driver/runtimes/linux-x64/native/
 
       - name: Start Docker service
         run: |
