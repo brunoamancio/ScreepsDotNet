@@ -38,7 +38,7 @@ D9 addresses the remaining driver helpers: history snapshot uploads, map view pe
 
 ## Current Implementation
 - `HistoryService` stores per-room tick diffs in Redis; once a chunk is ready it persists the chunk to Mongo (`rooms.history`) and emits `roomHistorySaved`.
-- `RoomHistoryPipeline` listens for that event, writes the chunk to the configured uploader path (filesystem by default), and refreshes both the map-view snapshot and room-event log payload so UI consumers stay in sync.
+- `RoomHistoryPipeline` listens for that event and refreshes both the map-view snapshot and room-event log payload in Redis so UI consumers stay in sync—no extra filesystem copies are produced.
 - `NotificationService` handles console/watchdog/intent notifications through the shared throttler, while `RoomsDoneBroadcaster` throttles `roomsDone` emits so downstream listeners aren’t flooded when ticks complete rapidly.
 
 ## Next Steps
