@@ -17,7 +17,7 @@ Track progress toward replacing the managed A* fallback with the upstream Screep
 - ⚠️ Managed driver still uses the C# A* fallback.
 
 ## Next Steps
-1. Refactor the search pipeline (`path_finder_t::search`, callbacks, cost matrices) so it no longer depends on V8/NAN.
+1. Refactor the search pipeline (`path_finder_t::search`, callbacks, cost matrices) so it no longer depends on V8/NAN. Native terrain loading + callback stubs exist, but search still uses V8 objects.
 2. Implement the real exports in `pathfinder_exports.cpp`: instantiate `path_finder_t`, marshal terrain/cost matrices, and copy results back into `ScreepsPathfinderResultNative`.
 3. Finalize the CMake project (or equivalent) to produce `libscreepspathfinder` for all target RIDs, plus scripts to drop them under `ScreepsDotNet.Driver/runtimes/<rid>/native`.
 4. Update the managed `PathfinderService` to P/Invoke the new library, keeping the managed fallback as a contingency until the native path passes tests.

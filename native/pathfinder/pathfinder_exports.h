@@ -56,6 +56,13 @@ extern "C"
         bool incomplete;
     };
 
+    typedef bool (*ScreepsRoomCallback)(
+        uint8_t roomX,
+        uint8_t roomY,
+        const uint8_t** costMatrix,
+        int* costMatrixLength,
+        void* userData);
+
     SCREEPS_PATHFINDER_API int ScreepsPathfinder_LoadTerrain(const ScreepsTerrainRoom* rooms, int count);
     SCREEPS_PATHFINDER_API int ScreepsPathfinder_Search(
         const ScreepsPathfinderPoint* origin,
@@ -64,4 +71,5 @@ extern "C"
         const ScreepsPathfinderOptionsNative* options,
         ScreepsPathfinderResultNative* result);
     SCREEPS_PATHFINDER_API void ScreepsPathfinder_FreeResult(ScreepsPathfinderResultNative* result);
+    SCREEPS_PATHFINDER_API void ScreepsPathfinder_SetRoomCallback(ScreepsRoomCallback callback, void* userData);
 }

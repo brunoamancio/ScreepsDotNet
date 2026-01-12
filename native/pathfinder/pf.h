@@ -355,10 +355,13 @@ namespace screeps {
 			bool flee;
 			v8::Local<v8::Value>* room_data_handles;
 			v8::Local<v8::Function>* room_callback;
+			static room_callback_fn native_room_callback;
+			static void* native_room_callback_context;
 			bool _is_in_use = false;
 
 			static std::array<uint8_t*, map_position_size> terrain;
 			static std::vector<std::unique_ptr<uint8_t[]>> terrain_storage;
+			static std::vector<std::unique_ptr<uint8_t[]>> cost_matrix_storage;
 
 			class js_error: public std::runtime_error {
 				public: js_error() : std::runtime_error("js error") {}
@@ -382,6 +385,7 @@ namespace screeps {
 			void jump_neighbor(world_position_t pos, pos_index_t index, world_position_t neighbor, cost_t g_cost, cost_t cost, cost_t n_cost);
 			static void reset_terrain_storage();
 			static void ingest_terrain_chunk(map_position_t pos, const uint8_t* source, size_t length);
+			static void set_room_callback(room_callback_fn callback, void* userData);
 
 		public:
 			v8::Local<v8::Value> search(
@@ -398,6 +402,7 @@ namespace screeps {
 			}
 
 			static void load_terrain(v8::Local<v8::Array> terrain);
+			static void load_terrain(const terrain_room_plain* rooms, size_t count);
 			static void load_terrain(const terrain_room_plain* rooms, size_t count);
 	};
 };

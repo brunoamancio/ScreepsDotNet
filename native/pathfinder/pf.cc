@@ -19,6 +19,9 @@ constexpr bool is_near_border_pos(T val) {
 
 decltype(path_finder_t::terrain) path_finder_t::terrain = {{ nullptr }};
 std::vector<std::unique_ptr<uint8_t[]>> path_finder_t::terrain_storage;
+std::vector<std::unique_ptr<uint8_t[]>> path_finder_t::cost_matrix_storage;
+room_callback_fn path_finder_t::native_room_callback = nullptr;
+void* path_finder_t::native_room_callback_context = nullptr;
 
 	// Return room index from a map position, allocates a new room index if needed and possible
 	room_index_t path_finder_t::room_index_from_pos(const map_position_t map_pos) {
@@ -57,6 +60,19 @@ std::vector<std::unique_ptr<uint8_t[]>> path_finder_t::terrain_storage;
 					if (cost_matrix_js.length() == 2500) {
 						cost_matrix = *cost_matrix_js;
 					}
+				}
+			} else if (native_room_callback != nullptr) {
+				room_callback_result result{};
+				if (!native_room_callback(map_pos.xx, map_pos.yy, &result, native_room_callback_context)) {
+					blocked_rooms.insert(map_pos);
+					return 0;
+				}
+
+				if (result.cost_matrix != nullptr && result.cost_matrix_length >= 2500) {
+					auto buffer = std::make_unique<uint8_t[]>(2500);
+					std::memcpy(buffer.get(), result.cost_matrix, 2500);
+					cost_matrix = buffer.get();
+					cost_matrix_storage.push_back(std::move(buffer));
 				}
 			}
 			room_table[room_table_size++] = room_info_t(terrain_ptr, cost_matrix, map_pos);
@@ -645,4 +661,10 @@ std::vector<std::unique_ptr<uint8_t[]>> path_finder_t::terrain_storage;
 			map_position_t pos(room.xx, room.yy);
 			ingest_terrain_chunk(pos, room.bits, room.length);
 		}
+	}
+
+	void path_finder_t::set_room_callback(room_callback_fn callback, void* userData)
+	{
+		native_room_callback = callback;
+		native_room_callback_context = userData;
 	}

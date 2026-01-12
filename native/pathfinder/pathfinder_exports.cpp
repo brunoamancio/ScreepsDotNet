@@ -142,3 +142,10 @@ extern "C"
         result->pathLength = 0;
     }
 }
+#include "pf.h"
+    void ScreepsPathfinder_SetRoomCallback(ScreepsRoomCallback callback, void* userData)
+    {
+        (void)callback;
+        (void)userData;
+        // TODO: Wire managed callback once the search path is native-friendly.
+    }
