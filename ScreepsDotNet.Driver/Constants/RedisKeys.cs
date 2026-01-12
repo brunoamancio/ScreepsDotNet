@@ -18,4 +18,10 @@ internal static class RedisKeys
     public const string RoomEventLog = "roomEventLog:";
     public const string ActiveRooms = "activeRooms";
     public const string MainLoopMinDuration = "tickRate";
+    public const string MainLoopResetInterval = "mainLoopResetInterval";
+    public const string CpuMaxPerTick = "cpuMaxPerTick";
+    public const string CpuBucketSize = "cpuBucketSize";
+    public const string HistoryChunkSize = "historyChunkSize";
+    public const string UseSigintTimeout = "useSigintTimeout";
+    public const string EnableInspector = "enableInspector";
 }

@@ -63,3 +63,8 @@ public interface IDriverConfig
 2. Add `DriverEvents` helper to expose Node-like `emit`/`on` semantics for compatibility shims.
 3. Integrate config persistence with Redis env keys where applicable.
 4. Update `AGENT.md` (D7) to “Plan completed (implementation pending)” until wiring is coded.
+
+### Current Status (January 12, 2026)
+- `DriverConfig` now persists loop/tick settings (`tickRate`, reset interval, CPU caps, history chunk size, SIGINT toggle, inspector flag) to Redis via `EnvironmentService`, so values survive restarts and match the legacy env keys.
+- `EnvironmentService` exposes typed getters/setters for those Redis keys alongside the existing lifecycle helpers (tick started, rooms done, gametime).
+- Remaining work: Node-style `config.emit` shim plus wider event surface for mods still TODO.

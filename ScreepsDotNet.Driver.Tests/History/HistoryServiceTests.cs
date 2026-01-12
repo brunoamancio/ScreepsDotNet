@@ -12,7 +12,7 @@ public sealed class HistoryServiceTests(MongoRedisFixture fixture) : IClassFixtu
     [Fact]
     public async Task UploadRoomHistoryChunkAsync_RaisesEvent()
     {
-        var config = new DriverConfig();
+        var config = new DriverConfig(new FakeEnvironmentService());
         var service = new HistoryService(config, _fixture.RedisProvider);
         var received = new TaskCompletionSource<RoomHistorySavedEventArgs>(TaskCreationOptions.RunContinuationsAsynchronously);
         config.RoomHistorySaved += (_, args) => received.TrySetResult(args);
