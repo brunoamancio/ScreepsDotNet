@@ -60,7 +60,3 @@ jobs:
 
       - name: CLI smoke - system status
         run: dotnet run --project ScreepsDotNet.Backend.Cli/ScreepsDotNet.Backend.Cli.csproj -- system status --json
-
-      - name: Tear down Mongo + Redis
-        if: always()
-        run: docker compose down -v
