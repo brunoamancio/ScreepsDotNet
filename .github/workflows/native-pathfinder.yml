@@ -43,19 +43,37 @@ jobs:
             rid: osx-arm64
             disabled: true
 
-    defaults:
-      run:
-        working-directory: native/pathfinder
-
     steps:
-      - name: Skip if disabled
-        if: matrix.disabled == true
-        run: echo "Skipping ${matrix.rid}"
+
       - name: Checkout
         uses: actions/checkout@v6
 
+      - name: Determine working directory
+        if: ${{ matrix.disabled != true }}
+        run: |
+          if [ -d "native/pathfinder" ]; then
+            echo "workdir=native/pathfinder" >> $GITHUB_ENV
+          elif [ -d "ScreepsDotNet/native/pathfinder" ]; then
+            echo "workdir=ScreepsDotNet/native/pathfinder" >> $GITHUB_ENV
+          else
+            echo "Native pathfinder directory not found" >&2
+            exit 1
+          fi
+        shell: bash
+
+      - name: Show working directory
+        if: ${{ matrix.disabled != true }}
+        run: echo "Using workdir ${{ env.workdir }}"
+
       - name: Show CMake version
-        run: cmake --version
+        if: ${{ matrix.disabled != true }}
+        run: |
+          cd "${{ env.workdir }}"
+          cmake --version
+
+      - name: Skip job
+        if: matrix.disabled == true
+        run: echo "Skipping ${matrix.rid}"
 
       - name: Install cross toolchain
         if: matrix.disabled != true && runner.os == 'Linux' && matrix.rid == 'linux-arm64'
@@ -77,18 +95,21 @@ jobs:
           if (-not $vsPath) { throw "Unable to locate Visual Studio installation via vswhere.exe" }
           $vcvarsPath = Join-Path $vsPath "VC\Auxiliary\Build\vcvarsall.bat"
           if (-not (Test-Path $vcvarsPath)) { throw "vcvarsall.bat not found at $vcvarsPath" }
-          & cmd.exe /c "`"$vcvarsPath`" $Env:VCVARS && bash ./build.sh $Env:RID"
+          & cmd.exe /c "`"$vcvarsPath`" $Env:VCVARS && cd ${{ env.workdir }} && bash ./build.sh $Env:RID"
 
       - name: Build libscreepspathfinder (POSIX)
         if: matrix.disabled != true && runner.os != 'Windows'
         shell: bash
-        run: ./build.sh "${{ matrix.rid }}"
+        run: |
+          cd "${{ env.workdir }}"
+          ./build.sh "${{ matrix.rid }}"
 
       - name: Package native artifact (POSIX)
         if: matrix.disabled != true && runner.os != 'Windows'
         shell: bash
         run: |
           set -euo pipefail
+          cd "${{ env.workdir }}"
           dist_dir="$(pwd)/dist"
           native_dir="../../ScreepsDotNet.Driver/runtimes/${{ matrix.rid }}/native"
           if [[ ! -d "$native_dir" ]]; then
@@ -104,6 +125,7 @@ jobs:
         if: matrix.disabled != true && runner.os == 'Windows'
         shell: pwsh
         run: |
+          Push-Location "${{ env.workdir }}"
           $dist = Join-Path (Get-Location) "dist"
           New-Item -ItemType Directory -Force -Path $dist | Out-Null
           $dest = Join-Path $dist "native-pathfinder-${{ matrix.rid }}.zip"
@@ -114,12 +136,13 @@ jobs:
             exit 1
           }
           Compress-Archive -Path "$nativePath\*" -DestinationPath $dest -Force
+          Pop-Location
 
       - name: Upload native artifact
         uses: actions/upload-artifact@v6
         with:
           name: native-pathfinder-${{ matrix.rid }}
-          path: native/pathfinder/dist/native-pathfinder-${{ matrix.rid }}.zip
+          path: ${{ env.workdir }}/dist/native-pathfinder-${{ matrix.rid }}.zip
         if: matrix.disabled != true
 
   release-native:
