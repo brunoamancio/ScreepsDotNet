@@ -76,7 +76,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          native_dir="../ScreepsDotNet.Driver/runtimes/${{ matrix.rid }}/native"
+          native_dir="../../ScreepsDotNet.Driver/runtimes/${{ matrix.rid }}/native"
           if [[ ! -d "$native_dir" ]]; then
             echo "Native pathfinder output not found at $native_dir" >&2
             exit 1
@@ -93,7 +93,7 @@ jobs:
           New-Item -ItemType Directory -Force -Path dist | Out-Null
           $dest = "dist/native-pathfinder-${{ matrix.rid }}.zip"
           if (Test-Path $dest) { Remove-Item $dest }
-          $nativePath = Join-Path "..\ScreepsDotNet.Driver\runtimes\${{ matrix.rid }}" "native"
+          $nativePath = Join-Path "..\..\ScreepsDotNet.Driver\runtimes\${{ matrix.rid }}" "native"
           if (-not (Test-Path $nativePath)) {
             Write-Error "Native pathfinder output not found at $nativePath"
             exit 1
