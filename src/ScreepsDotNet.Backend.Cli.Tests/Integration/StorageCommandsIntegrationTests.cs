@@ -8,13 +8,11 @@ using Spectre.Console;
 
 public sealed class StorageCommandsIntegrationTests(SystemCommandsIntegrationFixture fixture) : IClassFixture<SystemCommandsIntegrationFixture>
 {
-    private readonly SystemCommandsIntegrationFixture _fixture = fixture;
-
     [Fact]
     public async Task StorageStatusCommand_ReportsConnected()
     {
-        await _fixture.ResetStateAsync();
-        var adapter = new MongoRedisStorageAdapter(_fixture.DatabaseProvider, _fixture.RedisProvider, NullLogger<MongoRedisStorageAdapter>.Instance);
+        await fixture.ResetStateAsync();
+        var adapter = new MongoRedisStorageAdapter(fixture.DatabaseProvider, fixture.RedisProvider, NullLogger<MongoRedisStorageAdapter>.Instance);
         var command = new StorageStatusCommand(adapter, NullLogger<StorageStatusCommand>.Instance, null, new TestFormatter());
 
         var exitCode = await command.ExecuteAsync(null!, new StorageStatusCommand.Settings { OutputJson = true }, CancellationToken.None);

@@ -5,16 +5,14 @@ namespace ScreepsDotNet.Driver.Services.Runtime;
 
 internal sealed class RuntimeSandboxPool(IRuntimeSandboxFactory factory, ILogger<RuntimeSandboxPool>? logger = null) : IRuntimeSandboxPool
 {
-    private readonly IRuntimeSandboxFactory _factory = factory;
-    private readonly ILogger<RuntimeSandboxPool>? _logger = logger;
     private readonly ConcurrentBag<IRuntimeSandbox> _pool = new();
 
     public IRuntimeSandbox Rent()
     {
         if (_pool.TryTake(out var sandbox))
             return sandbox;
-        _logger?.LogTrace("Allocating new runtime sandbox.");
-        return _factory.CreateSandbox();
+        logger?.LogTrace("Allocating new runtime sandbox.");
+        return factory.CreateSandbox();
     }
 
     public void Return(IRuntimeSandbox sandbox)
@@ -37,9 +35,9 @@ internal sealed class RuntimeSandboxPool(IRuntimeSandboxFactory factory, ILogger
             }
             catch (Exception ex)
             {
-                _logger?.LogWarning(ex, "Failed to dispose sandbox during invalidation.");
+                logger?.LogWarning(ex, "Failed to dispose sandbox during invalidation.");
             }
         }
-        _logger?.LogDebug("Sandbox invalidated and removed from pool.");
+        logger?.LogDebug("Sandbox invalidated and removed from pool.");
     }
 }

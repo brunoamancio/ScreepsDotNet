@@ -10,7 +10,6 @@ using StackExchange.Redis;
 public sealed class RedisSystemControlService(IRedisConnectionProvider connectionProvider, ILogger<RedisSystemControlService> logger)
     : ISystemControlService, IDisposable
 {
-    private readonly ILogger<RedisSystemControlService> _logger = logger;
     private readonly IConnectionMultiplexer _connection = connectionProvider.GetConnection();
 
     public async Task<bool> IsSimulationPausedAsync(CancellationToken cancellationToken = default)
@@ -72,6 +71,6 @@ public sealed class RedisSystemControlService(IRedisConnectionProvider connectio
     {
         var db = _connection.GetDatabase();
         await db.StringSetAsync(SystemControlConstants.MainLoopPausedKey, paused ? "1" : "0").ConfigureAwait(false);
-        _logger.LogInformation("Simulation {State}.", paused ? "paused" : "resumed");
+        logger.LogInformation("Simulation {State}.", paused ? "paused" : "resumed");
     }
 }

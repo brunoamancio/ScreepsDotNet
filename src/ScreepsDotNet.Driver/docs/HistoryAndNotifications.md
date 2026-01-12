@@ -36,9 +36,14 @@ D9 addresses the remaining driver helpers: history snapshot uploads, map view pe
 - Integration tests ensuring `updateAccessibleRoomsList` writes the proper JSON payload and that `getAllRoomsNames` drains the set, similar to the Node flow.
 - Notification throttling tests (group interval, error notification interval) to ensure we don’t spam `users.notifications`.
 
+## Current Implementation
+- `HistoryService` stores per-room tick diffs in Redis; once a chunk is ready it persists the chunk to Mongo (`rooms.history`) and emits `roomHistorySaved`.
+- `RoomHistoryPipeline` listens for that event, writes the chunk to the configured uploader path (filesystem by default), and refreshes both the map-view snapshot and room-event log payload so UI consumers stay in sync.
+- `NotificationService` handles console/watchdog/intent notifications through the shared throttler, while `RoomsDoneBroadcaster` throttles `roomsDone` emits so downstream listeners aren’t flooded when ticks complete rapidly.
+
 ## Next Steps
-- Implement service interfaces + wiring.
-- Update `AGENT.md` to reflect planning status.
+- Swap the filesystem uploader for the final storage target (S3, GridFS, etc.) once the deployment story is ready.
+- Hook the throttled `roomsDone` emitter into the upcoming compatibility shim so legacy engine consumers receive the same cadence they expect today.
 
 ## Current Progress
 - `HistoryService` now batches per-room ticks in Redis, persists the assembled chunk to Mongo (`rooms.history`) with upsert semantics, and only then emits `config.emit('roomHistorySaved', ...)` so downstream uploaders can rely on durable storage.

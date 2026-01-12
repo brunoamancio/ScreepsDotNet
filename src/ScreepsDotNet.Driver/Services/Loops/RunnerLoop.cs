@@ -17,7 +17,6 @@ internal sealed class RunnerLoop(
     : IRunnerLoop
 {
     private readonly RunnerLoopOptions _options = options.Value;
-    private readonly IRuntimeThrottleRegistry _throttleRegistry = throttleRegistry;
 
     private IWorkQueueChannel? _queue;
 
@@ -40,7 +39,7 @@ internal sealed class RunnerLoop(
 
                 config.EmitRunnerLoopStage("runUser", userId);
 
-                if (_throttleRegistry.TryGetDelay(userId, out var delay) && delay > TimeSpan.Zero)
+                if (throttleRegistry.TryGetDelay(userId, out var delay) && delay > TimeSpan.Zero)
                 {
                     logger?.LogWarning("Runner loop delaying user {UserId} for {Delay} due to telemetry throttle.", userId, delay);
                     await Task.Delay(delay, token).ConfigureAwait(false);

@@ -43,6 +43,8 @@ public static class ServiceCollectionExtensions
         services.AddOptions<RunnerLoopOptions>();
         services.AddOptions<ProcessorLoopOptions>();
         services.AddOptions<SchedulerTelemetryOptions>();
+        services.AddOptions<RoomHistoryUploadOptions>();
+        services.AddOptions<RoomsDoneBroadcastOptions>();
         services.AddSingleton<IRuntimeSandboxFactory, V8RuntimeSandboxFactory>();
         services.AddSingleton<IRuntimeSandboxPool, RuntimeSandboxPool>();
         services.AddSingleton<IRuntimeBundleCache, RuntimeBundleCache>();
@@ -50,6 +52,9 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IRuntimeTelemetryListener, SchedulerTelemetryListener>();
         services.AddSingleton<IRuntimeTelemetrySink, RuntimeTelemetryPipeline>();
         services.AddSingleton<IRuntimeThrottleRegistry, RuntimeThrottleRegistry>();
+        services.AddSingleton<IRoomHistoryUploader, FileSystemRoomHistoryUploader>();
+        services.AddSingleton<RoomHistoryPipeline>();
+        services.AddSingleton<IRoomsDoneBroadcaster, RoomsDoneBroadcaster>();
         services.AddSingleton<IRuntimeService, RuntimeService>();
         services.AddSingleton<IRuntimeCoordinator, RuntimeCoordinator>();
         services.AddSingleton<RuntimeTelemetryMonitor>();

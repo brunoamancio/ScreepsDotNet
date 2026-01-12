@@ -37,47 +37,39 @@ internal sealed class RuntimeCoordinator(
     private readonly IMongoCollection<UserCodeDocument> _userCode =
         databaseProvider.GetCollection<UserCodeDocument>(databaseProvider.Settings.UserCodeCollection);
 
-    private readonly IUserDataService _users = userDataService;
-    private readonly IRuntimeService _runtime = runtimeService;
-    private readonly IRuntimeBundleCache _bundleCache = bundleCache;
-    private readonly IRuntimeWatchdog _watchdog = runtimeWatchdog;
-    private readonly IDriverLoopHooks _hooks = loopHooks;
-    private readonly IDriverConfig _config = config;
-    private readonly IEnvironmentService _environment = environmentService;
     private readonly IDatabase _redis = redisProvider.GetConnection().GetDatabase();
-    private readonly ILogger<RuntimeCoordinator>? _logger = logger;
 
     public async Task ExecuteAsync(string userId, CancellationToken token = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(userId);
 
-        var user = await _users.GetUserAsync(userId, token).ConfigureAwait(false);
+        var user = await userDataService.GetUserAsync(userId, token).ConfigureAwait(false);
         if (user is null)
         {
-            _logger?.LogWarning("Skipping runtime execution because user {UserId} was not found.", userId);
+            logger?.LogWarning("Skipping runtime execution because user {UserId} was not found.", userId);
             return;
         }
 
         var codeDocument = await LoadActiveCodeAsync(userId, token).ConfigureAwait(false);
         if (codeDocument?.Modules is not { Count: > 0 })
         {
-            _logger?.LogDebug("User {UserId} has no active code modules.", userId);
+            logger?.LogDebug("User {UserId} has no active code modules.", userId);
             return;
         }
 
         var modules = RuntimeModuleBuilder.NormalizeModules(codeDocument.Modules);
         if (modules.Count == 0 || !modules.ContainsKey("main"))
         {
-            _logger?.LogDebug("User {UserId} does not have a valid 'main' module.", userId);
+            logger?.LogDebug("User {UserId} does not have a valid 'main' module.", userId);
             return;
         }
 
         var codeHash = RuntimeModuleBuilder.ComputeCodeHash(modules);
-        var bundle = _bundleCache.GetOrAdd(codeHash, modules);
-        var gameTime = await _environment.GetGameTimeAsync(token).ConfigureAwait(false);
-        var cpuBucket = await _environment.GetCpuBucketSizeAsync(token).ConfigureAwait(false) ?? _config.CpuBucketSize;
+        var bundle = bundleCache.GetOrAdd(codeHash, modules);
+        var gameTime = await environmentService.GetGameTimeAsync(token).ConfigureAwait(false);
+        var cpuBucket = await environmentService.GetCpuBucketSizeAsync(token).ConfigureAwait(false) ?? config.CpuBucketSize;
 
-        var forceColdSandbox = _watchdog.TryConsumeColdStartRequest(userId);
+        var forceColdSandbox = runtimeWatchdog.TryConsumeColdStartRequest(userId);
 
         var context = new RuntimeExecutionContext(
             userId,
@@ -100,14 +92,14 @@ internal sealed class RuntimeCoordinator(
         RuntimeExecutionResult result;
         try
         {
-            result = await _runtime.ExecuteAsync(context, token).ConfigureAwait(false);
+            result = await runtimeService.ExecuteAsync(context, token).ConfigureAwait(false);
         }
         catch (Exception ex)
         {
-            _logger?.LogError(ex, "Runtime execution failed for user {UserId}.", userId);
+            logger?.LogError(ex, "Runtime execution failed for user {UserId}.", userId);
             var message = ex.Message?.Trim();
             if (!string.IsNullOrWhiteSpace(message))
-                await _hooks.PublishConsoleErrorAsync(userId, message!, token).ConfigureAwait(false);
+                await loopHooks.PublishConsoleErrorAsync(userId, message!, token).ConfigureAwait(false);
             throw;
         }
 
@@ -123,11 +115,11 @@ internal sealed class RuntimeCoordinator(
             result.Metrics.HeapSizeLimitBytes,
             result.Error);
 
-        await _hooks.PublishRuntimeTelemetryAsync(telemetry, token).ConfigureAwait(false);
-        _config.EmitRuntimeTelemetry(new RuntimeTelemetryEventArgs(telemetry));
+        await loopHooks.PublishRuntimeTelemetryAsync(telemetry, token).ConfigureAwait(false);
+        config.EmitRuntimeTelemetry(new RuntimeTelemetryEventArgs(telemetry));
 
-        var replenishedBucket = Math.Clamp(cpuBucket - result.CpuUsed + context.CpuLimit, 0, _config.CpuBucketSize);
-        await _environment.SetCpuBucketSizeAsync(replenishedBucket, token).ConfigureAwait(false);
+        var replenishedBucket = Math.Clamp(cpuBucket - result.CpuUsed + context.CpuLimit, 0, config.CpuBucketSize);
+        await environmentService.SetCpuBucketSizeAsync(replenishedBucket, token).ConfigureAwait(false);
 
         await PersistResultsAsync(userId, result, token).ConfigureAwait(false);
     }
@@ -158,7 +150,7 @@ internal sealed class RuntimeCoordinator(
         }
         catch (JsonException)
         {
-            _logger?.LogWarning("User {UserId} memory blob is not valid JSON. Resetting to empty object.", userId);
+            logger?.LogWarning("User {UserId} memory blob is not valid JSON. Resetting to empty object.", userId);
             return new Dictionary<string, object?>(StringComparer.Ordinal);
         }
     }
@@ -189,13 +181,13 @@ internal sealed class RuntimeCoordinator(
     private async Task PersistResultsAsync(string userId, RuntimeExecutionResult result, CancellationToken token)
     {
         if (result.Memory is not null)
-            await _users.SaveUserMemoryAsync(userId, result.Memory, token).ConfigureAwait(false);
+            await userDataService.SaveUserMemoryAsync(userId, result.Memory, token).ConfigureAwait(false);
 
         if (result.MemorySegments is { Count: > 0 })
-            await _users.SaveUserMemorySegmentsAsync(userId, result.MemorySegments, token).ConfigureAwait(false);
+            await userDataService.SaveUserMemorySegmentsAsync(userId, result.MemorySegments, token).ConfigureAwait(false);
 
         if (result.InterShardSegment is not null)
-            await _users.SaveUserInterShardSegmentAsync(userId, result.InterShardSegment, token).ConfigureAwait(false);
+            await userDataService.SaveUserInterShardSegmentAsync(userId, result.InterShardSegment, token).ConfigureAwait(false);
 
         if (result.RoomIntents.Count > 0 || result.GlobalIntents.Count > 0 || result.Notifications.Count > 0)
         {
@@ -204,23 +196,23 @@ internal sealed class RuntimeCoordinator(
                 rooms[room] = new Dictionary<string, object?>(intents, StringComparer.OrdinalIgnoreCase);
 
             var payload = new UserIntentWritePayload(rooms, result.Notifications, result.GlobalIntents);
-            await _users.SaveUserIntentsAsync(userId, payload, token).ConfigureAwait(false);
+            await userDataService.SaveUserIntentsAsync(userId, payload, token).ConfigureAwait(false);
         }
 
         if (result.ConsoleLog.Count > 0 || result.ConsoleResults.Count > 0)
         {
             var payload = new ConsoleMessagesPayload(result.ConsoleLog, result.ConsoleResults);
-            await _hooks.PublishConsoleMessagesAsync(userId, payload, token).ConfigureAwait(false);
+            await loopHooks.PublishConsoleMessagesAsync(userId, payload, token).ConfigureAwait(false);
         }
 
         if (!string.IsNullOrWhiteSpace(result.Error))
-            await _hooks.PublishConsoleErrorAsync(userId, result.Error!, token).ConfigureAwait(false);
+            await loopHooks.PublishConsoleErrorAsync(userId, result.Error!, token).ConfigureAwait(false);
     }
 
     private int ResolveCpuLimit(UserDocument user)
     {
-        var cpu = user.Cpu ?? _config.CpuMaxPerTick;
+        var cpu = user.Cpu ?? config.CpuMaxPerTick;
         var limit = (int)Math.Ceiling(cpu);
-        return limit > 0 ? limit : _config.CpuMaxPerTick;
+        return limit > 0 ? limit : config.CpuMaxPerTick;
     }
 }

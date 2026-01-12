@@ -11,14 +11,12 @@ using Spectre.Console;
 
 public sealed class WorldCommandsIntegrationTests(MongoMapIntegrationFixture fixture) : IClassFixture<MongoMapIntegrationFixture>
 {
-    private readonly MongoMapIntegrationFixture _fixture = fixture;
-
     [Fact]
     public async Task WorldDumpCommand_ReturnsRoomTerrain()
     {
-        await _fixture.ResetAsync();
+        await fixture.ResetAsync();
         var formatter = new CapturingFormatter();
-        var repository = new MongoRoomTerrainRepository(_fixture.DatabaseProvider);
+        var repository = new MongoRoomTerrainRepository(fixture.DatabaseProvider);
         var command = new WorldDumpCommand(repository, NullLogger<WorldDumpCommand>.Instance, null, formatter);
         var settings = new WorldDumpCommand.Settings
         {
@@ -36,9 +34,9 @@ public sealed class WorldCommandsIntegrationTests(MongoMapIntegrationFixture fix
     [Fact]
     public async Task WorldOverviewCommand_ReturnsOwner()
     {
-        await _fixture.ResetAsync();
+        await fixture.ResetAsync();
         var formatter = new CapturingFormatter();
-        var overviewRepository = new MongoRoomOverviewRepository(_fixture.DatabaseProvider);
+        var overviewRepository = new MongoRoomOverviewRepository(fixture.DatabaseProvider);
         var command = new WorldOverviewCommand(overviewRepository, NullLogger<WorldOverviewCommand>.Instance, null, formatter);
         var settings = new WorldOverviewCommand.Settings
         {
@@ -55,10 +53,10 @@ public sealed class WorldCommandsIntegrationTests(MongoMapIntegrationFixture fix
     [Fact]
     public async Task WorldStatsCommand_ReturnsStats()
     {
-        await _fixture.ResetAsync();
+        await fixture.ResetAsync();
         var formatter = new CapturingFormatter();
-        var metadataRepository = new MongoWorldMetadataRepository(_fixture.DatabaseProvider);
-        var statsRepository = new MongoWorldStatsRepository(_fixture.DatabaseProvider, metadataRepository);
+        var metadataRepository = new MongoWorldMetadataRepository(fixture.DatabaseProvider);
+        var statsRepository = new MongoWorldStatsRepository(fixture.DatabaseProvider, metadataRepository);
         var command = new WorldStatsCommand(statsRepository, NullLogger<WorldStatsCommand>.Instance, null, formatter);
         var settings = new WorldStatsCommand.Settings
         {

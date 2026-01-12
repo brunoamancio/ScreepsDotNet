@@ -30,8 +30,6 @@ public sealed class InvaderCommandTests
 
     private sealed class FakeUserRepository(string userId) : IUserRepository
     {
-        private readonly string _userId = userId;
-
         public Task<UserProfile?> GetProfileAsync(string userId, CancellationToken cancellationToken = default)
             => throw new NotImplementedException();
 
@@ -39,7 +37,7 @@ public sealed class InvaderCommandTests
             => throw new NotImplementedException();
 
         public Task<UserPublicProfile?> FindPublicProfileAsync(string? username, string? shard, CancellationToken cancellationToken = default)
-            => Task.FromResult<UserPublicProfile?>(new UserPublicProfile(_userId, username ?? "test-user", null, null, 0, null));
+            => Task.FromResult<UserPublicProfile?>(new UserPublicProfile(userId, username ?? "test-user", null, null, 0, null));
 
         public Task UpdateNotifyPreferencesAsync(string userId, IDictionary<string, object?> notifyPreferences, CancellationToken cancellationToken = default)
             => throw new NotImplementedException();

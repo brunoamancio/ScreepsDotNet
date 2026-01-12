@@ -8,13 +8,11 @@ using ScreepsDotNet.Storage.MongoRedis.Repositories.Documents;
 
 public sealed class MapCommandsIntegrationTests(MongoMapIntegrationFixture fixture) : IClassFixture<MongoMapIntegrationFixture>
 {
-    private readonly MongoMapIntegrationFixture _fixture = fixture;
-
     [Fact]
     public async Task MapGenerateCommand_PersistsRoomTerrainAndObjects()
     {
-        await _fixture.ResetAsync();
-        var service = _fixture.CreateService();
+        await fixture.ResetAsync();
+        var service = fixture.CreateService();
         var command = new MapGenerateCommand(service);
         const string roomName = "W30N30";
 
@@ -31,19 +29,19 @@ public sealed class MapCommandsIntegrationTests(MongoMapIntegrationFixture fixtu
 
         Assert.Equal(0, exitCode);
 
-        var rooms = _fixture.GetCollection<RoomDocument>("rooms");
+        var rooms = fixture.GetCollection<RoomDocument>("rooms");
         var room = await rooms.Find(document => document.Id == roomName).FirstOrDefaultAsync();
         Assert.NotNull(room);
         Assert.Equal("normal", room.Status);
 
-        var terrain = _fixture.GetCollection<RoomTerrainDocument>("rooms.terrain");
+        var terrain = fixture.GetCollection<RoomTerrainDocument>("rooms.terrain");
         var terrainDoc = await terrain.Find(document => document.Room == roomName).FirstOrDefaultAsync();
         Assert.NotNull(terrainDoc);
         Assert.Equal("terrain", terrainDoc.Type);
         Assert.NotNull(terrainDoc.Terrain);
         Assert.Equal(2500, terrainDoc.Terrain!.Length);
 
-        var roomObjects = _fixture.GetCollection<RoomObjectDocument>("rooms.objects");
+        var roomObjects = fixture.GetCollection<RoomObjectDocument>("rooms.objects");
         var sources = await roomObjects.Find(document => document.Room == roomName && document.Type == "source")
                                        .CountDocumentsAsync();
         Assert.Equal(3, sources);
@@ -55,8 +53,8 @@ public sealed class MapCommandsIntegrationTests(MongoMapIntegrationFixture fixtu
     [Fact]
     public async Task MapCloseAndOpenCommands_UpdateRoomStatus()
     {
-        await _fixture.ResetAsync();
-        var service = _fixture.CreateService();
+        await fixture.ResetAsync();
+        var service = fixture.CreateService();
         const string roomName = "W31N31";
         await new MapGenerateCommand(service).ExecuteAsync(null!, new MapGenerateCommand.Settings
         {
@@ -67,7 +65,7 @@ public sealed class MapCommandsIntegrationTests(MongoMapIntegrationFixture fixtu
         var closeCommand = new MapCloseCommand(service);
         await closeCommand.ExecuteAsync(null!, new MapCloseCommand.Settings { RoomName = roomName }, CancellationToken.None);
 
-        var rooms = _fixture.GetCollection<RoomDocument>("rooms");
+        var rooms = fixture.GetCollection<RoomDocument>("rooms");
         var room = await rooms.Find(document => document.Id == roomName).FirstOrDefaultAsync();
         Assert.NotNull(room);
         Assert.Equal("closed", room.Status);
@@ -82,8 +80,8 @@ public sealed class MapCommandsIntegrationTests(MongoMapIntegrationFixture fixtu
     [Fact]
     public async Task MapRemoveCommand_DeletesRoomAndObjects()
     {
-        await _fixture.ResetAsync();
-        var service = _fixture.CreateService();
+        await fixture.ResetAsync();
+        var service = fixture.CreateService();
         const string roomName = "W32N32";
         await new MapGenerateCommand(service).ExecuteAsync(null!, new MapGenerateCommand.Settings
         {
@@ -98,11 +96,11 @@ public sealed class MapCommandsIntegrationTests(MongoMapIntegrationFixture fixtu
             PurgeObjects = true
         }, CancellationToken.None);
 
-        var rooms = _fixture.GetCollection<RoomDocument>("rooms");
+        var rooms = fixture.GetCollection<RoomDocument>("rooms");
         var room = await rooms.Find(document => document.Id == roomName).FirstOrDefaultAsync();
         Assert.Null(room);
 
-        var roomObjects = _fixture.GetCollection<RoomObjectDocument>("rooms.objects");
+        var roomObjects = fixture.GetCollection<RoomObjectDocument>("rooms.objects");
         var remainingObjects = await roomObjects.Find(document => document.Room == roomName).AnyAsync();
         Assert.False(remainingObjects);
     }
@@ -110,8 +108,8 @@ public sealed class MapCommandsIntegrationTests(MongoMapIntegrationFixture fixtu
     [Fact]
     public async Task MapTerrainRefreshCommand_NormalizesTerrainType()
     {
-        await _fixture.ResetAsync();
-        var service = _fixture.CreateService();
+        await fixture.ResetAsync();
+        var service = fixture.CreateService();
         const string roomName = "W33N33";
         await new MapGenerateCommand(service).ExecuteAsync(null!, new MapGenerateCommand.Settings
         {
@@ -119,7 +117,7 @@ public sealed class MapCommandsIntegrationTests(MongoMapIntegrationFixture fixtu
             Overwrite = true
         }, CancellationToken.None);
 
-        var terrain = _fixture.GetCollection<RoomTerrainDocument>("rooms.terrain");
+        var terrain = fixture.GetCollection<RoomTerrainDocument>("rooms.terrain");
         await terrain.UpdateOneAsync(document => document.Room == roomName,
                                      Builders<RoomTerrainDocument>.Update.Unset(document => document.Type));
 
@@ -134,8 +132,8 @@ public sealed class MapCommandsIntegrationTests(MongoMapIntegrationFixture fixtu
     [Fact]
     public async Task MapAssetsUpdateCommand_Completes()
     {
-        await _fixture.ResetAsync();
-        var service = _fixture.CreateService();
+        await fixture.ResetAsync();
+        var service = fixture.CreateService();
 
         var command = new MapAssetsUpdateCommand(service);
         var settings = new MapAssetsUpdateCommand.Settings

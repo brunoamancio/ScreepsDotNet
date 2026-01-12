@@ -16,7 +16,6 @@ internal sealed class NotificationService(IMongoDatabaseProvider databaseProvide
 
     private readonly IMongoCollection<UserNotificationDocument> _notifications = databaseProvider.GetCollection<UserNotificationDocument>(databaseProvider.Settings.UserNotificationsCollection);
     private readonly ISubscriber _subscriber = redisProvider.GetConnection().GetSubscriber();
-    private readonly ILogger<NotificationService>? _logger = logger;
 
     public Task PublishConsoleMessagesAsync(string userId, ConsoleMessagesPayload payload, CancellationToken token = default)
     {
@@ -26,7 +25,7 @@ internal sealed class NotificationService(IMongoDatabaseProvider databaseProvide
         if (IsNpcUser(userId))
         {
             if (payload.Log.Count > 0)
-                _logger?.LogInformation("[Console:{User}] {Messages}", GetNpcName(userId), string.Join(", ", payload.Log));
+                logger?.LogInformation("[Console:{User}] {Messages}", GetNpcName(userId), string.Join(", ", payload.Log));
             return Task.CompletedTask;
         }
 
@@ -43,7 +42,7 @@ internal sealed class NotificationService(IMongoDatabaseProvider databaseProvide
 
         if (IsNpcUser(userId))
         {
-            _logger?.LogWarning("[Console:{User}] {Error}", GetNpcName(userId), normalized);
+            logger?.LogWarning("[Console:{User}] {Error}", GetNpcName(userId), normalized);
             return;
         }
 

@@ -14,12 +14,10 @@ using ScreepsDotNet.Storage.MongoRedis.Services;
 
 public sealed class BotCommandsIntegrationTests(MongoMapIntegrationFixture fixture) : IClassFixture<MongoMapIntegrationFixture>
 {
-    private readonly MongoMapIntegrationFixture _fixture = fixture;
-
     [Fact]
     public async Task BotSpawnCommand_CreatesUserAndSpawn()
     {
-        await _fixture.ResetAsync();
+        await fixture.ResetAsync();
         var roomName = "W41N41";
         await GenerateRoomAsync(roomName);
 
@@ -39,12 +37,12 @@ public sealed class BotCommandsIntegrationTests(MongoMapIntegrationFixture fixtu
 
         Assert.Equal(0, exitCode);
 
-        var users = _fixture.Database.GetCollection<UserDocument>("users");
+        var users = fixture.Database.GetCollection<UserDocument>("users");
         var user = await users.Find(document => document.Username == "AlphaIntegration").FirstOrDefaultAsync();
         Assert.NotNull(user);
         Assert.Equal("alpha", user!.Bot);
 
-        var roomObjects = _fixture.Database.GetCollection<BsonDocument>("rooms.objects");
+        var roomObjects = fixture.Database.GetCollection<BsonDocument>("rooms.objects");
         var spawnExists = await roomObjects.Find(doc => doc["room"] == roomName && doc["type"] == StructureType.Spawn.ToDocumentValue() && doc["user"] == user.Id)
                                            .AnyAsync();
         Assert.True(spawnExists);
@@ -53,7 +51,7 @@ public sealed class BotCommandsIntegrationTests(MongoMapIntegrationFixture fixtu
     [Fact]
     public async Task BotReloadCommand_ReplacesUserCodeBranch()
     {
-        await _fixture.ResetAsync();
+        await fixture.ResetAsync();
         var roomName = "W42N42";
         await GenerateRoomAsync(roomName);
 
@@ -68,11 +66,11 @@ public sealed class BotCommandsIntegrationTests(MongoMapIntegrationFixture fixtu
             Username = username
         }, CancellationToken.None);
 
-        var users = _fixture.Database.GetCollection<UserDocument>("users");
+        var users = fixture.Database.GetCollection<UserDocument>("users");
         var user = await users.Find(doc => doc.Username == username).FirstOrDefaultAsync();
         Assert.NotNull(user);
 
-        var userCode = _fixture.Database.GetCollection<UserCodeDocument>("users.code");
+        var userCode = fixture.Database.GetCollection<UserCodeDocument>("users.code");
         var before = await userCode.Find(doc => doc.UserId == user!.Id).FirstOrDefaultAsync();
         Assert.NotNull(before);
 
@@ -88,7 +86,7 @@ public sealed class BotCommandsIntegrationTests(MongoMapIntegrationFixture fixtu
     [Fact]
     public async Task BotRemoveCommand_DeletesUserArtifacts()
     {
-        await _fixture.ResetAsync();
+        await fixture.ResetAsync();
         var roomName = "W43N43";
         await GenerateRoomAsync(roomName);
 
@@ -107,18 +105,18 @@ public sealed class BotCommandsIntegrationTests(MongoMapIntegrationFixture fixtu
         var exitCode = await removeCommand.ExecuteAsync(null!, new BotRemoveCommand.Settings { Username = username }, CancellationToken.None);
         Assert.Equal(0, exitCode);
 
-        var users = _fixture.Database.GetCollection<UserDocument>("users");
+        var users = fixture.Database.GetCollection<UserDocument>("users");
         var user = await users.Find(doc => doc.Username == username).FirstOrDefaultAsync();
         Assert.Null(user);
 
-        var roomObjects = _fixture.Database.GetCollection<BsonDocument>("rooms.objects");
+        var roomObjects = fixture.Database.GetCollection<BsonDocument>("rooms.objects");
         var spawnExists = await roomObjects.Find(doc => doc["room"] == roomName && doc["type"] == "spawn").AnyAsync();
         Assert.False(spawnExists);
     }
 
     private async Task GenerateRoomAsync(string roomName)
     {
-        var mapCommand = new MapGenerateCommand(_fixture.MapControlService);
+        var mapCommand = new MapGenerateCommand(fixture.MapControlService);
         await mapCommand.ExecuteAsync(null!, new MapGenerateCommand.Settings
         {
             RoomName = roomName,
@@ -128,7 +126,7 @@ public sealed class BotCommandsIntegrationTests(MongoMapIntegrationFixture fixtu
 
     private MongoBotControlService CreateBotControlService(IBotDefinitionProvider provider)
     {
-        var databaseProvider = _fixture.DatabaseProvider;
+        var databaseProvider = fixture.DatabaseProvider;
         var memoryRepository = new MongoUserMemoryRepository(databaseProvider);
         var userWorldRepository = new MongoUserWorldRepository(databaseProvider);
         var respawnService = new MongoUserRespawnService(databaseProvider, userWorldRepository);

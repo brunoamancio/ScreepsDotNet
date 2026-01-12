@@ -10,12 +10,10 @@ using ScreepsDotNet.Storage.MongoRedis.Services;
 
 public sealed class StrongholdCommandsIntegrationTests(MongoMapIntegrationFixture fixture) : IClassFixture<MongoMapIntegrationFixture>
 {
-    private readonly MongoMapIntegrationFixture _fixture = fixture;
-
     [Fact]
     public async Task StrongholdSpawnCommand_CreatesInvaderCore()
     {
-        await _fixture.ResetAsync();
+        await fixture.ResetAsync();
         var roomName = "W44N44";
         await GenerateRoomAsync(roomName);
 
@@ -30,7 +28,7 @@ public sealed class StrongholdCommandsIntegrationTests(MongoMapIntegrationFixtur
 
         Assert.Equal(0, exitCode);
 
-        var roomObjects = _fixture.Database.GetCollection<BsonDocument>("rooms.objects");
+        var roomObjects = fixture.Database.GetCollection<BsonDocument>("rooms.objects");
         var core = await roomObjects.Find(doc => doc["room"] == roomName && doc["type"] == "invaderCore")
                                     .FirstOrDefaultAsync();
 
@@ -42,7 +40,7 @@ public sealed class StrongholdCommandsIntegrationTests(MongoMapIntegrationFixtur
     [Fact]
     public async Task StrongholdExpandCommand_UpdatesNextExpandTime()
     {
-        await _fixture.ResetAsync();
+        await fixture.ResetAsync();
         var roomName = "W45N45";
         await GenerateRoomAsync(roomName);
 
@@ -54,7 +52,7 @@ public sealed class StrongholdCommandsIntegrationTests(MongoMapIntegrationFixtur
             TemplateName = "bunker2"
         }, CancellationToken.None);
 
-        var roomObjects = _fixture.Database.GetCollection<BsonDocument>("rooms.objects");
+        var roomObjects = fixture.Database.GetCollection<BsonDocument>("rooms.objects");
         var coreFilter = Builders<BsonDocument>.Filter.And(
             Builders<BsonDocument>.Filter.Eq("room", roomName),
             Builders<BsonDocument>.Filter.Eq("type", "invaderCore"));
@@ -73,7 +71,7 @@ public sealed class StrongholdCommandsIntegrationTests(MongoMapIntegrationFixtur
 
     private async Task GenerateRoomAsync(string roomName)
     {
-        var mapCommand = new MapGenerateCommand(_fixture.MapControlService);
+        var mapCommand = new MapGenerateCommand(fixture.MapControlService);
         await mapCommand.ExecuteAsync(null!, new MapGenerateCommand.Settings
         {
             RoomName = roomName,
@@ -84,7 +82,7 @@ public sealed class StrongholdCommandsIntegrationTests(MongoMapIntegrationFixtur
     private IStrongholdControlService CreateStrongholdService()
     {
         var templateProvider = new EmbeddedStrongholdTemplateProvider();
-        var worldMetadataRepository = new MongoWorldMetadataRepository(_fixture.DatabaseProvider);
-        return new MongoStrongholdControlService(_fixture.DatabaseProvider, templateProvider, worldMetadataRepository);
+        var worldMetadataRepository = new MongoWorldMetadataRepository(fixture.DatabaseProvider);
+        return new MongoStrongholdControlService(fixture.DatabaseProvider, templateProvider, worldMetadataRepository);
     }
 }

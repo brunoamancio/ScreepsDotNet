@@ -11,8 +11,6 @@ internal sealed class BulkWriter<TDocument>(
     BulkWriterIdAccessor<TDocument> idAccessor) : IBulkWriter<TDocument>
     where TDocument : class
 {
-    private readonly IMongoCollection<TDocument> _collection = collection;
-    private readonly BulkWriterIdAccessor<TDocument> _idAccessor = idAccessor;
     private readonly Dictionary<string, BsonDocument> _updates = new(StringComparer.Ordinal);
     private readonly Dictionary<string, InsertEntry> _inserts = new(StringComparer.Ordinal);
     private readonly Dictionary<TDocument, string> _insertLookup = new(ReferenceEqualityComparer<TDocument>.Instance);
@@ -65,7 +63,7 @@ internal sealed class BulkWriter<TDocument>(
             return;
         }
 
-        _operations.Add(new DeleteOneModel<TDocument>(_idAccessor.CreateFilter(normalized)));
+        _operations.Add(new DeleteOneModel<TDocument>(idAccessor.CreateFilter(normalized)));
     }
 
     public void Remove(TDocument entity)
@@ -87,7 +85,7 @@ internal sealed class BulkWriter<TDocument>(
 
         var normalized = NormalizeId(id);
         var update = new BsonDocument("$inc", new BsonDocument(field, amount));
-        _operations.Add(new UpdateOneModel<TDocument>(_idAccessor.CreateFilter(normalized), new BsonDocumentUpdateDefinition<TDocument>(update)));
+        _operations.Add(new UpdateOneModel<TDocument>(idAccessor.CreateFilter(normalized), new BsonDocumentUpdateDefinition<TDocument>(update)));
     }
 
     public void AddToSet(string id, string field, object value)
@@ -97,7 +95,7 @@ internal sealed class BulkWriter<TDocument>(
 
         var normalized = NormalizeId(id);
         var update = new BsonDocument("$addToSet", new BsonDocument(field, BsonValue.Create(value)));
-        _operations.Add(new UpdateOneModel<TDocument>(_idAccessor.CreateFilter(normalized), new BsonDocumentUpdateDefinition<TDocument>(update)));
+        _operations.Add(new UpdateOneModel<TDocument>(idAccessor.CreateFilter(normalized), new BsonDocumentUpdateDefinition<TDocument>(update)));
     }
 
     public void Pull(string id, string field, object value)
@@ -107,7 +105,7 @@ internal sealed class BulkWriter<TDocument>(
 
         var normalized = NormalizeId(id);
         var update = new BsonDocument("$pull", new BsonDocument(field, BsonValue.Create(value)));
-        _operations.Add(new UpdateOneModel<TDocument>(_idAccessor.CreateFilter(normalized), new BsonDocumentUpdateDefinition<TDocument>(update)));
+        _operations.Add(new UpdateOneModel<TDocument>(idAccessor.CreateFilter(normalized), new BsonDocumentUpdateDefinition<TDocument>(update)));
     }
 
     public async Task ExecuteAsync(CancellationToken token = default)
@@ -121,7 +119,7 @@ internal sealed class BulkWriter<TDocument>(
         foreach (var (id, updateDocument) in _updates)
         {
             var update = new BsonDocument("$set", updateDocument);
-            models.Add(new UpdateOneModel<TDocument>(_idAccessor.CreateFilter(id), new BsonDocumentUpdateDefinition<TDocument>(update)));
+            models.Add(new UpdateOneModel<TDocument>(idAccessor.CreateFilter(id), new BsonDocumentUpdateDefinition<TDocument>(update)));
         }
 
         foreach (var entry in _inserts.Values)
@@ -130,7 +128,7 @@ internal sealed class BulkWriter<TDocument>(
             models.Add(new InsertOneModel<TDocument>(entity));
         }
 
-        await _collection.BulkWriteAsync(models, new BulkWriteOptions { IsOrdered = false }, token).ConfigureAwait(false);
+        await collection.BulkWriteAsync(models, new BulkWriteOptions { IsOrdered = false }, token).ConfigureAwait(false);
         Clear();
     }
 
@@ -164,14 +162,14 @@ internal sealed class BulkWriter<TDocument>(
         if (!string.IsNullOrWhiteSpace(explicitId))
         {
             var normalized = NormalizeId(explicitId);
-            document["_id"] = _idAccessor.CreateBsonValue(normalized);
-            _idAccessor.AssignId?.Invoke(entity, normalized);
+            document["_id"] = idAccessor.CreateBsonValue(normalized);
+            idAccessor.AssignId?.Invoke(entity, normalized);
             return normalized;
         }
 
-        if (_idAccessor.GetId?.Invoke(entity) is { Length: > 0 } existingId)
+        if (idAccessor.GetId?.Invoke(entity) is { Length: > 0 } existingId)
         {
-            document["_id"] = _idAccessor.CreateBsonValue(existingId);
+            document["_id"] = idAccessor.CreateBsonValue(existingId);
             return existingId;
         }
 
@@ -182,11 +180,11 @@ internal sealed class BulkWriter<TDocument>(
                 return fromDocument;
         }
 
-        if (_idAccessor.GenerateId is { } generator)
+        if (idAccessor.GenerateId is { } generator)
         {
             var generated = generator();
-            document["_id"] = _idAccessor.CreateBsonValue(generated);
-            _idAccessor.AssignId?.Invoke(entity, generated);
+            document["_id"] = idAccessor.CreateBsonValue(generated);
+            idAccessor.AssignId?.Invoke(entity, generated);
             return generated;
         }
 
@@ -195,7 +193,7 @@ internal sealed class BulkWriter<TDocument>(
 
     private string EnsureEntityId(TDocument entity)
     {
-        var id = _idAccessor.GetId?.Invoke(entity);
+        var id = idAccessor.GetId?.Invoke(entity);
         if (!string.IsNullOrWhiteSpace(id))
             return NormalizeId(id);
 

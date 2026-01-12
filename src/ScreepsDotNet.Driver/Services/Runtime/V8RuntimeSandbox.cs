@@ -18,9 +18,6 @@ internal sealed class V8RuntimeSandbox(RuntimeSandboxOptions options, ILogger<V8
         WriteIndented = false
     };
 
-    private readonly RuntimeSandboxOptions _options = options;
-    private readonly ILogger<V8RuntimeSandbox>? _logger = logger;
-
     public Task<RuntimeExecutionResult> ExecuteAsync(RuntimeExecutionContext context, CancellationToken token = default)
     {
         ArgumentNullException.ThrowIfNull(context);
@@ -28,7 +25,7 @@ internal sealed class V8RuntimeSandbox(RuntimeSandboxOptions options, ILogger<V8
         var modules = ExtractModules(context);
         var script = modules is null ? ExtractScript(context) : null;
         using var engine = CreateEngine();
-        var cpuLimitMs = Math.Max(context.CpuLimit, _options.DefaultCpuLimitMs) + _options.ScriptInterruptBufferMs;
+        var cpuLimitMs = Math.Max(context.CpuLimit, options.DefaultCpuLimitMs) + options.ScriptInterruptBufferMs;
         using var cpuTimeoutCts = new CancellationTokenSource(TimeSpan.FromMilliseconds(cpuLimitMs));
         using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(token, cpuTimeoutCts.Token);
         using var registration = linkedCts.Token.Register(engine.Interrupt);
@@ -41,7 +38,7 @@ internal sealed class V8RuntimeSandbox(RuntimeSandboxOptions options, ILogger<V8
         engine.Script.GameTime = context.GameTime;
         engine.Script.UserId = context.UserId;
         engine.Script.CodeHash = context.CodeHash;
-        engine.Script.CpuLimit = Math.Max(context.CpuLimit, _options.DefaultCpuLimitMs);
+        engine.Script.CpuLimit = Math.Max(context.CpuLimit, options.DefaultCpuLimitMs);
 
         engine.Execute($"var Memory = {initialMemoryJson};");
 
@@ -60,18 +57,18 @@ internal sealed class V8RuntimeSandbox(RuntimeSandboxOptions options, ILogger<V8
         {
             timedOut = true;
             error = "Script execution timed out.";
-            _logger?.LogWarning("Runtime interrupted for user {UserId}.", context.UserId);
+            logger?.LogWarning("Runtime interrupted for user {UserId}.", context.UserId);
         }
         catch (ScriptEngineException ex)
         {
             scriptError = true;
             error = ex.Message;
-            _logger?.LogError(ex, "Runtime error for user {UserId}.", context.UserId);
+            logger?.LogError(ex, "Runtime error for user {UserId}.", context.UserId);
         }
         catch (Exception ex)
         {
             error = ex.Message;
-            _logger?.LogError(ex, "Unexpected runtime failure for user {UserId}.", context.UserId);
+            logger?.LogError(ex, "Unexpected runtime failure for user {UserId}.", context.UserId);
         }
         stopwatch.Stop();
 
@@ -106,7 +103,7 @@ internal sealed class V8RuntimeSandbox(RuntimeSandboxOptions options, ILogger<V8
     private V8ScriptEngine CreateEngine()
     {
         var engine = new V8ScriptEngine(V8ScriptEngineFlags.DisableGlobalMembers, 64);
-        var heapSize = _options.MaxHeapSizeMegabytes;
+        var heapSize = options.MaxHeapSizeMegabytes;
         if (heapSize > 0)
         {
             var bytes = checked((ulong)heapSize * 1024UL * 1024UL);
@@ -212,15 +209,13 @@ if (__driverMainModule && typeof __driverMainModule.loop === "function") {
 
     private sealed class ModuleRegistry(IReadOnlyDictionary<string, string> modules)
     {
-        private readonly IReadOnlyDictionary<string, string> _modules = modules;
-
         [ScriptMember("GetSource")]
         public string? GetSource(string? name)
         {
             if (string.IsNullOrWhiteSpace(name))
                 return null;
 
-            return _modules.TryGetValue(name, out var code) ? code : null;
+            return modules.TryGetValue(name, out var code) ? code : null;
         }
     }
 

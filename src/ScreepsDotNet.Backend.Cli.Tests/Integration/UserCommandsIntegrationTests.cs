@@ -11,13 +11,11 @@ using Spectre.Console;
 
 public sealed class UserCommandsIntegrationTests(MongoMapIntegrationFixture fixture) : IClassFixture<MongoMapIntegrationFixture>
 {
-    private readonly MongoMapIntegrationFixture _fixture = fixture;
-
     [Fact]
     public async Task UserConsoleExecCommand_EnqueuesExpression()
     {
-        await _fixture.ResetAsync();
-        var repository = new MongoUserConsoleRepository(_fixture.DatabaseProvider);
+        await fixture.ResetAsync();
+        var repository = new MongoUserConsoleRepository(fixture.DatabaseProvider);
         var command = new UserConsoleExecCommand(repository, NullLogger<UserConsoleExecCommand>.Instance);
         var settings = new UserConsoleExecCommand.Settings
         {
@@ -30,7 +28,7 @@ public sealed class UserCommandsIntegrationTests(MongoMapIntegrationFixture fixt
         var exitCode = await command.ExecuteAsync(null!, settings, CancellationToken.None);
 
         Assert.Equal(0, exitCode);
-        var entries = _fixture.GetCollection<UserConsoleEntryDocument>(_fixture.DatabaseProvider.Settings.UserConsoleCollection);
+        var entries = fixture.GetCollection<UserConsoleEntryDocument>(fixture.DatabaseProvider.Settings.UserConsoleCollection);
         var stored = await entries.Find(doc => doc.UserId == SeedDataDefaults.User.Id && doc.Expression.Contains("hi from cli")).FirstOrDefaultAsync();
         Assert.NotNull(stored);
         Assert.True(stored!.Hidden);
@@ -39,8 +37,8 @@ public sealed class UserCommandsIntegrationTests(MongoMapIntegrationFixture fixt
     [Fact]
     public async Task UserMemorySetCommand_UpdatesRootMemory()
     {
-        await _fixture.ResetAsync();
-        var repository = new MongoUserMemoryRepository(_fixture.DatabaseProvider);
+        await fixture.ResetAsync();
+        var repository = new MongoUserMemoryRepository(fixture.DatabaseProvider);
         var command = new UserMemorySetCommand(repository, NullLogger<UserMemorySetCommand>.Instance);
         var settings = new UserMemorySetCommand.Settings
         {
@@ -52,7 +50,7 @@ public sealed class UserCommandsIntegrationTests(MongoMapIntegrationFixture fixt
         var exitCode = await command.ExecuteAsync(null!, settings, CancellationToken.None);
 
         Assert.Equal(0, exitCode);
-        var collection = _fixture.GetCollection<UserMemoryDocument>(_fixture.DatabaseProvider.Settings.UserMemoryCollection);
+        var collection = fixture.GetCollection<UserMemoryDocument>(fixture.DatabaseProvider.Settings.UserMemoryCollection);
         var document = await collection.Find(doc => doc.UserId == SeedDataDefaults.User.Id).FirstOrDefaultAsync();
         Assert.NotNull(document);
         Assert.True(document!.Memory.TryGetValue("theme", out var value));
@@ -62,8 +60,8 @@ public sealed class UserCommandsIntegrationTests(MongoMapIntegrationFixture fixt
     [Fact]
     public async Task UserMemorySetCommand_UpdatesSegment()
     {
-        await _fixture.ResetAsync();
-        var repository = new MongoUserMemoryRepository(_fixture.DatabaseProvider);
+        await fixture.ResetAsync();
+        var repository = new MongoUserMemoryRepository(fixture.DatabaseProvider);
         var command = new UserMemorySetCommand(repository, NullLogger<UserMemorySetCommand>.Instance);
         var settings = new UserMemorySetCommand.Settings
         {
@@ -76,7 +74,7 @@ public sealed class UserCommandsIntegrationTests(MongoMapIntegrationFixture fixt
         var exitCode = await command.ExecuteAsync(null!, settings, CancellationToken.None);
 
         Assert.Equal(0, exitCode);
-        var collection = _fixture.GetCollection<UserMemoryDocument>(_fixture.DatabaseProvider.Settings.UserMemoryCollection);
+        var collection = fixture.GetCollection<UserMemoryDocument>(fixture.DatabaseProvider.Settings.UserMemoryCollection);
         var document = await collection.Find(doc => doc.UserId == SeedDataDefaults.User.Id).FirstOrDefaultAsync();
         Assert.NotNull(document);
         Assert.True(document!.Segments.TryGetValue("7", out var data));
@@ -86,8 +84,8 @@ public sealed class UserCommandsIntegrationTests(MongoMapIntegrationFixture fixt
     [Fact]
     public async Task UserMemoryGetCommand_ReadsSegment()
     {
-        await _fixture.ResetAsync();
-        var repository = new MongoUserMemoryRepository(_fixture.DatabaseProvider);
+        await fixture.ResetAsync();
+        var repository = new MongoUserMemoryRepository(fixture.DatabaseProvider);
         await repository.SetMemorySegmentAsync(SeedDataDefaults.User.Id, 5, "seeded", CancellationToken.None);
 
         var command = new UserMemoryGetCommand(repository, NullLogger<UserMemoryGetCommand>.Instance, null, new TestFormatter());

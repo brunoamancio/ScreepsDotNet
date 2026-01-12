@@ -30,9 +30,7 @@ internal sealed class RoomDataService(
     private readonly IMongoCollection<MarketOrderDocument> _marketOrders = databaseProvider.GetCollection<MarketOrderDocument>(databaseProvider.Settings.MarketOrdersCollection);
     private readonly IMongoCollection<PowerCreepDocument> _powerCreeps = databaseProvider.GetCollection<PowerCreepDocument>(databaseProvider.Settings.UsersPowerCreepsCollection);
     private readonly IMongoCollection<UserIntentDocument> _userIntents = databaseProvider.GetCollection<UserIntentDocument>(databaseProvider.Settings.UsersIntentsCollection);
-    private readonly IBulkWriterFactory _bulkWriterFactory = bulkWriterFactory;
     private readonly IDatabase _redis = redisProvider.GetConnection().GetDatabase();
-    private readonly IEnvironmentService _environmentService = environmentService;
 
     public async Task<IReadOnlyList<string>> DrainActiveRoomsAsync(CancellationToken token = default)
     {
@@ -109,7 +107,7 @@ internal sealed class RoomDataService(
         if (string.IsNullOrWhiteSpace(room.Id))
             throw new ArgumentException("Room must have an identifier.", nameof(room));
 
-        var writer = _bulkWriterFactory.CreateRoomsWriter();
+        var writer = bulkWriterFactory.CreateRoomsWriter();
         writer.Update(room.Id, room);
         await writer.ExecuteAsync(token).ConfigureAwait(false);
     }
@@ -119,7 +117,7 @@ internal sealed class RoomDataService(
         ArgumentException.ThrowIfNullOrWhiteSpace(roomName);
         ArgumentException.ThrowIfNullOrWhiteSpace(status);
 
-        var writer = _bulkWriterFactory.CreateRoomsWriter();
+        var writer = bulkWriterFactory.CreateRoomsWriter();
         writer.Update(roomName, new { Status = status });
         await writer.ExecuteAsync(token).ConfigureAwait(false);
     }
@@ -204,7 +202,7 @@ internal sealed class RoomDataService(
 
     public async Task<InterRoomSnapshot> GetInterRoomSnapshotAsync(CancellationToken token = default)
     {
-        var gameTime = await _environmentService.GetGameTimeAsync(token).ConfigureAwait(false);
+        var gameTime = await environmentService.GetGameTimeAsync(token).ConfigureAwait(false);
         var movingCreepsTask = _roomObjects.Find(Builders<RoomObjectDocument>.Filter.And(
                                                 Builders<RoomObjectDocument>.Filter.In(document => document.Type, MovingCreepTypes),
                                                 new BsonDocument("interRoom", new BsonDocument("$ne", BsonNull.Value))))

@@ -18,11 +18,9 @@ internal sealed class HistoryService(
     IMongoDatabaseProvider databaseProvider,
     ILogger<HistoryService>? logger = null) : IHistoryService
 {
-    private readonly IDriverConfig _driverConfig = driverConfig;
     private readonly IDatabase _redis = redisProvider.GetConnection().GetDatabase();
     private readonly IMongoCollection<RoomHistoryChunkDocument> _historyChunks =
         databaseProvider.GetCollection<RoomHistoryChunkDocument>(databaseProvider.Settings.RoomHistoryCollection);
-    private readonly ILogger<HistoryService>? _logger = logger;
 
     public Task SaveRoomHistoryAsync(string roomName, int gameTime, string serializedObjects, CancellationToken token = default)
     {
@@ -64,13 +62,13 @@ internal sealed class HistoryService(
             chunkTicks);
 
         await PersistChunkAsync(chunk, token).ConfigureAwait(false);
-        _driverConfig.EmitRoomHistorySaved(new RoomHistorySavedEventArgs(roomName, baseGameTime, chunk));
+        driverConfig.EmitRoomHistorySaved(new RoomHistorySavedEventArgs(roomName, baseGameTime, chunk));
 
         await _redis.KeyDeleteAsync(key).ConfigureAwait(false);
-        _logger?.LogDebug("Uploaded room history chunk for {Room} starting at {BaseTick}.", roomName, baseGameTime);
+        logger?.LogDebug("Uploaded room history chunk for {Room} starting at {BaseTick}.", roomName, baseGameTime);
     }
 
-    public IRoomStatsUpdater CreateRoomStatsUpdater(string roomName) => new RoomStatsUpdater(roomName, _driverConfig);
+    public IRoomStatsUpdater CreateRoomStatsUpdater(string roomName) => new RoomStatsUpdater(roomName, driverConfig);
 
     private static (int? Tick, string? Payload) ParseTick(HashEntry entry)
     {
@@ -121,8 +119,6 @@ internal sealed class HistoryService(
 
     private sealed class RoomStatsUpdater(string roomName, IDriverConfig config) : IRoomStatsUpdater
     {
-        private readonly string _roomName = roomName;
-        private readonly IDriverConfig _config = config;
         private readonly Dictionary<string, Dictionary<string, int>> _metrics = new(StringComparer.Ordinal);
 
         public void Increment(string userId, string metric, int amount)
@@ -146,7 +142,7 @@ internal sealed class HistoryService(
             if (_metrics.Count == 0)
                 return Task.CompletedTask;
 
-            _config.EmitProcessorLoopStage("roomStatsUpdated", new { Room = _roomName, Metrics = _metrics });
+            config.EmitProcessorLoopStage("roomStatsUpdated", new { Room = roomName, Metrics = _metrics });
             _metrics.Clear();
             return Task.CompletedTask;
         }

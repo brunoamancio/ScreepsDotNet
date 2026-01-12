@@ -10,7 +10,6 @@ using ScreepsDotNet.Backend.Core.Services;
 
 public sealed class ManifestIntentSchemaCatalog(IModManifestProvider manifestProvider) : IIntentSchemaCatalog
 {
-    private readonly IModManifestProvider _manifestProvider = manifestProvider;
     private readonly SemaphoreSlim _lock = new(1, 1);
 
     private IReadOnlyDictionary<string, IntentDefinition> _cache = IntentSchemas.All;
@@ -19,13 +18,13 @@ public sealed class ManifestIntentSchemaCatalog(IModManifestProvider manifestPro
 
     public async ValueTask<IReadOnlyDictionary<string, IntentDefinition>> GetSchemasAsync(CancellationToken cancellationToken = default)
     {
-        var manifest = await _manifestProvider.GetManifestAsync(cancellationToken).ConfigureAwait(false);
+        var manifest = await manifestProvider.GetManifestAsync(cancellationToken).ConfigureAwait(false);
         if (!NeedsReload(manifest))
             return _cache;
 
         await _lock.WaitAsync(cancellationToken).ConfigureAwait(false);
         try {
-            manifest = await _manifestProvider.GetManifestAsync(cancellationToken).ConfigureAwait(false);
+            manifest = await manifestProvider.GetManifestAsync(cancellationToken).ConfigureAwait(false);
             if (!NeedsReload(manifest))
                 return _cache;
 

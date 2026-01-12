@@ -22,25 +22,18 @@ internal sealed class ProcessorLoopWorker(
 {
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 
-    private readonly IRoomDataService _rooms = roomDataService;
-    private readonly IEnvironmentService _environment = environmentService;
-    private readonly IDriverLoopHooks _hooks = loopHooks;
-    private readonly IDriverConfig _config = config;
-    private readonly IBulkWriterFactory _bulkWriterFactory = bulkWriterFactory;
-    private readonly ILogger<ProcessorLoopWorker>? _logger = logger;
-
     public async Task HandleRoomAsync(string roomName, CancellationToken token = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(roomName);
 
-        var gameTime = await _environment.GetGameTimeAsync(token).ConfigureAwait(false);
-        var roomObjects = await _rooms.GetRoomObjectsAsync(roomName, token).ConfigureAwait(false);
-        var intents = await _rooms.GetRoomIntentsAsync(roomName, token).ConfigureAwait(false);
+        var gameTime = await environmentService.GetGameTimeAsync(token).ConfigureAwait(false);
+        var roomObjects = await roomDataService.GetRoomObjectsAsync(roomName, token).ConfigureAwait(false);
+        var intents = await roomDataService.GetRoomIntentsAsync(roomName, token).ConfigureAwait(false);
 
         if (intents is not null)
             await ApplyRoomIntentsAsync(roomName, roomObjects.Objects, intents, token).ConfigureAwait(false);
 
-        await _rooms.ClearRoomIntentsAsync(roomName, token).ConfigureAwait(false);
+        await roomDataService.ClearRoomIntentsAsync(roomName, token).ConfigureAwait(false);
 
         var historyPayload = JsonSerializer.Serialize(new
         {
@@ -49,13 +42,13 @@ internal sealed class ProcessorLoopWorker(
             users = roomObjects.Users
         }, JsonOptions);
 
-        await _hooks.SaveRoomHistoryAsync(roomName, gameTime, historyPayload, token).ConfigureAwait(false);
+        await loopHooks.SaveRoomHistoryAsync(roomName, gameTime, historyPayload, token).ConfigureAwait(false);
 
-        var chunkSize = Math.Max(_config.HistoryChunkSize, 1);
+        var chunkSize = Math.Max(config.HistoryChunkSize, 1);
         if (gameTime % chunkSize == 0)
         {
             var chunkBase = Math.Max(gameTime - chunkSize + 1, 0);
-            await _hooks.UploadRoomHistoryChunkAsync(roomName, chunkBase, token).ConfigureAwait(false);
+            await loopHooks.UploadRoomHistoryChunkAsync(roomName, chunkBase, token).ConfigureAwait(false);
         }
     }
 
@@ -64,7 +57,7 @@ internal sealed class ProcessorLoopWorker(
         if (intents.Users is null || intents.Users.Count == 0)
             return;
 
-        var writer = _bulkWriterFactory.CreateRoomObjectsWriter();
+        var writer = bulkWriterFactory.CreateRoomObjectsWriter();
         var events = new List<RoomIntentEvent>();
         var notificationCounts = new Dictionary<string, int>(StringComparer.Ordinal);
         var timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
@@ -115,12 +108,12 @@ internal sealed class ProcessorLoopWorker(
         if (events.Count > 0)
         {
             var eventLogJson = JsonSerializer.Serialize(events, JsonOptions);
-            await _rooms.SaveRoomEventLogAsync(roomName, eventLogJson, token).ConfigureAwait(false);
+            await roomDataService.SaveRoomEventLogAsync(roomName, eventLogJson, token).ConfigureAwait(false);
 
             var mapViewPayload = JsonSerializer.Serialize(new RoomIntentMapView(roomName, timestamp, events), JsonOptions);
-            await _rooms.SaveMapViewAsync(roomName, mapViewPayload, token).ConfigureAwait(false);
+            await roomDataService.SaveMapViewAsync(roomName, mapViewPayload, token).ConfigureAwait(false);
 
-            _logger?.LogDebug("Applied {Count} intents for room {Room}.", events.Count, roomName);
+            logger?.LogDebug("Applied {Count} intents for room {Room}.", events.Count, roomName);
         }
 
         foreach (var (userId, count) in notificationCounts)
@@ -129,7 +122,7 @@ internal sealed class ProcessorLoopWorker(
                 continue;
 
             var message = $"Processed {count} intents in {roomName}.";
-            await _hooks.SendNotificationAsync(userId, message, new NotificationOptions(5, "intent"), token).ConfigureAwait(false);
+            await loopHooks.SendNotificationAsync(userId, message, new NotificationOptions(5, "intent"), token).ConfigureAwait(false);
         }
     }
 

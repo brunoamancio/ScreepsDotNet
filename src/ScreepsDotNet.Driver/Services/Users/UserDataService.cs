@@ -19,7 +19,6 @@ internal sealed class UserDataService(IMongoDatabaseProvider databaseProvider, I
     private readonly IMongoCollection<UserNotificationDocument> _userNotifications = databaseProvider.GetCollection<UserNotificationDocument>(databaseProvider.Settings.UserNotificationsCollection);
     private readonly IMongoCollection<UserIntentDocument> _userIntents = databaseProvider.GetCollection<UserIntentDocument>(databaseProvider.Settings.UsersIntentsCollection);
     private readonly IMongoCollection<RoomIntentDocument> _roomIntents = databaseProvider.GetCollection<RoomIntentDocument>(databaseProvider.Settings.RoomsIntentsCollection);
-    private readonly IBulkWriterFactory _bulkWriterFactory = bulkWriterFactory;
     private readonly IDatabase _redis = redisProvider.GetConnection().GetDatabase();
 
     public async Task<IReadOnlyList<UserDocument>> GetActiveUsersAsync(CancellationToken token = default)
@@ -103,7 +102,7 @@ internal sealed class UserDataService(IMongoDatabaseProvider databaseProvider, I
         ArgumentException.ThrowIfNullOrWhiteSpace(userId);
         ArgumentException.ThrowIfNullOrWhiteSpace(roomName);
 
-        var writer = _bulkWriterFactory.CreateUsersWriter();
+        var writer = bulkWriterFactory.CreateUsersWriter();
         writer.AddToSet(userId, "rooms", roomName);
         await writer.ExecuteAsync(token).ConfigureAwait(false);
     }
@@ -113,7 +112,7 @@ internal sealed class UserDataService(IMongoDatabaseProvider databaseProvider, I
         ArgumentException.ThrowIfNullOrWhiteSpace(userId);
         ArgumentException.ThrowIfNullOrWhiteSpace(roomName);
 
-        var writer = _bulkWriterFactory.CreateUsersWriter();
+        var writer = bulkWriterFactory.CreateUsersWriter();
         writer.Pull(userId, "rooms", roomName);
         await writer.ExecuteAsync(token).ConfigureAwait(false);
     }

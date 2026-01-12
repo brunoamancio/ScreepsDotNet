@@ -14,35 +14,33 @@ using SystemControlConstants = Core.Constants.SystemControlConstants;
 
 public sealed class SystemCommandsIntegrationTests(SystemCommandsIntegrationFixture fixture) : IClassFixture<SystemCommandsIntegrationFixture>
 {
-    private readonly SystemCommandsIntegrationFixture _fixture = fixture;
-
     [Fact]
     public async Task PauseAndResumeCommandsToggleFlag()
     {
-        await _fixture.ResetStateAsync();
-        var service = _fixture.CreateSystemControlService();
+        await fixture.ResetStateAsync();
+        var service = fixture.CreateSystemControlService();
         var pauseCommand = new SystemPauseCommand(service);
         var resumeCommand = new SystemResumeCommand(service);
 
         await pauseCommand.ExecuteAsync(null!, new SystemPauseCommand.Settings(), CancellationToken.None);
-        var value = await _fixture.RedisConnection.GetDatabase().StringGetAsync(SystemControlConstants.MainLoopPausedKey);
+        var value = await fixture.RedisConnection.GetDatabase().StringGetAsync(SystemControlConstants.MainLoopPausedKey);
         Assert.Equal("1", value.ToString());
 
         await resumeCommand.ExecuteAsync(null!, new SystemResumeCommand.Settings(), CancellationToken.None);
-        value = await _fixture.RedisConnection.GetDatabase().StringGetAsync(SystemControlConstants.MainLoopPausedKey);
+        value = await fixture.RedisConnection.GetDatabase().StringGetAsync(SystemControlConstants.MainLoopPausedKey);
         Assert.Equal("0", value.ToString());
     }
 
     [Fact]
     public async Task TickSetAndGetCommandsRoundTripDuration()
     {
-        await _fixture.ResetStateAsync();
-        var service = _fixture.CreateSystemControlService();
+        await fixture.ResetStateAsync();
+        var service = fixture.CreateSystemControlService();
         var setCommand = new SystemTickSetCommand(service);
         var getCommand = new SystemTickGetCommand(service);
 
         await setCommand.ExecuteAsync(null!, new SystemTickSetCommand.Settings { DurationMilliseconds = 750 }, CancellationToken.None);
-        var stored = await _fixture.RedisConnection.GetDatabase().StringGetAsync(SystemControlConstants.MainLoopMinimumDurationKey);
+        var stored = await fixture.RedisConnection.GetDatabase().StringGetAsync(SystemControlConstants.MainLoopMinimumDurationKey);
         Assert.Equal("750", stored.ToString());
 
         var exitCode = await getCommand.ExecuteAsync(null!, new SystemTickGetCommand.Settings { OutputJson = true }, CancellationToken.None);
@@ -52,12 +50,12 @@ public sealed class SystemCommandsIntegrationTests(SystemCommandsIntegrationFixt
     [Fact]
     public async Task SystemStatusCommandReadsPauseState()
     {
-        await _fixture.ResetStateAsync();
-        var db = _fixture.RedisConnection.GetDatabase();
+        await fixture.ResetStateAsync();
+        var db = fixture.RedisConnection.GetDatabase();
         await db.StringSetAsync(SystemControlConstants.MainLoopPausedKey, "1");
         await db.StringSetAsync(SystemControlConstants.MainLoopMinimumDurationKey, "800");
 
-        var service = _fixture.CreateSystemControlService();
+        var service = fixture.CreateSystemControlService();
         var command = new SystemStatusCommand(service);
         var exitCode = await command.ExecuteAsync(null!, new SystemStatusCommand.Settings { OutputJson = true }, CancellationToken.None);
 
@@ -67,10 +65,10 @@ public sealed class SystemCommandsIntegrationTests(SystemCommandsIntegrationFixt
     [Fact]
     public async Task SystemMessageCommandPublishesChannel()
     {
-        await _fixture.ResetStateAsync();
-        var service = _fixture.CreateSystemControlService();
+        await fixture.ResetStateAsync();
+        var service = fixture.CreateSystemControlService();
         var command = new SystemMessageCommand(service);
-        var subscriber = _fixture.RedisConnection.GetSubscriber();
+        var subscriber = fixture.RedisConnection.GetSubscriber();
         var tcs = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
 
         var channel = new RedisChannel(SystemControlConstants.ServerMessageChannel, RedisChannel.PatternMode.Literal);
@@ -89,11 +87,11 @@ public sealed class SystemCommandsIntegrationTests(SystemCommandsIntegrationFixt
     [Fact]
     public async Task SystemResetCommandReseedsDatabase()
     {
-        await _fixture.ResetStateAsync();
-        var rooms = _fixture.GetCollection<RoomDocument>("rooms");
+        await fixture.ResetStateAsync();
+        var rooms = fixture.GetCollection<RoomDocument>("rooms");
         await rooms.InsertOneAsync(new RoomDocument { Id = "W99N99", Status = "normal" });
 
-        var resetCommand = new SystemResetCommand(new SeedDataService(), Options.Create(_fixture.StorageOptions), NullLogger<SystemResetCommand>.Instance);
+        var resetCommand = new SystemResetCommand(new SeedDataService(), Options.Create(fixture.StorageOptions), NullLogger<SystemResetCommand>.Instance);
         var exitCode = await resetCommand.ExecuteAsync(null!, new SystemResetCommand.Settings { Force = true, Confirm = "RESET" }, CancellationToken.None);
         Assert.Equal(0, exitCode);
 

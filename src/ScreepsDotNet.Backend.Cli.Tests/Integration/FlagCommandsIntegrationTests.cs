@@ -11,14 +11,12 @@ using ScreepsDotNet.Storage.MongoRedis.Services;
 
 public sealed class FlagCommandsIntegrationTests(MongoMapIntegrationFixture fixture) : IClassFixture<MongoMapIntegrationFixture>
 {
-    private readonly MongoMapIntegrationFixture _fixture = fixture;
-
     [Fact]
     public async Task FlagCreateCommand_CreatesFlagInMongo()
     {
-        await _fixture.ResetAsync();
+        await fixture.ResetAsync();
         var service = CreateFlagService();
-        var userRepository = new MongoUserRepository(_fixture.DatabaseProvider);
+        var userRepository = new MongoUserRepository(fixture.DatabaseProvider);
         var command = new FlagCreateCommand(service, userRepository);
 
         var settings = new FlagCreateCommand.Settings
@@ -36,7 +34,7 @@ public sealed class FlagCommandsIntegrationTests(MongoMapIntegrationFixture fixt
 
         Assert.Equal(0, exitCode);
 
-        var flags = _fixture.GetCollection<RoomFlagDocument>("rooms.flags");
+        var flags = fixture.GetCollection<RoomFlagDocument>("rooms.flags");
         var flag = await flags.Find(f => f.Id == "CliFlag").FirstOrDefaultAsync();
         Assert.NotNull(flag);
         Assert.Equal("25|25|1|3", flag.Data);
@@ -45,11 +43,11 @@ public sealed class FlagCommandsIntegrationTests(MongoMapIntegrationFixture fixt
     [Fact]
     public async Task FlagChangeColorCommand_UpdatesFlagInMongo()
     {
-        await _fixture.ResetAsync();
+        await fixture.ResetAsync();
         var service = CreateFlagService();
-        var userRepository = new MongoUserRepository(_fixture.DatabaseProvider);
+        var userRepository = new MongoUserRepository(fixture.DatabaseProvider);
 
-        var flags = _fixture.GetCollection<RoomFlagDocument>("rooms.flags");
+        var flags = fixture.GetCollection<RoomFlagDocument>("rooms.flags");
         await flags.InsertOneAsync(new RoomFlagDocument
         {
             Id = "ColorFlag",
@@ -79,11 +77,11 @@ public sealed class FlagCommandsIntegrationTests(MongoMapIntegrationFixture fixt
     [Fact]
     public async Task FlagRemoveCommand_DeletesFlagFromMongo()
     {
-        await _fixture.ResetAsync();
+        await fixture.ResetAsync();
         var service = CreateFlagService();
-        var userRepository = new MongoUserRepository(_fixture.DatabaseProvider);
+        var userRepository = new MongoUserRepository(fixture.DatabaseProvider);
 
-        var flags = _fixture.GetCollection<RoomFlagDocument>("rooms.flags");
+        var flags = fixture.GetCollection<RoomFlagDocument>("rooms.flags");
         await flags.InsertOneAsync(new RoomFlagDocument
         {
             Id = "RemoveFlag",
@@ -109,5 +107,5 @@ public sealed class FlagCommandsIntegrationTests(MongoMapIntegrationFixture fixt
     }
 
     private MongoFlagService CreateFlagService()
-        => new(_fixture.DatabaseProvider, NullLogger<MongoFlagService>.Instance);
+        => new(fixture.DatabaseProvider, NullLogger<MongoFlagService>.Instance);
 }

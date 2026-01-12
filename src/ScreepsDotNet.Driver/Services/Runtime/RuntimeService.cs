@@ -4,28 +4,26 @@ namespace ScreepsDotNet.Driver.Services.Runtime;
 
 internal sealed class RuntimeService(IRuntimeSandboxPool sandboxPool) : IRuntimeService
 {
-    private readonly IRuntimeSandboxPool _sandboxPool = sandboxPool;
-
     public async Task<RuntimeExecutionResult> ExecuteAsync(RuntimeExecutionContext context, CancellationToken token = default)
     {
         ArgumentNullException.ThrowIfNull(context);
-        var sandbox = _sandboxPool.Rent();
+        var sandbox = sandboxPool.Rent();
         try
         {
             var result = await sandbox.ExecuteAsync(context, token).ConfigureAwait(false);
             if (context.ForceColdSandbox)
             {
-                _sandboxPool.Invalidate(sandbox);
+                sandboxPool.Invalidate(sandbox);
             }
             else
             {
-                _sandboxPool.Return(sandbox);
+                sandboxPool.Return(sandbox);
             }
             return result;
         }
         catch
         {
-            _sandboxPool.Invalidate(sandbox);
+            sandboxPool.Invalidate(sandbox);
             throw;
         }
     }

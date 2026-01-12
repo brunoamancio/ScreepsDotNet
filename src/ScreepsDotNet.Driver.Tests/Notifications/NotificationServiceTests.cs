@@ -9,11 +9,9 @@ namespace ScreepsDotNet.Driver.Tests.Notifications;
 
 public sealed class NotificationServiceTests(MongoRedisFixture fixture) : IClassFixture<MongoRedisFixture>
 {
-    private readonly MongoRedisFixture _fixture = fixture;
-
-    private NotificationService CreateService() => new(_fixture.MongoProvider, _fixture.RedisProvider);
+    private NotificationService CreateService() => new(fixture.MongoProvider, fixture.RedisProvider);
     private IMongoCollection<UserNotificationDocument> NotificationCollection
-        => _fixture.GetCollection<UserNotificationDocument>(_fixture.Options.UserNotificationsCollection);
+        => fixture.GetCollection<UserNotificationDocument>(fixture.Options.UserNotificationsCollection);
 
     private static TaskCompletionSource<string> CreateTcs()
         => new(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -37,7 +35,7 @@ public sealed class NotificationServiceTests(MongoRedisFixture fixture) : IClass
     public async Task PublishConsoleMessagesAsync_WritesToRedisChannel()
     {
         var service = CreateService();
-        var mux = _fixture.RedisProvider.GetConnection();
+        var mux = fixture.RedisProvider.GetConnection();
         var subscriber = mux.GetSubscriber();
         var tcs = CreateTcs();
         await subscriber.SubscribeAsync(RedisChannel.Literal("user:user2/console"), (_, value) => tcs.TrySetResult(value!));
@@ -56,7 +54,7 @@ public sealed class NotificationServiceTests(MongoRedisFixture fixture) : IClass
         var service = CreateService();
         await NotificationCollection.DeleteManyAsync(FilterDefinition<UserNotificationDocument>.Empty);
 
-        var mux = _fixture.RedisProvider.GetConnection();
+        var mux = fixture.RedisProvider.GetConnection();
         var subscriber = mux.GetSubscriber();
         var tcs = CreateTcs();
         await subscriber.SubscribeAsync(RedisChannel.Literal("user:err/console"), (_, value) => tcs.TrySetResult(value!));
@@ -77,7 +75,7 @@ public sealed class NotificationServiceTests(MongoRedisFixture fixture) : IClass
     public async Task NotifyRoomsDoneAsync_PublishesGameTime()
     {
         var service = CreateService();
-        var mux = _fixture.RedisProvider.GetConnection();
+        var mux = fixture.RedisProvider.GetConnection();
         var subscriber = mux.GetSubscriber();
         var tcs = CreateTcs();
         await subscriber.SubscribeAsync(RedisChannel.Literal("roomsDone"), (_, value) => tcs.TrySetResult(value!));

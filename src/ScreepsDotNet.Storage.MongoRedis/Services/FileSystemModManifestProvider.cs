@@ -20,7 +20,6 @@ public sealed class FileSystemModManifestProvider(IOptions<BotManifestOptions> o
     private static readonly JsonSerializerOptions SerializerOptions = new(JsonSerializerDefaults.Web);
 
     private readonly BotManifestOptions _options = options.Value;
-    private readonly ILogger<FileSystemModManifestProvider> _logger = logger;
     private readonly SemaphoreSlim _lock = new(1, 1);
     private ModManifest _cache = ModManifest.Empty;
     private string? _cachedPath;
@@ -68,7 +67,7 @@ public sealed class FileSystemModManifestProvider(IOptions<BotManifestOptions> o
         }
         catch (Exception ex) when (ex is IOException or JsonException or UnauthorizedAccessException)
         {
-            _logger.LogError(ex, "Failed to load mods manifest '{Path}'.", path);
+            logger.LogError(ex, "Failed to load mods manifest '{Path}'.", path);
             return new ModManifest(path,
                                    timestamp,
                                    new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase),
@@ -106,7 +105,7 @@ public sealed class FileSystemModManifestProvider(IOptions<BotManifestOptions> o
         var result = new Dictionary<string, IntentDefinition>(StringComparer.Ordinal);
         foreach (var intentNode in customElement.EnumerateObject()) {
             if (intentNode.Value.ValueKind != JsonValueKind.Object) {
-                _logger.LogWarning("Custom intent '{Intent}' must be an object of field definitions.", intentNode.Name);
+                logger.LogWarning("Custom intent '{Intent}' must be an object of field definitions.", intentNode.Name);
                 continue;
             }
 
@@ -114,14 +113,14 @@ public sealed class FileSystemModManifestProvider(IOptions<BotManifestOptions> o
             var invalid = false;
             foreach (var field in intentNode.Value.EnumerateObject()) {
                 if (field.Value.ValueKind != JsonValueKind.String) {
-                    _logger.LogWarning("Field '{Field}' on custom intent '{Intent}' must be a string.", field.Name, intentNode.Name);
+                    logger.LogWarning("Field '{Field}' on custom intent '{Intent}' must be a string.", field.Name, intentNode.Name);
                     invalid = true;
                     break;
                 }
 
                 var fieldType = field.Value.GetString();
                 if (!TryMapIntentFieldType(fieldType, out var mapped)) {
-                    _logger.LogWarning("Unsupported field type '{Type}' on custom intent '{Intent}'.", fieldType, intentNode.Name);
+                    logger.LogWarning("Unsupported field type '{Type}' on custom intent '{Intent}'.", fieldType, intentNode.Name);
                     invalid = true;
                     break;
                 }
@@ -224,7 +223,7 @@ public sealed class FileSystemModManifestProvider(IOptions<BotManifestOptions> o
             if (File.Exists(explicitPath))
                 return explicitPath;
 
-            _logger.LogWarning("Mods manifest '{Path}' not found.", explicitPath);
+            logger.LogWarning("Mods manifest '{Path}' not found.", explicitPath);
             return null;
         }
 
@@ -234,7 +233,7 @@ public sealed class FileSystemModManifestProvider(IOptions<BotManifestOptions> o
 
         var envPath = Path.GetFullPath(env);
         if (!File.Exists(envPath)) {
-            _logger.LogWarning("Environment MODFILE='{Path}' not found.", envPath);
+            logger.LogWarning("Environment MODFILE='{Path}' not found.", envPath);
             return null;
         }
 

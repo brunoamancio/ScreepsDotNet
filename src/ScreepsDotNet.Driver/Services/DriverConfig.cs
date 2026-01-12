@@ -250,16 +250,13 @@ internal sealed class DriverConfig : IDriverConfig
 
     private sealed class DriverEventSubscription(string eventName, DriverEventListener handler, DriverConfig source) : IDriverEventSubscription
     {
-        private readonly string _eventName = eventName;
-        private readonly DriverEventListener _handler = handler;
-        private readonly DriverConfig _source = source;
         private bool _disposed;
 
         public void Dispose()
         {
             if (_disposed) return;
             _disposed = true;
-            _source.Unsubscribe(_eventName, _handler);
+            source.Unsubscribe(eventName, handler);
         }
     }
 }

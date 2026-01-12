@@ -11,9 +11,7 @@ internal sealed class SchedulerTelemetryListener(
     IOptions<SchedulerTelemetryOptions> options,
     ILogger<SchedulerTelemetryListener>? logger = null) : IRuntimeTelemetryListener
 {
-    private readonly IRuntimeThrottleRegistry _throttleRegistry = throttleRegistry;
     private readonly SchedulerTelemetryOptions _options = options.Value;
-    private readonly ILogger<SchedulerTelemetryListener>? _logger = logger;
     private readonly ConcurrentDictionary<string, FailureState> _states = new(StringComparer.Ordinal);
 
     public Task OnTelemetryAsync(RuntimeTelemetryPayload payload, CancellationToken token = default)
@@ -23,7 +21,7 @@ internal sealed class SchedulerTelemetryListener(
         if (!(payload.TimedOut || payload.ScriptError))
         {
             _states.TryRemove(payload.UserId, out _);
-            _throttleRegistry.Clear(payload.UserId);
+            throttleRegistry.Clear(payload.UserId);
             return Task.CompletedTask;
         }
 
@@ -32,8 +30,8 @@ internal sealed class SchedulerTelemetryListener(
         if (failures < Math.Max(1, _options.FailureThreshold))
             return Task.CompletedTask;
 
-        _throttleRegistry.RegisterThrottle(payload.UserId, _options.ThrottleDuration);
-        _logger?.LogWarning(
+        throttleRegistry.RegisterThrottle(payload.UserId, _options.ThrottleDuration);
+        logger?.LogWarning(
             "Scheduler telemetry throttling user {UserId} for {Duration} after {Failures} consecutive failures (timedOut={TimedOut}, scriptError={ScriptError}).",
             payload.UserId,
             _options.ThrottleDuration,
@@ -46,8 +44,8 @@ internal sealed class SchedulerTelemetryListener(
     public Task OnWatchdogAlertAsync(RuntimeWatchdogAlert alert, CancellationToken token = default)
     {
         ArgumentNullException.ThrowIfNull(alert);
-        _throttleRegistry.RegisterThrottle(alert.Payload.UserId, _options.ThrottleDuration);
-        _logger?.LogWarning("Watchdog throttling user {UserId} for {Duration}.", alert.Payload.UserId, _options.ThrottleDuration);
+        throttleRegistry.RegisterThrottle(alert.Payload.UserId, _options.ThrottleDuration);
+        logger?.LogWarning("Watchdog throttling user {UserId} for {Duration}.", alert.Payload.UserId, _options.ThrottleDuration);
         return Task.CompletedTask;
     }
 

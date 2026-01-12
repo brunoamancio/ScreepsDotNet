@@ -16,8 +16,6 @@ public sealed class FileSystemBotDefinitionProvider(IModManifestProvider manifes
                                                     ILogger<FileSystemBotDefinitionProvider> logger)
     : IBotDefinitionProvider
 {
-    private readonly IModManifestProvider _manifestProvider = manifestProvider;
-    private readonly ILogger<FileSystemBotDefinitionProvider> _logger = logger;
     private readonly SemaphoreSlim _refreshLock = new(1, 1);
     private IReadOnlyDictionary<string, BotDefinition> _cache = new Dictionary<string, BotDefinition>(StringComparer.OrdinalIgnoreCase);
     private string? _cachedManifestPath;
@@ -37,13 +35,13 @@ public sealed class FileSystemBotDefinitionProvider(IModManifestProvider manifes
 
     private async Task EnsureCacheAsync(CancellationToken cancellationToken)
     {
-        var manifest = await _manifestProvider.GetManifestAsync(cancellationToken).ConfigureAwait(false);
+        var manifest = await manifestProvider.GetManifestAsync(cancellationToken).ConfigureAwait(false);
         if (!NeedsReload(manifest))
             return;
 
         await _refreshLock.WaitAsync(cancellationToken).ConfigureAwait(false);
         try {
-            manifest = await _manifestProvider.GetManifestAsync(cancellationToken).ConfigureAwait(false);
+            manifest = await manifestProvider.GetManifestAsync(cancellationToken).ConfigureAwait(false);
             if (!NeedsReload(manifest))
                 return;
 
@@ -75,7 +73,7 @@ public sealed class FileSystemBotDefinitionProvider(IModManifestProvider manifes
     {
         if (manifest.SourcePath is null || manifest.Bots.Count == 0) {
             if (manifest.SourcePath is not null)
-                _logger.LogWarning("Mods manifest '{Path}' does not define any bots.", manifest.SourcePath);
+                logger.LogWarning("Mods manifest '{Path}' does not define any bots.", manifest.SourcePath);
             return new Dictionary<string, BotDefinition>(StringComparer.OrdinalIgnoreCase);
         }
 
@@ -93,7 +91,7 @@ public sealed class FileSystemBotDefinitionProvider(IModManifestProvider manifes
                 definitions[botName] = new BotDefinition(botName, description, modules);
             }
             catch (Exception ex) {
-                _logger.LogError(ex, "Failed to load bot \"{BotName}\" from {Path}.", botName, botEntry.Value);
+                logger.LogError(ex, "Failed to load bot \"{BotName}\" from {Path}.", botName, botEntry.Value);
             }
         });
 
