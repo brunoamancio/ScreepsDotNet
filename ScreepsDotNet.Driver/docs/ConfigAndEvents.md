@@ -67,4 +67,4 @@ public interface IDriverConfig
 ### Current Status (January 12, 2026)
 - `DriverConfig` now persists loop/tick settings (`tickRate`, reset interval, CPU caps, history chunk size, SIGINT toggle, inspector flag) to Redis via `EnvironmentService`, so values survive restarts and match the legacy env keys.
 - `EnvironmentService` exposes typed getters/setters for those Redis keys alongside the existing lifecycle helpers (tick started, rooms done, gametime).
-- Remaining work: Node-style `config.emit` shim plus wider event surface for mods still TODO.
+- Node-style `config.emit(eventName, ...)` semantics are implemented: consumers can `Subscribe("mainLoopStage", handler)` and receive the same args mods expect from the legacy driver. The typed .NET events continue to fire in parallel.

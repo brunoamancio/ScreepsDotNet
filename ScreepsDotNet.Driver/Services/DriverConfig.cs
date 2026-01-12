@@ -18,6 +18,8 @@ internal sealed class DriverConfig : IDriverConfig
     private readonly Dictionary<string, CustomIntentDefinition> _intentDefinitions = new(StringComparer.OrdinalIgnoreCase);
     private IReadOnlyDictionary<string, CustomIntentDefinition> _intentSnapshot =
         new ReadOnlyDictionary<string, CustomIntentDefinition>(new Dictionary<string, CustomIntentDefinition>(StringComparer.OrdinalIgnoreCase));
+    private readonly Lock _eventLock = new();
+    private readonly Dictionary<string, List<DriverEventListener>> _emitHandlers = new(StringComparer.OrdinalIgnoreCase);
 
     private int _mainLoopMinDurationMs;
     private int _mainLoopResetIntervalMs;
@@ -114,22 +116,93 @@ internal sealed class DriverConfig : IDriverConfig
     }
 
     public void EmitMainLoopStage(string stage, object? payload = null) =>
-        MainLoopStage?.Invoke(this, new LoopStageEventArgs(stage, payload));
+        DispatchEvent(MainLoopStage, "mainLoopStage", new LoopStageEventArgs(stage, payload), stage, payload);
 
     public void EmitRunnerLoopStage(string stage, object? payload = null) =>
-        RunnerLoopStage?.Invoke(this, new LoopStageEventArgs(stage, payload));
+        DispatchEvent(RunnerLoopStage, "runnerLoopStage", new LoopStageEventArgs(stage, payload), stage, payload);
 
     public void EmitProcessorLoopStage(string stage, object? payload = null) =>
-        ProcessorLoopStage?.Invoke(this, new LoopStageEventArgs(stage, payload));
+        DispatchEvent(ProcessorLoopStage, "processorLoopStage", new LoopStageEventArgs(stage, payload), stage, payload);
 
     public void EmitPlayerSandbox(PlayerSandboxEventArgs args) =>
-        PlayerSandbox?.Invoke(this, args);
+        DispatchEvent(PlayerSandbox, "playerSandbox", args, args);
 
-    public void EmitInitialized(DriverProcessType processType) =>
-        Initialized?.Invoke(this, new DriverInitEventArgs(processType));
+    public void EmitInitialized(DriverProcessType processType)
+    {
+        var eventArgs = new DriverInitEventArgs(processType);
+        DispatchEvent(Initialized, "init", eventArgs, processType);
+    }
 
     public void EmitRoomHistorySaved(RoomHistorySavedEventArgs args) =>
-        RoomHistorySaved?.Invoke(this, args);
+        DispatchEvent(RoomHistorySaved, "roomHistorySaved", args, args.RoomName, args.BaseGameTime, args.Chunk);
+
+    public IDriverEventSubscription Subscribe(string eventName, DriverEventListener handler)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(eventName);
+        ArgumentNullException.ThrowIfNull(handler);
+
+        lock (_eventLock)
+        {
+            if (!_emitHandlers.TryGetValue(eventName, out var handlers))
+            {
+                handlers = [];
+                _emitHandlers[eventName] = handlers;
+            }
+
+            handlers.Add(handler);
+        }
+
+        return new DriverEventSubscription(eventName, handler, this);
+    }
+
+    public void Unsubscribe(string eventName, DriverEventListener handler)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(eventName);
+        ArgumentNullException.ThrowIfNull(handler);
+
+        lock (_eventLock)
+        {
+            if (!_emitHandlers.TryGetValue(eventName, out var handlers))
+                return;
+
+            handlers.Remove(handler);
+            if (handlers.Count == 0)
+                _emitHandlers.Remove(eventName);
+        }
+    }
+
+    public void Emit(string eventName, params object?[] args)
+    {
+        if (string.IsNullOrWhiteSpace(eventName))
+            return;
+
+        DriverEventListener[] snapshot;
+        lock (_eventLock)
+        {
+            if (!_emitHandlers.TryGetValue(eventName, out var handlers) || handlers.Count == 0)
+                return;
+            snapshot = handlers.ToArray();
+        }
+
+        foreach (var handler in snapshot)
+        {
+            try
+            {
+                handler(args);
+            }
+            catch
+            {
+                // Swallow to mirror EventEmitter semantics; errors should not break other subscribers.
+            }
+        }
+    }
+
+    private void DispatchEvent<TEventArgs>(EventHandler<TEventArgs>? typedHandler, string eventName, TEventArgs eventArgs, params object?[] emitArgs)
+        where TEventArgs : EventArgs
+    {
+        typedHandler?.Invoke(this, eventArgs);
+        Emit(eventName, emitArgs.Length == 0 ? [eventArgs] : emitArgs);
+    }
 
     private static int LoadInt(Func<CancellationToken, Task<int?>> loader, int fallback)
     {
@@ -169,5 +242,20 @@ internal sealed class DriverConfig : IDriverConfig
         if (field == value) return;
         field = value;
         setter(value, CancellationToken.None).GetAwaiter().GetResult();
+    }
+
+    private sealed class DriverEventSubscription(string eventName, DriverEventListener handler, DriverConfig source) : IDriverEventSubscription
+    {
+        private readonly string _eventName = eventName;
+        private readonly DriverEventListener _handler = handler;
+        private readonly DriverConfig _source = source;
+        private bool _disposed;
+
+        public void Dispose()
+        {
+            if (_disposed) return;
+            _disposed = true;
+            _source.Unsubscribe(_eventName, _handler);
+        }
     }
 }

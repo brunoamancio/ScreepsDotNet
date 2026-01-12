@@ -32,4 +32,14 @@ public interface IDriverConfig
     void EmitPlayerSandbox(PlayerSandboxEventArgs args);
     void EmitInitialized(DriverProcessType processType);
     void EmitRoomHistorySaved(RoomHistorySavedEventArgs args);
+
+    IDriverEventSubscription Subscribe(string eventName, DriverEventListener handler);
+    void Unsubscribe(string eventName, DriverEventListener handler);
+    void Emit(string eventName, params object?[] args);
+}
+
+public delegate void DriverEventListener(params object?[] args);
+
+public interface IDriverEventSubscription : IDisposable
+{
 }
