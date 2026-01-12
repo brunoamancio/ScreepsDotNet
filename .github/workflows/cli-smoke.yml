@@ -29,11 +29,6 @@ jobs:
       - name: Wait for Mongo + Redis to initialize
         run: sleep 15
 
-      - name: Setup .NET SDK
-        uses: actions/setup-dotnet@v5
-        with:
-          dotnet-version: 10.0.x
-
       - name: Restore solution
         run: dotnet restore ScreepsDotNet.slnx
 
