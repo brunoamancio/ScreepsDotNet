@@ -26,9 +26,6 @@ jobs:
             rid: linux-x64
           - os: ubuntu-latest
             rid: linux-arm64
-            install: |
-              sudo apt-get update
-              sudo apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
           - os: windows-latest
             rid: win-x64
             vcvars: x64
@@ -52,7 +49,7 @@ jobs:
         run: cmake --version
 
       - name: Install cross toolchain
-        if: ${{ runner.os == 'Linux' && matrix.rid == 'linux-arm64' }}
+        if: runner.os == 'Linux' && matrix.rid == 'linux-arm64'
         run: |
           sudo apt-get update
           sudo apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
@@ -67,16 +64,61 @@ jobs:
           if (-not $Env:VCVARS) { $Env:VCVARS = "x64" }
           $vcvarsPath = Join-Path $Env:VSINSTALLDIR "VC\Auxiliary\Build\vcvarsall.bat"
           if (-not (Test-Path $vcvarsPath)) { throw "vcvarsall.bat not found at $vcvarsPath" }
-          $cmd = "`"$vcvarsPath`" $Env:VCVARS && bash ./build.sh $Env:RID"
-          cmd.exe /c $cmd
+          & cmd.exe /c "`"$vcvarsPath`" $Env:VCVARS && bash ./build.sh $Env:RID"
 
       - name: Build libscreepspathfinder (POSIX)
         if: runner.os != 'Windows'
         shell: bash
         run: ./build.sh "${{ matrix.rid }}"
 
+      - name: Package native artifact (POSIX)
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          mkdir -p dist
+          rm -f "dist/native-pathfinder-${{ matrix.rid }}.zip"
+          (cd ../ScreepsDotNet.Driver/runtimes/${{ matrix.rid }} && zip -r ../../../native/pathfinder/dist/native-pathfinder-${{ matrix.rid }}.zip native)
+
+      - name: Package native artifact (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path dist | Out-Null
+          $dest = "dist/native-pathfinder-${{ matrix.rid }}.zip"
+          if (Test-Path $dest) { Remove-Item $dest }
+          Compress-Archive -Path "../ScreepsDotNet.Driver/runtimes/${{ matrix.rid }}/native" -DestinationPath $dest
+
       - name: Upload native artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
-          name: libscreepspathfinder-${{ matrix.rid }}
-          path: ../ScreepsDotNet.Driver/runtimes/${{ matrix.rid }}/native/**
+          name: native-pathfinder-${{ matrix.rid }}
+          path: dist/native-pathfinder-${{ matrix.rid }}.zip
+
+  release-native:
+    name: Publish native release
+    needs: build-native
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v7
+        with:
+          path: native-artifacts
+
+      - name: List artifacts
+        run: ls -R native-artifacts
+
+      - name: Publish GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: native-latest
+          name: Native Pathfinder (latest)
+          prerelease: true
+          draft: false
+          files: native-artifacts/**/native-pathfinder-*.zip
+          make_latest: true
+          body: "Automated native pathfinder binaries built from ${{ github.sha }}."
+          allow_updates: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -36,7 +36,17 @@ Run the script once per platform to populate every RID the .NET driver targets (
 - `macos-latest` (`osx-x64`)
 - `macos-14` (`osx-arm64`)
 
-It uploads each RID’s native folder as an artifact so other jobs (or developers) can download prebuilt libraries without running CMake locally.
+Each job packages `native-pathfinder-<rid>.zip`. When the workflow runs on `main`, the `release-native` job publishes (or updates) the GitHub release tagged `native-latest` with those ZIPs. This gives the .NET driver (and any developer) a stable download URL per RID without checking binaries into git.
+
+### Consumption from the .NET Driver
+
+`ScreepsDotNet.Driver` now contains an MSBuild target (`EnsureNativePathfinder`) that runs before the build resolves references. For supported runtime identifiers (linux-x64/linux-arm64/win-x64/win-arm64/osx-x64/osx-arm64), the target:
+
+1. Checks if `runtimes/<rid>/native/libscreepspathfinder.*` exists.
+2. If missing, downloads `native-pathfinder-<rid>.zip` from `https://github.com/th3b0y/screeps-rewrite/releases/download/native-latest/`.
+3. Extracts the archive into the correct `runtimes/<rid>/` directory so P/Invoke can load the native solver.
+
+You can override or skip this behavior by setting `NativePathfinderBaseUrl`/`NativePathfinderPackageName` (to point at a different feed) or `NativePathfinderSkipDownload=true` (useful when testing local builds).
 
 ## Status / Next steps
 

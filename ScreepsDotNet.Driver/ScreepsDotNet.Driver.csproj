@@ -42,4 +42,57 @@
     <PackageReference Include="Microsoft.ClearScript.V8.Native.osx-arm64" Version="7.4.5" />
   </ItemGroup>
 
+  <PropertyGroup>
+    <NativePathfinderBaseUrl Condition="'$(NativePathfinderBaseUrl)' == ''">https://github.com/th3b0y/screeps-rewrite/releases/download/native-latest</NativePathfinderBaseUrl>
+    <NativePathfinderPackageName Condition="'$(RuntimeIdentifier)' != ''">native-pathfinder-$(RuntimeIdentifier).zip</NativePathfinderPackageName>
+    <NativePathfinderIntermediateDir>$(IntermediateOutputPath)native-pathfinder\</NativePathfinderIntermediateDir>
+    <NativePathfinderPackageFile>$(NativePathfinderIntermediateDir)$(NativePathfinderPackageName)</NativePathfinderPackageFile>
+    <NativePathfinderRuntimeDir Condition="'$(RuntimeIdentifier)' != ''">$(MSBuildThisFileDirectory)runtimes\$(RuntimeIdentifier)</NativePathfinderRuntimeDir>
+    <NativePathfinderNativeDir Condition="'$(RuntimeIdentifier)' != ''">$(NativePathfinderRuntimeDir)\native</NativePathfinderNativeDir>
+    <NativePathfinderLibExtension Condition="'$(NativePathfinderLibExtension)' == '' and $([System.String]::Copy('$(RuntimeIdentifier)').StartsWith('win'))">.dll</NativePathfinderLibExtension>
+    <NativePathfinderLibExtension Condition="'$(NativePathfinderLibExtension)' == '' and $([System.String]::Copy('$(RuntimeIdentifier)').StartsWith('linux'))">.so</NativePathfinderLibExtension>
+    <NativePathfinderLibExtension Condition="'$(NativePathfinderLibExtension)' == '' and $([System.String]::Copy('$(RuntimeIdentifier)').StartsWith('osx'))">.dylib</NativePathfinderLibExtension>
+    <NativePathfinderBinary Condition="'$(RuntimeIdentifier)' != ''">$(NativePathfinderNativeDir)\libscreepspathfinder$(NativePathfinderLibExtension)</NativePathfinderBinary>
+    <NativePathfinderSupported>false</NativePathfinderSupported>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(RuntimeIdentifier)' == 'linux-x64' or '$(RuntimeIdentifier)' == 'linux-arm64' or '$(RuntimeIdentifier)' == 'win-x64' or '$(RuntimeIdentifier)' == 'win-arm64' or '$(RuntimeIdentifier)' == 'osx-x64' or '$(RuntimeIdentifier)' == 'osx-arm64'">
+    <NativePathfinderSupported>true</NativePathfinderSupported>
+  </PropertyGroup>
+
+  <UsingTask TaskName="ExtractNativePathfinder" TaskFactory="CodeTaskFactory" AssemblyName="Microsoft.Build.Tasks.Core">
+    <ParameterGroup>
+      <SourceZip ParameterType="System.String" Required="true" />
+      <Destination ParameterType="System.String" Required="true" />
+    </ParameterGroup>
+    <Task>
+      <Reference Include="System.IO.Compression" />
+      <Reference Include="System.IO.Compression.FileSystem" />
+      <Code Type="Fragment" Language="cs"><![CDATA[
+        if (!File.Exists(SourceZip))
+        {
+          Log.LogError($"Native pathfinder archive '{SourceZip}' was not downloaded.");
+          return false;
+        }
+        if (!Directory.Exists(Destination))
+        {
+          Directory.CreateDirectory(Destination);
+        }
+        System.IO.Compression.ZipFile.ExtractToDirectory(SourceZip, Destination, true);
+        return true;
+      ]]></Code>
+    </Task>
+  </UsingTask>
+
+  <Target Name="EnsureNativePathfinder" BeforeTargets="ResolveReferences"
+          Condition="'$(RuntimeIdentifier)' != '' and '$(NativePathfinderSkipDownload)' != 'true' and $(NativePathfinderSupported) and '$(NativePathfinderLibExtension)' != '' and !Exists('$(NativePathfinderBinary)')">
+    <Message Importance="high" Text="Downloading native pathfinder binary for $(RuntimeIdentifier)..." />
+    <MakeDir Directories="$(NativePathfinderIntermediateDir)" />
+    <MakeDir Directories="$(NativePathfinderRuntimeDir)" />
+    <DownloadFile SourceUrl="$(NativePathfinderBaseUrl)/$(NativePathfinderPackageName)"
+                  DestinationFile="$(NativePathfinderPackageFile)" />
+    <ExtractNativePathfinder SourceZip="$(NativePathfinderPackageFile)"
+                             Destination="$(NativePathfinderRuntimeDir)" />
+  </Target>
+
 </Project>
