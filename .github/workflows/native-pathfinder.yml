@@ -60,13 +60,13 @@ jobs:
         run: |
           if [ -d "src/native/pathfinder" ]; then
             echo "workdir=src/native/pathfinder" >> $GITHUB_ENV
-            echo "driver_dir=src/ScreepsDotNet.Driver" >> $GITHUB_ENV
+            echo "driver_dir=$GITHUB_WORKSPACE/src/ScreepsDotNet.Driver" >> $GITHUB_ENV
           elif [ -d "native/pathfinder" ]; then
             echo "workdir=native/pathfinder" >> $GITHUB_ENV
-            echo "driver_dir=ScreepsDotNet.Driver" >> $GITHUB_ENV
+            echo "driver_dir=$GITHUB_WORKSPACE/ScreepsDotNet.Driver" >> $GITHUB_ENV
           elif [ -d "ScreepsDotNet/native/pathfinder" ]; then
             echo "workdir=ScreepsDotNet/native/pathfinder" >> $GITHUB_ENV
-            echo "driver_dir=ScreepsDotNet/ScreepsDotNet.Driver" >> $GITHUB_ENV
+            echo "driver_dir=$GITHUB_WORKSPACE/ScreepsDotNet/ScreepsDotNet.Driver" >> $GITHUB_ENV
           else
             echo "Native pathfinder directory not found" >&2
             exit 1
