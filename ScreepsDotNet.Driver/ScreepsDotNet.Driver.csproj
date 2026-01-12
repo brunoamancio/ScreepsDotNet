@@ -43,7 +43,8 @@
   </ItemGroup>
 
   <PropertyGroup>
-    <NativePathfinderBaseUrl Condition="'$(NativePathfinderBaseUrl)' == ''">https://github.com/th3b0y/screeps-rewrite/releases/download/native-latest</NativePathfinderBaseUrl>
+    <RuntimeIdentifier Condition="'$(RuntimeIdentifier)' == '' and '$(NETCoreSdkPortableRuntimeIdentifier)' != ''">$(NETCoreSdkPortableRuntimeIdentifier)</RuntimeIdentifier>
+    <NativePathfinderBaseUrl Condition="'$(NativePathfinderBaseUrl)' == ''">https://github.com/brunoamancio/ScreepsDotNet/releases/download/native-pathfinder-latest</NativePathfinderBaseUrl>
     <NativePathfinderPackageName Condition="'$(RuntimeIdentifier)' != ''">native-pathfinder-$(RuntimeIdentifier).zip</NativePathfinderPackageName>
     <NativePathfinderIntermediateDir>$(IntermediateOutputPath)native-pathfinder\</NativePathfinderIntermediateDir>
     <NativePathfinderPackageFile>$(NativePathfinderIntermediateDir)$(NativePathfinderPackageName)</NativePathfinderPackageFile>
@@ -66,27 +67,23 @@
     <Message Importance="high" Text="Downloading native pathfinder binary for $(RuntimeIdentifier)..." />
     <MakeDir Directories="$(NativePathfinderIntermediateDir)" />
     <MakeDir Directories="$(NativePathfinderRuntimeDir)" />
-    <DownloadFile SourceUrl="$(NativePathfinderBaseUrl)/$(NativePathfinderPackageName)"
-                  DestinationFile="$(NativePathfinderPackageFile)" />
-    <DownloadFile SourceUrl="$(NativePathfinderBaseUrl)/$(NativePathfinderPackageName).sha256"
-                  DestinationFile="$(NativePathfinderHashFile)" />
-    <ReadLinesFromFile File="$(NativePathfinderHashFile)"
-                       Condition="'$(NativePathfinderSkipHashCheck)' != 'true'">
+    <DownloadFile SourceUrl="$(NativePathfinderBaseUrl)/$(NativePathfinderPackageName)" DestinationFolder="$(NativePathfinderIntermediateDir)" />
+    <DownloadFile SourceUrl="$(NativePathfinderBaseUrl)/$(NativePathfinderPackageName).sha256" DestinationFolder="$(NativePathfinderIntermediateDir)" />
+    
+    <ReadLinesFromFile File="$(NativePathfinderHashFile)" Condition="'$(NativePathfinderSkipHashCheck)' != 'true'">
       <Output TaskParameter="Lines" ItemName="_NativePathfinderHashLines" />
     </ReadLinesFromFile>
+      
     <PropertyGroup Condition="'$(NativePathfinderSkipHashCheck)' != 'true'">
       <NativePathfinderHashLine>$([System.String]::Copy('@(_NativePathfinderHashLines->'%(Identity)', ';')').Split(';')[0])</NativePathfinderHashLine>
       <NativePathfinderExpectedHash>$([System.Text.RegularExpressions.Regex]::Match('$(NativePathfinderHashLine)', '^[0-9A-Fa-f]+').Value)</NativePathfinderExpectedHash>
     </PropertyGroup>
-    <Error Condition="'$(NativePathfinderSkipHashCheck)' != 'true' and '$(NativePathfinderExpectedHash)' == ''"
-           Text="Hash file '$(NativePathfinderHashFile)' is empty or invalid." />
-    <VerifyFileHash Condition="'$(NativePathfinderSkipHashCheck)' != 'true'"
-                    Files="$(NativePathfinderPackageFile)"
-                    HashAlgorithm="SHA256"
-                    Hash="$(NativePathfinderExpectedHash)" />
-    <Unzip SourceFiles="$(NativePathfinderPackageFile)"
-           DestinationFolder="$(NativePathfinderRuntimeDir)"
-           Overwrite="true" />
+      
+    <Error Condition="'$(NativePathfinderSkipHashCheck)' != 'true' and '$(NativePathfinderExpectedHash)' == ''" Text="Hash file '$(NativePathfinderHashFile)' is empty or invalid." />
+    <VerifyFileHash Condition="'$(NativePathfinderSkipHashCheck)' != 'true'" Files="$(NativePathfinderPackageFile)" HashAlgorithm="SHA256" Hash="$(NativePathfinderExpectedHash)" />
+    <RemoveDir Directories="$(NativePathfinderRuntimeDir)" />
+    <MakeDir Directories="$(NativePathfinderRuntimeDir)" />
+    <Unzip SourceFiles="$(NativePathfinderPackageFile)" DestinationFolder="$(NativePathfinderRuntimeDir)" />
   </Target>
 
 </Project>

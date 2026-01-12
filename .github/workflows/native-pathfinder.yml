@@ -176,7 +176,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: native-latest
+          tag_name: native-pathfinder-latest
           name: Native Pathfinder (latest)
           prerelease: true
           draft: false
