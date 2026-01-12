@@ -40,9 +40,9 @@ public static class ServiceCollectionExtensions
         services.AddOptions<ProcessorLoopOptions>();
         services.AddSingleton<IRuntimeSandboxFactory, V8RuntimeSandboxFactory>();
         services.AddSingleton<IRuntimeService, RuntimeService>();
-        services.AddSingleton<IMainLoopGlobalProcessor, NoopMainLoopGlobalProcessor>();
-        services.AddSingleton<IRunnerLoopWorker, NoopRunnerLoopWorker>();
-        services.AddSingleton<IProcessorLoopWorker, NoopProcessorLoopWorker>();
+        services.AddSingleton<IMainLoopGlobalProcessor, MainLoopGlobalProcessor>();
+        services.AddSingleton<IRunnerLoopWorker, RunnerLoopWorker>();
+        services.AddSingleton<IProcessorLoopWorker, ProcessorLoopWorker>();
         services.AddSingleton<IMainLoop, MainLoop>();
         services.AddSingleton<IRunnerLoop, RunnerLoop>();
         services.AddSingleton<IProcessorLoop, ProcessorLoop>();

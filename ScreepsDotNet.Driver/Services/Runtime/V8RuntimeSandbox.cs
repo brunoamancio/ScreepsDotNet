@@ -4,6 +4,7 @@ using Microsoft.ClearScript;
 using Microsoft.ClearScript.V8;
 using Microsoft.Extensions.Logging;
 using ScreepsDotNet.Driver.Abstractions.Runtime;
+using ScreepsDotNet.Driver.Abstractions.Users;
 
 namespace ScreepsDotNet.Driver.Services.Runtime;
 
@@ -70,11 +71,13 @@ internal sealed class V8RuntimeSandbox(RuntimeSandboxOptions options, ILogger<V8
             bridge.ConsoleLog,
             bridge.ConsoleResults,
             error,
-            bridge.GetIntents(),
+            bridge.GetGlobalIntents(),
             memoryResult,
             context.MemorySegments,
             context.InterShardSegment,
-            (int)Math.Clamp(Math.Ceiling(stopwatch.Elapsed.TotalMilliseconds), 0, int.MaxValue)));
+            (int)Math.Clamp(Math.Ceiling(stopwatch.Elapsed.TotalMilliseconds), 0, int.MaxValue),
+            bridge.GetRoomIntents(),
+            bridge.GetNotifications()));
     }
 
     private V8ScriptEngine CreateEngine()
@@ -130,18 +133,34 @@ function registerIntent(type, payload) {
     const body = payload === undefined ? null : JSON.stringify(payload);
     __driverHost.SetIntent(type, body);
 }
+function notify(message, groupIntervalMinutes = 0) {
+    __driverHost.Notify(message, groupIntervalMinutes || 0);
+}
 """;
 
     private sealed class ScriptBridge
     {
         private readonly List<string> _consoleLog = [];
         private readonly List<string> _consoleResults = [];
-        private readonly Dictionary<string, object?> _intents = new(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, object?> _globalIntents = new(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, Dictionary<string, object?>> _roomIntents = new(StringComparer.OrdinalIgnoreCase);
+        private readonly List<NotifyIntentPayload> _notifications = [];
 
         public IReadOnlyList<string> ConsoleLog => _consoleLog;
         public IReadOnlyList<string> ConsoleResults => _consoleResults;
 
-        public IReadOnlyDictionary<string, object?> GetIntents() => new Dictionary<string, object?>(_intents, StringComparer.OrdinalIgnoreCase);
+        public IReadOnlyDictionary<string, object?> GetGlobalIntents()
+            => new Dictionary<string, object?>(_globalIntents, StringComparer.OrdinalIgnoreCase);
+
+        public IReadOnlyDictionary<string, IReadOnlyDictionary<string, object?>> GetRoomIntents()
+        {
+            var snapshot = new Dictionary<string, IReadOnlyDictionary<string, object?>>(StringComparer.OrdinalIgnoreCase);
+            foreach (var (room, intents) in _roomIntents)
+                snapshot[room] = new Dictionary<string, object?>(intents, StringComparer.OrdinalIgnoreCase);
+            return snapshot;
+        }
+
+        public IReadOnlyList<NotifyIntentPayload> GetNotifications() => _notifications.ToArray();
 
         [ScriptMember("Log")]
         public void Log(object? message)
@@ -171,21 +190,82 @@ function registerIntent(type, payload) {
             if (string.IsNullOrWhiteSpace(typeText))
                 return;
 
-            object? payload = null;
-            var payloadText = payloadJson?.ToString();
-            if (!string.IsNullOrWhiteSpace(payloadText))
+            var payload = ParsePayload(payloadJson);
+            var roomName = TryExtractRoomName(payload);
+            if (!string.IsNullOrWhiteSpace(roomName))
             {
-                try
-                {
-                    payload = JsonSerializer.Deserialize<object>(payloadText, JsonOptions);
-                }
-                catch
-                {
-                    payload = payloadText;
-                }
+                var intents = GetOrCreateRoomIntent(roomName);
+                intents[typeText] = payload;
+                return;
             }
 
-            _intents[typeText] = payload;
+            _globalIntents[typeText] = payload;
+        }
+
+        [ScriptMember("Notify")]
+        public void Notify(object? message, object? intervalMinutes)
+        {
+            var text = message?.ToString();
+            if (string.IsNullOrWhiteSpace(text))
+                return;
+
+            var minutes = intervalMinutes switch
+            {
+                null => 0,
+                int value => value,
+                long value => (int)Math.Clamp(value, int.MinValue, int.MaxValue),
+                double value => (int)Math.Round(value),
+                float value => (int)Math.Round(value),
+                string value when int.TryParse(value, out var parsed) => parsed,
+                _ => 0
+            };
+
+            _notifications.Add(new NotifyIntentPayload(text.Trim(), Math.Max(0, minutes)));
+        }
+
+        private static object? ParsePayload(object? payloadJson)
+        {
+            var payloadText = payloadJson?.ToString();
+            if (string.IsNullOrWhiteSpace(payloadText))
+                return null;
+
+            try
+            {
+                var parsed = JsonSerializer.Deserialize<object>(payloadText, JsonOptions);
+                if (parsed is JsonElement element && element.ValueKind == JsonValueKind.Object)
+                    return JsonSerializer.Deserialize<Dictionary<string, object?>>(payloadText, JsonOptions);
+                return parsed;
+            }
+            catch
+            {
+                return payloadText;
+            }
+        }
+
+        private Dictionary<string, object?> GetOrCreateRoomIntent(string roomName)
+        {
+            if (_roomIntents.TryGetValue(roomName, out var intents))
+                return intents;
+
+            intents = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
+            _roomIntents[roomName] = intents;
+            return intents;
+        }
+
+        private static string? TryExtractRoomName(object? payload)
+        {
+            string? Resolve(object? candidate)
+            {
+                var text = candidate?.ToString()?.Trim();
+                return string.IsNullOrWhiteSpace(text) ? null : text;
+            }
+
+            return payload switch
+            {
+                IDictionary<string, object?> dictionary when dictionary.TryGetValue("room", out var roomValue) => Resolve(roomValue),
+                JsonElement element when element.ValueKind == JsonValueKind.Object && element.TryGetProperty("room", out var roomProperty) && roomProperty.ValueKind == JsonValueKind.String => Resolve(roomProperty.GetString()),
+                _ => null
+            };
         }
     }
 }

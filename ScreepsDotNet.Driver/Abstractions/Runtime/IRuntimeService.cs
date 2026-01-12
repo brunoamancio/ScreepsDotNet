@@ -1,3 +1,5 @@
+using ScreepsDotNet.Driver.Abstractions.Users;
+
 namespace ScreepsDotNet.Driver.Abstractions.Runtime;
 
 public interface IRuntimeService
@@ -20,8 +22,10 @@ public sealed record RuntimeExecutionResult(
     IReadOnlyList<string> ConsoleLog,
     IReadOnlyList<string> ConsoleResults,
     string? Error,
-    IReadOnlyDictionary<string, object?> Intents,
+    IReadOnlyDictionary<string, object?> GlobalIntents,
     string? Memory,
     IReadOnlyDictionary<int, string>? MemorySegments,
     string? InterShardSegment,
-    int CpuUsed);
+    int CpuUsed,
+    IReadOnlyDictionary<string, IReadOnlyDictionary<string, object?>> RoomIntents,
+    IReadOnlyList<NotifyIntentPayload> Notifications);

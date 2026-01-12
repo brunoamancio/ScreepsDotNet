@@ -41,7 +41,11 @@ console.log('tick', GameTime);
         var result = await _service.ExecuteAsync(context);
         Assert.True(string.IsNullOrEmpty(result.Error), result.Error);
 
-        Assert.True(result.Intents.ContainsKey("spawn"), $"Intents: {string.Join(',', result.Intents.Keys)}");
+        Assert.True(result.RoomIntents.TryGetValue("W1N1", out var roomIntents)
+                    && roomIntents.ContainsKey("spawn"),
+            "Expected room-level spawn intent.");
+        Assert.Empty(result.GlobalIntents);
+        Assert.Empty(result.Notifications);
         Assert.NotNull(result.Memory);
 
         var memoryDoc = JsonDocument.Parse(result.Memory!);
