@@ -18,34 +18,34 @@ jobs:
           docker info
 
       - name: Launch Mongo + Redis
-        run: docker compose up -d
+        run: docker compose -f src/docker-compose.yml up -d
 
       - name: Wait for Mongo + Redis to initialize
         run: sleep 15
 
       - name: Restore solution
-        run: dotnet restore ScreepsDotNet.slnx
+        run: dotnet restore src/ScreepsDotNet.slnx
 
       - name: Run unit and integration tests
-        run: dotnet test ScreepsDotNet.slnx --nologo
+        run: dotnet test src/ScreepsDotNet.slnx --nologo
 
       - name: CLI smoke - storage status
-        run: dotnet run --project ScreepsDotNet.Backend.Cli/ScreepsDotNet.Backend.Cli.csproj -- storage status --json
+        run: dotnet run --project src/ScreepsDotNet.Backend.Cli/ScreepsDotNet.Backend.Cli.csproj -- storage status --json
 
       - name: CLI smoke - world stats
-        run: dotnet run --project ScreepsDotNet.Backend.Cli/ScreepsDotNet.Backend.Cli.csproj -- world stats --room W1N1 --stat owners1 --json
+        run: dotnet run --project src/ScreepsDotNet.Backend.Cli/ScreepsDotNet.Backend.Cli.csproj -- world stats --room W1N1 --stat owners1 --json
 
       - name: CLI smoke - world dump
-        run: dotnet run --project ScreepsDotNet.Backend.Cli/ScreepsDotNet.Backend.Cli.csproj -- world dump --room W1N1 --decoded --json
+        run: dotnet run --project src/ScreepsDotNet.Backend.Cli/ScreepsDotNet.Backend.Cli.csproj -- world dump --room W1N1 --decoded --json
 
       - name: CLI smoke - bots list
-        run: dotnet run --project ScreepsDotNet.Backend.Cli/ScreepsDotNet.Backend.Cli.csproj -- bots list --json
+        run: dotnet run --project src/ScreepsDotNet.Backend.Cli/ScreepsDotNet.Backend.Cli.csproj -- bots list --json
 
       - name: CLI smoke - user show
-        run: dotnet run --project ScreepsDotNet.Backend.Cli/ScreepsDotNet.Backend.Cli.csproj -- user show --username test-user --format markdown
+        run: dotnet run --project src/ScreepsDotNet.Backend.Cli/ScreepsDotNet.Backend.Cli.csproj -- user show --username test-user --format markdown
 
       - name: CLI smoke - auth token list
-        run: dotnet run --project ScreepsDotNet.Backend.Cli/ScreepsDotNet.Backend.Cli.csproj -- auth token-list --json
+        run: dotnet run --project src/ScreepsDotNet.Backend.Cli/ScreepsDotNet.Backend.Cli.csproj -- auth token-list --json
 
       - name: CLI smoke - system status
-        run: dotnet run --project ScreepsDotNet.Backend.Cli/ScreepsDotNet.Backend.Cli.csproj -- system status --json
+        run: dotnet run --project src/ScreepsDotNet.Backend.Cli/ScreepsDotNet.Backend.Cli.csproj -- system status --json

@@ -2,6 +2,8 @@
 
 Modern .NET rewrite of the Screeps private server backend. The solution contains an ASP.NET Core HTTP host backed by MongoDB + Redis so we can iteratively replace the legacy Node.js services while keeping the public API and storage layout compatible with the official backend.
 
+> ℹ️ All .NET source lives under the `src/` folder. Commands below assume you are at the repo root (`ScreepsDotNet/`) and reference files via the `src/` prefix.
+
 ## Requirements
 
 - .NET 10 SDK
@@ -13,18 +15,18 @@ Modern .NET rewrite of the Screeps private server backend. The solution contains
 1. **Start infrastructure (Mongo + Redis + seed data):**
    ```powershell
    cd ScreepsDotNet
-   docker compose up -d
+   docker compose -f src/docker-compose.yml up -d
    ```
    This launches:
    - MongoDB on `localhost:27017` with the `screeps` database.
    - Redis on `localhost:16379`.
    - Mongo seed scripts:
-     - `docker/mongo-init/seed-users.js` ensures `test-user` exists together with example controller/spawn records.
-     - `docker/mongo-init/seed-server-data.js` keeps the `/api/server/info` payload in sync with the legacy backend defaults.
+     - `src/docker/mongo-init/seed-users.js` ensures `test-user` exists together with example controller/spawn records.
+     - `src/docker/mongo-init/seed-server-data.js` keeps the `/api/server/info` payload in sync with the legacy backend defaults.
 
 2. **Run the HTTP backend:**
    ```powershell
-   dotnet run --project ScreepsDotNet.Backend.Http/ScreepsDotNet.Backend.Http.csproj
+   dotnet run --project src/ScreepsDotNet.Backend.Http/ScreepsDotNet.Backend.Http.csproj
    ```
 
 3. **Authenticate and hit protected endpoints:**
@@ -41,23 +43,23 @@ Modern .NET rewrite of the Screeps private server backend. The solution contains
    - Copy the returned `token` and use it as the `X-Token` header for every `/api/user/*` call.
 
 4. **Use the `.http` helpers for smoke testing:**
-   - `ScreepsDotNet.Backend.Http/UserEndpoints.http` contains ready-made requests for memory, code, branches, console, badge SVG, etc. Update the `@ScreepsDotNet_User_Token` variable with the token from the previous step and execute the requests directly from JetBrains Rider / VS Code (REST Client) / HTTPie.
-   - `ScreepsDotNet.Backend.Http/CoreEndpoints.http` provides `/health`, `/api/version`, and `/api/server/info` requests.
-- `ScreepsDotNet.Backend.Http/BotEndpoints.http` exercises the `/api/game/bot/*` routes (list/spawn/reload/remove).
-- `ScreepsDotNet.Backend.Http/StrongholdEndpoints.http` covers `/api/game/stronghold/*` (templates/spawn/expand) for quick smoke testing.
-- `ScreepsDotNet.Backend.Http/SystemEndpoints.http` hits `/api/game/system/*` (status, pause/resume, tick get/set, server message, storage status, storage reseed/reset with `confirm=RESET`) for admin verification. The CLI `storage reseed` command now enforces the same `--confirm RESET` gate.
-- `ScreepsDotNet.Backend.Http/MapEndpoints.http` manages `/api/game/map/*` (generate, open/close, remove, assets update, terrain refresh).
-- `ScreepsDotNet.Backend.Http/IntentEndpoints.http` queues `/api/game/add-object-intent` and `/api/game/add-global-intent` payloads so you can verify manual intents without writing custom tooling.
-- `ScreepsDotNet.Backend.Http/PowerCreepEndpoints.http` hits `/api/game/power-creeps/*` (list/create/rename/upgrade/delete/cancel-delete/experimentation) for testing the new operator management surface.
-- `ScreepsDotNet.Backend.Http/RegisterEndpoints.http` covers `/api/register/*` (check-email, check-username, set-username) so you can exercise the onboarding flow end-to-end.
-- `ScreepsDotNet.Backend.Http/SpawnEndpoints.http` now includes samples for `/api/game/gen-unique-object-name` and `/api/game/check-unique-object-name` so you can generate/validate spawn names like the legacy client.
-- `ScreepsDotNet.Backend.Http/WorldEndpoints.http` includes both default-room samples and new shard-aware requests (pass `shard=shard1` or include `"shard": "shard1"` in the JSON body) so you can exercise the secondary shard seeded by default.
+-   - `src/ScreepsDotNet.Backend.Http/UserEndpoints.http` contains ready-made requests for memory, code, branches, console, badge SVG, etc. Update the `@ScreepsDotNet_User_Token` variable with the token from the previous step and execute the requests directly from JetBrains Rider / VS Code (REST Client) / HTTPie.
+    - `src/ScreepsDotNet.Backend.Http/CoreEndpoints.http` provides `/health`, `/api/version`, and `/api/server/info` requests.
+- `src/ScreepsDotNet.Backend.Http/BotEndpoints.http` exercises the `/api/game/bot/*` routes (list/spawn/reload/remove).
+- `src/ScreepsDotNet.Backend.Http/StrongholdEndpoints.http` covers `/api/game/stronghold/*` (templates/spawn/expand) for quick smoke testing.
+- `src/ScreepsDotNet.Backend.Http/SystemEndpoints.http` hits `/api/game/system/*` (status, pause/resume, tick get/set, server message, storage status, storage reseed/reset with `confirm=RESET`) for admin verification. The CLI `storage reseed` command now enforces the same `--confirm RESET` gate.
+- `src/ScreepsDotNet.Backend.Http/MapEndpoints.http` manages `/api/game/map/*` (generate, open/close, remove, assets update, terrain refresh).
+- `src/ScreepsDotNet.Backend.Http/IntentEndpoints.http` queues `/api/game/add-object-intent` and `/api/game/add-global-intent` payloads so you can verify manual intents without writing custom tooling.
+- `src/ScreepsDotNet.Backend.Http/PowerCreepEndpoints.http` hits `/api/game/power-creeps/*` (list/create/rename/upgrade/delete/cancel-delete/experimentation) for testing the new operator management surface.
+- `src/ScreepsDotNet.Backend.Http/RegisterEndpoints.http` covers `/api/register/*` (check-email, check-username, set-username) so you can exercise the onboarding flow end-to-end.
+- `src/ScreepsDotNet.Backend.Http/SpawnEndpoints.http` now includes samples for `/api/game/gen-unique-object-name` and `/api/game/check-unique-object-name` so you can generate/validate spawn names like the legacy client.
+- `src/ScreepsDotNet.Backend.Http/WorldEndpoints.http` includes both default-room samples and new shard-aware requests (pass `shard=shard1` or include `"shard": "shard1"` in the JSON body) so you can exercise the secondary shard seeded by default.
 - All `/api/game/world/*` read routes also understand the legacy `shardName/RoomName` notation (e.g., `shard1/W21N20`). If you supply both a `shard` parameter and a prefixed room, the explicit `shard` parameter wins.
 - Any `customIntentTypes` / `customObjectTypes` declared in your `mods.json` are now honored automatically: `/api/game/add-*intent` uses the merged schemas, while `/api/server/info` and `/api/version` surface the mod-supplied object metadata so the official client can render custom assets.
 
 5. **Run automated tests (unit + integration):**
    ```powershell
-   dotnet test
+   dotnet test src/ScreepsDotNet.slnx
    ```
    - Unit tests swap repositories with fast fakes (no Docker dependencies).
    - Integration tests spin up disposable Mongo + Redis containers via [Testcontainers](https://github.com/testcontainers/testcontainers-dotnet) and exercise the real storage adapters/endpoints (including `/api/user/respawn`). Docker Desktop must be running for these tests to pass.
@@ -69,13 +71,13 @@ The Spectre-based CLI mirrors the legacy `cli/` scripts so you can manage bots, 
 Run the CLI with:
 
 ```powershell
-dotnet run --project ScreepsDotNet.Backend.Cli/ScreepsDotNet.Backend.Cli.csproj -- --help
+dotnet run --project src/ScreepsDotNet.Backend.Cli/ScreepsDotNet.Backend.Cli.csproj -- --help
 ```
 
 Shortcuts:
 
-- **Unix/macOS:** `./cli.sh storage status`
-- **Windows PowerShell:** `pwsh ./cli.ps1 system status --json`
+- **Unix/macOS:** `./src/cli.sh storage status`
+- **Windows PowerShell:** `pwsh ./src/cli.ps1 system status --json`
 
 ### Common workflow: reset seed + rerun world tests
 
@@ -83,17 +85,17 @@ Use this flow when you need a clean database, updated seed data, and a verificat
 
 ```powershell
 # 1. Reset the local Docker volumes (optional but recommended when seed data changes)
-docker compose down -v
-docker compose up -d
+docker compose -f src/docker-compose.yml down -v
+docker compose -f src/docker-compose.yml up -d
 
 # 2. Reseed Mongo via the CLI (ensures RESET confirmation is wired)
-./cli.sh storage reseed --confirm RESET --force
+./src/cli.sh storage reseed --confirm RESET --force
 
 # 3. Run the world integration tests (includes Testcontainers coverage)
-dotnet test ScreepsDotNet.slnx --filter WorldEndpointsIntegrationTests --nologo
+dotnet test src/ScreepsDotNet.slnx --filter WorldEndpointsIntegrationTests --nologo
 
 # 4. Use the CLI to spot-check world data
-./cli.sh world dump --room W1N1 --decoded --format markdown
+./src/cli.sh world dump --room W1N1 --decoded --format markdown
 ```
 
 ### Global switches
@@ -107,8 +109,8 @@ dotnet test ScreepsDotNet.slnx --filter WorldEndpointsIntegrationTests --nologo
 | `--modfile` / `SCREEPSCLI_modfile` / `MODFILE` | Path to the legacy `mods.json` manifest containing bot AI directories plus any `customIntentTypes/customObjectTypes`. |
 | `--format <table\|markdown\|json>` | (Optional) Overrides the default formatting for status-style commands; JSON behaves the same as the traditional `--json` switches. |
 
-Every option can also be supplied via `SCREEPSCLI_<option>` environment variables, e.g., `SCREEPSCLI_connection-string`. For convenience we ship `.screepscli.sample`; copy or source it to preload the common Mongo/Redis/asset settings before running the CLI. Commands that support formatted summaries (storage status, system status, etc.) honor `--format table|markdown|json` when not already emitting JSON.
-If you just need something to point at while experimenting, copy `ScreepsDotNet.Backend.Http/mods.sample.json` to a writable location, adjust the bot paths, and edit the sample `customIntentTypes` / `customObjectTypes` entries as needed.
+Every option can also be supplied via `SCREEPSCLI_<option>` environment variables, e.g., `SCREEPSCLI_connection-string`. For convenience we ship `src/.screepscli.sample`; copy or source it to preload the common Mongo/Redis/asset settings before running the CLI. Commands that support formatted summaries (storage status, system status, etc.) honor `--format table|markdown|json` when not already emitting JSON.
+If you just need something to point at while experimenting, copy `src/ScreepsDotNet.Backend.Http/mods.sample.json` to a writable location, adjust the bot paths, and edit the sample `customIntentTypes` / `customObjectTypes` entries as needed.
 To set a default formatter globally, export `SCREEPSCLI_FORMAT=markdown` (or `json`/`table`); the CLI uses that value whenever `--format` isn’t specified.
 
 ### Storage commands
@@ -119,8 +121,8 @@ To set a default formatter globally, export `SCREEPSCLI_FORMAT=markdown` (or `js
 | `storage reseed --confirm RESET [--force] [--json] [--format table\|markdown\|json]` | Drops and reseeds Mongo with the canonical fixtures. | `--force` required when targeting any DB other than the default. |
 
 ```powershell
-dotnet run --project ScreepsDotNet.Backend.Cli -- storage status --format markdown
-dotnet run --project ScreepsDotNet.Backend.Cli -- storage reseed --confirm RESET --force --json
+dotnet run --project src/ScreepsDotNet.Backend.Cli -- storage status --format markdown
+dotnet run --project src/ScreepsDotNet.Backend.Cli -- storage reseed --confirm RESET --force --json
 ```
 
 ### User commands
@@ -133,9 +135,9 @@ dotnet run --project ScreepsDotNet.Backend.Cli -- storage reseed --confirm RESET
 | `user memory set --user-id <id> (--path <path> --value <json> \| --segment <0-99> --value <json>) [--json] [--format table\|markdown\|json]` | Writes structured data into memory/segments (JSON validated). | |
 
 ```powershell
-dotnet run --project ScreepsDotNet.Backend.Cli -- user show --username test-user --format markdown
-dotnet run --project ScreepsDotNet.Backend.Cli -- user console --user-id 57874d42d0ae911e3bd15bbc --expression "console.log(Game.time)" --json
-dotnet run --project ScreepsDotNet.Backend.Cli -- user memory set --user-id 57874d42d0ae911e3bd15bbc --path stats.logLevel --value "\"info\"" --format table
+dotnet run --project src/ScreepsDotNet.Backend.Cli -- user show --username test-user --format markdown
+dotnet run --project src/ScreepsDotNet.Backend.Cli -- user console --user-id 57874d42d0ae911e3bd15bbc --expression "console.log(Game.time)" --json
+dotnet run --project src/ScreepsDotNet.Backend.Cli -- user memory set --user-id 57874d42d0ae911e3bd15bbc --path stats.logLevel --value "\"info\"" --format table
 ```
 
 ### Bot commands
@@ -150,7 +152,7 @@ dotnet run --project ScreepsDotNet.Backend.Cli -- user memory set --user-id 5787
 Example:
 
 ```powershell
-dotnet run --project ScreepsDotNet.Backend.Cli -- bots spawn --bot invader --room W1N1 --cpu 150 --gcl 3
+dotnet run --project src/ScreepsDotNet.Backend.Cli -- bots spawn --bot invader --room W1N1 --cpu 150 --gcl 3
 ```
 
 ### World commands
@@ -162,8 +164,8 @@ dotnet run --project ScreepsDotNet.Backend.Cli -- bots spawn --bot invader --roo
 | `world overview --room <name> [--shard <name>] [--json] [--format table\|markdown\|json]` | Display controller ownership for a single room (mirrors `/api/game/room-overview`). | Shows `(unowned)` when the controller has no owner/reservation. |
 
 ```powershell
-dotnet run --project ScreepsDotNet.Backend.Cli -- world dump --room W1N1 --decoded --format markdown
-dotnet run --project ScreepsDotNet.Backend.Cli -- world stats --room shard1/W21N20 --stat owners1 --json
+dotnet run --project src/ScreepsDotNet.Backend.Cli -- world dump --room W1N1 --decoded --format markdown
+dotnet run --project src/ScreepsDotNet.Backend.Cli -- world stats --room shard1/W21N20 --stat owners1 --json
 ```
 
 ### Stronghold commands
@@ -177,7 +179,7 @@ dotnet run --project ScreepsDotNet.Backend.Cli -- world stats --room shard1/W21N
 Example:
 
 ```powershell
-dotnet run --project ScreepsDotNet.Backend.Cli -- strongholds spawn --room W5N3 --shard shard1 --template bunker3 --deploy-delay 10
+dotnet run --project src/ScreepsDotNet.Backend.Cli -- strongholds spawn --room W5N3 --shard shard1 --template bunker3 --deploy-delay 10
 ```
 
 ### Invader commands
@@ -190,7 +192,7 @@ dotnet run --project ScreepsDotNet.Backend.Cli -- strongholds spawn --room W5N3 
 Example:
 
 ```powershell
-dotnet run --project ScreepsDotNet.Backend.Cli -- invader create --username IntegrationUser --room W21N20 --shard shard1 -x 12 -y 18 --type Ranged
+dotnet run --project src/ScreepsDotNet.Backend.Cli -- invader create --username IntegrationUser --room W21N20 --shard shard1 -x 12 -y 18 --type Ranged
 ```
 
 ### System commands
@@ -209,9 +211,9 @@ dotnet run --project ScreepsDotNet.Backend.Cli -- invader create --username Inte
 Example:
 
 ```powershell
-dotnet run --project ScreepsDotNet.Backend.Cli -- system tick set --ms 750
-dotnet run --project ScreepsDotNet.Backend.Cli -- system status --format markdown
-dotnet run --project ScreepsDotNet.Backend.Cli -- system reset --confirm RESET --force --json
+dotnet run --project src/ScreepsDotNet.Backend.Cli -- system tick set --ms 750
+dotnet run --project src/ScreepsDotNet.Backend.Cli -- system status --format markdown
+dotnet run --project src/ScreepsDotNet.Backend.Cli -- system reset --confirm RESET --force --json
 ```
 
 ### Map commands
@@ -228,7 +230,7 @@ dotnet run --project ScreepsDotNet.Backend.Cli -- system reset --confirm RESET -
 Example:
 
 ```powershell
-dotnet run --project ScreepsDotNet.Backend.Cli -- map generate --room W10N5 --shard shard1 --sources 3 --terrain swampHeavy --keeper-lairs --overwrite --json
+dotnet run --project src/ScreepsDotNet.Backend.Cli -- map generate --room W10N5 --shard shard1 --sources 3 --terrain swampHeavy --keeper-lairs --overwrite --json
 ```
 
 ### Flag commands
@@ -240,8 +242,8 @@ dotnet run --project ScreepsDotNet.Backend.Cli -- map generate --room W10N5 --sh
 | `flag remove --username <name> --room <room> --name <flagName> [--json] [--format table\|markdown\|json]` | Deletes the flag. | |
 
 ```powershell
-dotnet run --project ScreepsDotNet.Backend.Cli -- flag create --username test-user --room W1N1 -x 25 -y 23 --name AlphaFlag --color red --secondary-color white --json
-dotnet run --project ScreepsDotNet.Backend.Cli -- flag change-color --username test-user --room W1N1 --name AlphaFlag --color yellow --format markdown
+dotnet run --project src/ScreepsDotNet.Backend.Cli -- flag create --username test-user --room W1N1 -x 25 -y 23 --name AlphaFlag --color red --secondary-color white --json
+dotnet run --project src/ScreepsDotNet.Backend.Cli -- flag change-color --username test-user --room W1N1 --name AlphaFlag --color yellow --format markdown
 ```
 
 ### Auth commands
@@ -256,9 +258,9 @@ dotnet run --project ScreepsDotNet.Backend.Cli -- flag change-color --username t
 Example:
 
 ```powershell
-dotnet run --project ScreepsDotNet.Backend.Cli -- auth issue --user-id test-user --format markdown
-dotnet run --project ScreepsDotNet.Backend.Cli -- auth resolve --token deadbeef --json
-dotnet run --project ScreepsDotNet.Backend.Cli -- auth revoke --token deadbeef --format table
+dotnet run --project src/ScreepsDotNet.Backend.Cli -- auth issue --user-id test-user --format markdown
+dotnet run --project src/ScreepsDotNet.Backend.Cli -- auth resolve --token deadbeef --json
+dotnet run --project src/ScreepsDotNet.Backend.Cli -- auth revoke --token deadbeef --format table
 ```
 
 ### CLI architecture notes
@@ -293,22 +295,22 @@ dotnet run --project ScreepsDotNet.Backend.Cli -- auth revoke --token deadbeef -
   - `rooms.objects` – source of controller/spawn information for `/api/user/world-*` endpoints.
 - Server metadata (`server.data`) and version metadata (`server.version`) power `/api/server/info` and the `protocol/useNativeAuth/packageVersion` fields returned by `/api/version`. Adjust `seed-server-data.js` (and `SeedDataDefaults`) if you need to change these defaults.
 - Both the Testcontainers harness (`SeedDataService`) and the docker init scripts now seed a dedicated shard sample (`shard1` / `SeedDataDefaults.World.SecondaryShardRoom`) with matching `rooms`, `rooms.objects`, and `rooms.terrain` documents. Use it when exercising upcoming shard-aware world endpoints—each document carries a `shard` field so you can filter deterministically.
-- Redis is reserved for token storage and other future Screeps subsystems; the `docker compose` file already wires the container, but current endpoints do not rely on it yet.
+- Redis is reserved for token storage and other future Screeps subsystems; the `src/docker-compose.yml` file already wires the container, but current endpoints do not rely on it yet.
 
 ### Repository Conventions
 
-- Every Mongo collection has a matching POCO under `ScreepsDotNet.Storage.MongoRedis.Repositories.Documents`. Repositories always take a typed `IMongoCollection<TDocument>` so LINQ queries translate cleanly—please don’t reintroduce `BsonDocument` projections.
-- When you add a new collection/field, update the corresponding document type **and** the integration harness (`ScreepsDotNet.Backend.Http.Tests/Integration/IntegrationTestHarness.cs`) so the disposable Mongo instance contains representative data.
+- Every Mongo collection has a matching POCO under `src/ScreepsDotNet.Storage.MongoRedis/Repositories/Documents`. Repositories always take a typed `IMongoCollection<TDocument>` so LINQ queries translate cleanly—please don’t reintroduce `BsonDocument` projections.
+- When you add a new collection/field, update the corresponding document type **and** the integration harness (`src/ScreepsDotNet.Backend.Http.Tests/Integration/IntegrationTestHarness.cs`) so the disposable Mongo instance contains representative data.
 - Integration tests in `UserEndpointsIntegrationTests` should cover every storage-backed endpoint you touch; seed data + assertions keep us aligned with the legacy backend.
 
 ### Resetting Data
 
 When seed scripts or schemas change, reset the Docker volumes so everyone shares the same baseline:
 ```powershell
-docker compose down -v
-docker compose up -d
+docker compose -f src/docker-compose.yml down -v
+docker compose -f src/docker-compose.yml up -d
 ```
-This wipes `mongo-data` / `redis-data`, reruns every script in `docker/mongo-init`, and gives you a clean `test-user`.
+This wipes `mongo-data` / `redis-data`, reruns every script in `src/docker/mongo-init`, and gives you a clean `test-user`.
 
 ## User API Coverage
 
@@ -320,20 +322,20 @@ This wipes `mongo-data` / `redis-data`, reruns every script in `docker/mongo-ini
 - Cross-shard regression tests now cover bots (`BotEndpointsIntegrationTests.RemoveBot_ShardsRemainIsolated`), strongholds (`StrongholdEndpointsIntegrationTests.Expand_WithShardTargetsMatchingCore`), intents, and map management (`MapEndpointsIntegrationTests.OpenRoom_WithShard_DoesNotAffectOtherShard`) so we know that multi-shard mutations touch only the targeted shard’s documents.
 
 If you add new endpoints or storage requirements, update:
-1. `docker/mongo-init/seed-users.js` (and document the change here).
+1. `src/docker/mongo-init/seed-users.js` (and document the change here).
 2. The `.http` files so there is always a runnable example.
 3. `AGENT.md` so automation agents know how to refresh their environment.
 
 ## Intent endpoints
 
 - `/api/game/add-object-intent` and `/api/game/add-global-intent` now write to `rooms.intents` / `users.intents` via the new `MongoIntentService`. Payloads are sanitized against the legacy schema (string/number/boolean converters, body part filters, price scaling), and activating safe mode enforces the same gametime/safeMode guard that Node uses.
-- Integration coverage lives in `ScreepsDotNet.Backend.Http.Tests/Integration/IntentEndpointsIntegrationTests` so every intent mutation is validated against a disposable Mongo + Redis stack.
+- Integration coverage lives in `src/ScreepsDotNet.Backend.Http.Tests/Integration/IntentEndpointsIntegrationTests` so every intent mutation is validated against a disposable Mongo + Redis stack.
 - Use `IntentEndpoints.http` for quick smoke tests (authentication snippet included).
 
 ## Power creep endpoints
 
 - `/api/game/power-creeps/list`, `/create`, `/delete`, `/cancel-delete`, `/upgrade`, `/rename`, and `/experimentation` now mirror the legacy maintenance routes using `MongoPowerCreepService`. They perform the same validation as `backend-local` (class gating, spawn/delete cooldowns, power budget math, experimentation cooldowns) while projecting room data (hits, fatigue, shard, coordinates) when a creep is spawned.
-- Integration coverage lives in `ScreepsDotNet.Backend.Http.Tests/Integration/PowerCreepEndpointsIntegrationTests`, which drives the HTTP host against Testcontainers Mongo/Redis to verify list/create/rename/delete/cancel/upgrade/experimentation flows.
+- Integration coverage lives in `src/ScreepsDotNet.Backend.Http.Tests/Integration/PowerCreepEndpointsIntegrationTests`, which drives the HTTP host against Testcontainers Mongo/Redis to verify list/create/rename/delete/cancel/upgrade/experimentation flows.
 - The HTTP scratch file `PowerCreepEndpoints.http` matches the CLI defaults so you can manage creeps via REST without shelling into the host. These endpoints reuse the same storage-backed services, so anything you test here automatically benefits the CLI and future automation.
 
 ## World helper endpoints

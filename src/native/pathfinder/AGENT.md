@@ -14,8 +14,8 @@ Track progress toward replacing the managed A* fallback with the upstream Screep
 - ✅ Terrain loading no longer requires V8/NAN: `path_finder_t::load_terrain` now accepts a POD array (`terrain_room_plain`), and the C wrapper (`pathfinder_exports.cpp`) parses room names and forwards data via the new API.
 - ✅ `path_finder_t::search` now funnels through a native-only helper that emits POD results (`search_result_native`). The Nan/V8 wrapper simply adapts to JS while `ScreepsPathfinder_Search` calls the same helper directly.
 - ✅ `pathfinder_exports.cpp` now returns real paths/costs, converts room names, and supports native room callbacks via `ScreepsPathfinder_SetRoomCallback`.
-- ✅ CMake build + tooling exists (`build.sh`) to compile for a specific RID and copy the artifact to `ScreepsDotNet.Driver/runtimes/<rid>/native/`.
-- ✅ GitHub Actions workflow (`native-pathfinder.yml`) rebuilds the library on `ubuntu-latest` (x64 + arm64), `windows-latest` (x64 + arm64), `macos-latest`, and `macos-14` whenever native files change, zips the outputs, and updates the `native-latest` GitHub release with per-RID packages.
+- ✅ CMake build + tooling exists (`build.sh`) to compile for a specific RID and copy the artifact to `src/ScreepsDotNet.Driver/runtimes/<rid>/native/`.
+- ✅ GitHub Actions workflow (`native-pathfinder.yml`) rebuilds the library on `ubuntu-latest` (x64 + arm64), `windows-latest` (x64 + arm64), `macos-latest`, and `macos-14` whenever native files change, zips the outputs, and updates the `native-pathfinder-latest` GitHub release with per-RID packages.
 - ⚠️ Managed driver still uses the C# A* fallback.
 - ⚠️ CI/release currently requires manually invoking `build.sh` on each platform; automation pending.
 

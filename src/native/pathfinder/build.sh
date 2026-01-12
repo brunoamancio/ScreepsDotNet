@@ -15,7 +15,7 @@ Examples:
 
 The script configures CMake for the provided runtime identifier (RID),
 builds the native library, and copies the output to
-ScreepsDotNet.Driver/runtimes/<rid>/native/.
+src/ScreepsDotNet.Driver/runtimes/<rid>/native/.
 EOF
 }
 
