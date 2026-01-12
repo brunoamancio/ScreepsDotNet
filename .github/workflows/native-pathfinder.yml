@@ -24,24 +24,33 @@ jobs:
         include:
           - os: ubuntu-latest
             rid: linux-x64
+            disabled: false
           - os: ubuntu-latest
             rid: linux-arm64
+            disabled: true
           - os: windows-latest
             rid: win-x64
             vcvars: x64
+            disabled: true
           - os: windows-latest
             rid: win-arm64
             vcvars: x64_arm64
+            disabled: true
           - os: macos-latest
             rid: osx-x64
+            disabled: true
           - os: macos-14
             rid: osx-arm64
+            disabled: true
 
     defaults:
       run:
         working-directory: native/pathfinder
 
     steps:
+      - name: Skip if disabled
+        if: matrix.disabled == true
+        run: echo "Skipping ${matrix.rid}"
       - name: Checkout
         uses: actions/checkout@v6
 
@@ -49,13 +58,13 @@ jobs:
         run: cmake --version
 
       - name: Install cross toolchain
-        if: runner.os == 'Linux' && matrix.rid == 'linux-arm64'
+        if: matrix.disabled != true && runner.os == 'Linux' && matrix.rid == 'linux-arm64'
         run: |
           sudo apt-get update
           sudo apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
 
       - name: Build libscreepspathfinder (Windows)
-        if: runner.os == 'Windows'
+        if: matrix.disabled != true && runner.os == 'Windows'
         shell: pwsh
         env:
           RID: ${{ matrix.rid }}
@@ -71,12 +80,12 @@ jobs:
           & cmd.exe /c "`"$vcvarsPath`" $Env:VCVARS && bash ./build.sh $Env:RID"
 
       - name: Build libscreepspathfinder (POSIX)
-        if: runner.os != 'Windows'
+        if: matrix.disabled != true && runner.os != 'Windows'
         shell: bash
         run: ./build.sh "${{ matrix.rid }}"
 
       - name: Package native artifact (POSIX)
-        if: runner.os != 'Windows'
+        if: matrix.disabled != true && runner.os != 'Windows'
         shell: bash
         run: |
           set -euo pipefail
@@ -92,7 +101,7 @@ jobs:
           (cd "$native_dir" && zip -r "$zip_path" .)
 
       - name: Package native artifact (Windows)
-        if: runner.os == 'Windows'
+        if: matrix.disabled != true && runner.os == 'Windows'
         shell: pwsh
         run: |
           $dist = Join-Path (Get-Location) "dist"
@@ -110,7 +119,8 @@ jobs:
         uses: actions/upload-artifact@v6
         with:
           name: native-pathfinder-${{ matrix.rid }}
-          path: dist/native-pathfinder-${{ matrix.rid }}.zip
+          path: native/pathfinder/dist/native-pathfinder-${{ matrix.rid }}.zip
+        if: matrix.disabled != true
 
   release-native:
     name: Publish native release
