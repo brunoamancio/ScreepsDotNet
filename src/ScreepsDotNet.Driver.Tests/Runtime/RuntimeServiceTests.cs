@@ -6,7 +6,7 @@ namespace ScreepsDotNet.Driver.Tests.Runtime;
 
 public sealed class RuntimeServiceTests
 {
-    private readonly RuntimeService _service = new(new StubRuntimeSandboxFactory());
+    private readonly RuntimeService _service = new(new StubRuntimeSandboxPool());
 
     [Fact]
     public async Task ExecuteAsync_UpdatesMemoryAndIntents()
@@ -43,10 +43,15 @@ console.log('tick', GameTime);
         Assert.Equal(2, memoryDoc.RootElement.GetProperty("counter").GetInt32());
     }
 
-    private sealed class StubRuntimeSandboxFactory : IRuntimeSandboxFactory
+    private sealed class StubRuntimeSandboxPool : IRuntimeSandboxPool
     {
-        public IRuntimeSandbox CreateSandbox()
-            => new StubRuntimeSandbox();
+        private readonly StubRuntimeSandbox _sandbox = new();
+
+        public IRuntimeSandbox Rent() => _sandbox;
+
+        public void Return(IRuntimeSandbox sandbox)
+        {
+        }
     }
 
     private sealed class StubRuntimeSandbox : IRuntimeSandbox

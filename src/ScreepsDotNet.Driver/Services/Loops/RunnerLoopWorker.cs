@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using MongoDB.Driver;
 using ScreepsDotNet.Driver.Abstractions.Config;
 using ScreepsDotNet.Driver.Abstractions.Environment;
+using ScreepsDotNet.Driver.Abstractions.Eventing;
 using ScreepsDotNet.Driver.Abstractions.Loops;
 using ScreepsDotNet.Driver.Abstractions.Notifications;
 using ScreepsDotNet.Driver.Abstractions.Runtime;
@@ -73,11 +74,12 @@ internal sealed class RunnerLoopWorker(
         var bundle = _bundleCache.GetOrAdd(codeHash, modules);
 
         var gameTime = await _environment.GetGameTimeAsync(token).ConfigureAwait(false);
+        var cpuBucket = await _environment.GetCpuBucketSizeAsync(token).ConfigureAwait(false) ?? _config.CpuBucketSize;
         var context = new RuntimeExecutionContext(
             userId,
             codeHash,
             ResolveCpuLimit(user),
-            _config.CpuBucketSize,
+            cpuBucket,
             gameTime,
             await LoadMemoryAsync(userId).ConfigureAwait(false),
             await LoadMemorySegmentsAsync(userId).ConfigureAwait(false),
@@ -104,20 +106,23 @@ internal sealed class RunnerLoopWorker(
             return;
         }
 
-        await _hooks.PublishRuntimeTelemetryAsync(
-                      new RuntimeTelemetryPayload(
-                          userId,
-                          gameTime,
-                          context.CpuLimit,
-                          context.CpuBucket,
-                          result.CpuUsed,
-                          result.Metrics.TimedOut,
-                          result.Metrics.ScriptError,
-                          result.Metrics.HeapUsedBytes,
-                          result.Metrics.HeapSizeLimitBytes,
-                          result.Error),
-                      token)
-                  .ConfigureAwait(false);
+        var telemetry = new RuntimeTelemetryPayload(
+            userId,
+            gameTime,
+            context.CpuLimit,
+            context.CpuBucket,
+            result.CpuUsed,
+            result.Metrics.TimedOut,
+            result.Metrics.ScriptError,
+            result.Metrics.HeapUsedBytes,
+            result.Metrics.HeapSizeLimitBytes,
+            result.Error);
+
+        await _hooks.PublishRuntimeTelemetryAsync(telemetry, token).ConfigureAwait(false);
+        _config.EmitRuntimeTelemetry(new RuntimeTelemetryEventArgs(telemetry));
+
+        var replenishedBucket = Math.Clamp(cpuBucket - result.CpuUsed + context.CpuLimit, 0, _config.CpuBucketSize);
+        await _environment.SetCpuBucketSizeAsync(replenishedBucket, token).ConfigureAwait(false);
 
         await PersistResultsAsync(userId, result, token).ConfigureAwait(false);
     }

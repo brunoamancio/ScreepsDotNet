@@ -42,6 +42,7 @@ public static class ServiceCollectionExtensions
         services.AddOptions<RunnerLoopOptions>();
         services.AddOptions<ProcessorLoopOptions>();
         services.AddSingleton<IRuntimeSandboxFactory, V8RuntimeSandboxFactory>();
+        services.AddSingleton<IRuntimeSandboxPool, RuntimeSandboxPool>();
         services.AddSingleton<IRuntimeBundleCache, RuntimeBundleCache>();
         services.AddSingleton<IRuntimeService, RuntimeService>();
         services.AddSingleton<IMainLoopGlobalProcessor, MainLoopGlobalProcessor>();

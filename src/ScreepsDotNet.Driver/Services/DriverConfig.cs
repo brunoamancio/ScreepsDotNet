@@ -47,6 +47,7 @@ internal sealed class DriverConfig : IDriverConfig
     public event EventHandler<PlayerSandboxEventArgs>? PlayerSandbox;
     public event EventHandler<DriverInitEventArgs>? Initialized;
     public event EventHandler<RoomHistorySavedEventArgs>? RoomHistorySaved;
+    public event EventHandler<RuntimeTelemetryEventArgs>? RuntimeTelemetry;
 
     public int MainLoopMinDurationMs
     {
@@ -135,6 +136,9 @@ internal sealed class DriverConfig : IDriverConfig
 
     public void EmitRoomHistorySaved(RoomHistorySavedEventArgs args) =>
         DispatchEvent(RoomHistorySaved, "roomHistorySaved", args, args.RoomName, args.BaseGameTime, args.Chunk);
+
+    public void EmitRuntimeTelemetry(RuntimeTelemetryEventArgs args) =>
+        DispatchEvent(RuntimeTelemetry, "runtimeTelemetry", args, args.Payload);
 
     public IDriverEventSubscription Subscribe(string eventName, DriverEventListener handler)
     {

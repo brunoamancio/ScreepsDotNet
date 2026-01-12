@@ -2,14 +2,21 @@ using ScreepsDotNet.Driver.Abstractions.Runtime;
 
 namespace ScreepsDotNet.Driver.Services.Runtime;
 
-internal sealed class RuntimeService(IRuntimeSandboxFactory sandboxFactory) : IRuntimeService
+internal sealed class RuntimeService(IRuntimeSandboxPool sandboxPool) : IRuntimeService
 {
-    private readonly IRuntimeSandboxFactory _sandboxFactory = sandboxFactory;
+    private readonly IRuntimeSandboxPool _sandboxPool = sandboxPool;
 
-    public Task<RuntimeExecutionResult> ExecuteAsync(RuntimeExecutionContext context, CancellationToken token = default)
+    public async Task<RuntimeExecutionResult> ExecuteAsync(RuntimeExecutionContext context, CancellationToken token = default)
     {
         ArgumentNullException.ThrowIfNull(context);
-        var sandbox = _sandboxFactory.CreateSandbox();
-        return sandbox.ExecuteAsync(context, token);
+        var sandbox = _sandboxPool.Rent();
+        try
+        {
+            return await sandbox.ExecuteAsync(context, token).ConfigureAwait(false);
+        }
+        finally
+        {
+            _sandboxPool.Return(sandbox);
+        }
     }
 }

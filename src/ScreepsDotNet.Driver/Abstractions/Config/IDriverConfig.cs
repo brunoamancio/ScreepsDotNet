@@ -11,6 +11,7 @@ public interface IDriverConfig
     event EventHandler<PlayerSandboxEventArgs>? PlayerSandbox;
     event EventHandler<DriverInitEventArgs>? Initialized;
     event EventHandler<RoomHistorySavedEventArgs>? RoomHistorySaved;
+    event EventHandler<RuntimeTelemetryEventArgs>? RuntimeTelemetry;
 
     int MainLoopMinDurationMs { get; set; }
     int MainLoopResetIntervalMs { get; set; }
@@ -32,6 +33,7 @@ public interface IDriverConfig
     void EmitPlayerSandbox(PlayerSandboxEventArgs args);
     void EmitInitialized(DriverProcessType processType);
     void EmitRoomHistorySaved(RoomHistorySavedEventArgs args);
+    void EmitRuntimeTelemetry(RuntimeTelemetryEventArgs args);
 
     IDriverEventSubscription Subscribe(string eventName, DriverEventListener handler);
     void Unsubscribe(string eventName, DriverEventListener handler);
