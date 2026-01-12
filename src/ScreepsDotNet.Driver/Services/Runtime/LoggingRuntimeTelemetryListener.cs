@@ -4,11 +4,11 @@ using ScreepsDotNet.Driver.Abstractions.Runtime;
 
 namespace ScreepsDotNet.Driver.Services.Runtime;
 
-internal sealed class LoggingRuntimeTelemetrySink(ILogger<LoggingRuntimeTelemetrySink>? logger = null) : IRuntimeTelemetrySink
+internal sealed class LoggingRuntimeTelemetryListener(ILogger<LoggingRuntimeTelemetryListener>? logger = null) : IRuntimeTelemetryListener
 {
-    private readonly ILogger<LoggingRuntimeTelemetrySink>? _logger = logger;
+    private readonly ILogger<LoggingRuntimeTelemetryListener>? _logger = logger;
 
-    public Task PublishTelemetryAsync(RuntimeTelemetryPayload payload, CancellationToken token = default)
+    public Task OnTelemetryAsync(RuntimeTelemetryPayload payload, CancellationToken token = default)
     {
         ArgumentNullException.ThrowIfNull(payload);
 
@@ -26,7 +26,7 @@ internal sealed class LoggingRuntimeTelemetrySink(ILogger<LoggingRuntimeTelemetr
         return Task.CompletedTask;
     }
 
-    public Task PublishWatchdogAlertAsync(RuntimeWatchdogAlert alert, CancellationToken token = default)
+    public Task OnWatchdogAlertAsync(RuntimeWatchdogAlert alert, CancellationToken token = default)
     {
         ArgumentNullException.ThrowIfNull(alert);
 

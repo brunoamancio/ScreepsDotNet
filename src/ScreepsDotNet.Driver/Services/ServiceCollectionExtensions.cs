@@ -18,6 +18,7 @@ using ScreepsDotNet.Driver.Services.Notifications;
 using ScreepsDotNet.Driver.Services.Pathfinding;
 using ScreepsDotNet.Driver.Services.Queues;
 using ScreepsDotNet.Driver.Services.Runtime;
+using ScreepsDotNet.Driver.Services.Scheduling;
 using ScreepsDotNet.Driver.Services.Rooms;
 using ScreepsDotNet.Driver.Services.Users;
 
@@ -41,10 +42,14 @@ public static class ServiceCollectionExtensions
         services.AddOptions<MainLoopOptions>();
         services.AddOptions<RunnerLoopOptions>();
         services.AddOptions<ProcessorLoopOptions>();
+        services.AddOptions<SchedulerTelemetryOptions>();
         services.AddSingleton<IRuntimeSandboxFactory, V8RuntimeSandboxFactory>();
         services.AddSingleton<IRuntimeSandboxPool, RuntimeSandboxPool>();
         services.AddSingleton<IRuntimeBundleCache, RuntimeBundleCache>();
-        services.AddSingleton<IRuntimeTelemetrySink, LoggingRuntimeTelemetrySink>();
+        services.AddSingleton<IRuntimeTelemetryListener, LoggingRuntimeTelemetryListener>();
+        services.AddSingleton<IRuntimeTelemetryListener, SchedulerTelemetryListener>();
+        services.AddSingleton<IRuntimeTelemetrySink, RuntimeTelemetryPipeline>();
+        services.AddSingleton<IRuntimeThrottleRegistry, RuntimeThrottleRegistry>();
         services.AddSingleton<IRuntimeService, RuntimeService>();
         services.AddSingleton<IRuntimeCoordinator, RuntimeCoordinator>();
         services.AddSingleton<RuntimeTelemetryMonitor>();

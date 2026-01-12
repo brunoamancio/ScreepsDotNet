@@ -3,13 +3,21 @@ using Microsoft.Extensions.Options;
 using ScreepsDotNet.Driver.Abstractions.Config;
 using ScreepsDotNet.Driver.Abstractions.Loops;
 using ScreepsDotNet.Driver.Abstractions.Queues;
+using ScreepsDotNet.Driver.Abstractions.Runtime;
 
 namespace ScreepsDotNet.Driver.Services.Loops;
 
-internal sealed class RunnerLoop(IDriverConfig config, IQueueService queues, IRunnerLoopWorker worker, IOptions<RunnerLoopOptions> options, ILogger<RunnerLoop>? logger = null)
+internal sealed class RunnerLoop(
+    IDriverConfig config,
+    IQueueService queues,
+    IRunnerLoopWorker worker,
+    IRuntimeThrottleRegistry throttleRegistry,
+    IOptions<RunnerLoopOptions> options,
+    ILogger<RunnerLoop>? logger = null)
     : IRunnerLoop
 {
     private readonly RunnerLoopOptions _options = options.Value;
+    private readonly IRuntimeThrottleRegistry _throttleRegistry = throttleRegistry;
 
     private IWorkQueueChannel? _queue;
 
@@ -31,6 +39,13 @@ internal sealed class RunnerLoop(IDriverConfig config, IQueueService queues, IRu
                 }
 
                 config.EmitRunnerLoopStage("runUser", userId);
+
+                if (_throttleRegistry.TryGetDelay(userId, out var delay) && delay > TimeSpan.Zero)
+                {
+                    logger?.LogWarning("Runner loop delaying user {UserId} for {Delay} due to telemetry throttle.", userId, delay);
+                    await Task.Delay(delay, token).ConfigureAwait(false);
+                }
+
                 await worker.HandleUserAsync(userId, token).ConfigureAwait(false);
             }
             catch (OperationCanceledException) when (token.IsCancellationRequested)
