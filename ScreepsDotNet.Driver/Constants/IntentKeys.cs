@@ -18,4 +18,18 @@ internal static class IntentKeys
     public const string TargetId = "id";
     public const string Amount = "amount";
     public const string ResourceType = "resourceType";
+
+    public const string Move = "move";
+    public const string UpgradeController = "upgradeController";
+    public const string ReserveController = "reserveController";
+    public const string AttackController = "attackController";
+    public const string Build = "build";
+    public const string Repair = "repair";
+    public const string Harvest = "harvest";
+    public const string Transfer = "transfer";
+    public const string Withdraw = "withdraw";
+    public const string Pickup = "pickup";
+    public const string Drop = "drop";
+    public const string Say = "say";
+    public const string Power = "power";
 }

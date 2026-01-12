@@ -18,7 +18,7 @@ internal sealed class RoomDataService(
     IEnvironmentService environmentService) : IRoomDataService
 {
     private static readonly string[] MovingCreepTypes = [RoomObjectTypes.Creep, RoomObjectTypes.PowerCreep];
-    private static readonly string[] SpecialObjectTypes = ["terminal", "powerSpawn", RoomObjectTypes.PowerCreep];
+    private static readonly string[] SpecialObjectTypes = [RoomObjectTypes.Terminal, RoomObjectTypes.PowerSpawn, RoomObjectTypes.PowerCreep];
     private readonly IMongoCollection<RoomObjectDocument> _roomObjects = databaseProvider.GetCollection<RoomObjectDocument>(databaseProvider.Settings.RoomObjectsCollection);
     private readonly IMongoCollection<UserDocument> _users = databaseProvider.GetCollection<UserDocument>(databaseProvider.Settings.UsersCollection);
     private readonly IMongoCollection<RoomFlagDocument> _roomFlags = databaseProvider.GetCollection<RoomFlagDocument>(databaseProvider.Settings.RoomsFlagsCollection);

@@ -11,4 +11,11 @@ internal static class RoomObjectTypes
     public const string Extension = "extension";
     public const string Controller = "controller";
     public const string Factory = "factory";
+    public const string Terminal = "terminal";
+    public const string PowerSpawn = "powerSpawn";
+    public const string Observer = "observer";
+    public const string PowerBank = "powerBank";
+    public const string Deposit = "deposit";
+    public const string Tombstone = "tombstone";
+    public const string Portal = "portal";
 }
