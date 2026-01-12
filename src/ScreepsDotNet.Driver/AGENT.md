@@ -1,53 +1,37 @@
-# Driver Rewrite Plan
+# Driver AGENT
 
-## Purpose
-Track the strategy and status for porting the legacy Screeps Node.js driver into the new .NET solution. This document is a shared hand-off point for every agent touching the driver work.
+Use this file for day-to-day coordination inside `ScreepsDotNet.Driver`. The full roadmap, plan docs, and milestone status live in `docs/driver.md` plus the per-topic files under `src/ScreepsDotNet.Driver/docs/`.
 
-## Current Snapshot (January 11, 2026)
-- `ScreepsDotNet.Driver` now ships queue infrastructure, scheduler helpers, bulk writers, room/user data services, notification/history services, and a ClearScript-based runtime executor (expects `RuntimeData.script`, captures console/memory/intents).
-- Runner/Main/Processor loops are wired: the main loop fills Redis queues, `RunnerLoopWorker` bundles code from `users.code`, executes it via ClearScript, and writes intents/memory; `ProcessorLoopWorker` drains room work, snapshots history, and clears intents so we can exercise a simplified end-to-end tick.
-- Remaining driver entry points (pathfinder and the legacy-engine compatibility shim) are still pending implementation.
-- Engine still consumes the legacy Node driver (via `@screeps/core`).
+## Snapshot (January 2026)
 
-## Guiding Objectives
-1. Recreate the full driver contract expected by the engine (`driver.*` methods, config emitter, bulk writers, queues, runtime bootstrap, pathfinding, notifications, history/map storage, etc.).
-2. Provide a sandboxed JavaScript runtime (ClearScript + V8) that can execute user scripts with the same semantics and safety limits as `isolated-vm` today.
-3. Maintain storage compatibility with the current Mongo/Redis schema so the Node engine (and later the .NET engine) can swap in without data migrations.
-4. Keep the implementation modular so we can unit/integration test each subsystem (queue service, runtime host, pathfinder, history uploads) independently.
+- Queue infrastructure, worker scheduler skeleton, bulk writers, room/user services, notification/history services, and the ClearScript runtime coordinator are merged; runner/main/processor loops can execute a simplified tick.
+- Native pathfinder work is split into `src/native/pathfinder` (see that AGENT for build/CI info); the managed service still needs to switch over once the new binaries are wired.
+- Compatibility shim (D10) and deeper processor logic (intent application, map view, stats) remain after runtime/pathfinder stabilization.
 
-## Work Plan & Status
-| Step | Description | Plan Doc | Status |
-|------|-------------|----------|--------|
-| D1 | Enumerate the complete driver API surface by scanning `ScreepsNodeJs/engine` for `driver.*` usage and documenting the method signatures + behavior. Turn this into a C# interface (e.g., `IScreepsDriver`). | `docs/DriverApi.md` | Plan completed (implementation pending) ◐ |
-| D2 | Design storage adapters for Mongo/Redis that cover bulk writes, env keys, queues, pub/sub, history storage, map view persistence. Leverage existing `ScreepsDotNet.Storage.MongoRedis` types where possible. | `docs/StorageAdapters.md` | Plan completed (implementation pending) ◐ |
-| D3 | Choose and prototype the JavaScript sandbox (ClearScript + V8). Implement module/require plumbing, runtime bootstrap, memory/CPU quotas, and host bridges. | `docs/SandboxOptions.md` | ClearScript V8 runtime with CommonJS loader + sandbox prototype; pathfinder/host bridges remain ◐ |
-| D4 | Implement queue + scheduler services (room/user queues, add/fetch/mark-done/reset, rate limiting). Ensure graceful shutdown semantics. | `docs/QueueAndScheduler.md` | Queues + loop workers wired (runner/processor use Redis queues); worker scheduler logging/backoff still TODO ◐ |
-| D5 | Port bulk writer abstractions (`BulkObjects`, `BulkUsers`, `BulkFlags`, `BulkTransactions`, etc.). | `docs/BulkWriters.md` | Implementation complete (services/Bulk) ✔ |
-| D6 | Implement pathfinder integration (reuse native algorithm or wrap existing Node addon through interop). Seed terrain data cache and expose `driver.pathFinder`. | `docs/Pathfinder.md` | Managed service running; native solver sources extracted under `native/pathfinder` (CMake + pf.cc/h) awaiting P/Invoke bridge ◐ |
-| D7 | Wire global config and events (`config.engine.emit`, tick scheduling knobs, custom object prototypes). | `docs/ConfigAndEvents.md` | Implementation complete (Redis-backed config + Node-style emit/on) ✔ |
-| D8 | Provide runtime lifecycle endpoints (make runtime, send console messages, save memory/segments/intents, notify errors). | `docs/RuntimeLifecycle.md` | RuntimeService invoked via RunnerLoopWorker; JS prelude now supports `registerIntent` + `notify` to drive intents/notifications ◐ |
-| D9 | Build history/map view writers and notification helpers (`activateRoom`, `updateAccessibleRoomsList`, `notifyRoomsDone`, etc.). | `docs/HistoryAndNotifications.md` | History + notification services wired through `DriverLoopHooks` with unit tests for diff/throttle logic ◐ |
-| D10 | Integration phase: run the legacy Node engine against the new driver via a compatibility shim to validate parity before attempting the .NET engine rewrite. | _TBD_ | Pending ☐ |
+See `docs/driver.md` for the latest D1–D10 table and links to `DriverApi.md`, `QueueAndScheduler.md`, etc.
 
-_Progress Legend:_ ☐ not started, ◐ in progress, ✔ complete. Update this table as work advances.
+## Active focus
 
-## Next Up
-- Exercise `DriverLoopHooks` once processor/main/runner scaffolding exists so tick stages call into the new runtime/notification/history surface instead of touching services directly.
-- Expand the runtime pipeline: load real module bundles, persist memory segments/inter-shard payloads, and integrate with the upcoming runner coordinator.
-- Pathfinder native integration (multi-room + parity) and the legacy-engine compatibility shim (D10) remain after the runtime + main-loop wiring solidifies.
+1. Finish D6 (native pathfinder swap + managed bindings) and D7/D8 polish items called out in `docs/driver.md`.
+2. Expand processor handlers beyond metadata snapshots (creep/tower/link/lab done; need movement/controller/power actions).
+3. Keep `DriverLoopHooks` as the integration surface—don’t let loops call services directly.
 
-## Notes for Future Agents
-- Keep cross-cutting settings in `Directory.Build.props`; avoid duplicating target framework info inside this project.
-- Record meaningful decisions (e.g., sandbox tech, storage schema tweaks) in this file so new agents don’t repeat discovery work.
-- Prefer relying on implicit/usings inherited from `Directory.Build.props`. Only add explicit `using` directives when a file needs a namespace that isn’t already imported; redundant `System.*` usings make future cleanups harder.
-- Match the existing style conventions: declare locks with the `Lock` type, use collection expressions (`[]`) for empty initializers, favor primary constructors when possible, convert one-line methods to expression-bodied members, and drop braces for single-line `if` statements.
-- Bulk writer infrastructure (`Services/Bulk`) powers the new `RoomDataService`, `UserDataService`, and downstream services; prefer going through `IBulkWriterFactory` for collection mutations.
-- History snapshots live under `Services/History` (Redis-backed hashes + `HistoryDiffBuilder`) and raise `RoomHistorySaved` via `IDriverConfig`. Notification fan-out (`Services/Notifications` + `NotificationThrottler`) publishes console/rooms-done events and manages `users.notifications`.
-- Runtime execution now loads player modules directly (`RuntimeExecutionContext.RuntimeData["modules"]`), builds them via a CommonJS-style loader in `V8RuntimeSandbox`, and falls back to the legacy bundled script only if modules are missing. Module caching beyond per-tick compilation still needs work.
-- `registerIntent` in the ClearScript prelude inspects `payload.room` to route intents to rooms; use `notify("text", intervalMinutes)` inside user code to queue notifications (they enter `UserIntentWritePayload.Notifications` and flow through `UserDataService`).
-- Processor loop currently snapshots room objects + clears intents only; real intent application, map view, and stats flushing still need to be ported.
-- Processor loop now stores per-object `lastIntent*` metadata via `IBulkWriterFactory`, applies manual deltas (`damage`, `set`, `patch`, `remove`) plus a first wave of typed handlers (creep/tower attacks & heals, link transfers, lab reactions) to mutate `rooms.objects`, writes intent summaries to map view + event logs, and triggers aggregated intent notifications via `IDriverLoopHooks`. Full parity with the Node processor (movement, power actions, controller logic, etc.) remains TODO.
-- Object types / intent keys moved to `Constants/{RoomObjectTypes,IntentKeys}` (with matching enum helpers), so future handlers avoid hand-typed strings. Update new code to reuse these constants.
-- `StringLiteralGuardTests` enforces that no other .cs files introduce raw object-type or intent-key strings; update the exclusions if you add new constant files.
-- Native pathfinder binaries are fetched automatically during `dotnet build`: if a RID isn’t specified, MSBuild defaults `RuntimeIdentifier` to the host SDK RID (`$(NETCoreSdkPortableRuntimeIdentifier)`), downloads the matching ZIP + `.sha256`, verifies the hash, and extracts it to `runtimes/<rid>/native/`. Set `NativePathfinderSkipDownload=true` to keep a local copy or `NativePathfinderSkipHashCheck=true` if you need to bypass verification temporarily.
-- Outstanding TODOs: connect queue scheduler error handling to the shared logging infrastructure once it exists.
+## How to work here
+
+- Rely on cross-cutting settings from `Directory.Build.props`; avoid duplicating target framework or analyzer settings.
+- Implicit usings are enabled solution-wide; only add explicit `using` directives when a namespace isn’t already imported. Dropping redundant `System.*` usings keeps IDE warnings down.
+- Follow the agreed conventions:
+  - Locks use the `Lock` type.
+  - Empty collections use `[]` literals.
+  - Prefer primary constructors and expression-bodied members for single-line methods.
+  - One-line `if` bodies omit braces.
+- Styles gleaned from cleanup notes (also mentioned in `docs/driver.md`): don’t add `using System;`, `System.Threading`, etc., unless required; respect implicit usings.
+- When introducing new constants for object types or intent keys, put them under `ScreepsDotNet.Driver.Abstractions.Shared.Constants` and extend `StringLiteralGuardTests` if needed.
+- Runtime execution currently expects `RuntimeData["modules"]`; keep module/require plumbing aligned with `docs/SandboxOptions.md`.
+- Bulk mutations should flow through `IBulkWriterFactory`; avoid reaching directly into repositories.
+
+## Hand-offs & references
+
+- Native pathfinder build/release: `src/native/pathfinder/AGENT.md`.
+- Config/event emitter, queue service, runtime lifecycle, history/notification design: see the matching doc under `src/ScreepsDotNet.Driver/docs/`.
+- When updating this project, document the change in the relevant plan doc and call it out in `docs/driver.md` so other agents see the status shift.
