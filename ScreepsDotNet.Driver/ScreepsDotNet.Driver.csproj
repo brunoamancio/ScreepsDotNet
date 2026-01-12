@@ -46,11 +46,11 @@
     <RuntimeIdentifier Condition="'$(RuntimeIdentifier)' == '' and '$(NETCoreSdkPortableRuntimeIdentifier)' != ''">$(NETCoreSdkPortableRuntimeIdentifier)</RuntimeIdentifier>
     <NativePathfinderBaseUrl Condition="'$(NativePathfinderBaseUrl)' == ''">https://github.com/brunoamancio/ScreepsDotNet/releases/download/native-pathfinder-latest</NativePathfinderBaseUrl>
     <NativePathfinderPackageName Condition="'$(RuntimeIdentifier)' != ''">native-pathfinder-$(RuntimeIdentifier).zip</NativePathfinderPackageName>
-    <NativePathfinderIntermediateDir>$(IntermediateOutputPath)native-pathfinder\</NativePathfinderIntermediateDir>
-    <NativePathfinderPackageFile>$(NativePathfinderIntermediateDir)$(NativePathfinderPackageName)</NativePathfinderPackageFile>
-    <NativePathfinderHashFile>$(NativePathfinderPackageFile).sha256</NativePathfinderHashFile>
     <NativePathfinderRuntimeDir Condition="'$(RuntimeIdentifier)' != ''">$(MSBuildThisFileDirectory)runtimes\$(RuntimeIdentifier)</NativePathfinderRuntimeDir>
     <NativePathfinderNativeDir Condition="'$(RuntimeIdentifier)' != ''">$(NativePathfinderRuntimeDir)\native</NativePathfinderNativeDir>
+    <NativePathfinderDownloadDir Condition="'$(RuntimeIdentifier)' != ''">$(NativePathfinderRuntimeDir)\_download</NativePathfinderDownloadDir>
+    <NativePathfinderPackageFile>$(NativePathfinderDownloadDir)\$(NativePathfinderPackageName)</NativePathfinderPackageFile>
+    <NativePathfinderHashFile>$(NativePathfinderPackageFile).sha256</NativePathfinderHashFile>
     <NativePathfinderLibExtension Condition="'$(NativePathfinderLibExtension)' == '' and $([System.String]::Copy('$(RuntimeIdentifier)').StartsWith('win'))">.dll</NativePathfinderLibExtension>
     <NativePathfinderLibExtension Condition="'$(NativePathfinderLibExtension)' == '' and $([System.String]::Copy('$(RuntimeIdentifier)').StartsWith('linux'))">.so</NativePathfinderLibExtension>
     <NativePathfinderLibExtension Condition="'$(NativePathfinderLibExtension)' == '' and $([System.String]::Copy('$(RuntimeIdentifier)').StartsWith('osx'))">.dylib</NativePathfinderLibExtension>
@@ -102,16 +102,24 @@
   <Target Name="EnsureNativePathfinder" BeforeTargets="ResolveReferences"
           Condition="'$(RuntimeIdentifier)' != '' and '$(NativePathfinderSkipDownload)' != 'true' and $(NativePathfinderSupported) and '$(NativePathfinderLibExtension)' != '' and !Exists('$(NativePathfinderBinary)')">
     <Message Importance="high" Text="Downloading native pathfinder binary for $(RuntimeIdentifier)..." />
-    <MakeDir Directories="$(NativePathfinderIntermediateDir)" />
     <MakeDir Directories="$(NativePathfinderRuntimeDir)" />
-    <DownloadFile SourceUrl="$(NativePathfinderBaseUrl)/$(NativePathfinderPackageName)" DestinationFolder="$(NativePathfinderIntermediateDir)" />
-    <DownloadFile SourceUrl="$(NativePathfinderBaseUrl)/$(NativePathfinderPackageName).sha256" DestinationFolder="$(NativePathfinderIntermediateDir)" />
+    <MakeDir Directories="$(NativePathfinderDownloadDir)" />
+    <DownloadFile SourceUrl="$(NativePathfinderBaseUrl)/$(NativePathfinderPackageName)"
+                  DestinationFolder="$(NativePathfinderDownloadDir)" />
+    <DownloadFile SourceUrl="$(NativePathfinderBaseUrl)/$(NativePathfinderPackageName).sha256"
+                  DestinationFolder="$(NativePathfinderDownloadDir)" />
     <VerifyNativePathfinderHash Condition="'$(NativePathfinderSkipHashCheck)' != 'true'"
                                  FilePath="$(NativePathfinderPackageFile)"
                                  HashFilePath="$(NativePathfinderHashFile)" />
-    <RemoveDir Directories="$(NativePathfinderRuntimeDir)" />
-    <MakeDir Directories="$(NativePathfinderRuntimeDir)" />
-    <Unzip SourceFiles="$(NativePathfinderPackageFile)" DestinationFolder="$(NativePathfinderRuntimeDir)" />
+    <RemoveDir Directories="$(NativePathfinderNativeDir)" />
+    <MakeDir Directories="$(NativePathfinderNativeDir)" />
+    <Unzip SourceFiles="$(NativePathfinderPackageFile)"
+           DestinationFolder="$(NativePathfinderNativeDir)" />
+    <Delete Files="$(NativePathfinderPackageFile)"
+            Condition="Exists('$(NativePathfinderPackageFile)')" />
+    <Delete Files="$(NativePathfinderHashFile)"
+            Condition="Exists('$(NativePathfinderHashFile)')" />
+    <RemoveDir Directories="$(NativePathfinderDownloadDir)" />
   </Target>
 
 </Project>
