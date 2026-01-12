@@ -1,11 +1,12 @@
 # Runtime Lifecycle Plan
-_Last updated: January 11, 2026_
+_Last updated: January 12, 2026_
 
 D8 covers the operations executed around each user tick: sandbox creation, console/memory/intents persistence, error reporting, telemetry, and watchdogs.
 
 ## Responsibilities
 - `makeRuntime(userId)` equivalent: assemble runtime context, execute user code via the sandbox from D3, return outputs (console entries, intents, memory deltas, inter-shard data, errors).
 - Persist outputs via storage adapters: `saveUserMemory`, `saveUserMemorySegments`, `saveUserMemoryInterShardSegment`, `saveUserIntents`.
+- Expose `RawMemory.*` parity (get/set, segments, inter-shard) so user code can manipulate the same primitives as the Node driver.
 - Publish console logs/errors to pub/sub channels.
 - Track per-user CPU usage and enforce bucket/tick limits; integrate with config from D7.
 - Provide watchdog telemetry (e.g., log when a runtime exceeds CPU or crashes, expose metrics for heap usage per user).
@@ -63,7 +64,13 @@ Runner Loop
 - Integration tests running a sample script through the sandbox + coordinator, asserting Memory/intents end up in Mongo/Redis as expected.
 - Failure injection tests (sandbox throws, storage unavailable) to ensure runner recovers and requeues the user ticket.
 
+## Current Progress
+- `V8RuntimeSandbox` now injects a Node-like `RawMemory` object (get/set, segment proxy, inter-shard access) and only persists memory/segment/inter-shard data when user code actually mutates them.
+- Runner loop saves `Memory`, segments, and inter-shard payloads only when non-null, reducing needless Redis writes.
+- New integration tests (`V8RuntimeSandboxTests`) verify memory diffing, RawMemory overrides, and segment persistence.
+
 ## Next Steps
-- Implement `IRuntimeService`/`RuntimeCoordinator` skeletons in code.
-- Create mockable services for Memory/Intents/Console persistence to support testing.
-- Update `AGENT.md` (D8) to “Plan completed (implementation pending)” until implementation follows.
+1. Add runtime telemetry (CPU watchdog, heap usage) and emit config events/log entries when limits are exceeded.
+2. Introduce module/script caching keyed by code hash so ClearScript doesn’t rebuild module graphs every tick.
+3. Integrate runtime error events with `IDriverLoopHooks` once the shared logging pipeline is ready.
+4. Implement a coordinator layer in runner/main loops to manage sandbox pooling and CPU bucket accounting.

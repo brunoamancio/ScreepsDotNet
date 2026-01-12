@@ -161,14 +161,14 @@ internal sealed class RunnerLoopWorker(
 
     private async Task PersistResultsAsync(string userId, RuntimeExecutionResult result, CancellationToken token)
     {
-        if (!string.IsNullOrWhiteSpace(result.Memory))
-            await _users.SaveUserMemoryAsync(userId, result.Memory!, token).ConfigureAwait(false);
+        if (result.Memory is not null)
+            await _users.SaveUserMemoryAsync(userId, result.Memory, token).ConfigureAwait(false);
 
         if (result.MemorySegments is { Count: > 0 })
             await _users.SaveUserMemorySegmentsAsync(userId, result.MemorySegments, token).ConfigureAwait(false);
 
-        if (!string.IsNullOrWhiteSpace(result.InterShardSegment))
-            await _users.SaveUserInterShardSegmentAsync(userId, result.InterShardSegment!, token).ConfigureAwait(false);
+        if (result.InterShardSegment is not null)
+            await _users.SaveUserInterShardSegmentAsync(userId, result.InterShardSegment, token).ConfigureAwait(false);
 
         if (result.RoomIntents.Count > 0 || result.GlobalIntents.Count > 0 || result.Notifications.Count > 0)
         {

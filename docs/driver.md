@@ -27,7 +27,7 @@ This document summarizes the ongoing effort to port the legacy Screeps Node.js d
 | **D5 – Bulk writers** | Port `BulkObjects`, `BulkUsers`, etc., so processor/global stages can mutate Mongo documents. | [src/ScreepsDotNet.Driver/docs/BulkWriters.md](../src/ScreepsDotNet.Driver/docs/BulkWriters.md) | Complete |
 | **D6 – Pathfinder** | Ship native solver wrapper + managed bindings with terrain cache loading. | [src/ScreepsDotNet.Driver/docs/Pathfinder.md](../src/ScreepsDotNet.Driver/docs/Pathfinder.md) | Native sources extracted; managed swap WIP |
 | **D7 – Config/events** | Recreate `config.emit(...)`, tick knobs, and environment service. | [src/ScreepsDotNet.Driver/docs/ConfigAndEvents.md](../src/ScreepsDotNet.Driver/docs/ConfigAndEvents.md) | Complete |
-| **D8 – Runtime lifecycle** | Provide runtime hooks (make runtime, console, memory, intent persistence). | [src/ScreepsDotNet.Driver/docs/RuntimeLifecycle.md](../src/ScreepsDotNet.Driver/docs/RuntimeLifecycle.md) | In progress |
+| **D8 – Runtime lifecycle** | Provide runtime hooks (make runtime, console, memory, intent persistence). | [src/ScreepsDotNet.Driver/docs/RuntimeLifecycle.md](../src/ScreepsDotNet.Driver/docs/RuntimeLifecycle.md) | RawMemory/segments/inter-shard persistence wired; telemetry/caching still in progress |
 | **D9 – History & notifications** | Save room history/map view diffs and deliver notifications/console output via hooks. | [src/ScreepsDotNet.Driver/docs/HistoryAndNotifications.md](../src/ScreepsDotNet.Driver/docs/HistoryAndNotifications.md) | In progress |
 | **D10 – Legacy shim** | Run the Node engine against the .NET driver for parity validation. | _TBD_ | Not started |
 

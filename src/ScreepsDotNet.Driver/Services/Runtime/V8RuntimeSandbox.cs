@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Globalization;
 using System.Text.Json;
 using Microsoft.ClearScript;
 using Microsoft.ClearScript.V8;
@@ -32,7 +33,8 @@ internal sealed class V8RuntimeSandbox(RuntimeSandboxOptions options, ILogger<V8
         using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(token, cpuTimeoutCts.Token);
         using var registration = linkedCts.Token.Register(engine.Interrupt);
 
-        var bridge = new ScriptBridge();
+        var initialMemoryJson = SerializeMemory(context.Memory);
+        var bridge = new ScriptBridge(initialMemoryJson, context.MemorySegments ?? new Dictionary<int, string>(), context.InterShardSegment);
         engine.AddHostObject("host", HostItemFlags.PrivateAccess, bridge);
         engine.Execute(ScriptPrelude);
 
@@ -41,8 +43,7 @@ internal sealed class V8RuntimeSandbox(RuntimeSandboxOptions options, ILogger<V8
         engine.Script.CodeHash = context.CodeHash;
         engine.Script.CpuLimit = Math.Max(context.CpuLimit, _options.DefaultCpuLimitMs);
 
-        var memoryJson = SerializeMemory(context.Memory);
-        engine.Execute($"var Memory = {memoryJson};");
+        engine.Execute($"var Memory = {initialMemoryJson};");
 
         var stopwatch = Stopwatch.StartNew();
         string? error = null;
@@ -71,15 +72,21 @@ internal sealed class V8RuntimeSandbox(RuntimeSandboxOptions options, ILogger<V8
         stopwatch.Stop();
 
         var memoryResult = engine.Evaluate("typeof Memory === 'undefined' ? null : JSON.stringify(Memory)") as string;
+        var finalMemory = bridge.GetRawMemoryOverride()
+                           ?? (memoryResult is not null && !string.Equals(memoryResult, initialMemoryJson, StringComparison.Ordinal)
+                               ? memoryResult
+                               : null);
+        var updatedSegments = bridge.GetUpdatedMemorySegments();
+        var interShardSegment = bridge.GetInterShardSegmentOverride();
 
         return Task.FromResult(new RuntimeExecutionResult(
             bridge.ConsoleLog,
             bridge.ConsoleResults,
             error,
             bridge.GetGlobalIntents(),
-            memoryResult,
-            context.MemorySegments,
-            context.InterShardSegment,
+            finalMemory,
+            updatedSegments,
+            interShardSegment,
             (int)Math.Clamp(Math.Ceiling(stopwatch.Elapsed.TotalMilliseconds), 0, int.MaxValue),
             bridge.GetRoomIntents(),
             bridge.GetNotifications()));
@@ -233,6 +240,52 @@ function registerIntent(type, payload) {
 function notify(message, groupIntervalMinutes = 0) {
     __driverHost.Notify(message, groupIntervalMinutes || 0);
 }
+const RawMemory = (() => {
+    let raw = __driverHost.GetRawMemory();
+    const segmentsSourceJson = __driverHost.GetMemorySegments();
+    const segmentsTarget = segmentsSourceJson ? JSON.parse(segmentsSourceJson) : Object.create(null);
+    const segmentsProxy = new Proxy(segmentsTarget, {
+        set(target, prop, value) {
+            const index = Number(prop);
+            if (!Number.isFinite(index) || !Number.isInteger(index)) {
+                return false;
+            }
+            const text = value == null ? '' : String(value);
+            target[prop] = text;
+            __driverHost.SetMemorySegment(index, text);
+            return true;
+        },
+        deleteProperty(target, prop) {
+            const index = Number(prop);
+            if (!Number.isFinite(index) || !Number.isInteger(index)) {
+                return false;
+            }
+            delete target[prop];
+            __driverHost.DeleteMemorySegment(index);
+            return true;
+        }
+    });
+    return {
+        get() { return raw; },
+        set(value) {
+            raw = value == null ? '' : String(value);
+            __driverHost.SetRawMemory(raw);
+        },
+        get segments() { return segmentsProxy; },
+        set segments(value) {
+            if (!value || typeof value !== 'object') {
+                return;
+            }
+            Object.keys(value).forEach(key => {
+                segmentsProxy[key] = value[key];
+            });
+        },
+        get interShardSegment() { return __driverHost.GetInterShardSegment(); },
+        set interShardSegment(value) {
+            __driverHost.SetInterShardSegment(value == null ? '' : String(value));
+        }
+    };
+})();
 """;
 
     private sealed class ScriptBridge
@@ -242,6 +295,24 @@ function notify(message, groupIntervalMinutes = 0) {
         private readonly Dictionary<string, object?> _globalIntents = new(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, Dictionary<string, object?>> _roomIntents = new(StringComparer.OrdinalIgnoreCase);
         private readonly List<NotifyIntentPayload> _notifications = [];
+        private readonly string _initialRawMemory;
+        private readonly Dictionary<int, string> _initialSegments;
+        private readonly Dictionary<int, string> _segmentUpdates = [];
+        private readonly string? _initialInterShardSegment;
+        private string _currentRawMemory;
+        private string? _rawMemoryOverride;
+        private string? _interShardOverride;
+
+        public ScriptBridge(string initialRawMemory, IReadOnlyDictionary<int, string> initialSegments, string? interShardSegment)
+        {
+            _initialRawMemory = initialRawMemory ?? "{}";
+            _currentRawMemory = _initialRawMemory;
+            _initialSegments = initialSegments is { Count: > 0 }
+                ? new Dictionary<int, string>(initialSegments)
+                : new Dictionary<int, string>();
+            _initialInterShardSegment = interShardSegment;
+
+        }
 
         public IReadOnlyList<string> ConsoleLog => _consoleLog;
         public IReadOnlyList<string> ConsoleResults => _consoleResults;
@@ -258,6 +329,13 @@ function notify(message, groupIntervalMinutes = 0) {
         }
 
         public IReadOnlyList<NotifyIntentPayload> GetNotifications() => _notifications.ToArray();
+
+        public string? GetRawMemoryOverride() => _rawMemoryOverride;
+
+        public IReadOnlyDictionary<int, string>? GetUpdatedMemorySegments()
+            => _segmentUpdates.Count == 0 ? null : new Dictionary<int, string>(_segmentUpdates);
+
+        public string? GetInterShardSegmentOverride() => _interShardOverride;
 
         [ScriptMember("Log")]
         public void Log(object? message)
@@ -320,6 +398,69 @@ function notify(message, groupIntervalMinutes = 0) {
             _notifications.Add(new NotifyIntentPayload(text.Trim(), Math.Max(0, minutes)));
         }
 
+        [ScriptMember("GetRawMemory")]
+        public string GetRawMemory() => _currentRawMemory;
+
+        [ScriptMember("SetRawMemory")]
+        public void SetRawMemory(object? value)
+        {
+            _currentRawMemory = NormalizeString(value);
+            _rawMemoryOverride = string.Equals(_currentRawMemory, _initialRawMemory, StringComparison.Ordinal)
+                ? null
+                : _currentRawMemory;
+        }
+
+        [ScriptMember("GetMemorySegments")]
+        public string GetMemorySegments()
+        {
+            if (_initialSegments.Count == 0)
+                return "{}";
+
+            var map = new Dictionary<string, string>(_initialSegments.Count, StringComparer.Ordinal);
+            foreach (var (index, value) in _initialSegments)
+                map[index.ToString(CultureInfo.InvariantCulture)] = value ?? string.Empty;
+            return JsonSerializer.Serialize(map, JsonOptions);
+        }
+
+        [ScriptMember("SetMemorySegment")]
+        public void SetMemorySegment(object? indexValue, object? segmentValue)
+        {
+            if (!TryParseSegmentIndex(indexValue, out var index))
+                return;
+
+            var text = NormalizeSegment(segmentValue);
+            if (_initialSegments.TryGetValue(index, out var initialValue) && string.Equals(initialValue ?? string.Empty, text, StringComparison.Ordinal))
+                _segmentUpdates.Remove(index);
+            else
+                _segmentUpdates[index] = text;
+        }
+
+        [ScriptMember("DeleteMemorySegment")]
+        public void DeleteMemorySegment(object? indexValue)
+        {
+            if (!TryParseSegmentIndex(indexValue, out var index))
+                return;
+
+            if (_initialSegments.ContainsKey(index))
+                _segmentUpdates[index] = string.Empty;
+            else
+                _segmentUpdates.Remove(index);
+        }
+
+        [ScriptMember("GetInterShardSegment")]
+        public string GetInterShardSegment()
+            => _interShardOverride ?? _initialInterShardSegment ?? string.Empty;
+
+        [ScriptMember("SetInterShardSegment")]
+        public void SetInterShardSegment(object? value)
+        {
+            var text = NormalizeString(value);
+            if (string.Equals(text, _initialInterShardSegment ?? string.Empty, StringComparison.Ordinal))
+                _interShardOverride = null;
+            else
+                _interShardOverride = text;
+        }
+
         private static object? ParsePayload(object? payloadJson)
         {
             var payloadText = payloadJson?.ToString();
@@ -364,5 +505,43 @@ function notify(message, groupIntervalMinutes = 0) {
                 _ => null
             };
         }
+
+        private static bool TryParseSegmentIndex(object? value, out int index)
+        {
+            switch (value)
+            {
+                case null:
+                    index = 0;
+                    return false;
+                case int i:
+                    index = i;
+                    return true;
+                case long l when l is >= int.MinValue and <= int.MaxValue:
+                    index = (int)l;
+                    return true;
+                case double d when Math.Abs(d % 1) < double.Epsilon:
+                    index = (int)d;
+                    return true;
+                case string text when int.TryParse(text, NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsed):
+                    index = parsed;
+                    return true;
+                default:
+                    index = 0;
+                    return false;
+            }
+        }
+
+        private static string NormalizeString(object? value)
+        {
+            return value switch
+            {
+                null => string.Empty,
+                string text => text,
+                _ => value.ToString() ?? string.Empty
+            };
+        }
+
+        private static string NormalizeSegment(object? value)
+            => NormalizeString(value);
     }
 }
