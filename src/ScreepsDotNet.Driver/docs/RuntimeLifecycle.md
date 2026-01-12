@@ -70,7 +70,8 @@ Runner Loop
 - Bundle caching keyed by `codeHash` avoids rebuilding module graphs every tick, and `RuntimeSandboxPool` reuses `V8RuntimeSandbox` instances instead of creating a new engine per tick.
 - Runtime telemetry (cpu used, timeout/script error flags, heap usage) now flows through `IDriverLoopHooks.PublishRuntimeTelemetryAsync` **and** `config.emit('runtimeTelemetry', payload)`, so both loop hooks and config subscribers can react.
 - New integration tests (`V8RuntimeSandboxTests`) verify memory diffing, RawMemory overrides, and segment persistence.
+- `RuntimeCoordinator` now owns the entire lifecycle (context hydration, sandbox execution, persistence, telemetry, CPU bucket bookkeeping), so `RunnerLoopWorker` just schedules users.
 
 ## Next Steps
 1. Feed telemetry into the future logging/metrics pipeline (or config events) so operators get aggregated CPU/heap warnings.
-2. Implement a coordinator layer in runner/main loops to manage sandbox pooling (per user), CPU bucket accounting, and watchdog restarts rather than doing it inline in `RunnerLoopWorker`.
+2. Add watchdog/restart policies on top of the coordinator (detect isolate crashes, recycle sandboxes, emit alerts) and surface metrics via upcoming endpoints.
