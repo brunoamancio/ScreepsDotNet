@@ -61,76 +61,6 @@
     <NativePathfinderSupported>true</NativePathfinderSupported>
   </PropertyGroup>
 
-  <UsingTask TaskName="ExtractNativePathfinder" TaskFactory="CodeTaskFactory" AssemblyName="Microsoft.Build.Tasks.Core">
-    <ParameterGroup>
-      <SourceZip ParameterType="System.String" Required="true" />
-      <Destination ParameterType="System.String" Required="true" />
-    </ParameterGroup>
-    <Task>
-      <Reference Include="System.IO.Compression" />
-      <Reference Include="System.IO.Compression.FileSystem" />
-      <Code Type="Fragment" Language="cs"><![CDATA[
-        if (!File.Exists(SourceZip))
-        {
-          Log.LogError($"Native pathfinder archive '{SourceZip}' was not downloaded.");
-          return false;
-        }
-        if (!Directory.Exists(Destination))
-        {
-          Directory.CreateDirectory(Destination);
-        }
-        System.IO.Compression.ZipFile.ExtractToDirectory(SourceZip, Destination, true);
-        return true;
-      ]]></Code>
-    </Task>
-  </UsingTask>
-
-  <UsingTask TaskName="VerifyNativePathfinderHash" TaskFactory="CodeTaskFactory" AssemblyName="Microsoft.Build.Tasks.Core">
-    <ParameterGroup>
-      <FilePath ParameterType="System.String" Required="true" />
-      <HashFilePath ParameterType="System.String" Required="true" />
-    </ParameterGroup>
-    <Task>
-      <Reference Include="System.IO" />
-      <Reference Include="System.Security.Cryptography" />
-      <Code Type="Fragment" Language="cs"><![CDATA[
-        if (!File.Exists(FilePath))
-        {
-          Log.LogError($"Native pathfinder archive '{FilePath}' not found for hash verification.");
-          return false;
-        }
-        if (!File.Exists(HashFilePath))
-        {
-          Log.LogError($"Hash file '{HashFilePath}' not found.");
-          return false;
-        }
-        string firstLine = File.ReadLines(HashFilePath).FirstOrDefault();
-        if (string.IsNullOrWhiteSpace(firstLine))
-        {
-          Log.LogError($"Hash file '{HashFilePath}' is empty.");
-          return false;
-        }
-        string expected = firstLine.Split(new[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault();
-        if (string.IsNullOrWhiteSpace(expected))
-        {
-          Log.LogError($"Hash file '{HashFilePath}' does not contain a valid hash value.");
-          return false;
-        }
-        using var stream = File.OpenRead(FilePath);
-        using var sha = SHA256.Create();
-        var actual = sha.ComputeHash(stream);
-        string actualString = BitConverter.ToString(actual).Replace("-", string.Empty);
-        if (!string.Equals(actualString, expected, StringComparison.OrdinalIgnoreCase))
-        {
-          Log.LogError($"Hash verification failed for '{FilePath}'. Expected {expected}, got {actualString}.");
-          return false;
-        }
-        Log.LogMessage(MessageImportance.High, $"Verified native pathfinder archive hash ({expected}).");
-        return true;
-      ]]></Code>
-    </Task>
-  </UsingTask>
-
   <Target Name="EnsureNativePathfinder" BeforeTargets="ResolveReferences"
           Condition="'$(RuntimeIdentifier)' != '' and '$(NativePathfinderSkipDownload)' != 'true' and $(NativePathfinderSupported) and '$(NativePathfinderLibExtension)' != '' and !Exists('$(NativePathfinderBinary)')">
     <Message Importance="high" Text="Downloading native pathfinder binary for $(RuntimeIdentifier)..." />
@@ -140,11 +70,23 @@
                   DestinationFile="$(NativePathfinderPackageFile)" />
     <DownloadFile SourceUrl="$(NativePathfinderBaseUrl)/$(NativePathfinderPackageName).sha256"
                   DestinationFile="$(NativePathfinderHashFile)" />
-    <VerifyNativePathfinderHash FilePath="$(NativePathfinderPackageFile)"
-                                 HashFilePath="$(NativePathfinderHashFile)"
-                                 Condition="'$(NativePathfinderSkipHashCheck)' != 'true'" />
-    <ExtractNativePathfinder SourceZip="$(NativePathfinderPackageFile)"
-                             Destination="$(NativePathfinderRuntimeDir)" />
+    <ReadLinesFromFile File="$(NativePathfinderHashFile)"
+                       Condition="'$(NativePathfinderSkipHashCheck)' != 'true'">
+      <Output TaskParameter="Lines" ItemName="_NativePathfinderHashLines" />
+    </ReadLinesFromFile>
+    <PropertyGroup Condition="'$(NativePathfinderSkipHashCheck)' != 'true'">
+      <NativePathfinderHashLine>$([System.String]::Copy('@(_NativePathfinderHashLines->'%(Identity)', ';')').Split(';')[0])</NativePathfinderHashLine>
+      <NativePathfinderExpectedHash>$([System.Text.RegularExpressions.Regex]::Match('$(NativePathfinderHashLine)', '^[0-9A-Fa-f]+').Value)</NativePathfinderExpectedHash>
+    </PropertyGroup>
+    <Error Condition="'$(NativePathfinderSkipHashCheck)' != 'true' and '$(NativePathfinderExpectedHash)' == ''"
+           Text="Hash file '$(NativePathfinderHashFile)' is empty or invalid." />
+    <VerifyFileHash Condition="'$(NativePathfinderSkipHashCheck)' != 'true'"
+                    Files="$(NativePathfinderPackageFile)"
+                    HashAlgorithm="SHA256"
+                    Hash="$(NativePathfinderExpectedHash)" />
+    <Unzip SourceFiles="$(NativePathfinderPackageFile)"
+           DestinationFolder="$(NativePathfinderRuntimeDir)"
+           Overwrite="true" />
   </Target>
 
 </Project>

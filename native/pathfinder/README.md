@@ -48,7 +48,11 @@ Each job packages `native-pathfinder-<rid>.zip` plus `native-pathfinder-<rid>.zi
 3. Verifies the downloaded archive’s SHA-256 hash matches the manifest (set `NativePathfinderSkipHashCheck=true` to bypass).
 4. Extracts the archive into the correct `runtimes/<rid>/` directory so P/Invoke can load the native solver.
 
-You can override or skip this behavior by setting `NativePathfinderBaseUrl`/`NativePathfinderPackageName` (to point at a different feed) or `NativePathfinderSkipDownload=true` (useful when testing local builds).
+The driver now infers a runtime identifier automatically: if `dotnet build`/`dotnet run` is invoked without `-r`, MSBuild sets `RuntimeIdentifier` to the host SDK’s RID (`$(NETCoreSdkPortableRuntimeIdentifier)`), downloads the matching binary, verifies its SHA-256, and extracts it. You can override or skip the behavior by setting:
+
+- `NativePathfinderBaseUrl` / `NativePathfinderPackageName` – fetch from another feed.
+- `NativePathfinderSkipDownload=true` – rely on a locally provided native binary.
+- `NativePathfinderSkipHashCheck=true` – bypass SHA verification (not recommended).
 
 ## Status / Next steps
 

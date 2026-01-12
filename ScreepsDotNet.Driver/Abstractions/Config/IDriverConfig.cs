@@ -40,6 +40,4 @@ public interface IDriverConfig
 
 public delegate void DriverEventListener(params object?[] args);
 
-public interface IDriverEventSubscription : IDisposable
-{
-}
+public interface IDriverEventSubscription : IDisposable;
