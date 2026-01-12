@@ -92,7 +92,11 @@ internal sealed class ProcessorLoopWorker(
                 writer.Update(objectId, intentMetadata);
 
                 if (payload is not null)
+                {
+                    objects.TryGetValue(objectId, out var actor);
+                    ApplyTypedIntents(writer, objectId, actor, objects, payload);
                     ApplyMutations(writer, objectId, objects, payload);
+                }
 
                 events.Add(new RoomIntentEvent(
                     userId,
@@ -126,6 +130,111 @@ internal sealed class ProcessorLoopWorker(
             var message = $"Processed {count} intents in {roomName}.";
             await _hooks.SendNotificationAsync(userId, message, new NotificationOptions(5, "intent"), token).ConfigureAwait(false);
         }
+    }
+
+    private static void ApplyTypedIntents(IBulkWriter<RoomObjectDocument> writer, string actorId, RoomObjectDocument? actor, IReadOnlyDictionary<string, RoomObjectDocument> objects, BsonDocument payload)
+    {
+        if (actor?.Type is null || payload.ElementCount == 0)
+            return;
+
+        if (actor.Type == "creep" || actor.Type == "powerCreep" || actor.Type == "tower")
+            ApplyCombatIntents(writer, objects, payload);
+        else if (actor.Type == "link")
+            ApplyLinkIntents(writer, actorId, actor, objects, payload);
+        else if (actor.Type == "lab") ApplyLabIntents(writer, actorId, actor, payload);
+    }
+
+    private static void ApplyCombatIntents(IBulkWriter<RoomObjectDocument> writer, IReadOnlyDictionary<string, RoomObjectDocument> objects, BsonDocument payload)
+    {
+        if (payload.TryGetValue("attack", out var attack) && attack is BsonDocument attackDoc)
+            ApplyDamageIntent(writer, objects, attackDoc);
+
+        if (payload.TryGetValue("rangedAttack", out var rangedAttack) && rangedAttack is BsonDocument rangedDoc)
+            ApplyDamageIntent(writer, objects, rangedDoc);
+
+        if (payload.TryGetValue("heal", out var heal) && heal is BsonDocument healDoc)
+            ApplyHealIntent(writer, objects, healDoc);
+
+        if (payload.TryGetValue("rangedHeal", out var rangedHeal) && rangedHeal is BsonDocument rangedHealDoc)
+            ApplyHealIntent(writer, objects, rangedHealDoc);
+    }
+
+    private static void ApplyLinkIntents(IBulkWriter<RoomObjectDocument> writer, string actorId, RoomObjectDocument actor, IReadOnlyDictionary<string, RoomObjectDocument> objects, BsonDocument payload)
+    {
+        if (!payload.TryGetValue("transferEnergy", out var transfer) || transfer is not BsonDocument transferDoc)
+            return;
+
+        var targetId = transferDoc.TryGetValue("id", out var idValue) ? idValue.AsString : null;
+        var amount = transferDoc.TryGetValue("amount", out var amountValue) ? amountValue.ToInt32() : 0;
+        if (string.IsNullOrWhiteSpace(targetId) || amount <= 0)
+            return;
+
+        objects.TryGetValue(targetId, out var target);
+        if (target is null)
+            return;
+
+        var sourceEnergy = Math.Max(0, GetStoreValue(actor, "energy") - amount);
+        writer.Update(actorId, new { store = new Dictionary<string, int> { ["energy"] = sourceEnergy } });
+
+        var targetEnergy = GetStoreValue(target, "energy") + amount;
+        writer.Update(targetId, new { store = new Dictionary<string, int> { ["energy"] = targetEnergy } });
+    }
+
+    private static void ApplyLabIntents(IBulkWriter<RoomObjectDocument> writer, string actorId, RoomObjectDocument actor, BsonDocument payload)
+    {
+        if (!payload.TryGetValue("runReaction", out var reaction) || reaction is not BsonDocument reactionDoc)
+            return;
+
+        if (!reactionDoc.TryGetValue("resourceType", out var resourceValue))
+            return;
+
+        var resourceType = resourceValue.AsString;
+        if (string.IsNullOrWhiteSpace(resourceType))
+            return;
+
+        var store = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["energy"] = Math.Max(0, GetStoreValue(actor, "energy") - 2),
+            [resourceType] = GetStoreValue(actor, resourceType) + 1
+        };
+
+        writer.Update(actorId, new { store });
+    }
+
+    private static void ApplyDamageIntent(IBulkWriter<RoomObjectDocument> writer, IReadOnlyDictionary<string, RoomObjectDocument> objects, BsonDocument intent)
+    {
+        var targetId = intent.TryGetValue("id", out var idValue) ? idValue.AsString : null;
+        var damage = intent.TryGetValue("damage", out var damageValue) ? damageValue.ToInt32() : 0;
+        if (string.IsNullOrWhiteSpace(targetId) || damage <= 0)
+            return;
+
+        objects.TryGetValue(targetId, out var target);
+        if (target?.Hits is null)
+            return;
+
+        var hits = Math.Max(0, target.Hits.Value - damage);
+        target.Hits = hits;
+        if (hits == 0)
+            writer.Remove(targetId);
+        else
+            writer.Update(targetId, new { hits });
+    }
+
+    private static void ApplyHealIntent(IBulkWriter<RoomObjectDocument> writer, IReadOnlyDictionary<string, RoomObjectDocument> objects, BsonDocument intent)
+    {
+        var targetId = intent.TryGetValue("id", out var idValue) ? idValue.AsString : null;
+        var amount = intent.TryGetValue("amount", out var amountValue) ? amountValue.ToInt32() : 0;
+        if (string.IsNullOrWhiteSpace(targetId) || amount <= 0)
+            return;
+
+        objects.TryGetValue(targetId, out var target);
+        if (target?.Hits is null)
+            return;
+
+        var maxHits = target.HitsMax ?? int.MaxValue;
+        var hits = Math.Min(maxHits, target.Hits.Value + amount);
+        target.Hits = hits;
+        writer.Update(targetId, new { hits });
     }
 
     private static void ApplyMutations(IBulkWriter<RoomObjectDocument> writer, string objectId, IReadOnlyDictionary<string, RoomObjectDocument> objects, BsonDocument payload)
@@ -219,6 +328,9 @@ internal sealed class ProcessorLoopWorker(
             _ => !value.IsBsonNull
         };
     }
+
+    private static int GetStoreValue(RoomObjectDocument document, string resource)
+        => document.Store?.GetValueOrDefault(resource, 0) ?? 0;
 
     private sealed record RoomIntentEvent(string UserId, string ObjectId, object? Payload);
 
