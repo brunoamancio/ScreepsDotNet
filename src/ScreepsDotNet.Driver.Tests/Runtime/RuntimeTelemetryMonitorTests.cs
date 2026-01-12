@@ -3,6 +3,7 @@ using ScreepsDotNet.Driver.Abstractions.Config;
 using ScreepsDotNet.Driver.Abstractions.Eventing;
 using ScreepsDotNet.Driver.Abstractions.Loops;
 using ScreepsDotNet.Driver.Abstractions.Notifications;
+using ScreepsDotNet.Driver.Abstractions.Runtime;
 using ScreepsDotNet.Driver.Services;
 using ScreepsDotNet.Driver.Services.Runtime;
 using ScreepsDotNet.Driver.Tests.TestSupport;
@@ -12,19 +13,22 @@ namespace ScreepsDotNet.Driver.Tests.Runtime;
 public sealed class RuntimeTelemetryMonitorTests
 {
     [Fact]
-    public void TryConsumeColdStartRequest_TriggersAfterThreshold()
+    public async Task TryConsumeColdStartRequest_TriggersAfterThreshold()
     {
         var config = new DriverConfig(new FakeEnvironmentService());
         var notifications = new TestNotificationService();
-        using var monitor = new RuntimeTelemetryMonitor(config, notifications, NullLogger<RuntimeTelemetryMonitor>.Instance);
+        var sink = new TestTelemetrySink();
+        using var monitor = new RuntimeTelemetryMonitor(config, notifications, sink, NullLogger<RuntimeTelemetryMonitor>.Instance);
 
         EmitFailure(config, "user1");
         EmitFailure(config, "user1");
         EmitFailure(config, "user1");
 
+        await sink.WaitForAlertAsync(TimeSpan.FromSeconds(5));
         Assert.True(monitor.TryConsumeColdStartRequest("user1"));
         Assert.False(monitor.TryConsumeColdStartRequest("user1"));
         Assert.Single(notifications.SentNotifications);
+        Assert.Single(sink.Alerts);
 
         EmitSuccess(config, "user1");
         Assert.False(monitor.TryConsumeColdStartRequest("user1"));
@@ -80,5 +84,28 @@ public sealed class RuntimeTelemetryMonitorTests
 
         public Task NotifyRoomsDoneAsync(int gameTime, CancellationToken token = default) =>
             Task.CompletedTask;
+    }
+
+    private sealed class TestTelemetrySink : IRuntimeTelemetrySink
+    {
+        private readonly TaskCompletionSource<RuntimeWatchdogAlert> _alertSource = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public List<RuntimeWatchdogAlert> Alerts { get; } = [];
+
+        public Task PublishTelemetryAsync(RuntimeTelemetryPayload payload, CancellationToken token = default)
+            => Task.CompletedTask;
+
+        public Task PublishWatchdogAlertAsync(RuntimeWatchdogAlert alert, CancellationToken token = default)
+        {
+            Alerts.Add(alert);
+            _alertSource.TrySetResult(alert);
+            return Task.CompletedTask;
+        }
+
+        public Task WaitForAlertAsync(TimeSpan? timeout = null)
+        {
+            if (timeout is { } window)
+                return _alertSource.Task.WaitAsync(window);
+            return _alertSource.Task;
+        }
     }
 }

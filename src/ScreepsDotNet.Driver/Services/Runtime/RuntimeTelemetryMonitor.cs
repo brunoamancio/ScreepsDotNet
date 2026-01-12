@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using ScreepsDotNet.Driver.Abstractions.Config;
 using ScreepsDotNet.Driver.Abstractions.Eventing;
 using ScreepsDotNet.Driver.Abstractions.Loops;
+using ScreepsDotNet.Driver.Abstractions.Runtime;
 using ScreepsDotNet.Driver.Abstractions.Notifications;
 
 namespace ScreepsDotNet.Driver.Services.Runtime;
@@ -11,21 +12,23 @@ internal sealed class RuntimeTelemetryMonitor : IRuntimeWatchdog, IDisposable
 {
     private readonly IDriverConfig _config;
     private readonly INotificationService _notifications;
+    private readonly IRuntimeTelemetrySink _telemetry;
     private readonly ILogger<RuntimeTelemetryMonitor> _logger;
     private readonly ConcurrentDictionary<string, WatchdogState> _watchdogStates = new(StringComparer.Ordinal);
     private static readonly TimeSpan NotificationCooldown = TimeSpan.FromMinutes(10);
     private const int FailureThreshold = 3;
     private bool _disposed;
 
-    public RuntimeTelemetryMonitor(IDriverConfig config, INotificationService notifications, ILogger<RuntimeTelemetryMonitor> logger)
+    public RuntimeTelemetryMonitor(IDriverConfig config, INotificationService notifications, IRuntimeTelemetrySink telemetry, ILogger<RuntimeTelemetryMonitor> logger)
     {
         _config = config;
         _notifications = notifications;
+        _telemetry = telemetry;
         _logger = logger;
         _config.RuntimeTelemetry += HandleTelemetry;
     }
 
-    private void HandleTelemetry(object? sender, RuntimeTelemetryEventArgs args)
+    private async void HandleTelemetry(object? sender, RuntimeTelemetryEventArgs args)
     {
         var payload = args.Payload;
         var level = payload.TimedOut || payload.ScriptError ? LogLevel.Warning : LogLevel.Debug;
@@ -41,18 +44,25 @@ internal sealed class RuntimeTelemetryMonitor : IRuntimeWatchdog, IDisposable
             payload.TimedOut,
             payload.ScriptError);
 
-        _ = ProcessWatchdogAsync(payload);
+        try
+        {
+            await ProcessWatchdogAsync(payload).ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Runtime watchdog processing failed for user {UserId}.", payload.UserId);
+        }
     }
 
-    private Task ProcessWatchdogAsync(RuntimeTelemetryPayload payload)
+    private async Task ProcessWatchdogAsync(RuntimeTelemetryPayload payload)
     {
         if (string.IsNullOrWhiteSpace(payload.UserId))
-            return Task.CompletedTask;
+            return;
 
         if (!(payload.TimedOut || payload.ScriptError))
         {
             _watchdogStates.TryRemove(payload.UserId, out _);
-            return Task.CompletedTask;
+            return;
         }
 
         var now = DateTimeOffset.UtcNow;
@@ -60,19 +70,21 @@ internal sealed class RuntimeTelemetryMonitor : IRuntimeWatchdog, IDisposable
 
         var consecutive = state.Increment(now);
         if (consecutive < FailureThreshold)
-            return Task.CompletedTask;
+            return;
 
-        if (state.RequestColdStart() && _logger.IsEnabled(LogLevel.Warning))
+        if (state.RequestColdStart())
         {
             _logger.LogWarning("Runtime watchdog requesting cold sandbox restart for user {UserId} after {Consecutive} consecutive failures.", payload.UserId, consecutive);
+            var alert = new RuntimeWatchdogAlert(payload, consecutive, now);
+            await _telemetry.PublishWatchdogAlertAsync(alert).ConfigureAwait(false);
         }
 
         if (now - state.LastNotification < NotificationCooldown)
-            return Task.CompletedTask;
+            return;
 
         state.LastNotification = now;
         var message = $"Watchdog: runtime for {payload.UserId} failed {consecutive} consecutive ticks (timedOut={payload.TimedOut}, scriptError={payload.ScriptError}) at tick {payload.GameTime}.";
-        return _notifications.SendNotificationAsync(payload.UserId, message, new NotificationOptions(15, "watchdog"));
+        await _notifications.SendNotificationAsync(payload.UserId, message, new NotificationOptions(15, "watchdog")).ConfigureAwait(false);
     }
 
     public bool TryConsumeColdStartRequest(string userId)

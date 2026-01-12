@@ -38,7 +38,7 @@ public interface IRuntimeService
 
 4. **Telemetry & Watchdogs**
 - Record per-user metrics (heap usage, last tick time, code timestamp) so `runtime metrics` endpoints can introspect current isolates.
-- Implement a watchdog similar to Node driver’s `q.getUnhandledReasons` logging, but tailored to .NET tasks (log unobserved task exceptions, sandbox aborts, and request sandbox recycling after repeated failures).
+- Implement a watchdog similar to Node driver’s `q.getUnhandledReasons` logging, but tailored to .NET tasks (log unobserved task exceptions, sandbox aborts, request sandbox recycling after repeated failures, and forward alerts to a metrics sink).
 
 5. **API Shims**
 - Provide functions identical to Node driver exports that the engine expects: `sendConsoleMessages`, `sendConsoleError`, `saveUserMemory`, `saveUserMemorySegments`, `saveUserIntents`, `saveUserMemoryInterShardSegment`.
@@ -69,7 +69,8 @@ Runner Loop
 - Runner loop saves `Memory`, segments, and inter-shard payloads only when non-null, reducing needless Redis writes.
 - Bundle caching keyed by `codeHash` avoids rebuilding module graphs every tick, and `RuntimeSandboxPool` reuses `V8RuntimeSandbox` instances instead of creating a new engine per tick.
 - Runtime telemetry (cpu used, timeout/script error flags, heap usage) now flows through `IDriverLoopHooks.PublishRuntimeTelemetryAsync` **and** `config.emit('runtimeTelemetry', payload)`, so both loop hooks and config subscribers can react.
-- `RuntimeTelemetryMonitor` subscribes to those events and logs warnings for timeouts/script errors, giving schedulers/logging immediate visibility.
+- `RuntimeTelemetryMonitor` subscribes to those events and logs warnings for timeouts/script errors, giving schedulers/logging immediate visibility. Watchdog heuristics now track consecutive failures per user, request a cold sandbox restart, and raise throttled `"watchdog"` notifications; `RuntimeCoordinator` honors the cold-start flag so repeat offenders run in a fresh isolate.
+- `IRuntimeTelemetrySink` provides a single fan-out point for structured telemetry/alerts. The default `LoggingRuntimeTelemetrySink` keeps the original structured logs, while future metrics/observability providers can plug in by swapping/augmenting the sink implementation.
 - Watchdog heuristics now track consecutive failures per user, request a cold sandbox restart once the threshold is crossed, and raise throttled `"watchdog"` notifications so operators can follow up; `RuntimeCoordinator` honors these requests by forcing a cold sandbox per affected user.
 - New integration tests (`V8RuntimeSandboxTests`) verify memory diffing, RawMemory overrides, and segment persistence.
 - `RuntimeCoordinator` now owns the entire lifecycle (context hydration, sandbox execution, persistence, telemetry, CPU bucket bookkeeping), so `RunnerLoopWorker` just schedules users.

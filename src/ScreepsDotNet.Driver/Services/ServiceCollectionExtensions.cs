@@ -44,6 +44,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IRuntimeSandboxFactory, V8RuntimeSandboxFactory>();
         services.AddSingleton<IRuntimeSandboxPool, RuntimeSandboxPool>();
         services.AddSingleton<IRuntimeBundleCache, RuntimeBundleCache>();
+        services.AddSingleton<IRuntimeTelemetrySink, LoggingRuntimeTelemetrySink>();
         services.AddSingleton<IRuntimeService, RuntimeService>();
         services.AddSingleton<IRuntimeCoordinator, RuntimeCoordinator>();
         services.AddSingleton<RuntimeTelemetryMonitor>();
