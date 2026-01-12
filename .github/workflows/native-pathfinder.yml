@@ -27,21 +27,21 @@ jobs:
             disabled: false
           - os: ubuntu-latest
             rid: linux-arm64
-            disabled: true
+            disabled: false
           - os: windows-latest
             rid: win-x64
             vcvars: x64
-            disabled: true
+            disabled: false
           - os: windows-latest
             rid: win-arm64
             vcvars: x64_arm64
-            disabled: true
+            disabled: false
           - os: macos-latest
             rid: osx-x64
-            disabled: true
+            disabled: false
           - os: macos-14
             rid: osx-arm64
-            disabled: true
+            disabled: false
 
     steps:
 
