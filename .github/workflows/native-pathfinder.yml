@@ -80,22 +80,24 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          dist_dir="$(pwd)/dist"
           native_dir="../../ScreepsDotNet.Driver/runtimes/${{ matrix.rid }}/native"
           if [[ ! -d "$native_dir" ]]; then
             echo "Native pathfinder output not found at $native_dir" >&2
             exit 1
           fi
-          mkdir -p dist
-          zip_path="dist/native-pathfinder-${{ matrix.rid }}.zip"
+          mkdir -p "$dist_dir"
+          zip_path="$dist_dir/native-pathfinder-${{ matrix.rid }}.zip"
           rm -f "$zip_path"
-          (cd "$native_dir" && zip -r "$OLDPWD/$zip_path" .)
+          (cd "$native_dir" && zip -r "$zip_path" .)
 
       - name: Package native artifact (Windows)
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          New-Item -ItemType Directory -Force -Path dist | Out-Null
-          $dest = "dist/native-pathfinder-${{ matrix.rid }}.zip"
+          $dist = Join-Path (Get-Location) "dist"
+          New-Item -ItemType Directory -Force -Path $dist | Out-Null
+          $dest = Join-Path $dist "native-pathfinder-${{ matrix.rid }}.zip"
           if (Test-Path $dest) { Remove-Item $dest }
           $nativePath = Join-Path "..\..\ScreepsDotNet.Driver\runtimes\${{ matrix.rid }}" "native"
           if (-not (Test-Path $nativePath)) {
