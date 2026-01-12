@@ -26,6 +26,8 @@ public sealed class V8RuntimeSandboxTests
 
         var result = await _sandbox.ExecuteAsync(context);
         Assert.Null(result.Memory);
+        Assert.False(result.Metrics.TimedOut);
+        Assert.False(result.Metrics.ScriptError);
     }
 
     [Fact]
@@ -47,6 +49,8 @@ public sealed class V8RuntimeSandboxTests
 
         var result = await _sandbox.ExecuteAsync(context);
         Assert.Equal("{\"foo\":1}", result.Memory);
+        Assert.False(result.Metrics.TimedOut);
+        Assert.False(result.Metrics.ScriptError);
     }
 
     [Fact]
@@ -78,5 +82,7 @@ RawMemory.interShardSegment = "updated";
         Assert.Equal("updated", result.MemorySegments![3]);
         Assert.Equal("new", result.MemorySegments[5]);
         Assert.Equal("updated", result.InterShardSegment);
+        Assert.False(result.Metrics.TimedOut);
+        Assert.False(result.Metrics.ScriptError);
     }
 }

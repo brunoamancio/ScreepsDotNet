@@ -78,7 +78,8 @@ console.log('tick', GameTime);
                 InterShardSegment: context.InterShardSegment,
                 CpuUsed: 1,
                 RoomIntents: roomIntents,
-                Notifications: []);
+                Notifications: [],
+                Metrics: new RuntimeExecutionMetrics(false, false, 0, 0));
 
             return Task.FromResult(result);
         }

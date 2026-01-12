@@ -67,10 +67,10 @@ Runner Loop
 ## Current Progress
 - `V8RuntimeSandbox` now injects a Node-like `RawMemory` object (get/set, segment proxy, inter-shard access) and only persists memory/segment/inter-shard data when user code actually mutates them.
 - Runner loop saves `Memory`, segments, and inter-shard payloads only when non-null, reducing needless Redis writes.
+- Bundle caching keyed by `codeHash` avoids rebuilding module graphs every tick.
+- Runtime telemetry (cpu used, timeout/script error flags, heap usage) now flows through `IDriverLoopHooks.PublishRuntimeTelemetryAsync`, so schedulers/loggers can react once the logging pipeline lands.
 - New integration tests (`V8RuntimeSandboxTests`) verify memory diffing, RawMemory overrides, and segment persistence.
 
 ## Next Steps
-1. Add runtime telemetry (CPU watchdog, heap usage) and emit config events/log entries when limits are exceeded.
-2. Introduce module/script caching keyed by code hash so ClearScript doesn’t rebuild module graphs every tick.
-3. Integrate runtime error events with `IDriverLoopHooks` once the shared logging pipeline is ready.
-4. Implement a coordinator layer in runner/main loops to manage sandbox pooling and CPU bucket accounting.
+1. Feed telemetry into the future logging/metrics pipeline (or config events) so operators get aggregated CPU/heap warnings.
+2. Implement a coordinator layer in runner/main loops to manage sandbox pooling, CPU bucket accounting, and watchdog restarts.

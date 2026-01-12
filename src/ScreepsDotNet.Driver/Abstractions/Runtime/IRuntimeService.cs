@@ -28,4 +28,11 @@ public sealed record RuntimeExecutionResult(
     string? InterShardSegment,
     int CpuUsed,
     IReadOnlyDictionary<string, IReadOnlyDictionary<string, object?>> RoomIntents,
-    IReadOnlyList<NotifyIntentPayload> Notifications);
+    IReadOnlyList<NotifyIntentPayload> Notifications,
+    RuntimeExecutionMetrics Metrics);
+
+public sealed record RuntimeExecutionMetrics(
+    bool TimedOut,
+    bool ScriptError,
+    long HeapUsedBytes,
+    long HeapSizeLimitBytes);

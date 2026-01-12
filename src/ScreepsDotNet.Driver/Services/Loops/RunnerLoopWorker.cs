@@ -1,5 +1,3 @@
-using System.Security.Cryptography;
-using System.Text;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using MongoDB.Driver;
@@ -10,6 +8,7 @@ using ScreepsDotNet.Driver.Abstractions.Notifications;
 using ScreepsDotNet.Driver.Abstractions.Runtime;
 using ScreepsDotNet.Driver.Abstractions.Users;
 using ScreepsDotNet.Driver.Constants;
+using ScreepsDotNet.Driver.Services.Runtime;
 using ScreepsDotNet.Storage.MongoRedis.Providers;
 using ScreepsDotNet.Storage.MongoRedis.Repositories.Documents;
 using StackExchange.Redis;
@@ -21,6 +20,7 @@ internal sealed class RunnerLoopWorker(
     IRedisConnectionProvider redisProvider,
     IUserDataService userDataService,
     IRuntimeService runtimeService,
+    IRuntimeBundleCache bundleCache,
     IDriverLoopHooks loopHooks,
     IDriverConfig config,
     IEnvironmentService environmentService,
@@ -38,6 +38,7 @@ internal sealed class RunnerLoopWorker(
 
     private readonly IUserDataService _users = userDataService;
     private readonly IRuntimeService _runtime = runtimeService;
+    private readonly IRuntimeBundleCache _bundleCache = bundleCache;
     private readonly IDriverLoopHooks _hooks = loopHooks;
     private readonly IDriverConfig _config = config;
     private readonly IEnvironmentService _environment = environmentService;
@@ -62,18 +63,19 @@ internal sealed class RunnerLoopWorker(
             return;
         }
 
-        var modules = NormalizeModules(codeDocument.Modules);
+        var modules = RuntimeModuleBuilder.NormalizeModules(codeDocument.Modules);
         if (modules.Count == 0 || !modules.ContainsKey("main"))
         {
             _logger?.LogDebug("User {UserId} does not have a valid 'main' module.", userId);
             return;
         }
-        var script = BuildBundle(modules);
+        var codeHash = RuntimeModuleBuilder.ComputeCodeHash(modules);
+        var bundle = _bundleCache.GetOrAdd(codeHash, modules);
 
         var gameTime = await _environment.GetGameTimeAsync(token).ConfigureAwait(false);
         var context = new RuntimeExecutionContext(
             userId,
-            ComputeCodeHash(codeDocument.Modules),
+            codeHash,
             ResolveCpuLimit(user),
             _config.CpuBucketSize,
             gameTime,
@@ -82,8 +84,8 @@ internal sealed class RunnerLoopWorker(
             await LoadInterShardSegmentAsync(userId).ConfigureAwait(false),
             new Dictionary<string, object?>(StringComparer.Ordinal)
             {
-                ["script"] = script,
-                ["modules"] = modules,
+                ["script"] = bundle.Script,
+                ["modules"] = bundle.Modules,
                 ["userCodeTimestamp"] = codeDocument.Timestamp,
                 ["branch"] = codeDocument.Branch
             });
@@ -101,6 +103,21 @@ internal sealed class RunnerLoopWorker(
                 await _hooks.PublishConsoleErrorAsync(userId, message!, token).ConfigureAwait(false);
             return;
         }
+
+        await _hooks.PublishRuntimeTelemetryAsync(
+                      new RuntimeTelemetryPayload(
+                          userId,
+                          gameTime,
+                          context.CpuLimit,
+                          context.CpuBucket,
+                          result.CpuUsed,
+                          result.Metrics.TimedOut,
+                          result.Metrics.ScriptError,
+                          result.Metrics.HeapUsedBytes,
+                          result.Metrics.HeapSizeLimitBytes,
+                          result.Error),
+                      token)
+                  .ConfigureAwait(false);
 
         await PersistResultsAsync(userId, result, token).ConfigureAwait(false);
     }
@@ -196,81 +213,4 @@ internal sealed class RunnerLoopWorker(
         var limit = (int)Math.Ceiling(cpu);
         return limit > 0 ? limit : _config.CpuMaxPerTick;
     }
-
-    private static string ComputeCodeHash(IReadOnlyDictionary<string, string> modules)
-    {
-        var builder = new StringBuilder();
-        foreach (var (name, code) in modules.OrderBy(pair => pair.Key, StringComparer.Ordinal))
-        {
-            builder.Append(name);
-            builder.Append('\n');
-            builder.Append(code);
-            builder.Append('\n');
-        }
-
-        var buffer = Encoding.UTF8.GetBytes(builder.ToString());
-        return Convert.ToHexString(SHA256.HashData(buffer));
-    }
-
-    private static IReadOnlyDictionary<string, string> NormalizeModules(IReadOnlyDictionary<string, string> modules)
-    {
-        var normalized = new Dictionary<string, string>(StringComparer.Ordinal);
-        foreach (var (name, code) in modules)
-        {
-            if (string.IsNullOrWhiteSpace(name))
-                continue;
-
-            normalized[name.Trim()] = code;
-        }
-
-        return normalized;
-    }
-
-    private static string BuildBundle(IReadOnlyDictionary<string, string> modules)
-    {
-        if (modules.Count == 0)
-            return string.Empty;
-
-        var ordered = modules.Where(pair => !string.IsNullOrWhiteSpace(pair.Key))
-                             .OrderBy(pair => pair.Key, StringComparer.Ordinal)
-                             .ToArray();
-
-        if (ordered.Length == 0)
-            return string.Empty;
-
-        var builder = new StringBuilder();
-        builder.AppendLine("(function(){");
-        builder.AppendLine("const modules = {");
-        for (var i = 0; i < ordered.Length; i++)
-        {
-            var (name, code) = ordered[i];
-            builder.Append('"');
-            builder.Append(EscapeModuleName(name));
-            builder.Append("\":function(module, exports, require){\n");
-            builder.AppendLine(code);
-            builder.Append('}');
-            if (i < ordered.Length - 1)
-                builder.Append(',');
-            builder.AppendLine();
-        }
-        builder.AppendLine("};");
-        builder.AppendLine("const cache = {};");
-        builder.AppendLine("const requireModule = name => {");
-        builder.AppendLine("  if(!modules[name]) throw new Error(`Module '${name}' not found.`);");
-        builder.AppendLine("  if(!cache[name]) {");
-        builder.AppendLine("    const module = { exports: {} };");
-        builder.AppendLine("    cache[name] = module;");
-        builder.AppendLine("    modules[name](module, module.exports, requireModule);");
-        builder.AppendLine("  }");
-        builder.AppendLine("  return cache[name].exports;");
-        builder.AppendLine("};");
-        builder.AppendLine("const mainModule = requireModule('main');");
-        builder.AppendLine("if(mainModule && typeof mainModule.loop === 'function')");
-        builder.AppendLine("  mainModule.loop();");
-        builder.AppendLine("})();");
-        return builder.ToString();
-    }
-
-    private static string EscapeModuleName(string name) =>
-        name.Replace("\\", "\\\\", StringComparison.Ordinal).Replace("\"", "\\\"", StringComparison.Ordinal);
 }

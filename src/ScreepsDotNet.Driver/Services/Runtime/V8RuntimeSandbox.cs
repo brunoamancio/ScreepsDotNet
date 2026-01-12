@@ -47,6 +47,8 @@ internal sealed class V8RuntimeSandbox(RuntimeSandboxOptions options, ILogger<V8
 
         var stopwatch = Stopwatch.StartNew();
         string? error = null;
+        var timedOut = false;
+        var scriptError = false;
         try
         {
             if (modules is { Count: > 0 })
@@ -56,11 +58,13 @@ internal sealed class V8RuntimeSandbox(RuntimeSandboxOptions options, ILogger<V8
         }
         catch (ScriptInterruptedException)
         {
+            timedOut = true;
             error = "Script execution timed out.";
             _logger?.LogWarning("Runtime interrupted for user {UserId}.", context.UserId);
         }
         catch (ScriptEngineException ex)
         {
+            scriptError = true;
             error = ex.Message;
             _logger?.LogError(ex, "Runtime error for user {UserId}.", context.UserId);
         }
@@ -78,6 +82,12 @@ internal sealed class V8RuntimeSandbox(RuntimeSandboxOptions options, ILogger<V8
                                : null);
         var updatedSegments = bridge.GetUpdatedMemorySegments();
         var interShardSegment = bridge.GetInterShardSegmentOverride();
+        var heapInfo = engine.GetRuntimeHeapInfo();
+        var metrics = new RuntimeExecutionMetrics(
+            timedOut,
+            scriptError,
+            ClampToInt64(heapInfo.UsedHeapSize),
+            ClampToInt64(heapInfo.HeapSizeLimit));
 
         return Task.FromResult(new RuntimeExecutionResult(
             bridge.ConsoleLog,
@@ -89,7 +99,8 @@ internal sealed class V8RuntimeSandbox(RuntimeSandboxOptions options, ILogger<V8
             interShardSegment,
             (int)Math.Clamp(Math.Ceiling(stopwatch.Elapsed.TotalMilliseconds), 0, int.MaxValue),
             bridge.GetRoomIntents(),
-            bridge.GetNotifications()));
+            bridge.GetNotifications(),
+            metrics));
     }
 
     private V8ScriptEngine CreateEngine()
@@ -506,7 +517,7 @@ const RawMemory = (() => {
             };
         }
 
-        private static bool TryParseSegmentIndex(object? value, out int index)
+    private static bool TryParseSegmentIndex(object? value, out int index)
         {
             switch (value)
             {
@@ -544,4 +555,7 @@ const RawMemory = (() => {
         private static string NormalizeSegment(object? value)
             => NormalizeString(value);
     }
+
+    private static long ClampToInt64(ulong value)
+        => value > long.MaxValue ? long.MaxValue : (long)value;
 }

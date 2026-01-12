@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using ScreepsDotNet.Driver.Abstractions.History;
 using ScreepsDotNet.Driver.Abstractions.Loops;
 using ScreepsDotNet.Driver.Abstractions.Notifications;
@@ -6,10 +7,12 @@ namespace ScreepsDotNet.Driver.Services.Loops;
 
 internal sealed class DriverLoopHooks(
     IHistoryService historyService,
-    INotificationService notificationService) : IDriverLoopHooks
+    INotificationService notificationService,
+    ILogger<DriverLoopHooks>? logger = null) : IDriverLoopHooks
 {
     private readonly IHistoryService _history = historyService;
     private readonly INotificationService _notifications = notificationService;
+    private readonly ILogger<DriverLoopHooks>? _logger = logger;
 
     public Task SaveRoomHistoryAsync(string roomName, int gameTime, string serializedObjects, CancellationToken token = default)
         => _history.SaveRoomHistoryAsync(roomName, gameTime, serializedObjects, token);
@@ -28,4 +31,20 @@ internal sealed class DriverLoopHooks(
 
     public Task NotifyRoomsDoneAsync(int gameTime, CancellationToken token = default)
         => _notifications.NotifyRoomsDoneAsync(gameTime, token);
+
+    public Task PublishRuntimeTelemetryAsync(RuntimeTelemetryPayload payload, CancellationToken token = default)
+    {
+        ArgumentNullException.ThrowIfNull(payload);
+        _logger?.Log(payload.TimedOut || payload.ScriptError ? LogLevel.Warning : LogLevel.Debug,
+            "Runtime telemetry for user {UserId}: cpu {CpuUsed}/{CpuLimit} ms (bucket {CpuBucket}) timedOut={TimedOut} scriptError={ScriptError} heap={HeapUsed}/{HeapLimit} bytes",
+            payload.UserId,
+            payload.CpuUsed,
+            payload.CpuLimit,
+            payload.CpuBucket,
+            payload.TimedOut,
+            payload.ScriptError,
+            payload.HeapUsedBytes,
+            payload.HeapSizeLimitBytes);
+        return Task.CompletedTask;
+    }
 }

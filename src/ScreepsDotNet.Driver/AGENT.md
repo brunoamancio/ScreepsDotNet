@@ -6,6 +6,7 @@ Use this file for day-to-day coordination inside `ScreepsDotNet.Driver`. The ful
 
 - Queue infrastructure, worker scheduler skeleton, bulk writers, room/user services, notification/history services, and the ClearScript runtime coordinator are merged; runner/main/processor loops can execute a simplified tick.
 - Runtime sandbox now exposes Node-style `RawMemory`/segment/inter-shard APIs and only persists data when user code mutates it; `V8RuntimeSandboxTests` cover the new behavior.
+- Runtime telemetry (CPU used, timeout/script error flags, heap usage) now flows through `IDriverLoopHooks.PublishRuntimeTelemetryAsync`, so schedulers/loggers can react as soon as the logging pipeline is wired.
 - Native pathfinder work is split into `src/native/pathfinder` (see that AGENT for build/CI info); the managed service still needs to switch over once the new binaries are wired.
 - Compatibility shim (D10) and deeper processor logic (intent application, map view, stats) remain after runtime/pathfinder stabilization.
 
