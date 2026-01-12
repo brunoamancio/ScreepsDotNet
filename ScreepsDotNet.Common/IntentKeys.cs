@@ -1,6 +1,6 @@
-namespace ScreepsDotNet.Driver.Constants;
+namespace ScreepsDotNet.Common;
 
-internal static class IntentKeys
+public static class IntentKeys
 {
     public const string Damage = "damage";
     public const string Remove = "remove";

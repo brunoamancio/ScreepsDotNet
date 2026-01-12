@@ -1,6 +1,6 @@
-namespace ScreepsDotNet.Driver.Constants;
+namespace ScreepsDotNet.Common;
 
-internal enum IntentActionType
+public enum IntentActionType
 {
     Attack,
     RangedAttack,

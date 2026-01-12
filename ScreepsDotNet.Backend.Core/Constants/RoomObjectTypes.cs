@@ -1,6 +1,7 @@
 ﻿namespace ScreepsDotNet.Backend.Core.Constants;
 
 using System.Collections.Generic;
+using ScreepsDotNet.Common;
 
 public enum RoomObjectType
 {
@@ -15,11 +16,11 @@ public static class RoomObjectTypeExtensions
 {
     private static readonly IReadOnlyDictionary<RoomObjectType, string> DocumentValues = new Dictionary<RoomObjectType, string>(EnumComparer.Instance)
     {
-        [RoomObjectType.Controller] = "controller",
-        [RoomObjectType.Spawn] = "spawn",
-        [RoomObjectType.Mineral] = "mineral",
-        [RoomObjectType.InvaderCore] = "invaderCore",
-        [RoomObjectType.PowerCreep] = "powerCreep"
+        [RoomObjectType.Controller] = RoomObjectTypes.Controller,
+        [RoomObjectType.Spawn] = RoomObjectTypes.Spawn,
+        [RoomObjectType.Mineral] = RoomObjectTypes.Mineral,
+        [RoomObjectType.InvaderCore] = RoomObjectTypes.InvaderCore,
+        [RoomObjectType.PowerCreep] = RoomObjectTypes.PowerCreep
     };
 
     public static string ToDocumentValue(this RoomObjectType type)

@@ -1,6 +1,6 @@
-namespace ScreepsDotNet.Driver.Constants;
+namespace ScreepsDotNet.Common;
 
-internal static class RoomObjectTypes
+public static class RoomObjectTypes
 {
     public const string Creep = "creep";
     public const string PowerCreep = "powerCreep";
@@ -18,4 +18,18 @@ internal static class RoomObjectTypes
     public const string Deposit = "deposit";
     public const string Tombstone = "tombstone";
     public const string Portal = "portal";
+    public const string Mineral = "mineral";
+    public const string InvaderCore = "invaderCore";
+    public const string Source = "source";
+    public const string Road = "road";
+    public const string Wall = "wall";
+    public const string Rampart = "rampart";
+    public const string Storage = "storage";
+    public const string Extractor = "extractor";
+    public const string Container = "container";
+    public const string Nuker = "nuker";
+    public const string ConstructedWall = "constructedWall";
+    public const string ConstructionSite = "constructionSite";
+    public const string Ruin = "ruin";
+    public const string Exit = "exit";
 }

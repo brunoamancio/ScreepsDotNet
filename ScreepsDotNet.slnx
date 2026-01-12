@@ -8,5 +8,6 @@
     <Project Path="ScreepsDotNet.Backend.Cli.Tests/ScreepsDotNet.Backend.Cli.Tests.csproj" />
   </Folder>
   <Project Path="ScreepsDotNet.Driver/ScreepsDotNet.Driver.csproj" />
+  <Project Path="ScreepsDotNet.Common/ScreepsDotNet.Common.csproj" />
   <Project Path="ScreepsDotNet.Driver.Tests/ScreepsDotNet.Driver.Tests.csproj" />
 </Solution>

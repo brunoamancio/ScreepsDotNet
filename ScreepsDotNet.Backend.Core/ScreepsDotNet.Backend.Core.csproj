@@ -5,4 +5,8 @@
     <PackageReference Include="Microsoft.Extensions.Options" Version="10.0.1" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\ScreepsDotNet.Common\ScreepsDotNet.Common.csproj" />
+  </ItemGroup>
+
 </Project>

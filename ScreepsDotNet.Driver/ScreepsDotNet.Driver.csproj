@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
+    <ProjectReference Include="..\ScreepsDotNet.Common\ScreepsDotNet.Common.csproj" />
     <ProjectReference Include="../ScreepsDotNet.Storage.MongoRedis/ScreepsDotNet.Storage.MongoRedis.csproj" />
   </ItemGroup>
 

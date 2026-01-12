@@ -7,6 +7,7 @@ using MongoDB.Bson;
 using MongoDB.Driver;
 using ScreepsDotNet.Backend.Core.Constants;
 using ScreepsDotNet.Backend.Core.Seeding;
+using ScreepsDotNet.Common;
 using ScreepsDotNet.Storage.MongoRedis.Repositories.Documents;
 
 public sealed class SeedDataService : ISeedDataService
@@ -168,7 +169,7 @@ public sealed class SeedDataService : ISeedDataService
             new RoomObjectDocument
             {
                 Id = ObjectId.GenerateNewId(),
-                Type = "mineral",
+                Type = RoomObjectType.Mineral.ToDocumentValue(),
                 Room = SeedDataDefaults.World.StartRoom,
                 MineralType = SeedDataDefaults.World.MineralType,
                 Density = SeedDataDefaults.World.MineralDensity
@@ -177,7 +178,7 @@ public sealed class SeedDataService : ISeedDataService
             {
                 Id = ObjectId.GenerateNewId(),
                 UserId = SeedDataDefaults.World.InvaderUser,
-                Type = "invaderCore",
+                Type = RoomObjectType.InvaderCore.ToDocumentValue(),
                 Room = SeedDataDefaults.World.SecondaryRoom,
                 Level = 2
             },
@@ -526,7 +527,7 @@ public sealed class SeedDataService : ISeedDataService
                     {
                         ObjectsManual = new Dictionary<string, BsonDocument>(StringComparer.Ordinal)
                         {
-                            ["seed-controller"] = new("move", new BsonDocument
+                            ["seed-controller"] = new(IntentKeys.Move, new BsonDocument
                             {
                                 ["direction"] = 2,
                                 ["id"] = "seed-controller"
@@ -546,7 +547,7 @@ public sealed class SeedDataService : ISeedDataService
                     {
                         ObjectsManual = new Dictionary<string, BsonDocument>(StringComparer.Ordinal)
                         {
-                            [SeedDataDefaults.Intents.SecondaryShardObjectId] = new("move", new BsonDocument
+                            [SeedDataDefaults.Intents.SecondaryShardObjectId] = new(IntentKeys.Move, new BsonDocument
                             {
                                 ["direction"] = 1,
                                 ["id"] = SeedDataDefaults.Intents.SecondaryShardObjectId

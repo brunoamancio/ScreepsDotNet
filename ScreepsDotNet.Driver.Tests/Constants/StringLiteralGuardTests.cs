@@ -1,5 +1,5 @@
 using System.Reflection;
-using ScreepsDotNet.Driver.Constants;
+using ScreepsDotNet.Common;
 
 namespace ScreepsDotNet.Driver.Tests.Constants;
 

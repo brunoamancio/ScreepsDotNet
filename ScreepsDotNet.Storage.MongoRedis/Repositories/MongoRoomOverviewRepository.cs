@@ -3,6 +3,7 @@
 using MongoDB.Driver;
 using ScreepsDotNet.Backend.Core.Models;
 using ScreepsDotNet.Backend.Core.Repositories;
+using ScreepsDotNet.Common;
 using ScreepsDotNet.Storage.MongoRedis.Providers;
 using ScreepsDotNet.Storage.MongoRedis.Repositories.Documents;
 
@@ -32,7 +33,7 @@ public sealed class MongoRoomOverviewRepository(IMongoDatabaseProvider databaseP
     {
         var filter = Builders<RoomObjectDocument>.Filter.And(
             Builders<RoomObjectDocument>.Filter.Eq(obj => obj.Room, room.RoomName),
-            Builders<RoomObjectDocument>.Filter.Eq(obj => obj.Type, "controller"));
+            Builders<RoomObjectDocument>.Filter.Eq(obj => obj.Type, RoomObjectTypes.Controller));
 
         if (!string.IsNullOrWhiteSpace(room.ShardName))
             filter &= Builders<RoomObjectDocument>.Filter.Eq(obj => obj.Shard, room.ShardName);

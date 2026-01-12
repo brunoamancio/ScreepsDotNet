@@ -4,6 +4,7 @@ using MongoDB.Driver;
 using ScreepsDotNet.Driver.Abstractions.Bulk;
 using ScreepsDotNet.Driver.Abstractions.Environment;
 using ScreepsDotNet.Driver.Abstractions.Rooms;
+using ScreepsDotNet.Common;
 using ScreepsDotNet.Driver.Constants;
 using ScreepsDotNet.Storage.MongoRedis.Providers;
 using ScreepsDotNet.Storage.MongoRedis.Repositories.Documents;

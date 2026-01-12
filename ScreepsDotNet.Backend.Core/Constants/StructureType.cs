@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using ScreepsDotNet.Common;
 
 [JsonConverter(typeof(StructureTypeJsonConverter))]
 public enum StructureType
@@ -54,31 +55,31 @@ public static class StructureTypeExtensions
 {
     private static readonly Dictionary<StructureType, string> ToDocumentValueMap = new()
     {
-        [StructureType.Spawn] = "spawn",
-        [StructureType.Extension] = "extension",
-        [StructureType.Road] = "road",
-        [StructureType.Wall] = "wall",
-        [StructureType.Rampart] = "rampart",
-        [StructureType.Link] = "link",
-        [StructureType.Storage] = "storage",
-        [StructureType.Tower] = "tower",
-        [StructureType.Observer] = "observer",
-        [StructureType.PowerSpawn] = "powerSpawn",
-        [StructureType.Extractor] = "extractor",
-        [StructureType.Lab] = "lab",
-        [StructureType.Terminal] = "terminal",
-        [StructureType.Container] = "container",
-        [StructureType.Nuker] = "nuker",
-        [StructureType.Factory] = "factory",
-        [StructureType.ConstructedWall] = "constructedWall",
-        [StructureType.Controller] = "controller",
-        [StructureType.InvaderCore] = "invaderCore",
-        [StructureType.Source] = "source",
-        [StructureType.Mineral] = "mineral",
-        [StructureType.ConstructionSite] = "constructionSite",
-        [StructureType.Creep] = "creep",
-        [StructureType.Ruin] = "ruin",
-        [StructureType.Exit] = "exit"
+        [StructureType.Spawn] = RoomObjectTypes.Spawn,
+        [StructureType.Extension] = RoomObjectTypes.Extension,
+        [StructureType.Road] = RoomObjectTypes.Road,
+        [StructureType.Wall] = RoomObjectTypes.Wall,
+        [StructureType.Rampart] = RoomObjectTypes.Rampart,
+        [StructureType.Link] = RoomObjectTypes.Link,
+        [StructureType.Storage] = RoomObjectTypes.Storage,
+        [StructureType.Tower] = RoomObjectTypes.Tower,
+        [StructureType.Observer] = RoomObjectTypes.Observer,
+        [StructureType.PowerSpawn] = RoomObjectTypes.PowerSpawn,
+        [StructureType.Extractor] = RoomObjectTypes.Extractor,
+        [StructureType.Lab] = RoomObjectTypes.Lab,
+        [StructureType.Terminal] = RoomObjectTypes.Terminal,
+        [StructureType.Container] = RoomObjectTypes.Container,
+        [StructureType.Nuker] = RoomObjectTypes.Nuker,
+        [StructureType.Factory] = RoomObjectTypes.Factory,
+        [StructureType.ConstructedWall] = RoomObjectTypes.ConstructedWall,
+        [StructureType.Controller] = RoomObjectTypes.Controller,
+        [StructureType.InvaderCore] = RoomObjectTypes.InvaderCore,
+        [StructureType.Source] = RoomObjectTypes.Source,
+        [StructureType.Mineral] = RoomObjectTypes.Mineral,
+        [StructureType.ConstructionSite] = RoomObjectTypes.ConstructionSite,
+        [StructureType.Creep] = RoomObjectTypes.Creep,
+        [StructureType.Ruin] = RoomObjectTypes.Ruin,
+        [StructureType.Exit] = RoomObjectTypes.Exit
     };
 
     private static readonly Dictionary<string, StructureType> FromDocumentValueMap = ToDocumentValueMap.ToDictionary(kvp => kvp.Value, kvp => kvp.Key, StringComparer.OrdinalIgnoreCase);

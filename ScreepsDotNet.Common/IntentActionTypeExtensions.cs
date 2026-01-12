@@ -1,6 +1,6 @@
-namespace ScreepsDotNet.Driver.Constants;
+namespace ScreepsDotNet.Common;
 
-internal static class IntentActionTypeExtensions
+public static class IntentActionTypeExtensions
 {
     public static string ToKey(this IntentActionType type) =>
         type switch

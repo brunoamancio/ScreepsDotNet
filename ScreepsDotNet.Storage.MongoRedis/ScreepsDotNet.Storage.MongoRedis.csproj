@@ -9,6 +9,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\ScreepsDotNet.Backend.Core\ScreepsDotNet.Backend.Core.csproj" />
+    <ProjectReference Include="..\ScreepsDotNet.Common\ScreepsDotNet.Common.csproj" />
   </ItemGroup>
 
   <ItemGroup>

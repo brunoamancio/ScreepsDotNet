@@ -20,6 +20,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\ScreepsDotNet.Driver\ScreepsDotNet.Driver.csproj" />
+    <ProjectReference Include="..\ScreepsDotNet.Common\ScreepsDotNet.Common.csproj" />
   </ItemGroup>
 
   <ItemGroup>

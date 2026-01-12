@@ -3,9 +3,9 @@ using System.Text.Json;
 using Microsoft.ClearScript;
 using Microsoft.ClearScript.V8;
 using Microsoft.Extensions.Logging;
+using ScreepsDotNet.Common;
 using ScreepsDotNet.Driver.Abstractions.Runtime;
 using ScreepsDotNet.Driver.Abstractions.Users;
-using ScreepsDotNet.Driver.Constants;
 
 namespace ScreepsDotNet.Driver.Services.Runtime;
 
