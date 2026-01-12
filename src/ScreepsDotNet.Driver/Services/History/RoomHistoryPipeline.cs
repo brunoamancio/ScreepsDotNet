@@ -3,7 +3,6 @@ using System.Text.Json.Nodes;
 using Microsoft.Extensions.Logging;
 using ScreepsDotNet.Driver.Abstractions.Config;
 using ScreepsDotNet.Driver.Abstractions.Eventing;
-using ScreepsDotNet.Driver.Abstractions.History;
 using ScreepsDotNet.Driver.Abstractions.Rooms;
 
 namespace ScreepsDotNet.Driver.Services.History;
@@ -11,15 +10,13 @@ namespace ScreepsDotNet.Driver.Services.History;
 internal sealed class RoomHistoryPipeline : IDisposable
 {
     private readonly IDriverConfig _config;
-    private readonly IRoomHistoryUploader _uploader;
     private readonly IRoomDataService _rooms;
     private readonly ILogger<RoomHistoryPipeline>? _logger;
     private bool _disposed;
 
-    public RoomHistoryPipeline(IDriverConfig config, IRoomHistoryUploader uploader, IRoomDataService rooms, ILogger<RoomHistoryPipeline>? logger = null)
+    public RoomHistoryPipeline(IDriverConfig config, IRoomDataService rooms, ILogger<RoomHistoryPipeline>? logger = null)
     {
         _config = config;
-        _uploader = uploader;
         _rooms = rooms;
         _logger = logger;
         _config.RoomHistorySaved += HandleRoomHistorySaved;
@@ -29,9 +26,8 @@ internal sealed class RoomHistoryPipeline : IDisposable
     {
         try
         {
-            await _uploader.UploadAsync(args.Chunk).ConfigureAwait(false);
             await PublishMapViewSnapshotAsync(args).ConfigureAwait(false);
-            await PersistEventLogAsync(args).ConfigureAwait(false);
+            await PublishEventLogAsync(args).ConfigureAwait(false);
         }
         catch (Exception ex)
         {
@@ -49,7 +45,7 @@ internal sealed class RoomHistoryPipeline : IDisposable
         return _rooms.SaveMapViewAsync(args.RoomName, payload);
     }
 
-    private Task PersistEventLogAsync(RoomHistorySavedEventArgs args)
+    private Task PublishEventLogAsync(RoomHistorySavedEventArgs args)
     {
         var payload = JsonSerializer.Serialize(new RoomHistoryEventLog(
             args.RoomName,
