@@ -35,8 +35,17 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<INotificationService, NotificationService>();
         services.AddSingleton<IDriverLoopHooks, DriverLoopHooks>();
         services.AddOptions<RuntimeSandboxOptions>();
+        services.AddOptions<MainLoopOptions>();
+        services.AddOptions<RunnerLoopOptions>();
+        services.AddOptions<ProcessorLoopOptions>();
         services.AddSingleton<IRuntimeSandboxFactory, V8RuntimeSandboxFactory>();
         services.AddSingleton<IRuntimeService, RuntimeService>();
+        services.AddSingleton<IMainLoopGlobalProcessor, NoopMainLoopGlobalProcessor>();
+        services.AddSingleton<IRunnerLoopWorker, NoopRunnerLoopWorker>();
+        services.AddSingleton<IProcessorLoopWorker, NoopProcessorLoopWorker>();
+        services.AddSingleton<IMainLoop, MainLoop>();
+        services.AddSingleton<IRunnerLoop, RunnerLoop>();
+        services.AddSingleton<IProcessorLoop, ProcessorLoop>();
         services.AddSingleton<IDriverHost, DriverHost>();
         return services;
     }
