@@ -1,18 +1,26 @@
+using System.Collections.Concurrent;
 using Microsoft.Extensions.Logging;
 using ScreepsDotNet.Driver.Abstractions.Config;
 using ScreepsDotNet.Driver.Abstractions.Eventing;
+using ScreepsDotNet.Driver.Abstractions.Loops;
+using ScreepsDotNet.Driver.Abstractions.Notifications;
 
 namespace ScreepsDotNet.Driver.Services.Runtime;
 
-internal sealed class RuntimeTelemetryMonitor : IDisposable
+internal sealed class RuntimeTelemetryMonitor : IRuntimeWatchdog, IDisposable
 {
     private readonly IDriverConfig _config;
+    private readonly INotificationService _notifications;
     private readonly ILogger<RuntimeTelemetryMonitor> _logger;
+    private readonly ConcurrentDictionary<string, WatchdogState> _watchdogStates = new(StringComparer.Ordinal);
+    private static readonly TimeSpan NotificationCooldown = TimeSpan.FromMinutes(10);
+    private const int FailureThreshold = 3;
     private bool _disposed;
 
-    public RuntimeTelemetryMonitor(IDriverConfig config, ILogger<RuntimeTelemetryMonitor> logger)
+    public RuntimeTelemetryMonitor(IDriverConfig config, INotificationService notifications, ILogger<RuntimeTelemetryMonitor> logger)
     {
         _config = config;
+        _notifications = notifications;
         _logger = logger;
         _config.RuntimeTelemetry += HandleTelemetry;
     }
@@ -32,6 +40,47 @@ internal sealed class RuntimeTelemetryMonitor : IDisposable
             payload.HeapSizeLimitBytes,
             payload.TimedOut,
             payload.ScriptError);
+
+        _ = ProcessWatchdogAsync(payload);
+    }
+
+    private Task ProcessWatchdogAsync(RuntimeTelemetryPayload payload)
+    {
+        if (string.IsNullOrWhiteSpace(payload.UserId))
+            return Task.CompletedTask;
+
+        if (!(payload.TimedOut || payload.ScriptError))
+        {
+            _watchdogStates.TryRemove(payload.UserId, out _);
+            return Task.CompletedTask;
+        }
+
+        var now = DateTimeOffset.UtcNow;
+        var state = _watchdogStates.GetOrAdd(payload.UserId, _ => new WatchdogState());
+
+        var consecutive = state.Increment(now);
+        if (consecutive < FailureThreshold)
+            return Task.CompletedTask;
+
+        if (state.RequestColdStart() && _logger.IsEnabled(LogLevel.Warning))
+        {
+            _logger.LogWarning("Runtime watchdog requesting cold sandbox restart for user {UserId} after {Consecutive} consecutive failures.", payload.UserId, consecutive);
+        }
+
+        if (now - state.LastNotification < NotificationCooldown)
+            return Task.CompletedTask;
+
+        state.LastNotification = now;
+        var message = $"Watchdog: runtime for {payload.UserId} failed {consecutive} consecutive ticks (timedOut={payload.TimedOut}, scriptError={payload.ScriptError}) at tick {payload.GameTime}.";
+        return _notifications.SendNotificationAsync(payload.UserId, message, new NotificationOptions(15, "watchdog"));
+    }
+
+    public bool TryConsumeColdStartRequest(string userId)
+    {
+        if (string.IsNullOrWhiteSpace(userId))
+            return false;
+
+        return _watchdogStates.TryGetValue(userId, out var state) && state.TryConsumeColdStartRequest();
     }
 
     public void Dispose()
@@ -41,5 +90,37 @@ internal sealed class RuntimeTelemetryMonitor : IDisposable
 
         _config.RuntimeTelemetry -= HandleTelemetry;
         _disposed = true;
+    }
+
+    private sealed class WatchdogState
+    {
+        private int _consecutiveFailures;
+        private int _pendingColdStarts;
+        public DateTimeOffset LastFailure { get; private set; }
+        public DateTimeOffset LastNotification { get; set; }
+
+        public int Increment(DateTimeOffset timestamp)
+        {
+            LastFailure = timestamp;
+            return Interlocked.Increment(ref _consecutiveFailures);
+        }
+
+        public bool RequestColdStart()
+        {
+            var pending = Interlocked.Increment(ref _pendingColdStarts);
+            return pending == 1;
+        }
+
+        public bool TryConsumeColdStartRequest()
+        {
+            while (true)
+            {
+                var pending = Volatile.Read(ref _pendingColdStarts);
+                if (pending == 0)
+                    return false;
+                if (Interlocked.CompareExchange(ref _pendingColdStarts, pending - 1, pending) == pending)
+                    return true;
+            }
+        }
     }
 }

@@ -1,11 +1,13 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Microsoft.Extensions.Logging;
+using MongoDB.Driver;
 using ScreepsDotNet.Driver.Abstractions.Config;
 using ScreepsDotNet.Driver.Abstractions.Eventing;
 using ScreepsDotNet.Driver.Abstractions.History;
 using ScreepsDotNet.Driver.Constants;
 using ScreepsDotNet.Storage.MongoRedis.Providers;
+using ScreepsDotNet.Storage.MongoRedis.Repositories.Documents;
 using StackExchange.Redis;
 
 namespace ScreepsDotNet.Driver.Services.History;
@@ -13,10 +15,13 @@ namespace ScreepsDotNet.Driver.Services.History;
 internal sealed class HistoryService(
     IDriverConfig driverConfig,
     IRedisConnectionProvider redisProvider,
+    IMongoDatabaseProvider databaseProvider,
     ILogger<HistoryService>? logger = null) : IHistoryService
 {
     private readonly IDriverConfig _driverConfig = driverConfig;
     private readonly IDatabase _redis = redisProvider.GetConnection().GetDatabase();
+    private readonly IMongoCollection<RoomHistoryChunkDocument> _historyChunks =
+        databaseProvider.GetCollection<RoomHistoryChunkDocument>(databaseProvider.Settings.RoomHistoryCollection);
     private readonly ILogger<HistoryService>? _logger = logger;
 
     public Task SaveRoomHistoryAsync(string roomName, int gameTime, string serializedObjects, CancellationToken token = default)
@@ -58,6 +63,7 @@ internal sealed class HistoryService(
             DateTimeOffset.UtcNow,
             chunkTicks);
 
+        await PersistChunkAsync(chunk, token).ConfigureAwait(false);
         _driverConfig.EmitRoomHistorySaved(new RoomHistorySavedEventArgs(roomName, baseGameTime, chunk));
 
         await _redis.KeyDeleteAsync(key).ConfigureAwait(false);
@@ -88,6 +94,30 @@ internal sealed class HistoryService(
             return null;
         }
     }
+
+    private Task PersistChunkAsync(RoomHistoryChunk chunk, CancellationToken token)
+    {
+        var document = new RoomHistoryChunkDocument
+        {
+            Id = $"{chunk.Room}:{chunk.BaseTick}",
+            Room = chunk.Room,
+            BaseTick = chunk.BaseTick,
+            TimestampUtc = chunk.Timestamp.UtcDateTime,
+            Ticks = SerializeTicks(chunk.Ticks)
+        };
+
+        return _historyChunks.ReplaceOneAsync(doc => doc.Id == document.Id, document, new ReplaceOptions { IsUpsert = true }, token);
+    }
+
+    private static Dictionary<string, string?> SerializeTicks(IReadOnlyDictionary<int, JsonNode?> ticks)
+    {
+        var serialized = new Dictionary<string, string?>(ticks.Count, StringComparer.Ordinal);
+        foreach (var (tick, payload) in ticks)
+            serialized[tick.ToString()] = SerializeNode(payload);
+        return serialized;
+    }
+
+    private static string? SerializeNode(JsonNode? node) => node?.ToJsonString();
 
     private sealed class RoomStatsUpdater(string roomName, IDriverConfig config) : IRoomStatsUpdater
     {

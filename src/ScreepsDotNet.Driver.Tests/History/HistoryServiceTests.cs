@@ -1,7 +1,9 @@
+using MongoDB.Driver;
 using ScreepsDotNet.Driver.Abstractions.Eventing;
 using ScreepsDotNet.Driver.Services;
 using ScreepsDotNet.Driver.Services.History;
 using ScreepsDotNet.Driver.Tests.TestSupport;
+using ScreepsDotNet.Storage.MongoRedis.Repositories.Documents;
 
 namespace ScreepsDotNet.Driver.Tests.History;
 
@@ -13,7 +15,7 @@ public sealed class HistoryServiceTests(MongoRedisFixture fixture) : IClassFixtu
     public async Task UploadRoomHistoryChunkAsync_RaisesEvent()
     {
         var config = new DriverConfig(new FakeEnvironmentService());
-        var service = new HistoryService(config, _fixture.RedisProvider);
+        var service = new HistoryService(config, _fixture.RedisProvider, _fixture.MongoProvider);
         var received = new TaskCompletionSource<RoomHistorySavedEventArgs>(TaskCreationOptions.RunContinuationsAsynchronously);
         config.RoomHistorySaved += (_, args) => received.TrySetResult(args);
 
@@ -27,5 +29,24 @@ public sealed class HistoryServiceTests(MongoRedisFixture fixture) : IClassFixtu
         Assert.Equal(100, args.BaseGameTime);
         Assert.True(args.Chunk.Ticks.ContainsKey(100));
         Assert.True(args.Chunk.Ticks.ContainsKey(101));
+    }
+
+    [Fact]
+    public async Task UploadRoomHistoryChunkAsync_PersistsDocument()
+    {
+        var config = new DriverConfig(new FakeEnvironmentService());
+        var service = new HistoryService(config, _fixture.RedisProvider, _fixture.MongoProvider);
+
+        await service.SaveRoomHistoryAsync("W2N3", 200, """{"energy":300}""");
+        await service.SaveRoomHistoryAsync("W2N3", 201, """{"energy":250}""");
+        await service.UploadRoomHistoryChunkAsync("W2N3", 200);
+
+        var collection = _fixture.GetCollection<RoomHistoryChunkDocument>(_fixture.Options.RoomHistoryCollection);
+        var document = await collection.Find(doc => doc.Room == "W2N3" && doc.BaseTick == 200)
+                                       .FirstOrDefaultAsync();
+        Assert.NotNull(document);
+        Assert.Equal("W2N3:200", document!.Id);
+        Assert.True(document.Ticks.ContainsKey("200"));
+        Assert.True(document.Ticks.ContainsKey("201"));
     }
 }

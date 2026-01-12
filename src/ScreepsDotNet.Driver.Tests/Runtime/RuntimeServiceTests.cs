@@ -43,6 +43,32 @@ console.log('tick', GameTime);
         Assert.Equal(2, memoryDoc.RootElement.GetProperty("counter").GetInt32());
     }
 
+    [Fact]
+    public async Task ExecuteAsync_ForceColdSandbox_InvalidatesPool()
+    {
+        var pool = new TrackingSandboxPool();
+        var service = new RuntimeService(pool);
+        var context = new RuntimeExecutionContext(
+            UserId: "user456",
+            CodeHash: "hash",
+            CpuLimit: 50,
+            CpuBucket: 1000,
+            GameTime: 999,
+            Memory: new Dictionary<string, object?>(),
+            MemorySegments: new Dictionary<int, string>(),
+            InterShardSegment: null,
+            RuntimeData: new Dictionary<string, object?>
+            {
+                ["script"] = "console.log('hi');"
+            },
+            ForceColdSandbox: true);
+
+        await service.ExecuteAsync(context);
+
+        Assert.True(pool.Invalidated);
+        Assert.False(pool.Returned);
+    }
+
     private sealed class StubRuntimeSandboxPool : IRuntimeSandboxPool
     {
         private readonly StubRuntimeSandbox _sandbox = new();
@@ -56,6 +82,19 @@ console.log('tick', GameTime);
         public void Invalidate(IRuntimeSandbox sandbox)
         {
         }
+    }
+
+    private sealed class TrackingSandboxPool : IRuntimeSandboxPool
+    {
+        private readonly StubRuntimeSandbox _sandbox = new();
+        public bool Returned { get; private set; }
+        public bool Invalidated { get; private set; }
+
+        public IRuntimeSandbox Rent() => _sandbox;
+
+        public void Return(IRuntimeSandbox sandbox) => Returned = true;
+
+        public void Invalidate(IRuntimeSandbox sandbox) => Invalidated = true;
     }
 
     private sealed class StubRuntimeSandbox : IRuntimeSandbox

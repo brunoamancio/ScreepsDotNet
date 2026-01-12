@@ -42,6 +42,7 @@ public sealed class MongoRedisFixture : IAsyncLifetime
         // Ensure collections exist
         var database = _mongoProvider.GetDatabase();
         await database.CreateCollectionAsync(Options.UserNotificationsCollection);
+        await database.CreateCollectionAsync(Options.RoomHistoryCollection);
     }
 
     public async Task DisposeAsync()

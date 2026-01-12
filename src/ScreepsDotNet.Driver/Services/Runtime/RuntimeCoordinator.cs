@@ -21,6 +21,7 @@ internal sealed class RuntimeCoordinator(
     IUserDataService userDataService,
     IRuntimeService runtimeService,
     IRuntimeBundleCache bundleCache,
+    IRuntimeWatchdog runtimeWatchdog,
     IDriverLoopHooks loopHooks,
     IDriverConfig config,
     IEnvironmentService environmentService,
@@ -39,6 +40,7 @@ internal sealed class RuntimeCoordinator(
     private readonly IUserDataService _users = userDataService;
     private readonly IRuntimeService _runtime = runtimeService;
     private readonly IRuntimeBundleCache _bundleCache = bundleCache;
+    private readonly IRuntimeWatchdog _watchdog = runtimeWatchdog;
     private readonly IDriverLoopHooks _hooks = loopHooks;
     private readonly IDriverConfig _config = config;
     private readonly IEnvironmentService _environment = environmentService;
@@ -75,6 +77,8 @@ internal sealed class RuntimeCoordinator(
         var gameTime = await _environment.GetGameTimeAsync(token).ConfigureAwait(false);
         var cpuBucket = await _environment.GetCpuBucketSizeAsync(token).ConfigureAwait(false) ?? _config.CpuBucketSize;
 
+        var forceColdSandbox = _watchdog.TryConsumeColdStartRequest(userId);
+
         var context = new RuntimeExecutionContext(
             userId,
             codeHash,
@@ -90,7 +94,8 @@ internal sealed class RuntimeCoordinator(
                 ["modules"] = bundle.Modules,
                 ["userCodeTimestamp"] = codeDocument.Timestamp,
                 ["branch"] = codeDocument.Branch
-            });
+            },
+            forceColdSandbox);
 
         RuntimeExecutionResult result;
         try

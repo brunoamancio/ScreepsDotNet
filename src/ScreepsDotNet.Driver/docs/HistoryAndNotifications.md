@@ -39,3 +39,8 @@ D9 addresses the remaining driver helpers: history snapshot uploads, map view pe
 ## Next Steps
 - Implement service interfaces + wiring.
 - Update `AGENT.md` to reflect planning status.
+
+## Current Progress
+- `HistoryService` now batches per-room ticks in Redis, persists the assembled chunk to Mongo (`rooms.history`) with upsert semantics, and only then emits `config.emit('roomHistorySaved', ...)` so downstream uploaders can rely on durable storage.
+- Notification helpers (`SendNotificationAsync`, `PublishConsole*`, `NotifyRoomsDoneAsync`) share the throttling logic in `NotificationThrottler`, while runtime watchdog alerts reuse the same path with the `"watchdog"` notification type.
+- Remaining work: wire the persisted chunks into whatever long-term blob/S3 upload pipeline we adopt and add throttled listeners for high-volume history consumers once processor loops cover more intent handlers.

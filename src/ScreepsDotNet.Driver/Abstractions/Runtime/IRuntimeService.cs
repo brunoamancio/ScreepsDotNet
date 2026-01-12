@@ -16,7 +16,8 @@ public sealed record RuntimeExecutionContext(
     IReadOnlyDictionary<string, object?> Memory,
     IReadOnlyDictionary<int, string> MemorySegments,
     string? InterShardSegment,
-    IReadOnlyDictionary<string, object?> RuntimeData);
+    IReadOnlyDictionary<string, object?> RuntimeData,
+    bool ForceColdSandbox = false);
 
 public sealed record RuntimeExecutionResult(
     IReadOnlyList<string> ConsoleLog,
