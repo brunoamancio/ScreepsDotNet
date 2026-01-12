@@ -3,6 +3,7 @@
 #include <iostream>
 #include <algorithm>
 #include <stdexcept>
+#include <cstring>
 
 using namespace screeps;
 
@@ -16,7 +17,8 @@ constexpr bool is_near_border_pos(T val) {
 	return (val + 2) % 50 < 4;
 }
 
-	decltype(path_finder_t::terrain) path_finder_t::terrain = {{ nullptr }};
+decltype(path_finder_t::terrain) path_finder_t::terrain = {{ nullptr }};
+std::vector<std::unique_ptr<uint8_t[]>> path_finder_t::terrain_storage;
 
 	// Return room index from a map position, allocates a new room index if needed and possible
 	room_index_t path_finder_t::room_index_from_pos(const map_position_t map_pos) {
@@ -601,13 +603,46 @@ constexpr bool is_near_border_pos(T val) {
 		return ret;
 	}
 
-	// Loads static terrain data into module upfront
-	void path_finder_t::load_terrain(v8::Local<v8::Array> terrain) {
-		uint8_t* data = new uint8_t[terrain->Length() * 625];
-		for (uint32_t ii = 0; ii < terrain->Length(); ++ii) {
-			v8::Local<v8::Object> terrain_info = Nan::To<v8::Object>(Nan::Get(terrain, ii).ToLocalChecked()).ToLocalChecked();
+	void path_finder_t::reset_terrain_storage() {
+		std::fill(terrain.begin(), terrain.end(), nullptr);
+		terrain_storage.clear();
+	}
+
+	void path_finder_t::ingest_terrain_chunk(map_position_t pos, const uint8_t* source, size_t length) {
+		if (source == nullptr || length < terrain_bytes_per_room)
+			return;
+
+		auto buffer = std::make_unique<uint8_t[]>(terrain_bytes_per_room);
+		std::memcpy(buffer.get(), source, terrain_bytes_per_room);
+		terrain[pos.id] = buffer.get();
+		terrain_storage.push_back(std::move(buffer));
+	}
+
+	// Loads static terrain data into module upfront (legacy V8 path)
+	void path_finder_t::load_terrain(v8::Local<v8::Array> terrain_array) {
+		if (terrain_array.IsEmpty())
+			return;
+
+		reset_terrain_storage();
+		for (uint32_t ii = 0; ii < terrain_array->Length(); ++ii) {
+			v8::Local<v8::Object> terrain_info = Nan::To<v8::Object>(Nan::Get(terrain_array, ii).ToLocalChecked()).ToLocalChecked();
 			map_position_t pos = Nan::Get(terrain_info, Nan::New("room").ToLocalChecked()).ToLocalChecked();
-			memcpy(data + ii * 625, *Nan::TypedArrayContents<uint8_t>(Nan::Get(terrain_info, Nan::New("bits").ToLocalChecked()).ToLocalChecked()), 625);
-			path_finder_t::terrain[pos.id] = data + ii * 625;
+			v8::Local<v8::Value> bits_value = Nan::Get(terrain_info, Nan::New("bits").ToLocalChecked()).ToLocalChecked();
+			Nan::TypedArrayContents<uint8_t> bits(bits_value);
+			if (bits.length() >= terrain_bytes_per_room)
+				ingest_terrain_chunk(pos, *bits, terrain_bytes_per_room);
+		}
+	}
+
+	// Loads terrain data from POD structs (native bridge)
+	void path_finder_t::load_terrain(const terrain_room_plain* rooms, size_t count) {
+		if (rooms == nullptr || count == 0)
+			return;
+
+		reset_terrain_storage();
+		for (size_t ii = 0; ii < count; ++ii) {
+			const auto& room = rooms[ii];
+			map_position_t pos(room.xx, room.yy);
+			ingest_terrain_chunk(pos, room.bits, room.length);
 		}
 	}

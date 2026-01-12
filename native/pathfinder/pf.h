@@ -340,6 +340,7 @@ namespace screeps {
 		private:
 			static constexpr size_t map_position_size = 1 << sizeof(map_position_t) * 8;
 			static constexpr cost_t obstacle = std::numeric_limits<cost_t>::max();
+			static constexpr size_t terrain_bytes_per_room = k_terrain_bytes;
 			std::array<room_info_t, k_max_rooms> room_table;
 			size_t room_table_size = 0;
 			std::array<room_index_t, map_position_size> reverse_room_table;
@@ -357,6 +358,7 @@ namespace screeps {
 			bool _is_in_use = false;
 
 			static std::array<uint8_t*, map_position_size> terrain;
+			static std::vector<std::unique_ptr<uint8_t[]>> terrain_storage;
 
 			class js_error: public std::runtime_error {
 				public: js_error() : std::runtime_error("js error") {}
@@ -378,6 +380,8 @@ namespace screeps {
 			world_position_t jump(cost_t cost, world_position_t pos, int dx, int dy);
 			void jps(pos_index_t index, world_position_t pos, cost_t g_cost);
 			void jump_neighbor(world_position_t pos, pos_index_t index, world_position_t neighbor, cost_t g_cost, cost_t cost, cost_t n_cost);
+			static void reset_terrain_storage();
+			static void ingest_terrain_chunk(map_position_t pos, const uint8_t* source, size_t length);
 
 		public:
 			v8::Local<v8::Value> search(
@@ -394,5 +398,6 @@ namespace screeps {
 			}
 
 			static void load_terrain(v8::Local<v8::Array> terrain);
+			static void load_terrain(const terrain_room_plain* rooms, size_t count);
 	};
 };

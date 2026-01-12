@@ -11,12 +11,13 @@ Track progress toward replacing the managed A* fallback with the upstream Screep
 
 ## Current Status (January 12, 2026)
 - ✅ Solver sources (`pf.cc/.h`) copied into this directory.
-- ⚠️ `pathfinder_exports.cpp` is a placeholder. `path_finder_t` still depends on V8/NAN callbacks, so the exports currently return `-1`.
+- ✅ Terrain loading no longer requires V8/NAN: `path_finder_t::load_terrain` now accepts a POD array (`terrain_room_plain`), and the C wrapper (`pathfinder_exports.cpp`) parses room names and forwards data via the new API.
+- ⚠️ Search still depends on V8/NAN callbacks, so `Pathfinder_Search` remains a stub.
 - ⚠️ No build tooling yet; CMake stub exists but doesn’t link against V8 or emit usable binaries.
 - ⚠️ Managed driver still uses the C# A* fallback.
 
 ## Next Steps
-1. Refactor `pf.cc` to remove direct NAN/V8 usage (or wrap it behind neutral adapters) so the solver can run without Node.
+1. Refactor the search pipeline (`path_finder_t::search`, callbacks, cost matrices) so it no longer depends on V8/NAN.
 2. Implement the real exports in `pathfinder_exports.cpp`: instantiate `path_finder_t`, marshal terrain/cost matrices, and copy results back into `ScreepsPathfinderResultNative`.
 3. Finalize the CMake project (or equivalent) to produce `libscreepspathfinder` for all target RIDs, plus scripts to drop them under `ScreepsDotNet.Driver/runtimes/<rid>/native`.
 4. Update the managed `PathfinderService` to P/Invoke the new library, keeping the managed fallback as a contingency until the native path passes tests.
