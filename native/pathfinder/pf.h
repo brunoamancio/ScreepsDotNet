@@ -13,6 +13,13 @@ namespace screeps {
 	typedef uint32_t room_index_t; // maximum: k_max_rooms (32 bits tested faster than uint8_t)
 	constexpr size_t k_max_rooms = 64;
 
+	struct room_callback_result {
+		const uint8_t* cost_matrix;
+		size_t cost_matrix_length;
+	};
+
+	using room_callback_fn = bool (*)(uint8_t room_x, uint8_t room_y, room_callback_result* result, void* context);
+
 	static_assert(std::numeric_limits<pos_index_t>::max() > 2500 * k_max_rooms, "pos_index_t is too small");
 
 	//
@@ -239,12 +246,49 @@ namespace screeps {
 	struct goal_t {
 		cost_t range;
 		world_position_t pos;
+		goal_t() : range(0), pos(world_position_t::null()) {}
 		goal_t(v8::Local<v8::Value> goal) {
 			v8::Local<v8::Object> obj = Nan::To<v8::Object>(goal).ToLocalChecked();
 			range = Nan::To<uint32_t>(Nan::Get(obj, Nan::New("range").ToLocalChecked()).ToLocalChecked()).FromJust();
 			pos = world_position_t(Nan::Get(obj, Nan::New("pos").ToLocalChecked()).ToLocalChecked());
 		}
+		goal_t(world_position_t position, cost_t goal_range) : range(goal_range), pos(position) {}
 	};
+
+	struct search_options_native {
+		cost_t plain_cost;
+		cost_t swamp_cost;
+		uint8_t max_rooms;
+		uint32_t max_ops;
+		uint32_t max_cost;
+		bool flee;
+		double heuristic_weight;
+	};
+
+	struct search_request_native {
+		world_position_t origin;
+		const goal_t* goals;
+		size_t goal_count;
+		search_options_native options;
+	};
+
+	enum class search_status {
+		Success,
+		SamePosition,
+		InvalidStart,
+		Interrupted,
+		Error
+	};
+
+	struct search_result_native {
+		std::vector<world_position_t> path;
+		uint32_t operations = 0;
+		cost_t cost = 0;
+		bool incomplete = false;
+		search_status status = search_status::Error;
+	};
+
+	using abort_callback_fn = bool (*)();
 
 	//
 	// Priority queue implementation w/ support for updating priorities
@@ -396,6 +440,11 @@ namespace screeps {
 				bool flee,
 				double heuristic_weight
 			);
+
+			search_status search_native(
+				const search_request_native& request,
+				search_result_native& result,
+				abort_callback_fn should_abort = nullptr);
 
 			bool is_in_use() const {
 				return _is_in_use;

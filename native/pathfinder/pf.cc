@@ -23,6 +23,12 @@ std::vector<std::unique_ptr<uint8_t[]>> path_finder_t::cost_matrix_storage;
 room_callback_fn path_finder_t::native_room_callback = nullptr;
 void* path_finder_t::native_room_callback_context = nullptr;
 
+namespace {
+	bool ShouldAbortForV8() {
+		return v8::Isolate::GetCurrent()->IsExecutionTerminating();
+	}
+}
+
 	// Return room index from a map position, allocates a new room index if needed and possible
 	room_index_t path_finder_t::room_index_from_pos(const map_position_t map_pos) {
 		room_index_t room_index = reverse_room_table[map_pos.id];
@@ -471,6 +477,123 @@ void* path_finder_t::native_room_callback_context = nullptr;
 		push_node(index, neighbor, g_cost);
 	}
 
+	search_status path_finder_t::search_native(
+		const search_request_native& request,
+		search_result_native& result,
+		abort_callback_fn should_abort
+	) {
+
+		for (size_t ii = 0; ii < room_table_size; ++ii) {
+			reverse_room_table[room_table[ii].pos.id] = 0;
+		}
+		room_table_size = 0;
+		blocked_rooms.clear();
+		goals.clear();
+		open_closed.clear();
+		heap.clear();
+		cost_matrix_storage.clear();
+
+		result.path.clear();
+		result.operations = 0;
+		result.cost = 0;
+		result.incomplete = false;
+		result.status = search_status::Error;
+
+		goals.reserve(request.goal_count);
+		for (size_t ii = 0; ii < request.goal_count; ++ii) {
+			goals.push_back(request.goals[ii]);
+		}
+
+		look_table[0] = request.options.plain_cost;
+		look_table[2] = request.options.swamp_cost;
+		this->max_rooms = request.options.max_rooms;
+		this->heuristic_weight = request.options.heuristic_weight;
+		uint32_t ops_remaining = request.options.max_ops;
+		this->flee = request.options.flee;
+		world_position_t origin = request.origin;
+		cost_t min_node_h_cost = std::numeric_limits<cost_t>::max();
+		cost_t min_node_g_cost = std::numeric_limits<cost_t>::max();
+		pos_index_t min_node = 0;
+
+		if (heuristic(origin) == 0) {
+			result.status = search_status::SamePosition;
+			return result.status;
+		}
+
+		_is_in_use = true;
+		try {
+			if (room_index_from_pos(origin.map_position()) == 0) {
+				_is_in_use = false;
+				result.status = search_status::InvalidStart;
+				return result.status;
+			}
+
+			min_node = index_from_pos(origin);
+			astar(min_node, origin, 0);
+
+			while (!heap.empty() && ops_remaining > 0) {
+				std::pair<pos_index_t, cost_t> current = heap.pop();
+				open_closed.close(current.first);
+
+				world_position_t pos = pos_from_index(current.first);
+				cost_t h_cost = heuristic(pos);
+				cost_t g_cost = current.second - cost_t(h_cost * heuristic_weight);
+
+				if (h_cost == 0) {
+					min_node = current.first;
+					min_node_h_cost = 0;
+					min_node_g_cost = g_cost;
+					break;
+				} else if (h_cost < min_node_h_cost) {
+					min_node = current.first;
+					min_node_h_cost = h_cost;
+					min_node_g_cost = g_cost;
+				}
+				if (g_cost + h_cost > request.options.max_cost) {
+					break;
+				}
+
+				jps(current.first, pos, g_cost);
+				--ops_remaining;
+
+				if (should_abort != nullptr && should_abort()) {
+					_is_in_use = false;
+					result.status = search_status::Interrupted;
+					return result.status;
+				}
+			}
+		} catch (js_error&) {
+			_is_in_use = false;
+			result.status = search_status::Error;
+			return result.status;
+		}
+
+		std::vector<world_position_t> reconstructed;
+		pos_index_t index = min_node;
+		world_position_t pos = pos_from_index(index);
+		while (pos != origin) {
+			reconstructed.push_back(pos);
+			index = parents[index];
+			world_position_t next = pos_from_index(index);
+			if (next.range_to(pos) > 1) {
+				world_position_t::direction_t dir = pos.direction_to(next);
+				do {
+					pos = pos.position_in_direction(dir);
+					reconstructed.push_back(pos);
+				} while (pos.range_to(next) > 1);
+			}
+			pos = next;
+		}
+
+		result.path = std::move(reconstructed);
+		result.operations = request.options.max_ops - ops_remaining;
+		result.cost = min_node_g_cost;
+		result.incomplete = (min_node_h_cost != 0);
+		result.status = search_status::Success;
+		_is_in_use = false;
+		return result.status;
+	}
+
 	v8::Local<v8::Value> path_finder_t::search(
 		v8::Local<v8::Value> origin_js,
 		v8::Local<v8::Array> goals_js,
@@ -484,23 +607,12 @@ void* path_finder_t::native_room_callback_context = nullptr;
 		double heuristic_weight
 	) {
 
-		// Clean up from previous iteration
-		for (size_t ii = 0; ii < room_table_size; ++ii) {
-			reverse_room_table[room_table[ii].pos.id] = 0;
-		}
-		room_table_size = 0;
-		blocked_rooms.clear();
-		goals.clear();
-		open_closed.clear();
-		heap.clear();
-
-		// Construct goal objects
+		std::vector<goal_t> goal_buffer;
+		goal_buffer.reserve(goals_js->Length());
 		for (uint32_t ii = 0; ii < goals_js->Length(); ++ii) {
-			goals.push_back(goal_t(Nan::Get(goals_js, ii).ToLocalChecked()));
+			goal_buffer.push_back(goal_t(Nan::Get(goals_js, ii).ToLocalChecked()));
 		}
 
-		// These aren't ever accessed, this is just a place to put the handles for the CostMatrix data
-		// so it doesn't get gc'd
 		v8::Local<v8::Value> room_data_handle_holder[k_max_rooms];
 		room_data_handles = room_data_handle_holder;
 		if (room_callback->IsUndefined()) {
@@ -509,113 +621,52 @@ void* path_finder_t::native_room_callback_context = nullptr;
 			this->room_callback = &room_callback;
 		}
 
-		// Other initialization
-		look_table[0] = plain_cost;
-		look_table[2] = swamp_cost;
-		this->max_rooms = max_rooms;
-		this->heuristic_weight = heuristic_weight;
-		uint32_t ops_remaining = max_ops;
-		this->flee = flee;
 		world_position_t origin(origin_js);
-		cost_t min_node_h_cost = std::numeric_limits<cost_t>::max();
-		cost_t min_node_g_cost = std::numeric_limits<cost_t>::max();
-		pos_index_t min_node = 0;
+		search_request_native request{
+			origin,
+			goal_buffer.data(),
+			goal_buffer.size(),
+			search_options_native{
+				plain_cost,
+				swamp_cost,
+				max_rooms,
+				max_ops,
+				max_cost,
+				flee,
+				heuristic_weight
+			}
+		};
 
-		// Special case for searching to same node, otherwise it searches everywhere because origin node
-		// is closed
-		if (heuristic(origin) == 0) {
+		search_result_native native_result;
+		search_status status = search_native(request, native_result, ShouldAbortForV8);
+
+		this->room_callback = nullptr;
+		room_data_handles = nullptr;
+
+		if (status == search_status::SamePosition) {
+			return Nan::Undefined();
+		}
+		if (status == search_status::InvalidStart) {
+			return Nan::New(-1);
+		}
+		if (status != search_status::Success) {
 			return Nan::Undefined();
 		}
 
-		_is_in_use = true;
-		try {
-			// Prime data for `index_from_pos`
-			if (room_index_from_pos(origin.map_position()) == 0) {
-				// Initial room is inaccessible
-				_is_in_use = false;
-				return Nan::New(-1);
-			}
-
-			// Initial A* iteration
-			min_node = index_from_pos(origin);
-			astar(min_node, origin, 0);
-
-			// Loop until we have a solution
-			while (!heap.empty() && ops_remaining > 0) {
-
-				// Pull cheapest open node off the heap and close the node
-				std::pair<pos_index_t, cost_t> current = heap.pop();
-				open_closed.close(current.first);
-
-				// Calculate costs
-				world_position_t pos = pos_from_index(current.first);
-				cost_t h_cost = heuristic(pos);
-				cost_t g_cost = current.second - cost_t(h_cost * heuristic_weight);
-				// std::cout <<"\n* " <<pos <<": h(" << h_cost <<") + " <<"g(" <<g_cost <<") = f(" <<current.second <<")\n";
-
-				// Reached destination?
-				if (h_cost == 0) {
-					min_node = current.first;
-					min_node_h_cost = 0;
-					min_node_g_cost = g_cost;
-					break;
-				} else if (h_cost < min_node_h_cost) {
-					min_node = current.first;
-					min_node_h_cost = h_cost;
-					min_node_g_cost = g_cost;
-				}
-				if (g_cost + h_cost > max_cost) {
-					break;
-				}
-
-				// Add next neighbors to heap
-				jps(current.first, pos, g_cost);
-				--ops_remaining;
-
-				// Check termination
-				if (v8::Isolate::GetCurrent()->IsExecutionTerminating()) {
-					_is_in_use = false;
-					return Nan::Undefined();
-				}
-			}
-		} catch (js_error) {
-			// Whoever threw the `js_error` should set the exception for v8
-			_is_in_use = false;
-			return Nan::Undefined();
-		}
-
-		// Reconstruct path from A* graph
-		v8::Local<v8::Array> path = Nan::New<v8::Array>(0);
-		pos_index_t index = min_node;
-		world_position_t pos = pos_from_index(index);
-		uint32_t ii = 0;
-		while (pos != origin) {
+		v8::Local<v8::Array> path = Nan::New<v8::Array>(static_cast<uint32_t>(native_result.path.size()));
+		for (uint32_t ii = 0; ii < native_result.path.size(); ++ii) {
+			const auto& node = native_result.path[ii];
 			v8::Local<v8::Array> tmp = Nan::New<v8::Array>(2);
-			Nan::Set(tmp, 0, Nan::New(pos.xx));
-			Nan::Set(tmp, 1, Nan::New(pos.yy));
+			Nan::Set(tmp, 0, Nan::New(node.xx));
+			Nan::Set(tmp, 1, Nan::New(node.yy));
 			Nan::Set(path, ii, tmp);
-			++ii;
-			index = parents[index];
-			world_position_t next = pos_from_index(index);
-			if (next.range_to(pos) > 1) {
-				world_position_t::direction_t dir = pos.direction_to(next);
-				do {
-					pos = pos.position_in_direction(dir);
-					v8::Local<v8::Array> tmp = Nan::New<v8::Array>(2);
-					Nan::Set(tmp, 0, Nan::New(pos.xx));
-					Nan::Set(tmp, 1, Nan::New(pos.yy));
-					Nan::Set(path, ii, tmp);
-					++ii;
-				} while (pos.range_to(next) > 1);
-			}
-			pos = next;
 		}
+
 		v8::Local<v8::Object> ret = Nan::New<v8::Object>();
 		Nan::Set(ret, Nan::New("path").ToLocalChecked(), path);
-		Nan::Set(ret, Nan::New("ops").ToLocalChecked(), Nan::New(max_ops - ops_remaining));
-		Nan::Set(ret, Nan::New("cost").ToLocalChecked(), Nan::New(min_node_g_cost));
-		Nan::Set(ret, Nan::New("incomplete").ToLocalChecked(), Nan::New<v8::Boolean>(min_node_h_cost != 0));
-		_is_in_use = false;
+		Nan::Set(ret, Nan::New("ops").ToLocalChecked(), Nan::New(native_result.operations));
+		Nan::Set(ret, Nan::New("cost").ToLocalChecked(), Nan::New(native_result.cost));
+		Nan::Set(ret, Nan::New("incomplete").ToLocalChecked(), Nan::New<v8::Boolean>(native_result.incomplete));
 		return ret;
 	}
 
