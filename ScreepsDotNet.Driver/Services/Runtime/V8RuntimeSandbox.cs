@@ -24,7 +24,8 @@ internal sealed class V8RuntimeSandbox(RuntimeSandboxOptions options, ILogger<V8
     {
         ArgumentNullException.ThrowIfNull(context);
 
-        var script = ExtractScript(context);
+        var modules = ExtractModules(context);
+        var script = modules is null ? ExtractScript(context) : null;
         using var engine = CreateEngine();
         var cpuLimitMs = Math.Max(context.CpuLimit, _options.DefaultCpuLimitMs) + _options.ScriptInterruptBufferMs;
         using var cpuTimeoutCts = new CancellationTokenSource(TimeSpan.FromMilliseconds(cpuLimitMs));
@@ -47,7 +48,10 @@ internal sealed class V8RuntimeSandbox(RuntimeSandboxOptions options, ILogger<V8
         string? error = null;
         try
         {
-            engine.Execute(script);
+            if (modules is { Count: > 0 })
+                ExecuteModuleGraph(engine, modules);
+            else if (!string.IsNullOrWhiteSpace(script))
+                engine.Execute(script);
         }
         catch (ScriptInterruptedException)
         {
@@ -95,6 +99,45 @@ internal sealed class V8RuntimeSandbox(RuntimeSandboxOptions options, ILogger<V8
         return engine;
     }
 
+    private static void ExecuteModuleGraph(V8ScriptEngine engine, IReadOnlyDictionary<string, string> modules)
+    {
+        var registry = new ModuleRegistry(modules);
+        engine.AddHostObject("moduleRegistry", registry);
+        engine.Execute(ModuleLoaderPrelude);
+    }
+
+    private static IReadOnlyDictionary<string, string>? ExtractModules(RuntimeExecutionContext context)
+    {
+        if (!context.RuntimeData.TryGetValue("modules", out var value) || value is null)
+            return null;
+
+        static IReadOnlyDictionary<string, string>? FromEnumerable(IEnumerable<KeyValuePair<string, string>> source)
+        {
+            var dict = new Dictionary<string, string>(StringComparer.Ordinal);
+            foreach (var (name, code) in source)
+            {
+                if (string.IsNullOrWhiteSpace(name))
+                    continue;
+                dict[name] = code;
+            }
+
+            return dict.Count == 0 ? null : dict;
+        }
+
+        return value switch
+        {
+            IReadOnlyDictionary<string, string> { Count: > 0 } typed => typed,
+            IDictionary<string, string> { Count: > 0 } dict => new Dictionary<string, string>(dict, StringComparer.Ordinal),
+            IEnumerable<KeyValuePair<string, string>> enumerable => FromEnumerable(enumerable),
+            JsonElement { ValueKind: JsonValueKind.Object } element => FromEnumerable(element.EnumerateObject()
+                                                                                             .Select(prop => new KeyValuePair<string, string>(
+                                                                                                              prop.Name, prop.Value.ValueKind == JsonValueKind.String
+                                                                                                                  ? prop.Value.GetString() ?? string.Empty
+                                                                                                                  : prop.Value.GetRawText()))),
+            _ => null
+        };
+    }
+
     private static string SerializeMemory(IReadOnlyDictionary<string, object?>? memory)
     {
         if (memory is null || memory.Count == 0)
@@ -108,6 +151,59 @@ internal sealed class V8RuntimeSandbox(RuntimeSandboxOptions options, ILogger<V8
             return script;
 
         throw new InvalidOperationException("RuntimeData.script is required to execute user code.");
+    }
+
+    private const string ModuleLoaderPrelude = """
+const __driverModuleCache = Object.create(null);
+const __driverModuleFactories = Object.create(null);
+
+function __driverCompileModule(name) {
+    let factory = __driverModuleFactories[name];
+    if (factory) {
+        return factory;
+    }
+    const source = moduleRegistry.GetSource(name);
+    if (typeof source !== "string") {
+        throw new Error("Module '" + name + "' not found.");
+    }
+    factory = new Function("module", "exports", "require", source);
+    __driverModuleFactories[name] = factory;
+    return factory;
+}
+
+function __driverRequire(name) {
+    if (!name) {
+        throw new Error("Module name is required.");
+    }
+    if (__driverModuleCache[name]) {
+        return __driverModuleCache[name].exports;
+    }
+    const module = { exports: {} };
+    __driverModuleCache[name] = module;
+    const factory = __driverCompileModule(name);
+    factory(module, module.exports, __driverRequire);
+    return module.exports;
+}
+
+globalThis.require = __driverRequire;
+const __driverMainModule = __driverRequire("main");
+if (__driverMainModule && typeof __driverMainModule.loop === "function") {
+    __driverMainModule.loop();
+}
+""";
+
+    private sealed class ModuleRegistry(IReadOnlyDictionary<string, string> modules)
+    {
+        private readonly IReadOnlyDictionary<string, string> _modules = modules;
+
+        [ScriptMember("GetSource")]
+        public string? GetSource(string? name)
+        {
+            if (string.IsNullOrWhiteSpace(name))
+                return null;
+
+            return _modules.TryGetValue(name, out var code) ? code : null;
+        }
     }
 
     private const string ScriptPrelude = """
@@ -233,7 +329,7 @@ function notify(message, groupIntervalMinutes = 0) {
             try
             {
                 var parsed = JsonSerializer.Deserialize<object>(payloadText, JsonOptions);
-                if (parsed is JsonElement element && element.ValueKind == JsonValueKind.Object)
+                if (parsed is JsonElement { ValueKind: JsonValueKind.Object })
                     return JsonSerializer.Deserialize<Dictionary<string, object?>>(payloadText, JsonOptions);
                 return parsed;
             }
@@ -264,7 +360,7 @@ function notify(message, groupIntervalMinutes = 0) {
             return payload switch
             {
                 IDictionary<string, object?> dictionary when dictionary.TryGetValue(IntentPayloadFields.Room, out var roomValue) => Resolve(roomValue),
-                JsonElement element when element.ValueKind == JsonValueKind.Object && element.TryGetProperty(IntentPayloadFields.Room, out var roomProperty) && roomProperty.ValueKind == JsonValueKind.String => Resolve(roomProperty.GetString()),
+                JsonElement { ValueKind: JsonValueKind.Object } element when element.TryGetProperty(IntentPayloadFields.Room, out var roomProperty) && roomProperty.ValueKind == JsonValueKind.String => Resolve(roomProperty.GetString()),
                 _ => null
             };
         }

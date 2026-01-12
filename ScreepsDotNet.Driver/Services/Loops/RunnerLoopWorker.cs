@@ -62,12 +62,13 @@ internal sealed class RunnerLoopWorker(
             return;
         }
 
-        var script = BuildBundle(codeDocument.Modules);
-        if (string.IsNullOrWhiteSpace(script))
+        var modules = NormalizeModules(codeDocument.Modules);
+        if (modules.Count == 0 || !modules.ContainsKey("main"))
         {
-            _logger?.LogDebug("User {UserId} bundle resolved to an empty script.", userId);
+            _logger?.LogDebug("User {UserId} does not have a valid 'main' module.", userId);
             return;
         }
+        var script = BuildBundle(modules);
 
         var gameTime = await _environment.GetGameTimeAsync(token).ConfigureAwait(false);
         var context = new RuntimeExecutionContext(
@@ -82,6 +83,7 @@ internal sealed class RunnerLoopWorker(
             new Dictionary<string, object?>(StringComparer.Ordinal)
             {
                 ["script"] = script,
+                ["modules"] = modules,
                 ["userCodeTimestamp"] = codeDocument.Timestamp,
                 ["branch"] = codeDocument.Branch
             });
@@ -208,6 +210,20 @@ internal sealed class RunnerLoopWorker(
 
         var buffer = Encoding.UTF8.GetBytes(builder.ToString());
         return Convert.ToHexString(SHA256.HashData(buffer));
+    }
+
+    private static IReadOnlyDictionary<string, string> NormalizeModules(IReadOnlyDictionary<string, string> modules)
+    {
+        var normalized = new Dictionary<string, string>(StringComparer.Ordinal);
+        foreach (var (name, code) in modules)
+        {
+            if (string.IsNullOrWhiteSpace(name))
+                continue;
+
+            normalized[name.Trim()] = code;
+        }
+
+        return normalized;
     }
 
     private static string BuildBundle(IReadOnlyDictionary<string, string> modules)
