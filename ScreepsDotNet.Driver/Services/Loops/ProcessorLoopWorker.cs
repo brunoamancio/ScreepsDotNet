@@ -7,6 +7,7 @@ using ScreepsDotNet.Driver.Abstractions.Environment;
 using ScreepsDotNet.Driver.Abstractions.Loops;
 using ScreepsDotNet.Driver.Abstractions.Notifications;
 using ScreepsDotNet.Driver.Abstractions.Rooms;
+using ScreepsDotNet.Driver.Constants;
 using ScreepsDotNet.Storage.MongoRedis.Repositories.Documents;
 
 namespace ScreepsDotNet.Driver.Services.Loops;
@@ -137,35 +138,36 @@ internal sealed class ProcessorLoopWorker(
         if (actor?.Type is null || payload.ElementCount == 0)
             return;
 
-        if (actor.Type == "creep" || actor.Type == "powerCreep" || actor.Type == "tower")
+        if (actor.Type is RoomObjectTypes.Creep or RoomObjectTypes.PowerCreep or RoomObjectTypes.Tower)
             ApplyCombatIntents(writer, objects, payload);
-        else if (actor.Type == "link")
+        else if (actor.Type == RoomObjectTypes.Link)
             ApplyLinkIntents(writer, actorId, actor, objects, payload);
-        else if (actor.Type == "lab") ApplyLabIntents(writer, actorId, actor, payload);
+        else if (actor.Type == RoomObjectTypes.Lab)
+            ApplyLabIntents(writer, actorId, actor, payload);
     }
 
     private static void ApplyCombatIntents(IBulkWriter<RoomObjectDocument> writer, IReadOnlyDictionary<string, RoomObjectDocument> objects, BsonDocument payload)
     {
-        if (payload.TryGetValue("attack", out var attack) && attack is BsonDocument attackDoc)
+        if (payload.TryGetValue(IntentActionType.Attack.ToKey(), out var attack) && attack is BsonDocument attackDoc)
             ApplyDamageIntent(writer, objects, attackDoc);
 
-        if (payload.TryGetValue("rangedAttack", out var rangedAttack) && rangedAttack is BsonDocument rangedDoc)
+        if (payload.TryGetValue(IntentActionType.RangedAttack.ToKey(), out var rangedAttack) && rangedAttack is BsonDocument rangedDoc)
             ApplyDamageIntent(writer, objects, rangedDoc);
 
-        if (payload.TryGetValue("heal", out var heal) && heal is BsonDocument healDoc)
+        if (payload.TryGetValue(IntentActionType.Heal.ToKey(), out var heal) && heal is BsonDocument healDoc)
             ApplyHealIntent(writer, objects, healDoc);
 
-        if (payload.TryGetValue("rangedHeal", out var rangedHeal) && rangedHeal is BsonDocument rangedHealDoc)
+        if (payload.TryGetValue(IntentActionType.RangedHeal.ToKey(), out var rangedHeal) && rangedHeal is BsonDocument rangedHealDoc)
             ApplyHealIntent(writer, objects, rangedHealDoc);
     }
 
     private static void ApplyLinkIntents(IBulkWriter<RoomObjectDocument> writer, string actorId, RoomObjectDocument actor, IReadOnlyDictionary<string, RoomObjectDocument> objects, BsonDocument payload)
     {
-        if (!payload.TryGetValue("transferEnergy", out var transfer) || transfer is not BsonDocument transferDoc)
+        if (!payload.TryGetValue(IntentActionType.TransferEnergy.ToKey(), out var transfer) || transfer is not BsonDocument transferDoc)
             return;
 
-        var targetId = transferDoc.TryGetValue("id", out var idValue) ? idValue.AsString : null;
-        var amount = transferDoc.TryGetValue("amount", out var amountValue) ? amountValue.ToInt32() : 0;
+        var targetId = transferDoc.TryGetValue(IntentKeys.TargetId, out var idValue) ? idValue.AsString : null;
+        var amount = transferDoc.TryGetValue(IntentKeys.Amount, out var amountValue) ? amountValue.ToInt32() : 0;
         if (string.IsNullOrWhiteSpace(targetId) || amount <= 0)
             return;
 
@@ -182,10 +184,10 @@ internal sealed class ProcessorLoopWorker(
 
     private static void ApplyLabIntents(IBulkWriter<RoomObjectDocument> writer, string actorId, RoomObjectDocument actor, BsonDocument payload)
     {
-        if (!payload.TryGetValue("runReaction", out var reaction) || reaction is not BsonDocument reactionDoc)
+        if (!payload.TryGetValue(IntentActionType.RunReaction.ToKey(), out var reaction) || reaction is not BsonDocument reactionDoc)
             return;
 
-        if (!reactionDoc.TryGetValue("resourceType", out var resourceValue))
+        if (!reactionDoc.TryGetValue(IntentKeys.ResourceType, out var resourceValue))
             return;
 
         var resourceType = resourceValue.AsString;
@@ -203,8 +205,8 @@ internal sealed class ProcessorLoopWorker(
 
     private static void ApplyDamageIntent(IBulkWriter<RoomObjectDocument> writer, IReadOnlyDictionary<string, RoomObjectDocument> objects, BsonDocument intent)
     {
-        var targetId = intent.TryGetValue("id", out var idValue) ? idValue.AsString : null;
-        var damage = intent.TryGetValue("damage", out var damageValue) ? damageValue.ToInt32() : 0;
+        var targetId = intent.TryGetValue(IntentKeys.TargetId, out var idValue) ? idValue.AsString : null;
+        var damage = intent.TryGetValue(IntentKeys.Damage, out var damageValue) ? damageValue.ToInt32() : 0;
         if (string.IsNullOrWhiteSpace(targetId) || damage <= 0)
             return;
 
@@ -222,8 +224,8 @@ internal sealed class ProcessorLoopWorker(
 
     private static void ApplyHealIntent(IBulkWriter<RoomObjectDocument> writer, IReadOnlyDictionary<string, RoomObjectDocument> objects, BsonDocument intent)
     {
-        var targetId = intent.TryGetValue("id", out var idValue) ? idValue.AsString : null;
-        var amount = intent.TryGetValue("amount", out var amountValue) ? amountValue.ToInt32() : 0;
+        var targetId = intent.TryGetValue(IntentKeys.TargetId, out var idValue) ? idValue.AsString : null;
+        var amount = intent.TryGetValue(IntentKeys.Amount, out var amountValue) ? amountValue.ToInt32() : 0;
         if (string.IsNullOrWhiteSpace(targetId) || amount <= 0)
             return;
 
@@ -242,13 +244,13 @@ internal sealed class ProcessorLoopWorker(
         objects.TryGetValue(objectId, out var target);
         var update = new Dictionary<string, object?>(StringComparer.Ordinal);
 
-        if (payload.TryGetValue("remove", out var removeValue) && IsTruthy(removeValue))
+        if (payload.TryGetValue(IntentKeys.Remove, out var removeValue) && IsTruthy(removeValue))
         {
             writer.Remove(objectId);
             return;
         }
 
-        if (payload.TryGetValue("damage", out var damageValue) && target is not null)
+        if (payload.TryGetValue(IntentKeys.Damage, out var damageValue) && target is not null)
         {
             var damage = damageValue.ToInt32();
             if (damage > 0 && target.Hits.HasValue)
@@ -264,20 +266,20 @@ internal sealed class ProcessorLoopWorker(
             }
         }
 
-        if (payload.TryGetValue("set", out var setValue) && setValue is BsonDocument setDoc)
+        if (payload.TryGetValue(IntentKeys.Set, out var setValue) && setValue is BsonDocument setDoc)
         {
             foreach (var element in setDoc.Elements)
                 update[element.Name] = ConvertBsonValue(element.Value);
         }
 
-        if (payload.TryGetValue("patch", out var patchValue) && patchValue is BsonDocument patchDoc) {
+        if (payload.TryGetValue(IntentKeys.Patch, out var patchValue) && patchValue is BsonDocument patchDoc) {
             foreach (var element in patchDoc.Elements)
                 update[element.Name] = ConvertBsonValue(element.Value);
         }
 
         foreach (var element in payload.Elements)
         {
-            if (element.Name is "damage" or "remove" or "set" or "patch")
+            if (element.Name is IntentKeys.Damage or IntentKeys.Remove or IntentKeys.Set or IntentKeys.Patch)
                 continue;
             update[element.Name] = ConvertBsonValue(element.Value);
         }

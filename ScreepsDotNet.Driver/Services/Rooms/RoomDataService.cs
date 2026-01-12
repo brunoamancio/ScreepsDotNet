@@ -17,8 +17,8 @@ internal sealed class RoomDataService(
     IBulkWriterFactory bulkWriterFactory,
     IEnvironmentService environmentService) : IRoomDataService
 {
-    private static readonly string[] MovingCreepTypes = ["creep", "powerCreep"];
-    private static readonly string[] SpecialObjectTypes = ["terminal", "powerSpawn", "powerCreep"];
+    private static readonly string[] MovingCreepTypes = [RoomObjectTypes.Creep, RoomObjectTypes.PowerCreep];
+    private static readonly string[] SpecialObjectTypes = ["terminal", "powerSpawn", RoomObjectTypes.PowerCreep];
     private readonly IMongoCollection<RoomObjectDocument> _roomObjects = databaseProvider.GetCollection<RoomObjectDocument>(databaseProvider.Settings.RoomObjectsCollection);
     private readonly IMongoCollection<UserDocument> _users = databaseProvider.GetCollection<UserDocument>(databaseProvider.Settings.UsersCollection);
     private readonly IMongoCollection<RoomFlagDocument> _roomFlags = databaseProvider.GetCollection<RoomFlagDocument>(databaseProvider.Settings.RoomsFlagsCollection);
