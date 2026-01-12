@@ -58,7 +58,7 @@
     <NativePathfinderSupported>false</NativePathfinderSupported>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(RuntimeIdentifier)' == 'linux-x64' or '$(RuntimeIdentifier)' == 'linux-arm64' or '$(RuntimeIdentifier)' == 'win-x64' or '$(RuntimeIdentifier)' == 'win-arm64' or '$(RuntimeIdentifier)' == 'osx-x64' or '$(RuntimeIdentifier)' == 'osx-arm64'">
+  <PropertyGroup Condition="'$(RuntimeIdentifier)' == 'linux-x64' or '$(RuntimeIdentifier)' == 'linux-arm64' or '$(RuntimeIdentifier)' == 'linux-x86' or '$(RuntimeIdentifier)' == 'win-x64' or '$(RuntimeIdentifier)' == 'win-arm64' or '$(RuntimeIdentifier)' == 'win-x86' or '$(RuntimeIdentifier)' == 'osx-x64' or '$(RuntimeIdentifier)' == 'osx-arm64'">
     <NativePathfinderSupported>true</NativePathfinderSupported>
   </PropertyGroup>
 

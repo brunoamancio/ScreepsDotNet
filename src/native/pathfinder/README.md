@@ -32,7 +32,9 @@ Run the script once per platform to populate every RID the .NET driver targets (
 `.github/workflows/native-pathfinder.yml` automatically runs `build.sh` on:
 - `ubuntu-latest` (`linux-x64`)
 - `ubuntu-latest` (`linux-arm64`, cross-compiled via aarch64 gcc)
+- `ubuntu-latest` (`linux-x86`, built with the multilib toolchain)
 - `windows-latest` (`win-x64`)
+- `windows-latest` (`win-x86`)
 - `windows-latest` (`win-arm64`, via MSVC cross tools)
 - `macos-latest` (`osx-x64`)
 - `macos-14` (`osx-arm64`)

@@ -36,6 +36,13 @@ CMAKE_ARGS=(
 )
 
 case "${RID}" in
+    linux-x86)
+        CMAKE_ARGS+=(
+            "-DCMAKE_SYSTEM_PROCESSOR=x86"
+            "-DCMAKE_C_FLAGS=-m32"
+            "-DCMAKE_CXX_FLAGS=-m32"
+        )
+        ;;
     linux-arm64)
         CMAKE_ARGS+=(
             "-DCMAKE_SYSTEM_NAME=Linux"
@@ -43,6 +50,13 @@ case "${RID}" in
             "-DCMAKE_C_COMPILER=aarch64-linux-gnu-gcc"
             "-DCMAKE_CXX_COMPILER=aarch64-linux-gnu-g++"
         )
+        ;;
+    win-x86)
+        if [[ "$OS" != "Windows_NT" ]]; then
+            echo "RID '${RID}' must be built on Windows." >&2
+            exit 1
+        fi
+        GENERATOR_ARGS+=("-G" "Visual Studio 17 2022" "-A" "Win32")
         ;;
     win-x64)
         if [[ "$OS" == "Windows_NT" ]]; then

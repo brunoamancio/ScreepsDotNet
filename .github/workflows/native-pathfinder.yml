@@ -28,9 +28,16 @@ jobs:
           - os: ubuntu-latest
             rid: linux-arm64
             disabled: false
+          - os: ubuntu-latest
+            rid: linux-x86
+            disabled: false
           - os: windows-latest
             rid: win-x64
             vcvars: x64
+            disabled: false
+          - os: windows-latest
+            rid: win-x86
+            vcvars: x86
             disabled: false
           - os: windows-latest
             rid: win-arm64
@@ -87,10 +94,14 @@ jobs:
         run: Write-Host "Skipping ${{ matrix.rid }}"
 
       - name: Install cross toolchain
-        if: matrix.disabled != true && runner.os == 'Linux' && matrix.rid == 'linux-arm64'
+        if: matrix.disabled != true && runner.os == 'Linux' && (matrix.rid == 'linux-arm64' || matrix.rid == 'linux-x86')
         run: |
           sudo apt-get update
-          sudo apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
+          if [ "${{ matrix.rid }}" = "linux-arm64" ]; then
+            sudo apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
+          else
+            sudo apt-get install -y g++-multilib
+          fi
 
       - name: Build libscreepspathfinder (Windows)
         if: matrix.disabled != true && runner.os == 'Windows'

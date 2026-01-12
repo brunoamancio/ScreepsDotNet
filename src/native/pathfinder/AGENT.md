@@ -15,7 +15,7 @@ Track progress toward replacing the managed A* fallback with the upstream Screep
 - ✅ `path_finder_t::search` now funnels through a native-only helper that emits POD results (`search_result_native`). The Nan/V8 wrapper simply adapts to JS while `ScreepsPathfinder_Search` calls the same helper directly.
 - ✅ `pathfinder_exports.cpp` now returns real paths/costs, converts room names, and supports native room callbacks via `ScreepsPathfinder_SetRoomCallback`.
 - ✅ CMake build + tooling exists (`build.sh`) to compile for a specific RID and copy the artifact to `src/ScreepsDotNet.Driver/runtimes/<rid>/native/`.
-- ✅ GitHub Actions workflow (`native-pathfinder.yml`) rebuilds the library on `ubuntu-latest` (x64 + arm64), `windows-latest` (x64 + arm64), `macos-latest`, and `macos-14` whenever native files change, zips the outputs, and updates the `native-pathfinder-latest` GitHub release with per-RID packages.
+- ✅ GitHub Actions workflow (`native-pathfinder.yml`) rebuilds the library on `ubuntu-latest` (linux-x64, linux-x86, linux-arm64), `windows-latest` (win-x64, win-x86, win-arm64), `macos-latest` (osx-x64), and `macos-14` (osx-arm64) whenever native files change, zips the outputs, and updates the `native-pathfinder-latest` GitHub release with per-RID packages.
 - ⚠️ Managed driver still uses the C# A* fallback.
 - ⚠️ CI/release currently requires manually invoking `build.sh` on each platform; automation pending.
 
