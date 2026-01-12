@@ -17,6 +17,8 @@ constexpr bool is_near_border_pos(T val) {
 	return (val + 2) % 50 < 4;
 }
 
+uint8_t room_info_t::cost_matrix0[2500] = {0};
+
 decltype(path_finder_t::terrain) path_finder_t::terrain = {{ nullptr }};
 std::vector<std::unique_ptr<uint8_t[]>> path_finder_t::terrain_storage;
 std::vector<std::unique_ptr<uint8_t[]>> path_finder_t::cost_matrix_storage;
