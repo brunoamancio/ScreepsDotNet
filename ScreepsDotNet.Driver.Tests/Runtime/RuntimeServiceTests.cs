@@ -1,6 +1,4 @@
 using System.Text.Json;
-using Microsoft.Extensions.Logging.Abstractions;
-using Microsoft.Extensions.Options;
 using ScreepsDotNet.Driver.Abstractions.Runtime;
 using ScreepsDotNet.Driver.Services.Runtime;
 
@@ -8,14 +6,7 @@ namespace ScreepsDotNet.Driver.Tests.Runtime;
 
 public sealed class RuntimeServiceTests
 {
-    private readonly RuntimeService _service;
-
-    public RuntimeServiceTests()
-    {
-        var options = Options.Create(new RuntimeSandboxOptions());
-        var factory = new V8RuntimeSandboxFactory(options, NullLoggerFactory.Instance);
-        _service = new RuntimeService(factory);
-    }
+    private readonly RuntimeService _service = new(new StubRuntimeSandboxFactory());
 
     [Fact]
     public async Task ExecuteAsync_UpdatesMemoryAndIntents()
@@ -50,5 +41,46 @@ console.log('tick', GameTime);
 
         var memoryDoc = JsonDocument.Parse(result.Memory!);
         Assert.Equal(2, memoryDoc.RootElement.GetProperty("counter").GetInt32());
+    }
+
+    private sealed class StubRuntimeSandboxFactory : IRuntimeSandboxFactory
+    {
+        public IRuntimeSandbox CreateSandbox()
+            => new StubRuntimeSandbox();
+    }
+
+    private sealed class StubRuntimeSandbox : IRuntimeSandbox
+    {
+        public Task<RuntimeExecutionResult> ExecuteAsync(RuntimeExecutionContext context, CancellationToken token = default)
+        {
+            var counter = context.Memory.TryGetValue("counter", out var raw) && raw is int value
+                ? value
+                : 0;
+
+            var roomIntents = new Dictionary<string, IReadOnlyDictionary<string, object?>>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["W1N1"] = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase)
+                {
+                    ["spawn"] = new Dictionary<string, object?>
+                    {
+                        ["room"] = "W1N1"
+                    }
+                }
+            };
+
+            var result = new RuntimeExecutionResult(
+                ConsoleLog: [],
+                ConsoleResults: [],
+                Error: null,
+                GlobalIntents: new Dictionary<string, object?>(),
+                Memory: JsonSerializer.Serialize(new { counter = counter + 1 }),
+                MemorySegments: context.MemorySegments,
+                InterShardSegment: context.InterShardSegment,
+                CpuUsed: 1,
+                RoomIntents: roomIntents,
+                Notifications: []);
+
+            return Task.FromResult(result);
+        }
     }
 }
