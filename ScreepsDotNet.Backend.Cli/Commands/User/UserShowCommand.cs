@@ -35,6 +35,10 @@ internal sealed class UserShowCommand(IUserRepository userRepository, ILogger<Us
         if (string.IsNullOrWhiteSpace(userId) && !string.IsNullOrWhiteSpace(settings.Username)) {
             var profile = await userRepository.FindPublicProfileAsync(settings.Username, null, cancellationToken).ConfigureAwait(false);
             userId = profile?.Id;
+
+            // CLI callers sometimes pass the Mongo _id via --username; fall back to treating it as an id.
+            if (string.IsNullOrWhiteSpace(userId))
+                userId = settings.Username;
         }
 
         if (string.IsNullOrWhiteSpace(userId)) {
