@@ -5,6 +5,7 @@ using Microsoft.ClearScript.V8;
 using Microsoft.Extensions.Logging;
 using ScreepsDotNet.Driver.Abstractions.Runtime;
 using ScreepsDotNet.Driver.Abstractions.Users;
+using ScreepsDotNet.Driver.Constants;
 
 namespace ScreepsDotNet.Driver.Services.Runtime;
 
@@ -262,8 +263,8 @@ function notify(message, groupIntervalMinutes = 0) {
 
             return payload switch
             {
-                IDictionary<string, object?> dictionary when dictionary.TryGetValue("room", out var roomValue) => Resolve(roomValue),
-                JsonElement element when element.ValueKind == JsonValueKind.Object && element.TryGetProperty("room", out var roomProperty) && roomProperty.ValueKind == JsonValueKind.String => Resolve(roomProperty.GetString()),
+                IDictionary<string, object?> dictionary when dictionary.TryGetValue(IntentPayloadFields.Room, out var roomValue) => Resolve(roomValue),
+                JsonElement element when element.ValueKind == JsonValueKind.Object && element.TryGetProperty(IntentPayloadFields.Room, out var roomProperty) && roomProperty.ValueKind == JsonValueKind.String => Resolve(roomProperty.GetString()),
                 _ => null
             };
         }
