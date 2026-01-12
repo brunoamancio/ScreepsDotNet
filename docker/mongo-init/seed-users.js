@@ -5,6 +5,7 @@ db.users.updateOne(
     {
         $set: {
             username: 'TestUser',
+            usernameLower: 'testuser',
             email: 'test@screeps.local',
             emailDirty: false,
             active: 1,

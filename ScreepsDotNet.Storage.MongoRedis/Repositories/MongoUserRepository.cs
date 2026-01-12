@@ -1,4 +1,6 @@
-﻿using MongoDB.Driver;
+﻿using System.Text.RegularExpressions;
+using MongoDB.Bson;
+using MongoDB.Driver;
 using ScreepsDotNet.Backend.Core.Constants;
 using ScreepsDotNet.Backend.Core.Models;
 using ScreepsDotNet.Backend.Core.Repositories;
@@ -183,7 +185,13 @@ public sealed class MongoUserRepository(IMongoDatabaseProvider databaseProvider)
             return Builders<UserDocument>.Filter.Eq(user => user.Id, userId);
 
         if (!string.IsNullOrWhiteSpace(username))
-            return Builders<UserDocument>.Filter.Eq(user => user.UsernameLower, username.ToLowerInvariant());
+        {
+            var normalized = username.ToLowerInvariant();
+            var regex = new BsonRegularExpression($"^{Regex.Escape(username)}$", "i");
+            return Builders<UserDocument>.Filter.Or(
+                Builders<UserDocument>.Filter.Eq(user => user.UsernameLower, normalized),
+                Builders<UserDocument>.Filter.Regex(user => user.Username!, regex));
+        }
 
         return null;
     }
