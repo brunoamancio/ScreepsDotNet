@@ -42,7 +42,6 @@ D9 addresses the remaining driver helpers: history snapshot uploads, map view pe
 - `NotificationService` handles console/watchdog/intent notifications through the shared throttler, while `RoomsDoneBroadcaster` throttles `roomsDone` emits so downstream listeners aren’t flooded when ticks complete rapidly.
 
 ## Next Steps
-- Swap the filesystem uploader for the final storage target (S3, GridFS, etc.) once the deployment story is ready.
 - Hook the throttled `roomsDone` emitter into the upcoming compatibility shim so legacy engine consumers receive the same cadence they expect today.
 
 ## Current Progress
