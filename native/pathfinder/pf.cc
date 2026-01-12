@@ -23,11 +23,13 @@ std::vector<std::unique_ptr<uint8_t[]>> path_finder_t::cost_matrix_storage;
 room_callback_fn path_finder_t::native_room_callback = nullptr;
 void* path_finder_t::native_room_callback_context = nullptr;
 
+#if SCREEPS_PATHFINDER_HAS_V8
 namespace {
 	bool ShouldAbortForV8() {
 		return v8::Isolate::GetCurrent()->IsExecutionTerminating();
 	}
 }
+#endif
 
 	// Return room index from a map position, allocates a new room index if needed and possible
 	room_index_t path_finder_t::room_index_from_pos(const map_position_t map_pos) {
@@ -41,10 +43,13 @@ namespace {
 			}
 			uint8_t* terrain_ptr = terrain[map_pos.id];
 			if (terrain_ptr == nullptr) {
+#if SCREEPS_PATHFINDER_HAS_V8
 				Nan::ThrowError("Could not load terrain data");
+#endif
 				throw js_error();
 			}
 			uint8_t* cost_matrix = nullptr;
+#if SCREEPS_PATHFINDER_HAS_V8
 			if (room_callback != nullptr) {
 				Nan::TryCatch try_catch;
 				v8::Local<v8::Value> argv[2];
@@ -67,7 +72,9 @@ namespace {
 						cost_matrix = *cost_matrix_js;
 					}
 				}
-			} else if (native_room_callback != nullptr) {
+			} else
+#endif
+			if (native_room_callback != nullptr) {
 				room_callback_result result{};
 				if (!native_room_callback(map_pos.xx, map_pos.yy, &result, native_room_callback_context)) {
 					blocked_rooms.insert(map_pos);
@@ -594,6 +601,7 @@ namespace {
 		return result.status;
 	}
 
+#if SCREEPS_PATHFINDER_HAS_V8
 	v8::Local<v8::Value> path_finder_t::search(
 		v8::Local<v8::Value> origin_js,
 		v8::Local<v8::Array> goals_js,
@@ -669,6 +677,7 @@ namespace {
 		Nan::Set(ret, Nan::New("incomplete").ToLocalChecked(), Nan::New<v8::Boolean>(native_result.incomplete));
 		return ret;
 	}
+#endif
 
 	void path_finder_t::reset_terrain_storage() {
 		std::fill(terrain.begin(), terrain.end(), nullptr);
@@ -685,6 +694,7 @@ namespace {
 		terrain_storage.push_back(std::move(buffer));
 	}
 
+#if SCREEPS_PATHFINDER_HAS_V8
 	// Loads static terrain data into module upfront (legacy V8 path)
 	void path_finder_t::load_terrain(v8::Local<v8::Array> terrain_array) {
 		if (terrain_array.IsEmpty())
@@ -700,6 +710,7 @@ namespace {
 				ingest_terrain_chunk(pos, *bits, terrain_bytes_per_room);
 		}
 	}
+#endif
 
 	// Loads terrain data from POD structs (native bridge)
 	void path_finder_t::load_terrain(const terrain_room_plain* rooms, size_t count) {

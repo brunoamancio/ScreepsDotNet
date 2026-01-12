@@ -1,7 +1,14 @@
 // Author: Marcel Laverdet <https://github.com/laverdet>
+#ifndef SCREEPS_PATHFINDER_NO_V8
 #include <nan.h>
+#define SCREEPS_PATHFINDER_HAS_V8 1
+#else
+#define SCREEPS_PATHFINDER_HAS_V8 0
+#endif
 #include <array>
+#include <cstdint>
 #include <iostream>
+#include <limits>
 #include <memory>
 #include <stdexcept>
 #include <unordered_set>
@@ -12,6 +19,14 @@ namespace screeps {
 	typedef uint32_t pos_index_t; // maximum: k_max_rooms * 2500
 	typedef uint32_t room_index_t; // maximum: k_max_rooms (32 bits tested faster than uint8_t)
 	constexpr size_t k_max_rooms = 64;
+	constexpr size_t k_terrain_bytes = 2500 * 2 / 8;
+
+	struct terrain_room_plain {
+		uint8_t xx;
+		uint8_t yy;
+		const uint8_t* bits;
+		size_t length;
+	};
 
 	struct room_callback_result {
 		const uint8_t* cost_matrix;
@@ -38,11 +53,13 @@ namespace screeps {
 
 		map_position_t(uint8_t xx, uint8_t yy) : xx(xx), yy(yy) {}
 
+#if SCREEPS_PATHFINDER_HAS_V8
 		map_position_t(v8::Local<v8::Value> pos) {
 			v8::Local<v8::Object> obj = Nan::To<v8::Object>(pos).ToLocalChecked();
 			xx = Nan::To<uint32_t>(Nan::Get(obj, Nan::New("xx").ToLocalChecked()).ToLocalChecked()).FromJust();
 			yy = Nan::To<uint32_t>(Nan::Get(obj, Nan::New("yy").ToLocalChecked()).ToLocalChecked()).FromJust();
 		}
+#endif
 
 		bool operator== (map_position_t right) const {
 			return this->id == right.id;
@@ -81,11 +98,13 @@ namespace screeps {
 
 			explicit world_position_t(uint64_t id) : id(id) {}
 
+#if SCREEPS_PATHFINDER_HAS_V8
 			world_position_t(v8::Local<v8::Value> pos) {
 				v8::Local<v8::Object> obj = Nan::To<v8::Object>(pos).ToLocalChecked();
 				xx = Nan::To<uint32_t>(Nan::Get(obj, Nan::New("xx").ToLocalChecked()).ToLocalChecked()).FromJust();
 				yy = Nan::To<uint32_t>(Nan::Get(obj, Nan::New("yy").ToLocalChecked()).ToLocalChecked()).FromJust();
 			}
+#endif
 
 			static world_position_t null() {
 				return world_position_t(0);
@@ -132,6 +151,7 @@ namespace screeps {
 					case TOP_LEFT:
 						return world_position_t(xx - 1, yy - 1);
 				}
+				return world_position_t();
 			}
 
 			// Gets the linear direction to a tile
@@ -247,11 +267,13 @@ namespace screeps {
 		cost_t range;
 		world_position_t pos;
 		goal_t() : range(0), pos(world_position_t::null()) {}
+#if SCREEPS_PATHFINDER_HAS_V8
 		goal_t(v8::Local<v8::Value> goal) {
 			v8::Local<v8::Object> obj = Nan::To<v8::Object>(goal).ToLocalChecked();
 			range = Nan::To<uint32_t>(Nan::Get(obj, Nan::New("range").ToLocalChecked()).ToLocalChecked()).FromJust();
 			pos = world_position_t(Nan::Get(obj, Nan::New("pos").ToLocalChecked()).ToLocalChecked());
 		}
+#endif
 		goal_t(world_position_t position, cost_t goal_range) : range(goal_range), pos(position) {}
 	};
 
@@ -397,8 +419,10 @@ namespace screeps {
 			double heuristic_weight;
 			room_index_t max_rooms;
 			bool flee;
+#if SCREEPS_PATHFINDER_HAS_V8
 			v8::Local<v8::Value>* room_data_handles;
 			v8::Local<v8::Function>* room_callback;
+#endif
 			static room_callback_fn native_room_callback;
 			static void* native_room_callback_context;
 			bool _is_in_use = false;
@@ -429,9 +453,9 @@ namespace screeps {
 			void jump_neighbor(world_position_t pos, pos_index_t index, world_position_t neighbor, cost_t g_cost, cost_t cost, cost_t n_cost);
 			static void reset_terrain_storage();
 			static void ingest_terrain_chunk(map_position_t pos, const uint8_t* source, size_t length);
-			static void set_room_callback(room_callback_fn callback, void* userData);
 
 		public:
+#if SCREEPS_PATHFINDER_HAS_V8
 			v8::Local<v8::Value> search(
 				v8::Local<v8::Value> origin_js, v8::Local<v8::Array> goals_js,
 				v8::Local<v8::Function> room_callback,
@@ -440,6 +464,7 @@ namespace screeps {
 				bool flee,
 				double heuristic_weight
 			);
+#endif
 
 			search_status search_native(
 				const search_request_native& request,
@@ -450,8 +475,10 @@ namespace screeps {
 				return _is_in_use;
 			}
 
+#if SCREEPS_PATHFINDER_HAS_V8
 			static void load_terrain(v8::Local<v8::Array> terrain);
+#endif
 			static void load_terrain(const terrain_room_plain* rooms, size_t count);
-			static void load_terrain(const terrain_room_plain* rooms, size_t count);
+			static void set_room_callback(room_callback_fn callback, void* userData);
 	};
 };

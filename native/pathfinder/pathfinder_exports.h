@@ -44,7 +44,7 @@ extern "C"
     {
         int x;
         int y;
-        char roomName[8];
+        char roomName[16];
     };
 
     struct ScreepsPathfinderResultNative

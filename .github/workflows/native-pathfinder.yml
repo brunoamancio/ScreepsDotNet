@@ -1,0 +1,82 @@
+name: Native Pathfinder Build
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - "native/pathfinder/**"
+      - ".github/workflows/native-pathfinder.yml"
+  pull_request:
+    branches: [ main ]
+    paths:
+      - "native/pathfinder/**"
+      - ".github/workflows/native-pathfinder.yml"
+  workflow_dispatch:
+
+jobs:
+  build-native:
+    name: Build on ${{ matrix.os }} (${{ matrix.rid }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            rid: linux-x64
+          - os: ubuntu-latest
+            rid: linux-arm64
+            install: |
+              sudo apt-get update
+              sudo apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
+          - os: windows-latest
+            rid: win-x64
+            vcvars: x64
+          - os: windows-latest
+            rid: win-arm64
+            vcvars: x64_arm64
+          - os: macos-latest
+            rid: osx-x64
+          - os: macos-14
+            rid: osx-arm64
+
+    defaults:
+      run:
+        working-directory: native/pathfinder
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Show CMake version
+        run: cmake --version
+
+      - name: Install cross toolchain
+        if: ${{ runner.os == 'Linux' && matrix.rid == 'linux-arm64' }}
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
+
+      - name: Build libscreepspathfinder (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        env:
+          RID: ${{ matrix.rid }}
+          VCVARS: ${{ matrix.vcvars }}
+        run: |
+          if (-not $Env:VCVARS) { $Env:VCVARS = "x64" }
+          $vcvarsPath = Join-Path $Env:VSINSTALLDIR "VC\Auxiliary\Build\vcvarsall.bat"
+          if (-not (Test-Path $vcvarsPath)) { throw "vcvarsall.bat not found at $vcvarsPath" }
+          $cmd = "`"$vcvarsPath`" $Env:VCVARS && bash ./build.sh $Env:RID"
+          cmd.exe /c $cmd
+
+      - name: Build libscreepspathfinder (POSIX)
+        if: runner.os != 'Windows'
+        shell: bash
+        run: ./build.sh "${{ matrix.rid }}"
+
+      - name: Upload native artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: libscreepspathfinder-${{ matrix.rid }}
+          path: ../ScreepsDotNet.Driver/runtimes/${{ matrix.rid }}/native/**
