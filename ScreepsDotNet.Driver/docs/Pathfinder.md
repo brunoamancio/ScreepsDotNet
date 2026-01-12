@@ -54,8 +54,13 @@ public interface IPathfinderService
 ## Alternate Plan (if native port stalls)
 - Temporarily host the Node pathfinder via an IPC bridge (e.g., small Node worker) while the native port is underway. This keeps the pipeline moving even if C++ work takes longer.
 
-## Next Steps
-- Extract and build the C++ pathfinder as a reusable library.
-- Define the managed `IPathfinderService` interface + DTOs.
-- Implement initialization + search mapping code in C#.
-- Update `AGENT.md` (D6) to “Plan completed (implementation pending)” until the native work is done.
+### Current Status (January 12, 2026)
+- `IPathfinderService` is registered and backed by a managed A*-based implementation that caches per-room terrain (50 × 50) and supports single-room searches (including swamp/plain cost tuning). This lets the processor exercise intents without the native dependency.
+- Limitations:
+  - Multi-room searches, flee logic, roads/structures, and parity with the legacy C++ solver are not implemented yet.
+  - Terrain ingestion currently expects 2 500-byte grids (legacy `rooms.terrain` output) and logs a warning for unrecognized formats.
+- Next steps:
+  1. Replace the managed A* core with the native Screeps pathfinder via P/Invoke.
+  2. Extend the terrain cache/initialization path so processor/main loops automatically seed the service at startup.
+  3. Add multi-room routing, flee mode, and additional options once the native layer is wired.
+  4. Update the compatibility shim/tests to validate native-vs-managed parity before flipping the default.

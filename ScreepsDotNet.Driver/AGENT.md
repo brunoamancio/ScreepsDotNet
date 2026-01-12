@@ -23,7 +23,7 @@ Track the strategy and status for porting the legacy Screeps Node.js driver into
 | D3 | Choose and prototype the JavaScript sandbox (ClearScript + V8). Implement module/require plumbing, runtime bootstrap, memory/CPU quotas, and host bridges. | `docs/SandboxOptions.md` | ClearScript V8 runtime with CommonJS loader + sandbox prototype; pathfinder/host bridges remain ◐ |
 | D4 | Implement queue + scheduler services (room/user queues, add/fetch/mark-done/reset, rate limiting). Ensure graceful shutdown semantics. | `docs/QueueAndScheduler.md` | Queues + loop workers wired (runner/processor use Redis queues); worker scheduler logging/backoff still TODO ◐ |
 | D5 | Port bulk writer abstractions (`BulkObjects`, `BulkUsers`, `BulkFlags`, `BulkTransactions`, etc.). | `docs/BulkWriters.md` | Implementation complete (services/Bulk) ✔ |
-| D6 | Implement pathfinder integration (reuse native algorithm or wrap existing Node addon through interop). Seed terrain data cache and expose `driver.pathFinder`. | `docs/Pathfinder.md` | Plan completed (implementation pending) ◐ |
+| D6 | Implement pathfinder integration (reuse native algorithm or wrap existing Node addon through interop). Seed terrain data cache and expose `driver.pathFinder`. | `docs/Pathfinder.md` | Managed pathfinder service with terrain cache + A* search (single-room) in place; native solver + multi-room support still TODO ◐ |
 | D7 | Wire global config and events (`config.engine.emit`, tick scheduling knobs, custom object prototypes). | `docs/ConfigAndEvents.md` | Implementation complete (Redis-backed config + Node-style emit/on) ✔ |
 | D8 | Provide runtime lifecycle endpoints (make runtime, send console messages, save memory/segments/intents, notify errors). | `docs/RuntimeLifecycle.md` | RuntimeService invoked via RunnerLoopWorker; JS prelude now supports `registerIntent` + `notify` to drive intents/notifications ◐ |
 | D9 | Build history/map view writers and notification helpers (`activateRoom`, `updateAccessibleRoomsList`, `notifyRoomsDone`, etc.). | `docs/HistoryAndNotifications.md` | History + notification services wired through `DriverLoopHooks` with unit tests for diff/throttle logic ◐ |
@@ -34,7 +34,7 @@ _Progress Legend:_ ☐ not started, ◐ in progress, ✔ complete. Update this t
 ## Next Up
 - Exercise `DriverLoopHooks` once processor/main/runner scaffolding exists so tick stages call into the new runtime/notification/history surface instead of touching services directly.
 - Expand the runtime pipeline: load real module bundles, persist memory segments/inter-shard payloads, and integrate with the upcoming runner coordinator.
-- Pathfinder implementation (D6) and the legacy-engine compatibility shim (D10) remain to be tackled after the runtime + main-loop wiring solidifies.
+- Pathfinder native integration (multi-room + parity) and the legacy-engine compatibility shim (D10) remain after the runtime + main-loop wiring solidifies.
 
 ## Notes for Future Agents
 - Keep cross-cutting settings in `Directory.Build.props`; avoid duplicating target framework info inside this project.
