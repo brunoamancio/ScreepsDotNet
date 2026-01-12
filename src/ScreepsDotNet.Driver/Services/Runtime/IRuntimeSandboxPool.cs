@@ -4,4 +4,5 @@ internal interface IRuntimeSandboxPool
 {
     IRuntimeSandbox Rent();
     void Return(IRuntimeSandbox sandbox);
+    void Invalidate(IRuntimeSandbox sandbox);
 }

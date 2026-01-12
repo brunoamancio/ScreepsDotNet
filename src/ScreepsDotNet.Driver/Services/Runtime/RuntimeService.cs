@@ -12,11 +12,14 @@ internal sealed class RuntimeService(IRuntimeSandboxPool sandboxPool) : IRuntime
         var sandbox = _sandboxPool.Rent();
         try
         {
-            return await sandbox.ExecuteAsync(context, token).ConfigureAwait(false);
-        }
-        finally
-        {
+            var result = await sandbox.ExecuteAsync(context, token).ConfigureAwait(false);
             _sandboxPool.Return(sandbox);
+            return result;
+        }
+        catch
+        {
+            _sandboxPool.Invalidate(sandbox);
+            throw;
         }
     }
 }

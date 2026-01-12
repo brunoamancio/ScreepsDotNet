@@ -46,6 +46,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IRuntimeBundleCache, RuntimeBundleCache>();
         services.AddSingleton<IRuntimeService, RuntimeService>();
         services.AddSingleton<IRuntimeCoordinator, RuntimeCoordinator>();
+        services.AddSingleton<RuntimeTelemetryMonitor>();
         services.AddSingleton<IMainLoopGlobalProcessor, MainLoopGlobalProcessor>();
         services.AddSingleton<IRunnerLoopWorker, RunnerLoopWorker>();
         services.AddSingleton<IProcessorLoopWorker, ProcessorLoopWorker>();

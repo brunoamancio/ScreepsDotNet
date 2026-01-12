@@ -11,11 +11,13 @@ using ScreepsDotNet.Driver.Abstractions.Queues;
 using ScreepsDotNet.Driver.Abstractions.Rooms;
 using ScreepsDotNet.Driver.Abstractions.Runtime;
 using ScreepsDotNet.Driver.Abstractions.Users;
+using ScreepsDotNet.Driver.Services.Runtime;
 
 namespace ScreepsDotNet.Driver.Services;
 
-internal sealed class DriverHost(IServiceProvider serviceProvider) : IDriverHost
+internal sealed class DriverHost(IServiceProvider serviceProvider, RuntimeTelemetryMonitor telemetryMonitor) : IDriverHost
 {
+    private readonly RuntimeTelemetryMonitor _telemetryMonitor = telemetryMonitor;
     public IDriverConfig Config => serviceProvider.GetRequiredService<IDriverConfig>();
     public IQueueService Queues => GetRequired<IQueueService>();
     public IBulkWriterFactory BulkWriters => GetRequired<IBulkWriterFactory>();

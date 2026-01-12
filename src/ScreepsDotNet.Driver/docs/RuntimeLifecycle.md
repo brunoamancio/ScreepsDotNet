@@ -69,6 +69,7 @@ Runner Loop
 - Runner loop saves `Memory`, segments, and inter-shard payloads only when non-null, reducing needless Redis writes.
 - Bundle caching keyed by `codeHash` avoids rebuilding module graphs every tick, and `RuntimeSandboxPool` reuses `V8RuntimeSandbox` instances instead of creating a new engine per tick.
 - Runtime telemetry (cpu used, timeout/script error flags, heap usage) now flows through `IDriverLoopHooks.PublishRuntimeTelemetryAsync` **and** `config.emit('runtimeTelemetry', payload)`, so both loop hooks and config subscribers can react.
+- `RuntimeTelemetryMonitor` subscribes to those events and logs warnings for timeouts/script errors, giving schedulers/logging immediate visibility.
 - New integration tests (`V8RuntimeSandboxTests`) verify memory diffing, RawMemory overrides, and segment persistence.
 - `RuntimeCoordinator` now owns the entire lifecycle (context hydration, sandbox execution, persistence, telemetry, CPU bucket bookkeeping), so `RunnerLoopWorker` just schedules users.
 

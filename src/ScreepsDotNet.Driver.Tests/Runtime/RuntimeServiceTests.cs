@@ -52,6 +52,10 @@ console.log('tick', GameTime);
         public void Return(IRuntimeSandbox sandbox)
         {
         }
+
+        public void Invalidate(IRuntimeSandbox sandbox)
+        {
+        }
     }
 
     private sealed class StubRuntimeSandbox : IRuntimeSandbox
