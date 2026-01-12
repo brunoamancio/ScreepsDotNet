@@ -142,7 +142,10 @@ jobs:
           zip_path="$dist_dir/native-pathfinder-${{ matrix.rid }}.zip"
           rm -f "$zip_path"
           (cd "$native_dir" && zip -r "$zip_path" .)
-          shasum -a 256 "$zip_path" > "${zip_path}.sha256"
+          (
+            cd "$dist_dir"
+            shasum -a 256 "$(basename "$zip_path")" > "$(basename "$zip_path").sha256"
+          )
 
       - name: Package native artifact (Windows)
         if: matrix.disabled != true && runner.os == 'Windows'
