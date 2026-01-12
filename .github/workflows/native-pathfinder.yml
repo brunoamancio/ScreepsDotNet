@@ -71,9 +71,15 @@ jobs:
           cd "${{ env.workdir }}"
           cmake --version
 
-      - name: Skip job
-        if: matrix.disabled == true
-        run: echo "Skipping ${matrix.rid}"
+      - name: Skip job (POSIX)
+        if: matrix.disabled == true && runner.os != 'Windows'
+        shell: bash
+        run: echo "Skipping ${{ matrix.rid }}"
+
+      - name: Skip job (Windows)
+        if: matrix.disabled == true && runner.os == 'Windows'
+        shell: pwsh
+        run: Write-Host "Skipping ${{ matrix.rid }}"
 
       - name: Install cross toolchain
         if: matrix.disabled != true && runner.os == 'Linux' && matrix.rid == 'linux-arm64'
