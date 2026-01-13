@@ -13,4 +13,5 @@ public sealed record RuntimeTelemetryPayload(
     long HeapSizeLimitBytes,
     string? ErrorMessage,
     int? QueueDepth = null,
-    bool ColdStartRequested = false);
+    bool ColdStartRequested = false,
+    string? Stage = null);

@@ -142,7 +142,7 @@ internal sealed class HistoryService(
             if (_metrics.Count == 0)
                 return Task.CompletedTask;
 
-            config.EmitProcessorLoopStage("roomStatsUpdated", new { Room = roomName, Metrics = _metrics });
+            config.EmitProcessorLoopStage(LoopStageNames.Processor.RoomStatsUpdated, new { Room = roomName, Metrics = _metrics });
             _metrics.Clear();
             return Task.CompletedTask;
         }

@@ -8,6 +8,7 @@ using ScreepsDotNet.Driver.Abstractions.Loops;
 using ScreepsDotNet.Driver.Abstractions.Queues;
 using ScreepsDotNet.Driver.Abstractions.Rooms;
 using ScreepsDotNet.Driver.Abstractions.Users;
+using ScreepsDotNet.Driver.Constants;
 
 namespace ScreepsDotNet.Driver.Services.Loops;
 
@@ -63,11 +64,11 @@ internal sealed class MainLoop(IDriverConfig config, IQueueService queues, IUser
 
     private async Task ExecuteOnceAsync(CancellationToken token)
     {
-        config.EmitMainLoopStage("start");
+        config.EmitMainLoopStage(LoopStageNames.Main.Start);
         await environment.NotifyTickStartedAsync(token).ConfigureAwait(false);
         var currentGameTime = await environment.GetGameTimeAsync(token).ConfigureAwait(false);
 
-        config.EmitMainLoopStage("getUsers");
+        config.EmitMainLoopStage(LoopStageNames.Main.GetUsers);
         var users1 = await users.GetActiveUsersAsync(token).ConfigureAwait(false);
 
         var userIds = users1.Select(u => u.Id)
@@ -75,55 +76,55 @@ internal sealed class MainLoop(IDriverConfig config, IQueueService queues, IUser
                            .Select(id => id!)
                            .ToArray();
 
-        config.EmitMainLoopStage("addUsersToQueue", userIds);
+        config.EmitMainLoopStage(LoopStageNames.Main.AddUsersToQueue, userIds);
         if (userIds.Length > 0)
             await _usersQueue!.EnqueueManyAsync(userIds, token).ConfigureAwait(false);
         var usersDepth = await _usersQueue!.GetPendingCountAsync(token).ConfigureAwait(false);
-        await PublishQueueDepthAsync(QueueNames.Users, currentGameTime, usersDepth, token).ConfigureAwait(false);
+        await PublishQueueDepthAsync(LoopStageNames.Main.TelemetryEnqueueUsers, QueueNames.Users, currentGameTime, usersDepth, token).ConfigureAwait(false);
 
-        config.EmitMainLoopStage("waitForUsers");
+        config.EmitMainLoopStage(LoopStageNames.Main.WaitForUsers);
         await _usersQueue!.WaitUntilDrainedAsync(token).ConfigureAwait(false);
         var usersDrainedDepth = await _usersQueue.GetPendingCountAsync(token).ConfigureAwait(false);
-        await PublishQueueDepthAsync($"{QueueNames.Users}:drained", currentGameTime, usersDrainedDepth, token).ConfigureAwait(false);
+        await PublishQueueDepthAsync(LoopStageNames.Main.TelemetryDrainUsers, $"{QueueNames.Users}:drained", currentGameTime, usersDrainedDepth, token).ConfigureAwait(false);
 
-        config.EmitMainLoopStage("getRooms");
+        config.EmitMainLoopStage(LoopStageNames.Main.GetRooms);
         var rooms1 = await rooms.DrainActiveRoomsAsync(token).ConfigureAwait(false);
         var roomNames = rooms1.Where(name => !string.IsNullOrWhiteSpace(name)).ToArray();
 
-        config.EmitMainLoopStage("addRoomsToQueue", roomNames);
+        config.EmitMainLoopStage(LoopStageNames.Main.AddRoomsToQueue, roomNames);
         if (roomNames.Length > 0)
             await _roomsQueue!.EnqueueManyAsync(roomNames, token).ConfigureAwait(false);
         var roomsDepth = await _roomsQueue!.GetPendingCountAsync(token).ConfigureAwait(false);
-        await PublishQueueDepthAsync(QueueNames.Rooms, currentGameTime, roomsDepth, token).ConfigureAwait(false);
+        await PublishQueueDepthAsync(LoopStageNames.Main.TelemetryEnqueueRooms, QueueNames.Rooms, currentGameTime, roomsDepth, token).ConfigureAwait(false);
 
-        config.EmitMainLoopStage("waitForRooms");
+        config.EmitMainLoopStage(LoopStageNames.Main.WaitForRooms);
         await _roomsQueue!.WaitUntilDrainedAsync(token).ConfigureAwait(false);
         var roomsDrainedDepth = await _roomsQueue.GetPendingCountAsync(token).ConfigureAwait(false);
-        await PublishQueueDepthAsync($"{QueueNames.Rooms}:drained", currentGameTime, roomsDrainedDepth, token).ConfigureAwait(false);
+        await PublishQueueDepthAsync(LoopStageNames.Main.TelemetryDrainRooms, $"{QueueNames.Rooms}:drained", currentGameTime, roomsDrainedDepth, token).ConfigureAwait(false);
 
-        config.EmitMainLoopStage("commitDbBulk:pre");
+        config.EmitMainLoopStage(LoopStageNames.Main.CommitDbBulkPre);
         await environment.CommitDatabaseBulkAsync(token).ConfigureAwait(false);
 
-        config.EmitMainLoopStage("global");
+        config.EmitMainLoopStage(LoopStageNames.Main.Global);
         await globalProcessor.ExecuteAsync(token).ConfigureAwait(false);
 
-        config.EmitMainLoopStage("commitDbBulk:post");
+        config.EmitMainLoopStage(LoopStageNames.Main.CommitDbBulkPost);
         await environment.CommitDatabaseBulkAsync(token).ConfigureAwait(false);
 
-        config.EmitMainLoopStage("incrementGameTime");
+        config.EmitMainLoopStage(LoopStageNames.Main.IncrementGameTime);
         var gameTime = await environment.IncrementGameTimeAsync(token).ConfigureAwait(false);
 
-        config.EmitMainLoopStage("updateAccessibleRooms");
+        config.EmitMainLoopStage(LoopStageNames.Main.UpdateAccessibleRooms);
         await rooms.UpdateAccessibleRoomsListAsync(token).ConfigureAwait(false);
         await rooms.UpdateRoomStatusDataAsync(token).ConfigureAwait(false);
 
-        config.EmitMainLoopStage("notifyRoomsDone");
+        config.EmitMainLoopStage(LoopStageNames.Main.NotifyRoomsDone);
         await hooks.NotifyRoomsDoneAsync(gameTime, token).ConfigureAwait(false);
 
-        config.EmitMainLoopStage("finish");
+        config.EmitMainLoopStage(LoopStageNames.Main.Finish);
     }
 
-    private Task PublishQueueDepthAsync(string targetId, int gameTime, int queueDepth, CancellationToken token)
+    private Task PublishQueueDepthAsync(string stage, string targetId, int gameTime, int queueDepth, CancellationToken token)
     {
         var payload = new RuntimeTelemetryPayload(
             Loop: DriverProcessType.Main,
@@ -138,7 +139,8 @@ internal sealed class MainLoop(IDriverConfig config, IQueueService queues, IUser
             HeapSizeLimitBytes: 0,
             ErrorMessage: null,
             QueueDepth: queueDepth,
-            ColdStartRequested: false);
+            ColdStartRequested: false,
+            Stage: stage);
         return hooks.PublishRuntimeTelemetryAsync(payload, token);
     }
 }

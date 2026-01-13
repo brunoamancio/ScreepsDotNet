@@ -1,11 +1,19 @@
 namespace ScreepsDotNet.Driver.Services.Scheduling;
 
-internal sealed class WorkerScheduler(string name, int concurrency)
+using Microsoft.Extensions.Logging;
+using ScreepsDotNet.Driver.Abstractions;
+using ScreepsDotNet.Driver.Abstractions.Loops;
+using ScreepsDotNet.Driver.Abstractions.Runtime;
+using ScreepsDotNet.Driver.Services.Runtime;
+using ScreepsDotNet.Driver.Constants;
+
+internal sealed class WorkerScheduler(string name, int concurrency, DriverProcessType? processType = null, IRuntimeTelemetrySink? telemetry = null, ILogger<WorkerScheduler>? logger = null)
 {
-    private readonly string _name = name;
     private readonly int _concurrency = concurrency > 0
         ? concurrency
         : throw new ArgumentOutOfRangeException(nameof(concurrency));
+    private readonly DriverProcessType _processType = processType ?? DriverProcessType.Runtime;
+    private readonly IRuntimeTelemetrySink _telemetry = telemetry ?? NullRuntimeTelemetrySink.Instance;
 
     public Task RunAsync(Func<CancellationToken, Task> worker, CancellationToken token = default)
     {
@@ -26,14 +34,35 @@ internal sealed class WorkerScheduler(string name, int concurrency)
                     {
                         break;
                     }
-                    catch
+                    catch (Exception ex)
                     {
-                        // TODO: connect to logging once available.
+                        logger?.LogError(ex, "Worker scheduler '{Name}' worker crashed.", name);
+                        await PublishSchedulerFaultAsync(ex, token).ConfigureAwait(false);
                     }
                 }
             }, token);
         }
 
         return Task.WhenAll(tasks);
+    }
+
+    private Task PublishSchedulerFaultAsync(Exception exception, CancellationToken token)
+    {
+        var payload = new RuntimeTelemetryPayload(
+            Loop: _processType,
+            UserId: $"{name}-worker",
+            GameTime: 0,
+            CpuLimit: 0,
+            CpuBucket: 0,
+            CpuUsed: 0,
+            TimedOut: false,
+            ScriptError: true,
+            HeapUsedBytes: 0,
+            HeapSizeLimitBytes: 0,
+            ErrorMessage: $"scheduler:{exception.GetType().Name}",
+            QueueDepth: null,
+            ColdStartRequested: false,
+            Stage: LoopStageNames.Scheduler.TelemetryStage);
+        return _telemetry.PublishTelemetryAsync(payload, token);
     }
 }

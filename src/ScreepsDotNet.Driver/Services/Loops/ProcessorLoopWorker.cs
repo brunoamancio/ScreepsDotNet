@@ -10,6 +10,7 @@ using ScreepsDotNet.Driver.Abstractions.Loops;
 using ScreepsDotNet.Driver.Abstractions.Notifications;
 using ScreepsDotNet.Driver.Abstractions.Rooms;
 using ScreepsDotNet.Storage.MongoRedis.Repositories.Documents;
+using ScreepsDotNet.Driver.Constants;
 
 namespace ScreepsDotNet.Driver.Services.Loops;
 
@@ -65,7 +66,8 @@ internal sealed class ProcessorLoopWorker(
             HeapSizeLimitBytes: 0,
             ErrorMessage: null,
             QueueDepth: queueDepth,
-            ColdStartRequested: false);
+            ColdStartRequested: false,
+            Stage: LoopStageNames.Processor.TelemetryProcessRoom);
         await loopHooks.PublishRuntimeTelemetryAsync(telemetry, token).ConfigureAwait(false);
     }
 

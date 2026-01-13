@@ -4,6 +4,7 @@ using ScreepsDotNet.Driver.Abstractions.Config;
 using ScreepsDotNet.Driver.Abstractions.Customization;
 using ScreepsDotNet.Driver.Abstractions.Environment;
 using ScreepsDotNet.Driver.Abstractions.Eventing;
+using ScreepsDotNet.Driver.Constants;
 
 namespace ScreepsDotNet.Driver.Services;
 
@@ -117,28 +118,28 @@ internal sealed class DriverConfig : IDriverConfig
     }
 
     public void EmitMainLoopStage(string stage, object? payload = null) =>
-        DispatchEvent(MainLoopStage, "mainLoopStage", new LoopStageEventArgs(stage, payload), stage, payload);
+        DispatchEvent(MainLoopStage, DriverEventNames.MainLoopStage, new LoopStageEventArgs(stage, payload), stage, payload);
 
     public void EmitRunnerLoopStage(string stage, object? payload = null) =>
-        DispatchEvent(RunnerLoopStage, "runnerLoopStage", new LoopStageEventArgs(stage, payload), stage, payload);
+        DispatchEvent(RunnerLoopStage, DriverEventNames.RunnerLoopStage, new LoopStageEventArgs(stage, payload), stage, payload);
 
     public void EmitProcessorLoopStage(string stage, object? payload = null) =>
-        DispatchEvent(ProcessorLoopStage, "processorLoopStage", new LoopStageEventArgs(stage, payload), stage, payload);
+        DispatchEvent(ProcessorLoopStage, DriverEventNames.ProcessorLoopStage, new LoopStageEventArgs(stage, payload), stage, payload);
 
     public void EmitPlayerSandbox(PlayerSandboxEventArgs args) =>
-        DispatchEvent(PlayerSandbox, "playerSandbox", args, args);
+        DispatchEvent(PlayerSandbox, DriverEventNames.PlayerSandbox, args, args);
 
     public void EmitInitialized(DriverProcessType processType)
     {
         var eventArgs = new DriverInitEventArgs(processType);
-        DispatchEvent(Initialized, "init", eventArgs, processType);
+        DispatchEvent(Initialized, DriverEventNames.Initialized, eventArgs, processType);
     }
 
     public void EmitRoomHistorySaved(RoomHistorySavedEventArgs args) =>
-        DispatchEvent(RoomHistorySaved, "roomHistorySaved", args, args.RoomName, args.BaseGameTime, args.Chunk);
+        DispatchEvent(RoomHistorySaved, DriverEventNames.RoomHistorySaved, args, args.RoomName, args.BaseGameTime, args.Chunk);
 
     public void EmitRuntimeTelemetry(RuntimeTelemetryEventArgs args) =>
-        DispatchEvent(RuntimeTelemetry, "runtimeTelemetry", args, args.Payload);
+        DispatchEvent(RuntimeTelemetry, DriverEventNames.RuntimeTelemetry, args, args.Payload);
 
     public IDriverEventSubscription Subscribe(string eventName, DriverEventListener handler)
     {

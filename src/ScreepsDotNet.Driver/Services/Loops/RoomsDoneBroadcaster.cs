@@ -2,6 +2,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using ScreepsDotNet.Driver.Abstractions.Config;
 using ScreepsDotNet.Driver.Abstractions.Loops;
+using ScreepsDotNet.Driver.Constants;
 
 namespace ScreepsDotNet.Driver.Services.Loops;
 
@@ -18,7 +19,7 @@ internal sealed class RoomsDoneBroadcaster(IDriverConfig config, IOptions<RoomsD
             return Task.CompletedTask;
 
         _lastBroadcast = now;
-        config.Emit("roomsDone", gameTime);
+        config.Emit(DriverEventNames.RoomsDone, gameTime);
         logger?.LogDebug("Broadcasted roomsDone event for tick {GameTime} (interval {Interval}).", gameTime, _options.MinInterval);
         return Task.CompletedTask;
     }

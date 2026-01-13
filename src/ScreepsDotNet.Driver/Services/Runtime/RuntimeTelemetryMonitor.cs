@@ -33,8 +33,9 @@ internal sealed class RuntimeTelemetryMonitor : IRuntimeWatchdog, IDisposable
         var payload = args.Payload;
         var level = payload.TimedOut || payload.ScriptError ? LogLevel.Warning : LogLevel.Debug;
         _logger.Log(level,
-            "Runtime telemetry ({Loop}) for user {UserId} tick {GameTime}: CPU {CpuUsed}/{CpuLimit}ms bucket {CpuBucket}, queueDepth={QueueDepth}, heap {HeapUsed}/{HeapLimit} bytes, timedOut={TimedOut}, scriptError={ScriptError}, coldStart={ColdStart}.",
+            "Runtime telemetry ({Loop}, stage={Stage}) for user {UserId} tick {GameTime}: CPU {CpuUsed}/{CpuLimit}ms bucket {CpuBucket}, queueDepth={QueueDepth}, heap {HeapUsed}/{HeapLimit} bytes, timedOut={TimedOut}, scriptError={ScriptError}, coldStart={ColdStart}.",
             payload.Loop,
+            payload.Stage ?? "n/a",
             payload.UserId,
             payload.GameTime,
             payload.CpuUsed,

@@ -26,6 +26,7 @@ The driver surfaces all runtime health data through `IRuntimeTelemetrySink`. Eve
 | `ErrorMessage` | `string?` | Last error string emitted by the sandbox (console error, require failure, etc.). |
 | `QueueDepth` | `int?` | Optional queue depth snapshot collected by the loop before/after executing the user. `null` means the loop did not collect the value. |
 | `ColdStartRequested` | `bool` | True when the watchdog requested a cold sandbox restart before executing this tick. |
+| `Stage` | `string?` | Optional stage descriptor (`execute`, `idle`, `dequeue`, `drainUsers`, etc.) so schedulers can distinguish runtime execution from queue/backpressure heartbeats. |
 
 All new optional properties default to `null`/`false`, so older components can continue constructing payloads without supplying queue data.
 
@@ -43,8 +44,15 @@ All new optional properties default to `null`/`false`, so older components can c
 
 `NullRuntimeTelemetrySink.Instance` implements `IRuntimeTelemetrySink` with no-ops so hosts embedding the driver without registering listeners can still consume `IDriverLoopHooks`. `ServiceCollectionExtensions.AddDriverCore` wires the real pipeline + listeners, but consuming apps can fall back to the null instance if needed.
 
+## Loop stage telemetry
+
+- **Runner loop** now emits `Stage=idle` when the users queue is empty, `Stage=dequeue` when a user is popped, and `Stage=throttleDelay` when the runtime throttle forces an artificial delay. The runtime coordinator emits `Stage=execute` once the sandbox runs.
+- **Processor loop** publishes `Stage=idle`/`Stage=dequeue` for the rooms queue before `ProcessorLoopWorker` runs, and the worker itself emits `Stage=processRoom` with the same queue depth snapshot.
+- **Main loop** produces `Stage=enqueueUsers`, `Stage=enqueueRooms`, `Stage=drainUsers`, and `Stage=drainRooms` heartbeats with queue depths so operators can see backlog evolution per tick.
+- **WorkerScheduler** (when used) sends `Stage=scheduler` telemetry with `ScriptError=true` whenever a background worker crashes before cancellation.
+
 ## Consuming the contract
 
 - Register additional `IRuntimeTelemetryListener` instances to push data into metrics pipelines (Prometheus, OTEL, etc.), send alerts, or drive queue throttling.
 - Avoid patching loop code directly; instead, inspect the payload in your listener and rely on `RuntimeWatchdogAlert` for high-severity cases.
-- When you start emitting queue depth or loop-level telemetry, populate `QueueDepth` so schedulers can reason about backlog size without introducing new event types.
+- When you start emitting queue depth or loop-level telemetry, populate `QueueDepth` and `Stage` so schedulers can reason about backlog size and state transitions without introducing new event types.

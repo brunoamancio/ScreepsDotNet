@@ -117,7 +117,8 @@ internal sealed class RuntimeCoordinator(
             HeapSizeLimitBytes: result.Metrics.HeapSizeLimitBytes,
             ErrorMessage: result.Error,
             QueueDepth: queueDepth,
-            ColdStartRequested: forceColdSandbox);
+            ColdStartRequested: forceColdSandbox,
+            Stage: LoopStageNames.Runner.TelemetryExecute);
 
         await loopHooks.PublishRuntimeTelemetryAsync(telemetry, token).ConfigureAwait(false);
         config.EmitRuntimeTelemetry(new RuntimeTelemetryEventArgs(telemetry));
