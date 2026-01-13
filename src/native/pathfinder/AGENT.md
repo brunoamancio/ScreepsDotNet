@@ -25,10 +25,11 @@ Track progress toward replacing the managed A* fallback with the upstream Screep
 - ✅ Added a “flee-multi-room” fixture so the flee logic is forced to cross room boundaries (origin W0N0 → W2N0 with `maxRooms=3`). Both the harness and managed tests now assert the Node path (cost 5, ops 4).
 - ✅ Added a “dense-corridor” fixture that snakes through a maze-like choke carved into wall terrain. Legacy ops/cost (59/691) are captured via the Node harness, and the baseline JSON + managed integration test now assert the exact path so native/managed stay in sync.
 - ✅ Added “controller-upgrade-creeps” and “tower-power-choke” fixtures so cost-matrix-driven obstacles (upgrade creep walls plus tower/power overlap zones) are covered. Expectations are recorded via the Node harness and consumed by the managed regression suite.
+- ✅ Added “keeper-lair-corridor”, “portal-chain”, “power-creep-flee”, “controller-tight-limit”, and “tower-keeper-hybrid” fixtures. These fill the remaining parity gaps (keeper aggro paths, multi-portal chains, flee + power-node matrices, tight maxRooms corridors, and overlapping tower/keeper danger zones). Each case is generated via `run-legacy-regressions.js`, copied into `Pathfinding/Baselines/legacy-regressions.json`, and enforced by `PathfinderNativeIntegrationTests`.
 
 ## Next Steps
-1. Keep expanding the regression dataset (e.g., keeper-lair corridors, portal chains, power-creep flee variants). We now cover multi-room, flee (single + multi), portal callbacks, wall-gap, controller corridors, tower cost detours, dense obstacle mazes, upgrade creeps, and tower/power choke points.
-2. Prune the managed fallback once we’re confident the native solver + download flow is stable (leave `PathfinderServiceOptions.EnableNative = false` solely for troubleshooting).
-3. Consider wiring the Node parity script into CI (behind a matrix that has Node 12 + native module available) to catch accidental divergence automatically.
+1. **Formalize native-only mode** – Remove the managed fallback once we’ve monitored a few more runs across all RIDs. Keep the flag only for emergency troubleshooting and document the process in `docs/driver.md`.
+2. **Automate baseline refreshes** – Add a CI job (or scripted `dotnet test … /p:RefreshPathfinderBaselines=true`) that runs when `src/native/pathfinder` changes so we always capture Node parity before merging.
+3. **Document rebuild/download flow** – Expand `docs/driver.md` (or a dedicated `PathfinderLifecycle.md`) with: required Node 12 toolchain for the harness, how to regenerate baselines, and steps for verifying the GitHub-release binaries. This will help other agents confidently delete the managed solver later.
 
 Track progress here so other agents can pick up where you leave off.
