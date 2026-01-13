@@ -54,6 +54,7 @@ const CONTROLLER_CORRIDOR_CASE = 'controller-corridor';
 const TOWER_COST_CASE = 'tower-cost';
 const FLEE_MULTI_ROOM_CASE = 'flee-multi-room';
 const DENSE_CORRIDOR_CASE = 'dense-corridor';
+const CONTROLLER_UPGRADE_CREEPS_CASE = 'controller-upgrade-creeps';
 
 const plainTerrain = room => ({ room, terrain: '0'.repeat(2500) });
 
@@ -116,6 +117,45 @@ function denseCorridorTerrain(room) {
   }
 
   return { room, terrain: tiles.join('') };
+}
+
+function createControllerUpgradeCostMatrix() {
+  const matrix = new Uint8Array(2500);
+  const creepPositions = [
+    [25, 24],
+    [25, 25],
+    [25, 26],
+    [24, 25],
+    [26, 25],
+    [24, 27],
+    [26, 27],
+    [24, 29],
+    [25, 29],
+    [26, 29],
+    [24, 31],
+    [25, 31],
+    [26, 31]
+  ];
+
+  for (const [x, y] of creepPositions) {
+    matrix[y * 50 + x] = 255;
+  }
+
+  const preferredPath = [];
+  for (let x = 5; x <= 45; x++) {
+    const offset = x < 25 ? 1 : -1;
+    const y = 25 + offset;
+    preferredPath.push([x, y]);
+  }
+
+  for (const [x, y] of preferredPath) {
+    const idx = y * 50 + x;
+    if (matrix[idx] !== 255) {
+      matrix[idx] = 10;
+    }
+  }
+
+  return matrix;
 }
 
 const createPortalMatrix = edgeY => {
@@ -490,6 +530,23 @@ const regressionCases = [
       incomplete: false,
       cost: 691,
       ops: 59,
+      path: undefined
+    }
+  },
+  {
+    name: CONTROLLER_UPGRADE_CREEPS_CASE,
+    rooms: [controllerCorridorTerrain('W0N0')],
+    origin: new RoomPosition(5, 25, 'W0N0'),
+    goals: [new RoomPosition(45, 25, 'W0N0')],
+    options: {
+      maxRooms: 1,
+      maxOps: 50_000,
+      roomCallback: roomName => roomName === 'W0N0' ? { _bits: createControllerUpgradeCostMatrix() } : null
+    },
+    expected: {
+      incomplete: false,
+      cost: 42,
+      ops: 41,
       path: undefined
     }
   }
