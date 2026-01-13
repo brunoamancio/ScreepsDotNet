@@ -6,6 +6,21 @@ const path = require('path');
 const repoRoot = path.resolve(__dirname, '../../../..');
 const driverRoot = path.resolve(repoRoot, '..', 'ScreepsNodeJs', 'driver');
 const nativeModulePath = path.join(driverRoot, 'native', 'build', 'Release', 'native.node');
+const args = process.argv.slice(2);
+let baselinePath;
+
+for (let i = 0; i < args.length; i++) {
+  if (args[i] === '--baseline') {
+    if (i + 1 >= args.length) {
+      console.error('--baseline requires a path');
+      process.exit(1);
+    }
+    baselinePath = path.resolve(repoRoot, args[i + 1]);
+    i += 1;
+  } else {
+    console.warn(`Unknown argument ignored: ${args[i]}`);
+  }
+}
 
 if (!fs.existsSync(nativeModulePath)) {
   console.error('Native module not built. Run `npx node-gyp rebuild -C native` inside ScreepsNodeJs/driver.');
@@ -233,6 +248,24 @@ const reportFile = path.join(outputPath, 'legacy-regressions.json');
 fs.writeFileSync(reportFile, JSON.stringify({ generatedAt: new Date().toISOString(), summary }, null, 2));
 
 console.log(`Legacy regression report written to ${path.relative(repoRoot, reportFile)}`);
+if (baselinePath) {
+  const baseline = {
+    generatedAt: new Date().toISOString(),
+    cases: summary.map(entry => {
+      const canonicalPath = entry.result.pathTargetFirst || entry.result.path || [];
+      return {
+        name: entry.name,
+        ops: entry.result.ops,
+        cost: entry.result.cost,
+        incomplete: entry.result.incomplete,
+        path: canonicalPath
+      };
+    })
+  };
+  fs.mkdirSync(path.dirname(baselinePath), { recursive: true });
+  fs.writeFileSync(baselinePath, JSON.stringify(baseline, null, 2));
+  console.log(`Baseline written to ${path.relative(repoRoot, baselinePath)}`);
+}
 if (mismatches > 0) {
   console.error('Legacy node driver regressions diverged. See report for details.');
   process.exit(2);

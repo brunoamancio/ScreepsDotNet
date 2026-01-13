@@ -74,6 +74,21 @@ Prerequisites:
 
 Outputs land under `src/native/pathfinder/reports/` (JSON + Markdown summary). Refer to the latest report before removing the managed fallback or when investigating discrepancies.
 
+#### Refreshing the managed test fixture
+
+To update the JSON fixture consumed by `ScreepsDotNet.Driver.Tests`, run:
+
+```
+cd ScreepsDotNet
+source ~/.nvm/nvm.sh
+nvm use 12
+node src/native/pathfinder/scripts/refresh-baselines.js
+# or, from anywhere (after ensuring Node 12 is on PATH):
+dotnet test src/ScreepsDotNet.Driver.Tests/ScreepsDotNet.Driver.Tests.csproj /p:RefreshPathfinderBaselines=true
+```
+
+Both commands call `run-legacy-regressions.js --baseline …` and copy the canonical results to `src/ScreepsDotNet.Driver.Tests/Pathfinding/Baselines/legacy-regressions.json`, which is tracked in git. Make sure the shell you run them from already activated Node 12 (e.g., via `nvm use 12`) so the legacy native module loads correctly. Use these commands whenever you change the native solver or add new regression cases.
+
 ## Status / Next steps
 
 The native search pipeline and exports are now functional. Remaining work lives in `AGENT.md` (managed bindings, CI packaging, and parity tests). Until the managed driver switches over, the C# fallback in `PathfinderService` is still available as a safety valve.

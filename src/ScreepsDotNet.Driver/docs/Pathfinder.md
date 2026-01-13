@@ -83,6 +83,8 @@ The script:
 
 If a case fails, inspect the JSON diff to see whether the issue is cost/ops/path ordering, then update `PathfinderNativeIntegrationTests` once the native fix lands.
 
+- Updating the managed fixture: run `node src/native/pathfinder/scripts/refresh-baselines.js` (with Node 12 active) **or** `dotnet test src/ScreepsDotNet.Driver.Tests/ScreepsDotNet.Driver.Tests.csproj /p:RefreshPathfinderBaselines=true`. Both routes invoke the harness with `--baseline` and copy the canonical results into `Pathfinding/Baselines/legacy-regressions.json`.
+
 - Next steps:
   1. Expand the regression coverage as additional intent handlers (movement/controller/power) migrate to the .NET processor; capture fresh fixtures with the Node script above.
   2. Keep the managed solver behind `EnableNative = false` for diagnostics only, and plan to remove it entirely once the expanded suite keeps passing.

@@ -27,4 +27,13 @@
     <Compile Include="..\GlobalSuppressions.Tests.cs" Link="GlobalSuppressions.Tests.cs" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Include="Pathfinding/Baselines/legacy-regressions.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <Target Name="RefreshPathfinderBaselines" BeforeTargets="Compile" Condition="'$(RefreshPathfinderBaselines)' == 'true'">
+    <Message Text="Refreshing pathfinder baselines via Node script..." Importance="High" />
+    <Exec Command="node &quot;$(ProjectDir)..\native\pathfinder\scripts\refresh-baselines.js&quot;" />
+  </Target>
+
 </Project>
