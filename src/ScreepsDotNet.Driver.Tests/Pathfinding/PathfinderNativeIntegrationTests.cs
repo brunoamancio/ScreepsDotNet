@@ -61,24 +61,6 @@ public sealed class PathfinderNativeIntegrationTests
         Assert.Equal(goals[1].Target.RoomName, result.Path[^1].RoomName);
     }
 
-    [Fact]
-    public async Task RoomCallbackBlockingRoomMarksSearchIncomplete()
-    {
-        var service = CreateManagedOnlyService();
-        var token = TestContext.Current.CancellationToken;
-        await service.InitializeAsync([PlainTerrain("W0N0"), PlainTerrain("W0N1"), PlainTerrain("W0N2")], token);
-
-        var options = new PathfinderOptions(
-            MaxRooms: 4,
-            RoomCallback: room => room == "W0N1" ? new PathfinderRoomCallbackResult(CreateBlockedMatrix()) : null);
-
-        var origin = new RoomPosition(25, 25, "W0N0");
-        var blockedGoal = new PathfinderGoal(new RoomPosition(25, 25, "W0N2"));
-        var result = service.Search(origin, blockedGoal, options);
-
-        Assert.True(result.Incomplete);
-    }
-
     [Theory]
     [MemberData(nameof(RegressionCaseData))]
     public async Task NativePathfinderMatchesRecordedBaseline(string caseName)
@@ -108,10 +90,7 @@ public sealed class PathfinderNativeIntegrationTests
     }
 
     private static PathfinderService CreateService()
-        => new(null, Options.Create(new PathfinderServiceOptions { EnableNative = true }));
-
-    private static PathfinderService CreateManagedOnlyService()
-        => new(null, Options.Create(new PathfinderServiceOptions { EnableNative = false }));
+        => new(null);
 
     private static TerrainRoomData PlainTerrain(string roomName)
         => CreateTerrain(roomName, _ => _ => false);

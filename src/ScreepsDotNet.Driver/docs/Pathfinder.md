@@ -55,14 +55,14 @@ public interface IPathfinderService
 - Temporarily host the Node pathfinder via an IPC bridge (e.g., small Node worker) while the native port is underway. This keeps the pipeline moving even if C++ work takes longer.
 
 ### Current Status (January 2026)
-  - `PathfinderService` now bootstraps the native solver via `PathfinderNative` whenever binaries are available for the current RID. `PathfinderServiceOptions.EnableNative` defaults to `true`; turn it off only when you explicitly want the managed solver for troubleshooting.
+  - `PathfinderService` now bootstraps the native solver via `PathfinderNative` whenever binaries are available for the current RID. The managed A* fallback was removed on January 13, 2026, so initialization fails fast if the native binary is missing.
   - Terrain ingestion accepts legacy 2 500-byte strings or packed 625-byte buffers; the service repacks the former before passing them to the native API.
   - Native binaries are published per RID and downloaded during `dotnet build` (hash verified); setting `NativePathfinderSkipDownload=true` keeps the old behavior for local experiments.
   - `roomCallback`, multi-goal arrays, flee logic, and `BlockRoom` semantics are all handled natively. Regression fixtures (multi-room, flee, portal/callback) live in `PathfinderNativeIntegrationTests`.
   - `src/native/pathfinder/scripts/run-legacy-regressions.js` now replays those fixtures against the Node driver (Node 12 + native addon) and drops reports into `src/native/pathfinder/reports/`. The January 13, 2026 run matched on ops/cost/path for every case (see `legacy-regressions.{json,md}`).
   - Limitations / remaining items:
-    - Grow the Node + managed fixture set beyond the three canonical cases (creep movement with obstacles, towers/links/power). Once confident, remove the managed A* fallback entirely (leave the flag only for emergency troubleshooting).
-    - Consider automating the Node comparison in CI so regressions are caught before release.
+    - Continue growing the Node + managed fixture set (keeper corridors, portal chains, power-creep flee, tight maxRooms corridors, tower/keeper hybrids already captured). Keep running the Node harness whenever native code changes.
+    - Automate the Node comparison in CI so regressions are caught before release.
 
 ### Legacy Regression Harness
 
@@ -87,4 +87,4 @@ If a case fails, inspect the JSON diff to see whether the issue is cost/ops/path
 
 - Next steps:
   1. Expand the regression coverage as additional intent handlers (movement/controller/power) migrate to the .NET processor; capture fresh fixtures with the Node script above.
-  2. Keep the managed solver behind `EnableNative = false` for diagnostics only, and plan to remove it entirely once the expanded suite keeps passing.
+  2. Since the managed solver is gone, focus on ensuring the download/release automation stays healthy (GitHub artifacts + MSBuild target) and document troubleshooting steps for missing binaries.
