@@ -14,7 +14,7 @@ This document summarizes the ongoing effort to port the legacy Screeps Node.js d
 - Queue infrastructure, scheduler helpers, bulk writers, room/user services, and notification/history services run inside `ScreepsDotNet.Driver`.
 - ClearScript-based runtime coordinator executes user code, captures console/memory/intents, and writes through the new services via `RunnerLoopWorker`/`ProcessorLoopWorker`.
 - Native pathfinder binaries now live under `src/native/pathfinder`; `dotnet build` downloads the correct RID package (hash-verified) and `PathfinderService` now always uses the native solver (the managed A* fallback has been removed, so missing binaries fail fast).
-- Next milestone is rewriting the engine itself on .NET; the driver is feature-complete and ready to plug into the new runtime stack without relying on a Node compatibility shim.
+- Next milestone is rewriting the engine itself on .NET; the driver is feature-complete and ready to plug into the new runtime stack without relying on a Node compatibility shim. Track that effort in [src/ScreepsDotNet.Engine/AGENT.md](../src/ScreepsDotNet.Engine/AGENT.md).
 
 ## Workstreams & Plan Docs
 

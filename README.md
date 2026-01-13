@@ -36,6 +36,7 @@ Modern .NET rewrite of the Screeps private server backend. The solution exposes 
 - [docs/http-endpoints.md](docs/http-endpoints.md) – route coverage tables + `.http` scratch file index.
 - [docs/driver.md](docs/driver.md) – driver rewrite overview with links to subsystem plan docs and AGENT notes.
 - [docs/README.md](docs/README.md) – documentation/AGENT ownership map (who updates what).
+- [src/ScreepsDotNet.Engine/AGENT.md](src/ScreepsDotNet.Engine/AGENT.md) – engine rewrite execution plan (E1–E8) and current status.
 - `docs/specs/*` – market/world API specs and driver design notes.
 - `docs/badges/BadgeGallery.md` – generated badge samples.
 

@@ -14,6 +14,7 @@ Use this index to understand which file owns which slice of project knowledge. W
 | `AGENT.md` (root) | Repo-wide conventions, orientation, and links to all docs. | Keep short; link to the docs above instead of repeating content. |
 | `src/ScreepsDotNet.Driver/AGENT.md` | Day-to-day driver tasks, coding conventions (locks, primary constructors), current TODOs. | Reference `docs/driver.md` for plan context; list actionable items here. |
 | `src/native/pathfinder/AGENT.md` | Native build instructions, CI workflow notes, release process for pathfinder binaries. | Mention hash/download requirements covered in driver docs. |
+| `src/ScreepsDotNet.Engine/AGENT.md` | Engine rewrite roadmap (E1–E8), legacy surface mapping, and work logs. | Link from high-level docs (README, driver/engine notes) whenever engine progress changes. |
 
 ## Update checklist
 

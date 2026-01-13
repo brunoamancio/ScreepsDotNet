@@ -15,6 +15,7 @@ This file is the quick hand-off for anyone jumping into the repository. Detailed
 - HTTP route coverage & `.http` samples: `docs/http-endpoints.md`.
 - Driver plan/status: `docs/driver.md` (plus `src/ScreepsDotNet.Driver/AGENT.md` for day-to-day tasks).
 - Native pathfinder build/release: `src/native/pathfinder/AGENT.md`.
+- Engine rewrite roadmap/log: `src/ScreepsDotNet.Engine/AGENT.md`.
 
 ## Current focus
 
