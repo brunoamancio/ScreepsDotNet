@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using ScreepsDotNet.Driver.Abstractions;
 using ScreepsDotNet.Driver.Abstractions.Config;
 using ScreepsDotNet.Driver.Abstractions.Environment;
 using ScreepsDotNet.Driver.Abstractions.Loops;
@@ -64,6 +65,7 @@ internal sealed class MainLoop(IDriverConfig config, IQueueService queues, IUser
     {
         config.EmitMainLoopStage("start");
         await environment.NotifyTickStartedAsync(token).ConfigureAwait(false);
+        var currentGameTime = await environment.GetGameTimeAsync(token).ConfigureAwait(false);
 
         config.EmitMainLoopStage("getUsers");
         var users1 = await users.GetActiveUsersAsync(token).ConfigureAwait(false);
@@ -76,9 +78,13 @@ internal sealed class MainLoop(IDriverConfig config, IQueueService queues, IUser
         config.EmitMainLoopStage("addUsersToQueue", userIds);
         if (userIds.Length > 0)
             await _usersQueue!.EnqueueManyAsync(userIds, token).ConfigureAwait(false);
+        var usersDepth = await _usersQueue!.GetPendingCountAsync(token).ConfigureAwait(false);
+        await PublishQueueDepthAsync(QueueNames.Users, currentGameTime, usersDepth, token).ConfigureAwait(false);
 
         config.EmitMainLoopStage("waitForUsers");
         await _usersQueue!.WaitUntilDrainedAsync(token).ConfigureAwait(false);
+        var usersDrainedDepth = await _usersQueue.GetPendingCountAsync(token).ConfigureAwait(false);
+        await PublishQueueDepthAsync($"{QueueNames.Users}:drained", currentGameTime, usersDrainedDepth, token).ConfigureAwait(false);
 
         config.EmitMainLoopStage("getRooms");
         var rooms1 = await rooms.DrainActiveRoomsAsync(token).ConfigureAwait(false);
@@ -87,9 +93,13 @@ internal sealed class MainLoop(IDriverConfig config, IQueueService queues, IUser
         config.EmitMainLoopStage("addRoomsToQueue", roomNames);
         if (roomNames.Length > 0)
             await _roomsQueue!.EnqueueManyAsync(roomNames, token).ConfigureAwait(false);
+        var roomsDepth = await _roomsQueue!.GetPendingCountAsync(token).ConfigureAwait(false);
+        await PublishQueueDepthAsync(QueueNames.Rooms, currentGameTime, roomsDepth, token).ConfigureAwait(false);
 
         config.EmitMainLoopStage("waitForRooms");
         await _roomsQueue!.WaitUntilDrainedAsync(token).ConfigureAwait(false);
+        var roomsDrainedDepth = await _roomsQueue.GetPendingCountAsync(token).ConfigureAwait(false);
+        await PublishQueueDepthAsync($"{QueueNames.Rooms}:drained", currentGameTime, roomsDrainedDepth, token).ConfigureAwait(false);
 
         config.EmitMainLoopStage("commitDbBulk:pre");
         await environment.CommitDatabaseBulkAsync(token).ConfigureAwait(false);
@@ -111,5 +121,24 @@ internal sealed class MainLoop(IDriverConfig config, IQueueService queues, IUser
         await hooks.NotifyRoomsDoneAsync(gameTime, token).ConfigureAwait(false);
 
         config.EmitMainLoopStage("finish");
+    }
+
+    private Task PublishQueueDepthAsync(string targetId, int gameTime, int queueDepth, CancellationToken token)
+    {
+        var payload = new RuntimeTelemetryPayload(
+            Loop: DriverProcessType.Main,
+            UserId: targetId,
+            GameTime: gameTime,
+            CpuLimit: 0,
+            CpuBucket: 0,
+            CpuUsed: 0,
+            TimedOut: false,
+            ScriptError: false,
+            HeapUsedBytes: 0,
+            HeapSizeLimitBytes: 0,
+            ErrorMessage: null,
+            QueueDepth: queueDepth,
+            ColdStartRequested: false);
+        return hooks.PublishRuntimeTelemetryAsync(payload, token);
     }
 }

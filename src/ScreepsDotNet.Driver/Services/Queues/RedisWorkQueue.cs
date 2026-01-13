@@ -89,6 +89,12 @@ internal sealed class RedisWorkQueue(IRedisConnectionProvider redisProvider, str
         }
     }
 
+    public async Task<int> GetPendingCountAsync(CancellationToken token = default)
+    {
+        var length = await Database.ListLengthAsync(PendingKey).ConfigureAwait(false);
+        return length > int.MaxValue ? int.MaxValue : (int)length;
+    }
+
     private Task<RedisValue> MovePendingToProcessingAsync()
         => Database.ListRightPopLeftPushAsync(PendingKey, ProcessingKey);
 

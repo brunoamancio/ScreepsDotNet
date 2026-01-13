@@ -17,12 +17,12 @@ public interface IProcessorLoop
 
 public interface IRunnerLoopWorker
 {
-    Task HandleUserAsync(string userId, CancellationToken token = default);
+    Task HandleUserAsync(string userId, int? queueDepth, CancellationToken token = default);
 }
 
 public interface IProcessorLoopWorker
 {
-    Task HandleRoomAsync(string roomName, CancellationToken token = default);
+    Task HandleRoomAsync(string roomName, int? queueDepth, CancellationToken token = default);
 }
 
 public interface IMainLoopGlobalProcessor

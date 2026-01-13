@@ -30,6 +30,7 @@ internal sealed class RunnerLoop(
             try
             {
                 config.EmitRunnerLoopStage("start");
+                int? queueDepth = await _queue.GetPendingCountAsync(token).ConfigureAwait(false);
                 userId = await _queue.FetchAsync(_options.FetchTimeout, token).ConfigureAwait(false);
                 if (string.IsNullOrWhiteSpace(userId))
                 {
@@ -45,7 +46,7 @@ internal sealed class RunnerLoop(
                     await Task.Delay(delay, token).ConfigureAwait(false);
                 }
 
-                await worker.HandleUserAsync(userId, token).ConfigureAwait(false);
+                await worker.HandleUserAsync(userId, queueDepth, token).ConfigureAwait(false);
             }
             catch (OperationCanceledException) when (token.IsCancellationRequested)
             {

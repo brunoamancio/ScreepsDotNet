@@ -9,4 +9,5 @@ public interface IWorkQueueChannel
     Task MarkDoneAsync(string id, CancellationToken token = default);
     Task ResetAsync(CancellationToken token = default);
     Task WaitUntilDrainedAsync(CancellationToken token = default);
+    Task<int> GetPendingCountAsync(CancellationToken token = default);
 }

@@ -23,6 +23,7 @@ internal sealed class ProcessorLoop(IDriverConfig config, IQueueService queues, 
             try
             {
                 config.EmitProcessorLoopStage("start");
+                int? queueDepth = await _queue.GetPendingCountAsync(token).ConfigureAwait(false);
                 room = await _queue.FetchAsync(_options.FetchTimeout, token).ConfigureAwait(false);
                 if (string.IsNullOrWhiteSpace(room))
                 {
@@ -31,7 +32,7 @@ internal sealed class ProcessorLoop(IDriverConfig config, IQueueService queues, 
                 }
 
                 config.EmitProcessorLoopStage("processRoom", room);
-                await worker.HandleRoomAsync(room, token).ConfigureAwait(false);
+                await worker.HandleRoomAsync(room, queueDepth, token).ConfigureAwait(false);
             }
             catch (OperationCanceledException) when (token.IsCancellationRequested)
             {

@@ -40,7 +40,7 @@ internal sealed class RuntimeCoordinator(
 
     private readonly IDatabase _redis = redisProvider.GetConnection().GetDatabase();
 
-    public async Task ExecuteAsync(string userId, CancellationToken token = default)
+    public async Task ExecuteAsync(string userId, int? queueDepth = null, CancellationToken token = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(userId);
 
@@ -116,7 +116,7 @@ internal sealed class RuntimeCoordinator(
             HeapUsedBytes: result.Metrics.HeapUsedBytes,
             HeapSizeLimitBytes: result.Metrics.HeapSizeLimitBytes,
             ErrorMessage: result.Error,
-            QueueDepth: null,
+            QueueDepth: queueDepth,
             ColdStartRequested: forceColdSandbox);
 
         await loopHooks.PublishRuntimeTelemetryAsync(telemetry, token).ConfigureAwait(false);

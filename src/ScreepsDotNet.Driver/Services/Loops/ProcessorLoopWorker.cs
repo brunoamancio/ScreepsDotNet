@@ -2,6 +2,7 @@ using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using MongoDB.Bson;
 using ScreepsDotNet.Common;
+using ScreepsDotNet.Driver.Abstractions;
 using ScreepsDotNet.Driver.Abstractions.Bulk;
 using ScreepsDotNet.Driver.Abstractions.Config;
 using ScreepsDotNet.Driver.Abstractions.Environment;
@@ -22,7 +23,7 @@ internal sealed class ProcessorLoopWorker(
 {
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 
-    public async Task HandleRoomAsync(string roomName, CancellationToken token = default)
+    public async Task HandleRoomAsync(string roomName, int? queueDepth, CancellationToken token = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(roomName);
 
@@ -50,6 +51,22 @@ internal sealed class ProcessorLoopWorker(
             var chunkBase = Math.Max(gameTime - chunkSize + 1, 0);
             await loopHooks.UploadRoomHistoryChunkAsync(roomName, chunkBase, token).ConfigureAwait(false);
         }
+
+        var telemetry = new RuntimeTelemetryPayload(
+            Loop: DriverProcessType.Processor,
+            UserId: roomName,
+            GameTime: gameTime,
+            CpuLimit: 0,
+            CpuBucket: 0,
+            CpuUsed: 0,
+            TimedOut: false,
+            ScriptError: false,
+            HeapUsedBytes: 0,
+            HeapSizeLimitBytes: 0,
+            ErrorMessage: null,
+            QueueDepth: queueDepth,
+            ColdStartRequested: false);
+        await loopHooks.PublishRuntimeTelemetryAsync(telemetry, token).ConfigureAwait(false);
     }
 
     private async Task ApplyRoomIntentsAsync(string roomName, IReadOnlyDictionary<string, RoomObjectDocument> objects, RoomIntentDocument intents, CancellationToken token)
