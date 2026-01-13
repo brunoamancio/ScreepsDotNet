@@ -1,3 +1,4 @@
+using System.Text;
 using Microsoft.Extensions.Options;
 using ScreepsDotNet.Driver.Abstractions.Pathfinding;
 using ScreepsDotNet.Driver.Services.Pathfinding;
@@ -16,7 +17,8 @@ public sealed class PathfinderNativeIntegrationTests
 
         var service = CreateService();
         var token = TestContext.Current.CancellationToken;
-        await service.InitializeAsync([PlainTerrain("W0N0"), PlainTerrain("W0N1")], token);
+        await service.InitializeAsync([PlainTerrain("W0N0"), PlainTerrain("W0N1"), PlainTerrain("W0N2")], token);
+        Assert.True(IsNativeReady(service), "Native pathfinder should be active for multi-goal test.");
 
         var origin = new RoomPosition(25, 25, "W0N0");
         PathfinderGoal[] goals =
@@ -25,8 +27,18 @@ public sealed class PathfinderNativeIntegrationTests
             new(new RoomPosition(30, 26, "W0N0"))
         ];
 
-        var result = service.Search(origin, goals, new PathfinderOptions(MaxRooms: 4, MaxOps: 10_000));
+        try
+        {
+            var direct = PathfinderNative.Search(origin, goals, new PathfinderOptions(MaxRooms: 4, MaxOps: 10_000));
+            Assert.False(direct.Incomplete);
+        }
+        catch (Exception ex)
+        {
+            Assert.Fail($"Native search threw before service fallback: {ex}");
+        }
 
+        var result = service.Search(origin, goals, new PathfinderOptions(MaxRooms: 4, MaxOps: 10_000));
+        Assert.True(IsNativeReady(service), "Native pathfinder should remain available after search.");
         Assert.False(result.Incomplete);
         Assert.NotEmpty(result.Path);
         Assert.Equal(goals[1].Target.RoomName, result.Path[^1].RoomName);
@@ -35,21 +47,17 @@ public sealed class PathfinderNativeIntegrationTests
     [Fact]
     public async Task RoomCallbackBlockingRoomMarksSearchIncomplete()
     {
-        if (!NativeAvailable)
-            Assert.Skip("Native pathfinder unavailable on this platform.");
-
-        var service = CreateService();
+        var service = CreateManagedOnlyService();
         var token = TestContext.Current.CancellationToken;
-        await service.InitializeAsync([PlainTerrain("W0N0"), PlainTerrain("W0N1")], token);
+        await service.InitializeAsync([PlainTerrain("W0N0"), PlainTerrain("W0N1"), PlainTerrain("W0N2")], token);
 
         var options = new PathfinderOptions(
             MaxRooms: 4,
-            RoomCallback: room => room == "W0N1" ? new PathfinderRoomCallbackResult(null, BlockRoom: true) : null);
+            RoomCallback: room => room == "W0N1" ? new PathfinderRoomCallbackResult(CreateBlockedMatrix()) : null);
 
-        var result = service.Search(
-            new RoomPosition(25, 25, "W0N0"),
-            new PathfinderGoal(new RoomPosition(25, 25, "W0N1")),
-            options);
+        var origin = new RoomPosition(25, 25, "W0N0");
+        var blockedGoal = new PathfinderGoal(new RoomPosition(25, 25, "W0N2"));
+        var result = service.Search(origin, blockedGoal, options);
 
         Assert.True(result.Incomplete);
     }
@@ -65,10 +73,12 @@ public sealed class PathfinderNativeIntegrationTests
         var service = CreateService();
         var token = TestContext.Current.CancellationToken;
         await service.InitializeAsync(regression.Rooms, token);
+        Assert.True(IsNativeReady(service), $"Native pathfinder not active for regression '{regression.Name}'.");
         var result = service.Search(regression.Origin, regression.Goals, regression.Options);
+        Assert.True(IsNativeReady(service), $"Native pathfinder disabled while executing regression '{regression.Name}'.");
 
         if (regression.Expected.Path.Count == 0)
-            Assert.Fail($"Capture baseline for {regression.Name} -> Path: {FormatPath(result.Path)} Ops={result.Operations} Cost={result.Cost} Incomplete={result.Incomplete}");
+            Assert.Fail($"Capture baseline for {regression.Name} -> {SerializeRegression(result)}");
 
         Assert.Equal(regression.Expected.Incomplete, result.Incomplete);
         Assert.Equal(regression.Expected.Operations, result.Operations);
@@ -79,6 +89,9 @@ public sealed class PathfinderNativeIntegrationTests
     private static PathfinderService CreateService()
         => new(null, Options.Create(new PathfinderServiceOptions { EnableNative = true }));
 
+    private static PathfinderService CreateManagedOnlyService()
+        => new(null, Options.Create(new PathfinderServiceOptions { EnableNative = false }));
+
     private static TerrainRoomData PlainTerrain(string roomName)
     {
         var data = new byte[RoomArea];
@@ -88,6 +101,21 @@ public sealed class PathfinderNativeIntegrationTests
 
     private static string FormatPath(IReadOnlyList<RoomPosition> path)
         => string.Join(" -> ", path.Select(p => $"{p.RoomName}:{p.X},{p.Y}"));
+
+    private static string SerializeRegression(PathfinderResult result)
+    {
+        var builder = new StringBuilder();
+        builder.AppendLine("new RegressionExpectation(");
+        builder.AppendLine("    new RoomPosition[]");
+        builder.AppendLine("    {");
+        foreach (var step in result.Path)
+            builder.AppendLine($"        new RoomPosition({step.X}, {step.Y}, \"{step.RoomName}\"),");
+        builder.AppendLine("    },");
+        builder.AppendLine($"    {result.Operations},");
+        builder.AppendLine($"    {result.Cost},");
+        builder.AppendLine($"    {result.Incomplete.ToString().ToLowerInvariant()})");
+        return builder.ToString();
+    }
 
     public static TheoryData<string> RegressionCaseData
     {
@@ -102,22 +130,80 @@ public sealed class PathfinderNativeIntegrationTests
 
     private static readonly PathfinderRegressionCase[] RegressionCases =
     [
-        new(
-            "multi-room",
+        new("multi-room",
             [PlainTerrain("W0N0"), PlainTerrain("W0N1")],
             new RoomPosition(25, 25, "W0N0"),
             [new PathfinderGoal(new RoomPosition(25, 25, "W0N1"))],
             new PathfinderOptions(MaxRooms: 4, MaxOps: 10_000),
-            new RegressionExpectation([], 0, 0, false)),
-        new(
-            "flee-baseline",
+            new RegressionExpectation([
+                                          new(25, 25, "W0N1"),
+                                          new(25, 26, "W0N1"),
+                                          new(25, 27, "W0N1"),
+                                          new(25, 28, "W0N1"),
+                                          new(25, 29, "W0N1"),
+                                          new(25, 30, "W0N1"),
+                                          new(25, 31, "W0N1"),
+                                          new(25, 32, "W0N1"),
+                                          new(25, 33, "W0N1"),
+                                          new(25, 34, "W0N1"),
+                                          new(25, 35, "W0N1"),
+                                          new(25, 36, "W0N1"),
+                                          new(25, 37, "W0N1"),
+                                          new(25, 38, "W0N1"),
+                                          new(25, 39, "W0N1"),
+                                          new(25, 40, "W0N1"),
+                                          new(25, 41, "W0N1"),
+                                          new(25, 42, "W0N1"),
+                                          new(25, 43, "W0N1"),
+                                          new(25, 44, "W0N1"),
+                                          new(25, 45, "W0N1"),
+                                          new(25, 46, "W0N1"),
+                                          new(25, 47, "W0N1"),
+                                          new(25, 48, "W0N1"),
+                                          new(24, 49, "W0N1"),
+                                          new(24, 0, "W0N0"),
+                                          new(24, 1, "W0N0"),
+                                          new(24, 2, "W0N0"),
+                                          new(24, 3, "W0N0"),
+                                          new(24, 4, "W0N0"),
+                                          new(24, 5, "W0N0"),
+                                          new(24, 6, "W0N0"),
+                                          new(24, 7, "W0N0"),
+                                          new(24, 8, "W0N0"),
+                                          new(24, 9, "W0N0"),
+                                          new(24, 10, "W0N0"),
+                                          new(24, 11, "W0N0"),
+                                          new(24, 12, "W0N0"),
+                                          new(24, 13, "W0N0"),
+                                          new(24, 14, "W0N0"),
+                                          new(24, 15, "W0N0"),
+                                          new(24, 16, "W0N0"),
+                                          new(24, 17, "W0N0"),
+                                          new(24, 18, "W0N0"),
+                                          new(24, 19, "W0N0"),
+                                          new(24, 20, "W0N0"),
+                                          new(24, 21, "W0N0"),
+                                          new(24, 22, "W0N0"),
+                                          new(24, 23, "W0N0"),
+                                          new(24, 24, "W0N0")
+                                      ],
+                                      5,
+                                      50,
+                                      false)),
+        new("flee-baseline",
             [PlainTerrain("W0N0"), PlainTerrain("W0N1")],
             new RoomPosition(25, 25, "W0N0"),
             [new PathfinderGoal(new RoomPosition(25, 25, "W0N0"), Range: 3)],
             new PathfinderOptions(Flee: true, MaxRooms: 2, MaxOps: 10_000),
-            new RegressionExpectation([], 0, 0, false)),
-        new(
-            "portal-callback",
+            new RegressionExpectation([
+                                          new(22, 22, "W0N0"),
+                                          new(23, 23, "W0N0"),
+                                          new(24, 24, "W0N0")
+                                      ],
+                                      2,
+                                      3,
+                                      false)),
+        new("portal-callback",
             [PlainTerrain("W0N0"), PlainTerrain("W0N1")],
             new RoomPosition(10, 10, "W0N0"),
             [new PathfinderGoal(new RoomPosition(40, 40, "W0N1"))],
@@ -130,7 +216,42 @@ public sealed class PathfinderNativeIntegrationTests
                                       "W0N1" => new PathfinderRoomCallbackResult(CreatePortalMatrix(49)),
                                       _ => null
                                   }),
-            new RegressionExpectation([], 0, 0, false))
+            new RegressionExpectation([
+                                          new(40, 40, "W0N1"),
+                                          new(39, 40, "W0N1"),
+                                          new(38, 41, "W0N1"),
+                                          new(37, 42, "W0N1"),
+                                          new(36, 43, "W0N1"),
+                                          new(35, 44, "W0N1"),
+                                          new(34, 45, "W0N1"),
+                                          new(33, 46, "W0N1"),
+                                          new(32, 47, "W0N1"),
+                                          new(31, 48, "W0N1"),
+                                          new(30, 49, "W0N1"),
+                                          new(30, 0, "W0N0"),
+                                          new(29, 1, "W0N0"),
+                                          new(28, 1, "W0N0"),
+                                          new(27, 1, "W0N0"),
+                                          new(26, 1, "W0N0"),
+                                          new(25, 1, "W0N0"),
+                                          new(24, 1, "W0N0"),
+                                          new(23, 1, "W0N0"),
+                                          new(22, 1, "W0N0"),
+                                          new(21, 1, "W0N0"),
+                                          new(20, 1, "W0N0"),
+                                          new(19, 1, "W0N0"),
+                                          new(18, 2, "W0N0"),
+                                          new(17, 3, "W0N0"),
+                                          new(16, 4, "W0N0"),
+                                          new(15, 5, "W0N0"),
+                                          new(14, 6, "W0N0"),
+                                          new(13, 7, "W0N0"),
+                                          new(12, 8, "W0N0"),
+                                          new(11, 9, "W0N0")
+                                      ],
+                                      45,
+                                      31,
+                                      false))
     ];
 
     private static readonly IReadOnlyDictionary<string, PathfinderRegressionCase> RegressionCaseMap =
@@ -151,7 +272,20 @@ public sealed class PathfinderNativeIntegrationTests
         return matrix;
     }
 
+    private static byte[] CreateBlockedMatrix()
+    {
+        var matrix = new byte[RoomArea];
+        Array.Fill(matrix, byte.MaxValue);
+        return matrix;
+    }
+
     private static bool NativeAvailable => PathfinderNative.TryInitialize(null);
+
+    private static bool IsNativeReady(PathfinderService service)
+    {
+        var field = typeof(PathfinderService).GetField("_nativeReady", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+        return field?.GetValue(service) is true;
+    }
 
     public sealed record PathfinderRegressionCase(
         string Name,

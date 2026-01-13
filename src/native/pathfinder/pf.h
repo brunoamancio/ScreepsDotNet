@@ -31,6 +31,7 @@ namespace screeps {
 	struct room_callback_result {
 		const uint8_t* cost_matrix;
 		size_t cost_matrix_length;
+		bool block_room;
 	};
 
 	using room_callback_fn = bool (*)(uint8_t room_x, uint8_t room_y, room_callback_result* result, void* context);

@@ -57,24 +57,26 @@ internal sealed class PathfinderService(
             nativeRooms.Add(new TerrainRoomData(room.RoomName, packed));
         }
 
-        if (nativeRooms is { Count: > 0 })
+        if (_nativeFeatureEnabled)
         {
-            if (PathfinderNative.TryInitialize(_logger))
+            if (nativeRooms is not { Count: > 0 })
+                throw new InvalidOperationException("Native pathfinder enabled but no terrain rooms were provided.");
+
+            if (!PathfinderNative.TryInitialize(_logger))
+                throw new InvalidOperationException("Native pathfinder library not found. Ensure native binaries are downloaded or disable EnableNative.");
+
+            try
             {
-                try
-                {
-                    PathfinderNative.LoadTerrain(nativeRooms);
-                    _nativeReady = true;
-                    _logger?.LogInformation("Native pathfinder initialized with {Count} rooms.", nativeRooms.Count);
-                }
-                catch (Exception ex)
-                {
-                    _nativeReady = false;
-                    _logger?.LogWarning(ex, "Native pathfinder initialization failed. Falling back to managed A*.");
-                }
+                PathfinderNative.LoadTerrain(nativeRooms);
+                _nativeReady = true;
+                _logger?.LogInformation("Native pathfinder initialized with {Count} rooms.", nativeRooms.Count);
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException("Native pathfinder initialization failed. Disable EnableNative to fall back to the managed solver.", ex);
             }
         }
-        else if (!_nativeFeatureEnabled)
+        else
             _logger?.LogInformation("Native pathfinder disabled via configuration; using managed fallback.");
 
         _initialized = true;
@@ -95,25 +97,25 @@ internal sealed class PathfinderService(
         if (!_initialized)
             throw new InvalidOperationException("InitializeAsync must be called before Search.");
 
-        if (_nativeReady)
+        if (_nativeFeatureEnabled)
         {
-            try
-            {
-                return PathfinderNative.Search(origin, goals, options);
-            }
-            catch (Exception ex)
-            {
-                _nativeReady = false;
-                _logger?.LogWarning(ex, "Native pathfinder search failed; reverting to managed fallback.");
-            }
+            if (!_nativeReady)
+                throw new InvalidOperationException("Native pathfinder must be initialized before searching.");
+            return PathfinderNative.Search(origin, goals, options);
         }
 
+        return ManagedSearch(origin, goals, options);
+    }
+
+    private PathfinderResult ManagedSearch(RoomPosition origin, IReadOnlyList<PathfinderGoal> goals, PathfinderOptions options)
+    {
         var primaryGoal = goals[0];
-        if (goals.Count > 1) _logger?.LogWarning("Managed pathfinder fallback only considers the first goal; native solver is required for multi-goal searches.");
+        if (goals.Count > 1)
+            _logger?.LogWarning("Managed pathfinder only considers the first goal; enable native pathfinder for multi-goal searches.");
 
         if (!string.Equals(origin.RoomName, primaryGoal.Target.RoomName, StringComparison.OrdinalIgnoreCase))
         {
-            _logger?.LogWarning("Multi-room pathfinding requires the native solver. Origin {OriginRoom}, Target {TargetRoom}.",
+            _logger?.LogWarning("Managed pathfinder cannot process multi-room paths. Origin {OriginRoom}, Target {TargetRoom}. Enable native pathfinder for full support.",
                 origin.RoomName, primaryGoal.Target.RoomName);
             return CreateIncompleteResult();
         }
@@ -121,8 +123,11 @@ internal sealed class PathfinderService(
         if (!_terrain.TryGetValue(origin.RoomName, out var grid))
             throw new InvalidOperationException($"Terrain data for room '{origin.RoomName}' is not loaded.");
 
-        var result = AStar(grid, origin, primaryGoal, options);
-        return result;
+        var callbackContext = EvaluateRoomCallback(options, origin.RoomName);
+        if (callbackContext.Blocked)
+            return CreateIncompleteResult();
+
+        return AStar(grid, origin, primaryGoal, options, callbackContext.CostMatrix);
     }
 
     private static byte[]? TryPackTerrain(byte[] data)
@@ -210,11 +215,43 @@ internal sealed class PathfinderService(
         return buffer;
     }
 
-    private static PathfinderResult AStar(TerrainGrid grid, RoomPosition origin, PathfinderGoal goal, PathfinderOptions options)
+    private static CallbackContext EvaluateRoomCallback(PathfinderOptions options, string roomName)
+    {
+        if (options.RoomCallback is null)
+            return CallbackContext.None;
+
+        PathfinderRoomCallbackResult? result;
+        try
+        {
+            result = options.RoomCallback(roomName);
+        }
+        catch (Exception ex)
+        {
+            throw new InvalidOperationException($"roomCallback for room '{roomName}' threw an exception.", ex);
+        }
+
+        if (result is null)
+            return CallbackContext.None;
+
+        if (result.BlockRoom)
+            return CallbackContext.BlockedRoom;
+
+        if (result.CostMatrix is null)
+            return CallbackContext.None;
+
+        if (result.CostMatrix.Length != RoomArea)
+            throw new InvalidOperationException($"roomCallback for room '{roomName}' must return a cost matrix with exactly {RoomArea} entries.");
+
+        return new CallbackContext(false, result.CostMatrix);
+    }
+
+    private static PathfinderResult AStar(TerrainGrid grid, RoomPosition origin, PathfinderGoal goal, PathfinderOptions options, byte[]? costMatrix)
     {
         var start = ToIndex(origin);
         var startNode = new Node(origin.X, origin.Y, start);
         var targetRange = Math.Max(0, goal.Range ?? 0);
+        if (options.Flee && targetRange == 0)
+            targetRange = 1;
         var visitedCost = new int[RoomArea];
         Array.Fill(visitedCost, int.MaxValue);
         visitedCost[start] = 0;
@@ -234,7 +271,16 @@ internal sealed class PathfinderService(
             operations++;
             current = open.Dequeue();
 
-            if (InRange(current.X, current.Y, goal.Target, targetRange))
+            var currentDistance = Range(current.X, current.Y, goal.Target);
+            if (!options.Flee)
+            {
+                if (currentDistance <= targetRange)
+                {
+                    targetReached = true;
+                    break;
+                }
+            }
+            else if (currentDistance >= targetRange)
             {
                 targetReached = true;
                 break;
@@ -253,15 +299,26 @@ internal sealed class PathfinderService(
 
                 var moveCost = current.X != nextX && current.Y != nextY ? options.PlainCost : 0;
                 moveCost += terrain.IsSwamp ? options.SwampCost : options.PlainCost;
-
                 var nextIndex = Index(nextX, nextY);
+                if (costMatrix is { } matrix)
+                {
+                    var overrideCost = matrix[nextIndex];
+                    if (overrideCost >= byte.MaxValue)
+                        continue;
+                    moveCost += overrideCost;
+                }
+
                 var tentative = visitedCost[current.Index] + moveCost;
                 if (tentative >= visitedCost[nextIndex])
                     continue;
 
                 visitedCost[nextIndex] = tentative;
                 cameFrom[nextIndex] = current.Index;
-                var priority = tentative + Heuristic(nextX, nextY, goal.Target);
+                var nextDistance = Range(nextX, nextY, goal.Target);
+                var heuristic = options.Flee
+                    ? Math.Max(0, targetRange - nextDistance)
+                    : nextDistance;
+                var priority = tentative + heuristic;
                 open.Enqueue(new Node(nextX, nextY, nextIndex), priority);
             }
         }
@@ -290,12 +347,9 @@ internal sealed class PathfinderService(
     private static PathfinderResult CreateIncompleteResult()
         => new([], Operations: 0, Cost: 0, Incomplete: true);
 
-    private static bool InRange(int x, int y, RoomPosition target, int range)
-        => Math.Max(Math.Abs(x - target.X), Math.Abs(y - target.Y)) <= range;
-
     private static bool IsInside(int x, int y) => x is >= 0 and < RoomSize && y is >= 0 and < RoomSize;
 
-    private static int Heuristic(int x, int y, RoomPosition target)
+    private static int Range(int x, int y, RoomPosition target)
         => Math.Max(Math.Abs(x - target.X), Math.Abs(y - target.Y));
 
     private static int Index(int x, int y) => y * RoomSize + x;
@@ -311,6 +365,12 @@ internal sealed class PathfinderService(
     ];
 
     private readonly record struct Node(int X, int Y, int Index);
+
+    private readonly record struct CallbackContext(bool Blocked, byte[]? CostMatrix)
+    {
+        public static CallbackContext None { get; } = new(false, null);
+        public static CallbackContext BlockedRoom { get; } = new(true, null);
+    }
 
     private sealed class TerrainGrid
     {

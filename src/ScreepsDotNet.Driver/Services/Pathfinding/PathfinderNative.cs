@@ -144,8 +144,6 @@ internal static class PathfinderNative
             RoomName = origin.RoomName
         };
 
-        var nativeGoals = ConvertGoals(goals);
-
         var optionsNative = new ScreepsPathfinderOptionsNative
         {
             Flee = options.Flee,
@@ -158,9 +156,9 @@ internal static class PathfinderNative
         };
 
         using var callbackScope = RoomCallbackScope.Enter(options.RoomCallback);
-        using var pinnedGoals = new PinnedArray<ScreepsPathfinderGoal>(nativeGoals);
+        using var goalBuffer = ConvertGoals(goals);
         var nativeResult = new ScreepsPathfinderResultNative();
-        var code = _search(ref nativeOrigin, pinnedGoals.Pointer, nativeGoals.Length, ref optionsNative, ref nativeResult);
+        var code = _search(ref nativeOrigin, goalBuffer.Pointer, goalBuffer.Count, ref optionsNative, ref nativeResult);
         if (code != 0)
             throw new InvalidOperationException($"Native pathfinder search failed with error code {code}.");
 
@@ -237,7 +235,11 @@ internal static class PathfinderNative
                 yield return direct;
 
             if (!string.IsNullOrWhiteSpace(rid))
+            {
                 yield return Path.Combine(root, "runtimes", rid, "native", fileName);
+                yield return Path.Combine(root, "src", "ScreepsDotNet.Driver", "runtimes", rid, "native", fileName);
+                yield return Path.Combine(root, "ScreepsDotNet.Driver", "runtimes", rid, "native", fileName);
+            }
         }
     }
 
@@ -247,31 +249,23 @@ internal static class PathfinderNative
         return Marshal.GetDelegateForFunctionPointer<T>(ptr);
     }
 
-    private static ScreepsPathfinderGoal[] ConvertGoals(IReadOnlyList<PathfinderGoal> goals)
-    {
-        var nativeGoals = new ScreepsPathfinderGoal[goals.Count];
-        for (var i = 0; i < goals.Count; i++)
-        {
-            var goal = goals[i] ?? throw new ArgumentException("Goal entries cannot be null.", nameof(goals));
-            nativeGoals[i] = new ScreepsPathfinderGoal
-            {
-                TargetX = goal.Target.X,
-                TargetY = goal.Target.Y,
-                RoomName = goal.Target.RoomName,
-                Range = Math.Max(goal.Range ?? 0, 0)
-            };
-        }
+    private static GoalBuffer ConvertGoals(IReadOnlyList<PathfinderGoal> goals)
+        => GoalBuffer.Create(goals);
 
-        return nativeGoals;
-    }
-
-    private static bool HandleRoomCallback(byte roomX, byte roomY, out IntPtr costMatrix, out int costMatrixLength, IntPtr _)
+    private static bool HandleRoomCallback(
+        byte roomX,
+        byte roomY,
+        out IntPtr costMatrix,
+        out int costMatrixLength,
+        out bool blockRoom,
+        IntPtr _)
     {
         var context = RoomCallbackState.Value;
         if (context?.Callback is null)
         {
             costMatrix = IntPtr.Zero;
             costMatrixLength = 0;
+            blockRoom = false;
             return true;
         }
 
@@ -285,6 +279,7 @@ internal static class PathfinderNative
         {
             costMatrix = IntPtr.Zero;
             costMatrixLength = 0;
+            blockRoom = false;
             return false;
         }
 
@@ -292,6 +287,7 @@ internal static class PathfinderNative
         {
             costMatrix = IntPtr.Zero;
             costMatrixLength = 0;
+            blockRoom = false;
             return true;
         }
 
@@ -299,9 +295,11 @@ internal static class PathfinderNative
         {
             costMatrix = IntPtr.Zero;
             costMatrixLength = 0;
-            return false;
+            blockRoom = true;
+            return true;
         }
 
+        blockRoom = false;
         if (result.CostMatrix is not { Length: CostMatrixSize } matrix)
             throw new InvalidOperationException($"Cost matrix returned by roomCallback must contain exactly {CostMatrixSize} entries.");
 
@@ -344,6 +342,7 @@ internal static class PathfinderNative
         byte roomY,
         out IntPtr costMatrix,
         out int costMatrixLength,
+        [MarshalAs(UnmanagedType.I1)] out bool blockRoom,
         IntPtr userData);
 
     [StructLayout(LayoutKind.Sequential)]
@@ -363,13 +362,12 @@ internal static class PathfinderNative
         public string RoomName;
     }
 
-    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
+    [StructLayout(LayoutKind.Sequential)]
     private struct ScreepsPathfinderGoal
     {
         public int TargetX;
         public int TargetY;
-        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 16)]
-        public string RoomName;
+        public IntPtr RoomName;
         public int Range;
     }
 
@@ -421,12 +419,10 @@ internal static class PathfinderNative
         }
     }
 
-    private sealed class RoomCallbackContext : IDisposable
+    private sealed class RoomCallbackContext(PathfinderRoomCallback callback) : IDisposable
     {
-        public PathfinderRoomCallback Callback { get; }
+        public PathfinderRoomCallback Callback { get; } = callback;
         public List<GCHandle> Handles { get; } = [];
-
-        public RoomCallbackContext(PathfinderRoomCallback callback) => Callback = callback;
 
         public void Dispose()
         {
@@ -455,6 +451,55 @@ internal static class PathfinderNative
         {
             if (_handle.IsAllocated)
                 _handle.Free();
+        }
+    }
+
+    private sealed class GoalBuffer : IDisposable
+    {
+        private readonly List<GCHandle> _handles;
+        private readonly PinnedArray<ScreepsPathfinderGoal>? _pinnedGoals;
+
+        private GoalBuffer(ScreepsPathfinderGoal[] goals, List<GCHandle> handles)
+        {
+            _handles = handles;
+            _pinnedGoals = goals.Length > 0 ? new PinnedArray<ScreepsPathfinderGoal>(goals) : null;
+            Count = goals.Length;
+        }
+
+        public static GoalBuffer Create(IReadOnlyList<PathfinderGoal> goals)
+        {
+            var nativeGoals = new ScreepsPathfinderGoal[goals.Count];
+            var handles = new List<GCHandle>(goals.Count);
+            for (var i = 0; i < goals.Count; i++)
+            {
+                var goal = goals[i] ?? throw new ArgumentException("Goal entries cannot be null.", nameof(goals));
+                var roomBytes = Utf8.GetBytes(goal.Target.RoomName + "\0");
+                var handle = GCHandle.Alloc(roomBytes, GCHandleType.Pinned);
+                handles.Add(handle);
+
+                nativeGoals[i] = new ScreepsPathfinderGoal
+                {
+                    TargetX = goal.Target.X,
+                    TargetY = goal.Target.Y,
+                    RoomName = handle.AddrOfPinnedObject(),
+                    Range = Math.Max(goal.Range ?? 0, 0)
+                };
+            }
+
+            return new GoalBuffer(nativeGoals, handles);
+        }
+
+        public IntPtr Pointer => _pinnedGoals?.Pointer ?? IntPtr.Zero;
+        public int Count { get; }
+
+        public void Dispose()
+        {
+            _pinnedGoals?.Dispose();
+            foreach (var handle in _handles)
+            {
+                if (handle.IsAllocated)
+                    handle.Free();
+            }
         }
     }
 }

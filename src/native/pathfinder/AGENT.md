@@ -16,12 +16,12 @@ Track progress toward replacing the managed A* fallback with the upstream Screep
 - ✅ `pathfinder_exports.cpp` now returns real paths/costs, converts room names, and supports native room callbacks via `ScreepsPathfinder_SetRoomCallback`.
 - ✅ CMake build + tooling exists (`build.sh`) to compile for a specific RID and copy the artifact to `src/ScreepsDotNet.Driver/runtimes/<rid>/native/`.
 - ✅ GitHub Actions workflow (`native-pathfinder.yml`) rebuilds the library on `ubuntu-latest` (linux-x64, linux-x86, linux-arm64), `windows-latest` (win-x64, win-x86, win-arm64), `macos-latest` (osx-x64), and `macos-14` (osx-arm64) whenever native files change, zips the outputs, and updates the `native-pathfinder-latest` GitHub release with per-RID packages.
-- ✅ `PathfinderService` now calls into the native library (feature-flagged via `PathfinderServiceOptions.EnableNative`) and falls back to the managed A* only when no binary is available.
-- ⚠️ Room callbacks (`roomCallback`), multi-goal arrays, and regression tests against the legacy driver are still missing, so the managed fallback stays in the codebase for now.
+- ✅ `PathfinderService` now calls into the native library (feature-flagged via `PathfinderServiceOptions.EnableNative`, which is on by default; disable it only for troubleshooting).
+- ✅ Room callbacks (`roomCallback`), multi-goal arrays, flee helpers, and the `BlockRoom` semantic now flow through the native interop layer (`ScreepsPathfinder_SetRoomCallback`). Regression baselines (multi-room, flee, portal/callback) live in `ScreepsDotNet.Driver.Tests/Pathfinding/PathfinderNativeIntegrationTests.cs`.
 
 ## Next Steps
-1. Finish the `roomCallback`/cost-matrix plumbing so processor code can provide custom matrices exactly like the Node driver (requires managed delegates + `ScreepsPathfinder_SetRoomCallback`).
-2. Add regression tests comparing native results to the legacy driver (multi-room goals, flee, portals) and gate the native feature flag on those baselines.
-3. Expand the managed surface (goal arrays, flee helpers, diagnostics) and document rebuild instructions + feature toggles in `docs/driver.md` before removing the managed fallback.
+1. Run the legacy Node driver against the recorded regression fixtures to confirm parity (especially `roomCallback` block scenarios) and capture any remaining differences.
+2. Document the rebuild instructions + feature toggles (`PathfinderServiceOptions`) in `docs/driver.md` now that native is the default, and keep the managed solver only as a troubleshooting flag (`EnableNative = false`).
+3. Once Node parity is verified, prune any vestigial managed-only code paths and expand the regression suite with additional legacy captures as new intent handlers migrate.
 
 Track progress here so other agents can pick up where you leave off.

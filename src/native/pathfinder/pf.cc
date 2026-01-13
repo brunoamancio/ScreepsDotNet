@@ -83,6 +83,11 @@ namespace {
 					return 0;
 				}
 
+				if (result.block_room) {
+					blocked_rooms.insert(map_pos);
+					return 0;
+				}
+
 				if (result.cost_matrix != nullptr && result.cost_matrix_length >= 2500) {
 					auto buffer = std::make_unique<uint8_t[]>(2500);
 					std::memcpy(buffer.get(), result.cost_matrix, 2500);

@@ -117,26 +117,31 @@ namespace
             {
                 result->cost_matrix = nullptr;
                 result->cost_matrix_length = 0;
+                result->block_room = false;
             }
             return true;
         }
 
         const uint8_t* costMatrix = nullptr;
         int length = 0;
-        if (!g_room_callback(roomX, roomY, &costMatrix, &length, g_room_user_data))
+        bool blockRoom = false;
+        bool callbackResult = g_room_callback(roomX, roomY, &costMatrix, &length, &blockRoom, g_room_user_data);
+        if (!callbackResult)
         {
             if (result != nullptr)
             {
                 result->cost_matrix = nullptr;
                 result->cost_matrix_length = 0;
+                result->block_room = true;
             }
-            return false;
+            return true;
         }
 
         if (result != nullptr)
         {
             result->cost_matrix = costMatrix;
             result->cost_matrix_length = length > 0 ? static_cast<size_t>(length) : 0;
+            result->block_room = blockRoom;
         }
 
         return true;

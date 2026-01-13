@@ -11,7 +11,8 @@ Use this file for day-to-day coordination inside `ScreepsDotNet.Driver`. The ful
 - Scheduler telemetry listener + throttle registry watch the same events and temporarily delay users that repeatedly time out/script error, preventing the runner queue from being monopolized while still letting operators log/observe the behavior.
 - Watchdog heuristics now track consecutive failures per user, request a cold sandbox restart, and raise throttled `"watchdog"` notifications; `RuntimeCoordinator` honors the cold-start flag so repeat offenders run in a fresh isolate.
 - Room history uploads now durably persist to Mongo (`rooms.history`) before we emit `roomHistorySaved`, so downstream uploaders can treat the chunk as committed storage instead of transient Redis data.
-- Native pathfinder lives in `src/native/pathfinder`; `PathfinderService` now loads those binaries (feature-flagged via `PathfinderServiceOptions`) and falls back to the managed A* only when the native solver is unavailable.
+- Native pathfinder lives in `src/native/pathfinder`; `PathfinderService` now requires those binaries whenever `PathfinderServiceOptions.EnableNative` (default) is true, and the managed A* solver is available only when that flag is disabled for troubleshooting. Regression baselines (multi-room, flee, portal callbacks, and `roomCallback` block semantics) run in `PathfinderNativeIntegrationTests`.
+- Managed fallback now honors `roomCallback` cost matrices, room blocking, and flee goals so local builds without the native binary still behave like the Node driver for same-room searches.
 - Compatibility shim (D10) and deeper processor logic (intent application, map view, stats) remain after runtime/pathfinder stabilization.
 
 See `docs/driver.md` for the latest D1–D10 table and links to `DriverApi.md`, `QueueAndScheduler.md`, etc.

@@ -61,6 +61,7 @@ extern "C"
         uint8_t roomY,
         const uint8_t** costMatrix,
         int* costMatrixLength,
+        bool* blockRoom,
         void* userData);
 
     SCREEPS_PATHFINDER_API int ScreepsPathfinder_LoadTerrain(const ScreepsTerrainRoom* rooms, int count);

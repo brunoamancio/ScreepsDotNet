@@ -54,15 +54,16 @@ public interface IPathfinderService
 ## Alternate Plan (if native port stalls)
 - Temporarily host the Node pathfinder via an IPC bridge (e.g., small Node worker) while the native port is underway. This keeps the pipeline moving even if C++ work takes longer.
 
-### Current Status (January 12, 2026)
-- `PathfinderService` now bootstraps the native solver via `PathfinderNative` whenever binaries are available for the current RID. The feature is controlled by `PathfinderServiceOptions.EnableNative` (default `true`) and automatically falls back to the managed A* implementation if the native library fails to load.
+### Current Status (January 2026)
+- `PathfinderService` now bootstraps the native solver via `PathfinderNative` whenever binaries are available for the current RID. `PathfinderServiceOptions.EnableNative` defaults to `true`; turn it off only when you explicitly want the managed solver for troubleshooting.
 - Terrain ingestion accepts legacy 2 500-byte strings or packed 625-byte buffers; the service repacks the former before passing them to the native API.
 - Native binaries are published per RID and downloaded during `dotnet build` (hash verified); setting `NativePathfinderSkipDownload=true` keeps the old behavior for local experiments.
-- Limitations:
-  - Room callbacks (`roomCallback`), multi-goal arrays, and flee/road tuning are still handled only by the legacy Node setup; the managed surface currently exposes a single-goal search without callback hooks.
-  - Processor tests still exercise the managed fallback; we need regression data that proves native vs. legacy parity before flipping the default permanently.
+- `roomCallback`, multi-goal arrays, flee logic, and `BlockRoom` semantics are all handled natively. Regression fixtures (multi-room, flee, portal/callback) live in `PathfinderNativeIntegrationTests`.
+- Limitations / remaining items:
+  - We still need to run the legacy Node driver against the new regression fixtures to confirm parity and capture any deviations.
+  - The managed solver now exists only behind the troubleshooting flag; remove the remaining managed-only helpers once legacy parity is confirmed.
 
 - Next steps:
-  1. Expose room callback plumbing and multi-goal helpers so `roomCallback`/`goals[]` in processor code behave like the legacy driver.
-  2. Add regression tests comparing native output to the Node driver (multi-room, flee, portal cases) and cover hash/download errors.
-  3. Document the feature flag + troubleshooting steps in `docs/driver.md`/`AGENT.md`, then remove the managed fallback once parity is proven.
+  1. Run the Node driver against the recorded regression cases and document the comparison process/results.
+  2. Keep the managed solver behind `EnableNative = false` for diagnostics, but plan to remove it entirely once parity holds.
+  3. Expand regression coverage as additional intent handlers (movement/controller/power) migrate to the .NET processor.
