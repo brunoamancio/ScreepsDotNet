@@ -12,6 +12,7 @@ public sealed class PathfinderNativeIntegrationTests
     private const string ControllerCorridorCaseName = "controller-corridor";
     private const string FleeMultiRoomCaseName = "flee-multi-room";
     private const string TowerCostCaseName = "tower-cost";
+    private const string TowerPowerChokeCaseName = "tower-power-choke";
 
     [Fact]
     public async Task MultiGoalSearch_ChoosesNearestGoal()
@@ -134,6 +135,49 @@ public sealed class PathfinderNativeIntegrationTests
         }
 
         return matrix;
+    }
+
+    private static byte[] CreateTowerPowerCostMatrix()
+    {
+        var matrix = new byte[RoomArea];
+        AddZone(matrix, 15, 15, 20, 20, 200);
+        AddZone(matrix, 30, 30, 35, 35, 200);
+        AddZone(matrix, 20, 32, 29, 41, 200);
+
+        foreach (var (x, y) in new (int X, int Y)[] { (18, 25), (32, 24), (27, 34) })
+            matrix[y * 50 + x] = byte.MaxValue;
+
+        for (var i = 0; i < 15; i++)
+        {
+            var x = 5 + i;
+            var y = 25 + (int)Math.Round(Math.Sin(i / 2d) * 5);
+            matrix[y * 50 + x] = 1;
+        }
+
+        for (var i = 0; i < 15; i++)
+        {
+            var x = 20 + i;
+            var y = 20 + i;
+            matrix[y * 50 + x] = 1;
+        }
+
+        for (var i = 0; i < 10; i++)
+        {
+            var x = 35 + i;
+            var y = 30 - i;
+            matrix[y * 50 + x] = 1;
+        }
+
+        return matrix;
+
+        static void AddZone(byte[] buffer, int x1, int y1, int x2, int y2, byte cost)
+        {
+            for (var y = y1; y <= y2; y++)
+            {
+                for (var x = x1; x <= x2; x++)
+                    buffer[y * 50 + x] = cost;
+            }
+        }
     }
 
     private static TerrainRoomData CreateTerrain(string roomName, Func<int, Func<int, bool>> isWall)
@@ -476,10 +520,61 @@ public sealed class PathfinderNativeIntegrationTests
                                           new(9, 9, "W0N0"),
                                           new(8, 8, "W0N0"),
                                           new(7, 7, "W0N0"),
-                                          new(6, 6, "W0N0")
+                                      new(6, 6, "W0N0")
+                                  ],
+                                  46,
+                                  50,
+                                  false)),
+        new(TowerPowerChokeCaseName,
+            [PlainTerrain("W0N0")],
+            new RoomPosition(5, 10, "W0N0"),
+            [new PathfinderGoal(new RoomPosition(45, 40, "W0N0"))],
+            new PathfinderOptions(MaxRooms: 1, MaxOps: 60_000, RoomCallback: room => room == "W0N0" ? new PathfinderRoomCallbackResult(CreateTowerPowerCostMatrix()) : null),
+            new RegressionExpectation([
+                                          new(45, 40, "W0N0"),
+                                          new(44, 40, "W0N0"),
+                                          new(43, 40, "W0N0"),
+                                          new(42, 40, "W0N0"),
+                                          new(41, 40, "W0N0"),
+                                          new(40, 40, "W0N0"),
+                                          new(39, 40, "W0N0"),
+                                          new(38, 40, "W0N0"),
+                                          new(37, 40, "W0N0"),
+                                          new(36, 40, "W0N0"),
+                                          new(35, 40, "W0N0"),
+                                          new(34, 40, "W0N0"),
+                                          new(33, 39, "W0N0"),
+                                          new(32, 38, "W0N0"),
+                                          new(31, 37, "W0N0"),
+                                          new(30, 36, "W0N0"),
+                                          new(29, 35, "W0N0"),
+                                          new(28, 34, "W0N0"),
+                                          new(27, 33, "W0N0"),
+                                          new(26, 32, "W0N0"),
+                                          new(25, 31, "W0N0"),
+                                          new(24, 30, "W0N0"),
+                                          new(23, 29, "W0N0"),
+                                          new(22, 28, "W0N0"),
+                                          new(21, 27, "W0N0"),
+                                          new(20, 26, "W0N0"),
+                                          new(19, 25, "W0N0"),
+                                          new(18, 24, "W0N0"),
+                                          new(17, 23, "W0N0"),
+                                          new(16, 22, "W0N0"),
+                                          new(15, 21, "W0N0"),
+                                          new(14, 20, "W0N0"),
+                                          new(14, 19, "W0N0"),
+                                          new(13, 18, "W0N0"),
+                                          new(12, 17, "W0N0"),
+                                          new(11, 16, "W0N0"),
+                                          new(10, 15, "W0N0"),
+                                          new(9, 14, "W0N0"),
+                                          new(8, 13, "W0N0"),
+                                          new(7, 12, "W0N0"),
+                                          new(6, 11, "W0N0")
                                       ],
-                                      46,
-                                      50,
+                                      66,
+                                      41,
                                       false))
     ];
 

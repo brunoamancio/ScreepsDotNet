@@ -55,6 +55,7 @@ const TOWER_COST_CASE = 'tower-cost';
 const FLEE_MULTI_ROOM_CASE = 'flee-multi-room';
 const DENSE_CORRIDOR_CASE = 'dense-corridor';
 const CONTROLLER_UPGRADE_CREEPS_CASE = 'controller-upgrade-creeps';
+const TOWER_POWER_CHOKE_CASE = 'tower-power-choke';
 
 const plainTerrain = room => ({ room, terrain: '0'.repeat(2500) });
 
@@ -184,6 +185,52 @@ const createTowerCostMatrix = () => {
     const idx = y * 50 + x;
     matrix[idx] = 0;
   }
+  return matrix;
+};
+
+const createTowerPowerCostMatrix = () => {
+  const matrix = new Uint8Array(2500);
+  const towerZones = [
+    { x1: 15, y1: 15, x2: 20, y2: 20 },
+    { x1: 30, y1: 30, x2: 35, y2: 35 },
+    { x1: 20, y1: 32, x2: 29, y2: 41 }
+  ];
+
+  for (const zone of towerZones) {
+    for (let y = zone.y1; y <= zone.y2; y++) {
+      for (let x = zone.x1; x <= zone.x2; x++) {
+        matrix[y * 50 + x] = 200;
+      }
+    }
+  }
+
+  const powerNodes = [
+    [18, 25],
+    [32, 24],
+    [27, 34]
+  ];
+  for (const [x, y] of powerNodes) {
+    matrix[y * 50 + x] = 255;
+  }
+
+  for (let i = 0; i < 15; i++) {
+    const x = 5 + i;
+    const y = 25 + Math.sin(i / 2) * 5 | 0;
+    matrix[y * 50 + x] = 1;
+  }
+
+  for (let i = 0; i < 15; i++) {
+    const x = 20 + i;
+    const y = 20 + i;
+    matrix[y * 50 + x] = 1;
+  }
+
+  for (let i = 0; i < 10; i++) {
+    const x = 35 + i;
+    const y = 30 - i;
+    matrix[y * 50 + x] = 1;
+  }
+
   return matrix;
 };
 
@@ -547,6 +594,23 @@ const regressionCases = [
       incomplete: false,
       cost: 42,
       ops: 41,
+      path: undefined
+    }
+  },
+  {
+    name: TOWER_POWER_CHOKE_CASE,
+    rooms: [plainTerrain('W0N0')],
+    origin: new RoomPosition(5, 10, 'W0N0'),
+    goals: [new RoomPosition(45, 40, 'W0N0')],
+    options: {
+      maxRooms: 1,
+      maxOps: 60_000,
+      roomCallback: roomName => roomName === 'W0N0' ? { _bits: createTowerPowerCostMatrix() } : null
+    },
+    expected: {
+      incomplete: false,
+      cost: 0,
+      ops: 0,
       path: undefined
     }
   }
