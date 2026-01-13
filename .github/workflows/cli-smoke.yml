@@ -14,9 +14,12 @@ jobs:
       native: ${{ steps.filter.outputs.native }}
     steps:
       - uses: actions/checkout@v6
+        with:
+          fetch-depth: 2
       - id: filter
         uses: dorny/paths-filter@v3
         with:
+          base: ${{ github.event.pull_request.base.sha || github.event.before || 'HEAD^' }}
           filters: |
             native:
               - 'src/native/pathfinder/**'
