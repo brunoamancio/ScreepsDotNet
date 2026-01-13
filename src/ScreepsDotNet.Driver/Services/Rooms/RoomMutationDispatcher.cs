@@ -88,7 +88,7 @@ internal sealed class RoomMutationDispatcher(
     private static BsonDocument ParseDocument(string json)
     {
         if (string.IsNullOrWhiteSpace(json))
-            return new BsonDocument();
+            return [];
 
         return BsonDocument.Parse(json);
     }

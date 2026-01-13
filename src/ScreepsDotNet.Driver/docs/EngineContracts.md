@@ -13,13 +13,13 @@ Expose stable driver-owned contracts so the upcoming ScreepsDotNet.Engine can co
 
 ## Current Status (January 2026)
 
-- ✅ DTOs added under `ScreepsDotNet.Driver.Contracts`.
-- ✅ `IRoomSnapshotBuilder` + caching `IRoomSnapshotProvider` implemented and wired into DI.
-- ✅ `RoomMutationBatch` contract and `IRoomMutationDispatcher` now bridge mutation requests back to Mongo bulk writers.
-- ◐ Processor/runtime loops still use legacy data paths; wiring them to the snapshot/mutation services is the next milestone.
+- ✅ DTOs added under `ScreepsDotNet.Driver.Contracts` (room snapshots, room objects, users, intents, mutation batches, plus the new `GlobalSnapshot`/market/power-creep/user-intent shapes).
+- ✅ Snapshot builders/providers for both per-room (`IRoomSnapshotProvider`) and inter-room/global data (`IInterRoomSnapshotProvider`) are implemented with caching + regression tests.
+- ✅ `RoomMutationBatch` + `IRoomMutationDispatcher` bridge engine-friendly mutation descriptions back to Mongo bulk writers; `RoomHistoryPipeline` now uses the same dispatcher path.
+- ◐ Compatibility: processor/runtime loops consume the room/global providers, but the legacy engine shim still needs to be wired up so Node consumers can request the same contracts during migration.
 
 ## Next Steps
 
-1. Add mutation batch contracts and adapters that wrap `IBulkWriterFactory`.
-2. Port the driver processor loops to consume `IRoomSnapshotProvider` so new engine code can plug in without bespoke wiring.
-3. Document how to request snapshots/mutations in this file once the engine integration goes live.
+1. Finish the compatibility shim so the legacy Node engine (and tooling) can pull `GlobalSnapshot`/`RoomSnapshot` data through the new provider APIs during the cut-over.
+2. Expand contract docs with concrete engine examples (sample `IRoomSnapshotProvider` usage, mutation batch authoring) and keep the regression fixtures under version control for future agents.
+3. Once the shim is validated, mark D10 as complete in `docs/driver.md` and move remaining parity tracking to the engine project (E milestones).

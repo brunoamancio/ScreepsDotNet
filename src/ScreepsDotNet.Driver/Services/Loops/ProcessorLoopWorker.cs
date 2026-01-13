@@ -150,7 +150,7 @@ internal sealed class ProcessorLoopWorker(
 
         var batch = new RoomMutationBatch(
             snapshot.RoomName,
-            Array.Empty<RoomObjectUpsert>(),
+            [],
             patchList,
             removals,
             null,

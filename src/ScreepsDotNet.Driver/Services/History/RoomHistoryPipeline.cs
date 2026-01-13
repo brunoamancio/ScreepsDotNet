@@ -50,9 +50,9 @@ internal sealed class RoomHistoryPipeline : IDisposable
 
         var batch = new RoomMutationBatch(
             args.RoomName,
-            Array.Empty<RoomObjectUpsert>(),
-            Array.Empty<RoomObjectPatch>(),
-            Array.Empty<string>(),
+            [],
+            [],
+            [],
             null,
             mapViewPayload,
             eventLogPayload);

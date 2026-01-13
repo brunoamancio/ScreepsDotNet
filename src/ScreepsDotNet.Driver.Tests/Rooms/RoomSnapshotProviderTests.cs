@@ -39,7 +39,7 @@ public sealed class RoomSnapshotProviderTests
 
     private sealed class StubSnapshotBuilder : IRoomSnapshotBuilder
     {
-        public List<(string Room, int GameTime)> Calls { get; } = new();
+        public List<(string Room, int GameTime)> Calls { get; } = [];
         public RoomSnapshot NextSnapshot { get; set; } = CreateSnapshot("default", 0);
 
         public Task<RoomSnapshot> BuildAsync(string roomName, int gameTime, CancellationToken token = default)
@@ -58,6 +58,6 @@ public sealed class RoomSnapshotProviderTests
             new Dictionary<string, UserState>(),
             null,
             new Dictionary<string, RoomTerrainSnapshot>(),
-            Array.Empty<RoomFlagSnapshot>(),
+            [],
             string.Empty);
 }

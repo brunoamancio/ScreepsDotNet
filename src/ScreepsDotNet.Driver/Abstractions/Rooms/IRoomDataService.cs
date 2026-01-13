@@ -24,7 +24,7 @@ public interface IRoomDataService
     Task UpdateAccessibleRoomsListAsync(CancellationToken token = default);
     Task UpdateRoomStatusDataAsync(CancellationToken token = default);
 
-    Task<InterRoomSnapshot> GetInterRoomSnapshotAsync(CancellationToken token = default);
+    Task<InterRoomSnapshot> GetInterRoomSnapshotAsync(int gameTime, CancellationToken token = default);
 }
 
 public sealed record RoomObjectsPayload(

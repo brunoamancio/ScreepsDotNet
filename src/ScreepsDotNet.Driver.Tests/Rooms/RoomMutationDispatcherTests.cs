@@ -1,9 +1,9 @@
 using MongoDB.Bson;
 using ScreepsDotNet.Driver.Abstractions.Bulk;
-using ScreepsDotNet.Driver.Abstractions.Rooms;
 using ScreepsDotNet.Driver.Contracts;
 using ScreepsDotNet.Driver.Services.Rooms;
 using ScreepsDotNet.Storage.MongoRedis.Repositories.Documents;
+using ScreepsDotNet.Driver.Tests.TestDoubles;
 
 namespace ScreepsDotNet.Driver.Tests.Rooms;
 
@@ -20,7 +20,7 @@ public sealed class RoomMutationDispatcherTests
 
         var batch = new RoomMutationBatch(
             RoomName: "W0N0",
-            ObjectUpserts: Array.Empty<RoomObjectUpsert>(),
+            ObjectUpserts: [],
             ObjectPatches: [new RoomObjectPatch("obj1", """{ "hits": 100 }""")],
             ObjectDeletes: ["obj2"],
             RoomInfoPatch: null,
@@ -54,9 +54,9 @@ public sealed class RoomMutationDispatcherTests
 
         var batch = new RoomMutationBatch(
             RoomName: "W1N1",
-            ObjectUpserts: Array.Empty<RoomObjectUpsert>(),
-            ObjectPatches: Array.Empty<RoomObjectPatch>(),
-            ObjectDeletes: Array.Empty<string>(),
+            ObjectUpserts: [],
+            ObjectPatches: [],
+            ObjectDeletes: [],
             RoomInfoPatch: new RoomInfoPatch("""{ "status": "normal" }"""),
             MapViewJson: null,
             EventLogJson: null);
@@ -93,8 +93,8 @@ public sealed class RoomMutationDispatcherTests
         where T : class
     {
         public bool ExecuteCalled { get; private set; }
-        public List<string> Removals { get; } = new();
-        public List<(string Id, string DeltaJson)> Updates { get; } = new();
+        public List<string> Removals { get; } = [];
+        public List<(string Id, string DeltaJson)> Updates { get; } = [];
 
         public bool HasPendingOperations => Removals.Count > 0 || Updates.Count > 0;
 
@@ -152,60 +152,21 @@ public sealed class RoomMutationDispatcherTests
         public void Clear() { }
     }
 
-    private sealed class StubRoomDataService : IRoomDataService
+    private sealed class StubRoomDataService : RoomDataServiceDouble
     {
         public string? EventLog { get; private set; }
         public string? MapView { get; private set; }
 
-        public Task<IReadOnlyList<string>> DrainActiveRoomsAsync(CancellationToken token = default)
-            => Task.FromResult<IReadOnlyList<string>>(Array.Empty<string>());
-
-        public Task ActivateRoomsAsync(IEnumerable<string> roomNames, CancellationToken token = default)
-            => Task.CompletedTask;
-
-        public Task<RoomObjectsPayload> GetRoomObjectsAsync(string roomName, CancellationToken token = default)
-            => Task.FromResult(new RoomObjectsPayload(new Dictionary<string, RoomObjectDocument>(), new Dictionary<string, UserDocument>()));
-
-        public Task<IReadOnlyList<RoomFlagDocument>> GetRoomFlagsAsync(string roomName, CancellationToken token = default)
-            => Task.FromResult<IReadOnlyList<RoomFlagDocument>>(Array.Empty<RoomFlagDocument>());
-
-        public Task<IReadOnlyDictionary<string, RoomTerrainDocument>> GetRoomTerrainAsync(string roomName, CancellationToken token = default)
-            => Task.FromResult<IReadOnlyDictionary<string, RoomTerrainDocument>>(new Dictionary<string, RoomTerrainDocument>());
-
-        public Task<RoomDocument?> GetRoomInfoAsync(string roomName, CancellationToken token = default)
-            => Task.FromResult<RoomDocument?>(null);
-
-        public Task SaveRoomInfoAsync(RoomDocument room, CancellationToken token = default)
-            => Task.CompletedTask;
-
-        public Task SetRoomStatusAsync(string roomName, string status, CancellationToken token = default)
-            => Task.CompletedTask;
-
-        public Task<RoomIntentDocument?> GetRoomIntentsAsync(string roomName, CancellationToken token = default)
-            => Task.FromResult<RoomIntentDocument?>(null);
-
-        public Task ClearRoomIntentsAsync(string roomName, CancellationToken token = default)
-            => Task.CompletedTask;
-        public Task SaveRoomEventLogAsync(string roomName, string eventLogJson, CancellationToken token = default)
+        public override Task SaveRoomEventLogAsync(string roomName, string eventLogJson, CancellationToken token = default)
         {
             EventLog = $"{roomName}:{eventLogJson}";
             return Task.CompletedTask;
         }
 
-        public Task SaveMapViewAsync(string roomName, string mapViewJson, CancellationToken token = default)
+        public override Task SaveMapViewAsync(string roomName, string mapViewJson, CancellationToken token = default)
         {
             MapView = $"{roomName}:{mapViewJson}";
             return Task.CompletedTask;
         }
-
-        public Task UpdateAccessibleRoomsListAsync(CancellationToken token = default) => Task.CompletedTask;
-
-        public Task UpdateRoomStatusDataAsync(CancellationToken token = default) => Task.CompletedTask;
-
-        public Task<InterRoomSnapshot> GetInterRoomSnapshotAsync(CancellationToken token = default)
-            => Task.FromResult(new InterRoomSnapshot(0, Array.Empty<RoomObjectDocument>(),
-                new Dictionary<string, RoomDocument>(), Array.Empty<RoomObjectDocument>(),
-                new InterRoomMarketSnapshot(Array.Empty<MarketOrderDocument>(), Array.Empty<UserDocument>(),
-                    Array.Empty<PowerCreepDocument>(), Array.Empty<UserIntentDocument>(), string.Empty)));
     }
 }

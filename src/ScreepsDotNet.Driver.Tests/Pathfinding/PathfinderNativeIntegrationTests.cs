@@ -1323,7 +1323,7 @@ public sealed class PathfinderNativeIntegrationTests
     private static IReadOnlyList<RoomPosition> ParseBaselinePath(JsonElement pathElement)
     {
         if (pathElement.ValueKind != JsonValueKind.Array)
-            return Array.Empty<RoomPosition>();
+            return [];
 
         var positions = new List<RoomPosition>();
         foreach (var entry in pathElement.EnumerateArray())

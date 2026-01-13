@@ -2,7 +2,6 @@ using System.Text.Json;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using ScreepsDotNet.Driver.Abstractions.Bulk;
-using ScreepsDotNet.Driver.Abstractions.Environment;
 using ScreepsDotNet.Driver.Abstractions.Rooms;
 using ScreepsDotNet.Common;
 using ScreepsDotNet.Driver.Constants;
@@ -15,8 +14,7 @@ namespace ScreepsDotNet.Driver.Services.Rooms;
 internal sealed class RoomDataService(
     IMongoDatabaseProvider databaseProvider,
     IRedisConnectionProvider redisProvider,
-    IBulkWriterFactory bulkWriterFactory,
-    IEnvironmentService environmentService) : IRoomDataService
+    IBulkWriterFactory bulkWriterFactory) : IRoomDataService
 {
     private static readonly string[] MovingCreepTypes = [RoomObjectTypes.Creep, RoomObjectTypes.PowerCreep];
     private static readonly string[] SpecialObjectTypes = [RoomObjectTypes.Terminal, RoomObjectTypes.PowerSpawn, RoomObjectTypes.PowerCreep];
@@ -200,9 +198,8 @@ internal sealed class RoomDataService(
         await _redis.StringSetAsync(RedisKeys.RoomStatusData, payload).ConfigureAwait(false);
     }
 
-    public async Task<InterRoomSnapshot> GetInterRoomSnapshotAsync(CancellationToken token = default)
+    public async Task<InterRoomSnapshot> GetInterRoomSnapshotAsync(int gameTime, CancellationToken token = default)
     {
-        var gameTime = await environmentService.GetGameTimeAsync(token).ConfigureAwait(false);
         var movingCreepsTask = _roomObjects.Find(Builders<RoomObjectDocument>.Filter.And(
                                                 Builders<RoomObjectDocument>.Filter.In(document => document.Type, MovingCreepTypes),
                                                 new BsonDocument("interRoom", new BsonDocument("$ne", BsonNull.Value))))
