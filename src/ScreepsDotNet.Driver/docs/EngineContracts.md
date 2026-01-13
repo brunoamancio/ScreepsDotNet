@@ -16,10 +16,10 @@ Expose stable driver-owned contracts so the upcoming ScreepsDotNet.Engine can co
 - ✅ DTOs added under `ScreepsDotNet.Driver.Contracts` (room snapshots, room objects, users, intents, mutation batches, plus the new `GlobalSnapshot`/market/power-creep/user-intent shapes).
 - ✅ Snapshot builders/providers for both per-room (`IRoomSnapshotProvider`) and inter-room/global data (`IInterRoomSnapshotProvider`) are implemented with caching + regression tests.
 - ✅ `RoomMutationBatch` + `IRoomMutationDispatcher` bridge engine-friendly mutation descriptions back to Mongo bulk writers; `RoomHistoryPipeline` now uses the same dispatcher path.
-- ◐ Compatibility: processor/runtime loops consume the room/global providers, but the legacy engine shim still needs to be wired up so Node consumers can request the same contracts during migration.
+- ◐ Complete driver coverage: all driver loops already consume the room/global providers, but **D10 remains “In progress” until ScreepsDotNet.Engine (or another engine client) actually runs on these contracts**. Once the engine consumes them end-to-end, mark D10 complete in `docs/driver.md`.
 
 ## Next Steps
 
-1. Wire ScreepsDotNet.Engine directly into `IRoomSnapshotProvider`, `IInterRoomSnapshotProvider`, and `IRoomMutationDispatcher` so the managed processor runs entirely on these contracts.
+1. Wire ScreepsDotNet.Engine directly into `IRoomSnapshotProvider`, `IInterRoomSnapshotProvider`, and `IRoomMutationDispatcher` so the managed processor runs entirely on these contracts. **When this is done, flip D10 to “Completed” in `docs/driver.md`.**
 2. Expand contract docs with concrete engine examples (sample provider usage, mutation batch authoring) and keep the regression fixtures under version control for future agents.
-3. Once the engine consumes these contracts in practice, mark D10 as complete in `docs/driver.md` and move any remaining parity tracking to the engine project (E milestones).
+3. After the engine is live on these contracts, move remaining parity tracking to the engine project (E milestones).
