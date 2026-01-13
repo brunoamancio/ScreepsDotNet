@@ -20,6 +20,6 @@ Expose stable driver-owned contracts so the upcoming ScreepsDotNet.Engine can co
 
 ## Next Steps
 
-1. Finish the compatibility shim so the legacy Node engine (and tooling) can pull `GlobalSnapshot`/`RoomSnapshot` data through the new provider APIs during the cut-over.
-2. Expand contract docs with concrete engine examples (sample `IRoomSnapshotProvider` usage, mutation batch authoring) and keep the regression fixtures under version control for future agents.
-3. Once the shim is validated, mark D10 as complete in `docs/driver.md` and move remaining parity tracking to the engine project (E milestones).
+1. Wire ScreepsDotNet.Engine directly into `IRoomSnapshotProvider`, `IInterRoomSnapshotProvider`, and `IRoomMutationDispatcher` so the managed processor runs entirely on these contracts.
+2. Expand contract docs with concrete engine examples (sample provider usage, mutation batch authoring) and keep the regression fixtures under version control for future agents.
+3. Once the engine consumes these contracts in practice, mark D10 as complete in `docs/driver.md` and move any remaining parity tracking to the engine project (E milestones).
