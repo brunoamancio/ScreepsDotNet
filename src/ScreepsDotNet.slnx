@@ -3,11 +3,11 @@
     <Project Path="ScreepsDotNet.Backend.Http/ScreepsDotNet.Backend.Http.csproj" />
     <Project Path="ScreepsDotNet.Backend.Http.Tests/ScreepsDotNet.Backend.Http.Tests.csproj" />
     <Project Path="ScreepsDotNet.Backend.Core/ScreepsDotNet.Backend.Core.csproj" />
-    <Project Path="ScreepsDotNet.Storage.MongoRedis/ScreepsDotNet.Storage.MongoRedis.csproj" />
     <Project Path="ScreepsDotNet.Backend.Cli/ScreepsDotNet.Backend.Cli.csproj" />
     <Project Path="ScreepsDotNet.Backend.Cli.Tests/ScreepsDotNet.Backend.Cli.Tests.csproj" />
   </Folder>
-  <Project Path="ScreepsDotNet.Driver/ScreepsDotNet.Driver.csproj" />
   <Project Path="ScreepsDotNet.Common/ScreepsDotNet.Common.csproj" />
+  <Project Path="ScreepsDotNet.Driver/ScreepsDotNet.Driver.csproj" />
   <Project Path="ScreepsDotNet.Driver.Tests/ScreepsDotNet.Driver.Tests.csproj" />
+  <Project Path="ScreepsDotNet.Storage.MongoRedis/ScreepsDotNet.Storage.MongoRedis.csproj" />
 </Solution>
