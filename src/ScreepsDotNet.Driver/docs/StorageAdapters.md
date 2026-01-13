@@ -4,7 +4,7 @@ _Last updated: January 11, 2026_
 D2’s objective is to define how the .NET driver will replace `@screeps/common` storage helpers (Mongo/Redis/queue/pubsub) without breaking compatibility. This document captures the proposed architecture so implementation work can be split up cleanly.
 
 ## Goals
-1. Mirror the semantics of `common.storage.db`, `env`, `pubsub`, and `queue` so the existing engine code can call into the .NET driver with zero changes once a compatibility shim exists.
+1. Mirror the semantics of `common.storage.db`, `env`, `pubsub`, and `queue` so the upcoming .NET engine can reuse the same persistence model without touching every caller (and so legacy modules still “feel” familiar during the transition).
 2. Reuse `ScreepsDotNet.Storage.MongoRedis` whenever practical to avoid duplicating connection logic, serializers, and collection naming.
 3. Provide testable abstractions so unit tests can plug in in-memory fakes while integration tests hit real Mongo/Redis instances.
 

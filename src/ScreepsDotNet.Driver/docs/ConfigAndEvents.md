@@ -60,7 +60,7 @@ public interface IDriverConfig
 
 ## Implementation Steps
 1. Create `DriverConfig` class implementing `IDriverConfig`, backed by options loaded from configuration (`appsettings` or CLI flags).
-2. Add `DriverEvents` helper to expose Node-like `emit`/`on` semantics for compatibility shims.
+2. Add `DriverEvents` helper to expose Node-like `emit`/`on` semantics so mods (and the forthcoming .NET engine) keep using the same event model without direct access to the underlying config object.
 3. Integrate config persistence with Redis env keys where applicable.
 4. Update `AGENT.md` (D7) to “Plan completed (implementation pending)” until wiring is coded.
 

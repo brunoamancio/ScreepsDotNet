@@ -13,7 +13,7 @@ Use this file for day-to-day coordination inside `ScreepsDotNet.Driver`. The ful
 - Room history uploads now durably persist to Mongo (`rooms.history`) before we emit `roomHistorySaved`, so downstream uploaders can treat the chunk as committed storage instead of transient Redis data.
 - Native pathfinder lives in `src/native/pathfinder`; `PathfinderService` now always requires those binaries (managed A* fallback removed on January 13, 2026). Regression baselines (multi-room, flee, portal callbacks, and room-callback block semantics) run in `PathfinderNativeIntegrationTests`.
 - Managed fallback now honors `roomCallback` cost matrices, room blocking, and flee goals so local builds without the native binary still behave like the Node driver for same-room searches.
-- Compatibility shim (D10) and deeper processor logic (intent application, map view, stats) remain after runtime/pathfinder stabilization.
+- Remaining large workstreams are deeper processor logic (intent application, map view, stats) and the full engine rewrite (replacing the legacy Node engine rather than building a compatibility shim).
 - `ObservabilityTelemetryListener` + `ObservabilityOptions` let you flip runtime telemetry export on/off per environment; by default dev builds keep the exporter disabled, while prod can register a custom `IObservabilityExporter` to push into Prometheus/OTLP/etc. without modifying loop code.
 
 See `docs/driver.md` for the latest D1–D10 table and links to `DriverApi.md`, `QueueAndScheduler.md`, etc.

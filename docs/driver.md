@@ -14,7 +14,7 @@ This document summarizes the ongoing effort to port the legacy Screeps Node.js d
 - Queue infrastructure, scheduler helpers, bulk writers, room/user services, and notification/history services run inside `ScreepsDotNet.Driver`.
 - ClearScript-based runtime coordinator executes user code, captures console/memory/intents, and writes through the new services via `RunnerLoopWorker`/`ProcessorLoopWorker`.
 - Native pathfinder binaries now live under `src/native/pathfinder`; `dotnet build` downloads the correct RID package (hash-verified) and `PathfinderService` now always uses the native solver (the managed A* fallback has been removed, so missing binaries fail fast).
-- Compatibility shim (D10) and parity validation against the Node engine remain after runtime + processor wiring solidify.
+- Next milestone is rewriting the engine itself on .NET; the driver is feature-complete and ready to plug into the new runtime stack without relying on a Node compatibility shim.
 
 ## Workstreams & Plan Docs
 
@@ -28,8 +28,7 @@ This document summarizes the ongoing effort to port the legacy Screeps Node.js d
 | **D6 – Pathfinder** | Ship native solver wrapper + managed bindings with terrain cache loading. | [src/ScreepsDotNet.Driver/docs/Pathfinder.md](../src/ScreepsDotNet.Driver/docs/Pathfinder.md) | **Completed** – Native solver/CI pipeline finished; managed fallback removed, regression fixtures guard parity, docs cover rebuild/download flow. |
 | **D7 – Config/events** | Recreate `config.emit(...)`, tick knobs, and environment service. | [src/ScreepsDotNet.Driver/docs/ConfigAndEvents.md](../src/ScreepsDotNet.Driver/docs/ConfigAndEvents.md) | **Completed** – Config emitter + environment service mirror legacy behavior and feed every loop. |
 | **D8 – Runtime lifecycle** | Provide runtime hooks (make runtime, console, memory, intent persistence). | [src/ScreepsDotNet.Driver/docs/RuntimeLifecycle.md](../src/ScreepsDotNet.Driver/docs/RuntimeLifecycle.md) | **Completed** – Runtime coordinator, sandbox pooling, telemetry fan-out, watchdog/scheduler throttling, and the observability exporter toggle/documentation are done (payload contract in [src/docs/runtime-telemetry.md](../src/docs/runtime-telemetry.md)). |
-| **D9 – History & notifications** | Save room history/map view diffs and deliver notifications/console output via hooks. | [src/ScreepsDotNet.Driver/docs/HistoryAndNotifications.md](../src/ScreepsDotNet.Driver/docs/HistoryAndNotifications.md) | **Completed** – History pipeline writes map-view/event logs from Mongo, notification throttling covers console/watchdog/roomsDone, docs/tests updated; compatibility shim will expose these externally. |
-| **D10 – Legacy shim** | Run the Node engine against the .NET driver for parity validation. | _TBD_ | Not started |
+| **D9 – History & notifications** | Save room history/map view diffs and deliver notifications/console output via hooks. | [src/ScreepsDotNet.Driver/docs/HistoryAndNotifications.md](../src/ScreepsDotNet.Driver/docs/HistoryAndNotifications.md) | **Completed** – History pipeline writes map-view/event logs from Mongo, notification throttling covers console/watchdog/roomsDone, docs/tests updated. |
 
 Status legend: ✔ done, ◐ in progress, ☐ not started. See the driver AGENT file for the most up-to-date ticks.
 
