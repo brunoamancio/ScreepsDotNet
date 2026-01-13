@@ -19,6 +19,7 @@ public sealed class PathfinderNativeIntegrationTests
     private const string PortalChainCaseName = "portal-chain";
     private const string PortalCallbackCaseName = "portal-callback";
     private const string PowerCreepFleeCaseName = "power-creep-flee";
+    private const string TowerKeeperHybridCaseName = "tower-keeper-hybrid";
     private const string ControllerTightLimitCaseName = "controller-tight-limit";
     private const string RegressionBaselineRelativePath = "Pathfinding/Baselines/legacy-regressions.json";
 
@@ -189,6 +190,47 @@ public sealed class PathfinderNativeIntegrationTests
                 for (var x = x1; x <= x2; x++)
                     buffer[y * 50 + x] = cost;
             }
+        }
+    }
+
+    private static byte[] CreateTowerKeeperHybridMatrix()
+    {
+        var matrix = CreateTowerPowerCostMatrix();
+        foreach (var (x, y) in new (int X, int Y)[] { (18, 32), (32, 24), (35, 15) })
+        {
+            for (var dy = -4; dy <= 4; dy++)
+            {
+                for (var dx = -4; dx <= 4; dx++)
+                {
+                    var px = x + dx;
+                    var py = y + dy;
+                    if (px < 0 || px >= 50 || py < 0 || py >= 50)
+                        continue;
+
+                    var idx = py * 50 + px;
+                    var dist = Math.Max(Math.Abs(dx), Math.Abs(dy));
+                    var cost = dist <= 2 ? byte.MaxValue : (byte)200;
+                    matrix[idx] = Math.Max(matrix[idx], cost);
+                }
+            }
+        }
+
+        foreach (var (x, y) in SafeCorridor())
+        {
+            var idx = y * 50 + x;
+            matrix[idx] = Math.Min(matrix[idx], (byte)5);
+        }
+
+        return matrix;
+
+        static IEnumerable<(int X, int Y)> SafeCorridor()
+        {
+            for (var i = 0; i < 10; i++)
+                yield return (5 + i, 10 + i);
+            for (var i = 0; i < 15; i++)
+                yield return (15 + i, 20 + i);
+            for (var i = 0; i < 10; i++)
+                yield return (30 + i, 35 - i);
         }
     }
 

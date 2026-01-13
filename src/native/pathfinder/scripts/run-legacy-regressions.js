@@ -60,6 +60,7 @@ const TOWER_POWER_CHOKE_CASE = 'tower-power-choke';
 const KEEPER_LAIR_CORRIDOR_CASE = 'keeper-lair-corridor';
 const PORTAL_CHAIN_CASE = 'portal-chain';
 const POWER_CREEP_FLEE_CASE = 'power-creep-flee';
+const TOWER_KEEPER_HYBRID_CASE = 'tower-keeper-hybrid';
 
 const plainTerrain = room => ({ room, terrain: '0'.repeat(2500) });
 
@@ -233,6 +234,44 @@ const createTowerPowerCostMatrix = () => {
     const x = 35 + i;
     const y = 30 - i;
     matrix[y * 50 + x] = 1;
+  }
+
+  return matrix;
+};
+
+const createTowerKeeperHybridMatrix = () => {
+  const matrix = createTowerPowerCostMatrix();
+
+  const keeperZones = [
+    { x: 18, y: 32 },
+    { x: 32, y: 24 },
+    { x: 35, y: 15 }
+  ];
+
+  for (const { x, y } of keeperZones) {
+    for (let dy = -4; dy <= 4; dy++) {
+      for (let dx = -4; dx <= 4; dx++) {
+        const px = x + dx;
+        const py = y + dy;
+        if (px < 0 || px >= 50 || py < 0 || py >= 50)
+          continue;
+        const idx = py * 50 + px;
+        const dist = Math.max(Math.abs(dx), Math.abs(dy));
+        const cost = dist <= 2 ? 255 : 200;
+        matrix[idx] = Math.max(matrix[idx], cost);
+      }
+    }
+  }
+
+  const safeCorridor = [
+    ...Array.from({ length: 10 }, (_, i) => [5 + i, 10 + i]),
+    ...Array.from({ length: 15 }, (_, i) => [15 + i, 20 + i]),
+    ...Array.from({ length: 10 }, (_, i) => [30 + i, 35 - i])
+  ];
+
+  for (const [x, y] of safeCorridor) {
+    const idx = y * 50 + x;
+    matrix[idx] = Math.min(matrix[idx], 5);
   }
 
   return matrix;
@@ -803,6 +842,18 @@ const regressionCases = [
       ops: 0,
       path: undefined
     }
+  },
+  {
+    name: TOWER_KEEPER_HYBRID_CASE,
+    rooms: [plainTerrain('W0N0')],
+    origin: new RoomPosition(5, 10, 'W0N0'),
+    goals: [new RoomPosition(45, 40, 'W0N0')],
+    options: {
+      maxRooms: 1,
+      maxOps: 70_000,
+      roomCallback: roomName => roomName === 'W0N0' ? { _bits: createTowerKeeperHybridMatrix() } : null
+    },
+    expected: null
   },
   {
     name: PORTAL_CHAIN_CASE,
