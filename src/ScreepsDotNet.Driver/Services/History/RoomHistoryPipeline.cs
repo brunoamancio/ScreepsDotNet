@@ -4,20 +4,21 @@ using Microsoft.Extensions.Logging;
 using ScreepsDotNet.Driver.Abstractions.Config;
 using ScreepsDotNet.Driver.Abstractions.Eventing;
 using ScreepsDotNet.Driver.Abstractions.Rooms;
+using ScreepsDotNet.Driver.Contracts;
 
 namespace ScreepsDotNet.Driver.Services.History;
 
 internal sealed class RoomHistoryPipeline : IDisposable
 {
     private readonly IDriverConfig _config;
-    private readonly IRoomDataService _rooms;
+    private readonly IRoomMutationDispatcher _mutationDispatcher;
     private readonly ILogger<RoomHistoryPipeline>? _logger;
     private bool _disposed;
 
-    public RoomHistoryPipeline(IDriverConfig config, IRoomDataService rooms, ILogger<RoomHistoryPipeline>? logger = null)
+    public RoomHistoryPipeline(IDriverConfig config, IRoomMutationDispatcher mutationDispatcher, ILogger<RoomHistoryPipeline>? logger = null)
     {
         _config = config;
-        _rooms = rooms;
+        _mutationDispatcher = mutationDispatcher;
         _logger = logger;
         _config.RoomHistorySaved += HandleRoomHistorySaved;
     }
@@ -26,8 +27,7 @@ internal sealed class RoomHistoryPipeline : IDisposable
     {
         try
         {
-            await PublishMapViewSnapshotAsync(args).ConfigureAwait(false);
-            await PublishEventLogAsync(args).ConfigureAwait(false);
+            await PublishArtifactsAsync(args).ConfigureAwait(false);
         }
         catch (Exception ex)
         {
@@ -35,24 +35,29 @@ internal sealed class RoomHistoryPipeline : IDisposable
         }
     }
 
-    private Task PublishMapViewSnapshotAsync(RoomHistorySavedEventArgs args)
+    private Task PublishArtifactsAsync(RoomHistorySavedEventArgs args)
     {
-        var payload = JsonSerializer.Serialize(new RoomHistoryMapViewSnapshot(
+        var mapViewPayload = JsonSerializer.Serialize(new RoomHistoryMapViewSnapshot(
             args.RoomName,
             args.BaseGameTime,
             args.Chunk.Timestamp.UtcDateTime,
             args.Chunk.Ticks.Count));
-        return _rooms.SaveMapViewAsync(args.RoomName, payload);
-    }
-
-    private Task PublishEventLogAsync(RoomHistorySavedEventArgs args)
-    {
-        var payload = JsonSerializer.Serialize(new RoomHistoryEventLog(
+        var eventLogPayload = JsonSerializer.Serialize(new RoomHistoryEventLog(
             args.RoomName,
             args.BaseGameTime,
             args.Chunk.Timestamp.UtcDateTime,
             args.Chunk.Ticks));
-        return _rooms.SaveRoomEventLogAsync(args.RoomName, payload);
+
+        var batch = new RoomMutationBatch(
+            args.RoomName,
+            Array.Empty<RoomObjectUpsert>(),
+            Array.Empty<RoomObjectPatch>(),
+            Array.Empty<string>(),
+            null,
+            mapViewPayload,
+            eventLogPayload);
+
+        return _mutationDispatcher.ApplyAsync(batch);
     }
 
     public void Dispose()

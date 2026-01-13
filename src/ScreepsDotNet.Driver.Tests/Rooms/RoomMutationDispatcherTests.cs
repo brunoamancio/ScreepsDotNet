@@ -78,15 +78,15 @@ public sealed class RoomMutationDispatcherTests
         : IBulkWriterFactory
     {
         public IBulkWriter<RoomObjectDocument> CreateRoomObjectsWriter() => objectsWriter;
-        public IBulkWriter<RoomFlagDocument> CreateRoomFlagsWriter() => new NullBulkWriter<RoomFlagDocument>();
-        public IBulkWriter<UserDocument> CreateUsersWriter() => new NullBulkWriter<UserDocument>();
+        public IBulkWriter<RoomFlagDocument> CreateRoomFlagsWriter() => NullBulkWriter<RoomFlagDocument>.Instance;
+        public IBulkWriter<UserDocument> CreateUsersWriter() => NullBulkWriter<UserDocument>.Instance;
         public IBulkWriter<RoomDocument> CreateRoomsWriter() => roomsWriter;
-        public IBulkWriter<BsonDocument> CreateTransactionsWriter() => new NullBulkWriter<BsonDocument>();
-        public IBulkWriter<MarketOrderDocument> CreateMarketOrdersWriter() => new NullBulkWriter<MarketOrderDocument>();
-        public IBulkWriter<MarketOrderDocument> CreateMarketIntershardOrdersWriter() => new NullBulkWriter<MarketOrderDocument>();
-        public IBulkWriter<UserMoneyEntryDocument> CreateUsersMoneyWriter() => new NullBulkWriter<UserMoneyEntryDocument>();
-        public IBulkWriter<BsonDocument> CreateUsersResourcesWriter() => new NullBulkWriter<BsonDocument>();
-        public IBulkWriter<PowerCreepDocument> CreateUsersPowerCreepsWriter() => new NullBulkWriter<PowerCreepDocument>();
+        public IBulkWriter<BsonDocument> CreateTransactionsWriter() => NullBulkWriter<BsonDocument>.Instance;
+        public IBulkWriter<MarketOrderDocument> CreateMarketOrdersWriter() => NullBulkWriter<MarketOrderDocument>.Instance;
+        public IBulkWriter<MarketOrderDocument> CreateMarketIntershardOrdersWriter() => NullBulkWriter<MarketOrderDocument>.Instance;
+        public IBulkWriter<UserMoneyEntryDocument> CreateUsersMoneyWriter() => NullBulkWriter<UserMoneyEntryDocument>.Instance;
+        public IBulkWriter<BsonDocument> CreateUsersResourcesWriter() => NullBulkWriter<BsonDocument>.Instance;
+        public IBulkWriter<PowerCreepDocument> CreateUsersPowerCreepsWriter() => NullBulkWriter<PowerCreepDocument>.Instance;
     }
 
     private sealed class FakeBulkWriter<T> : IBulkWriter<T>
@@ -98,10 +98,7 @@ public sealed class RoomMutationDispatcherTests
 
         public bool HasPendingOperations => Removals.Count > 0 || Updates.Count > 0;
 
-        public void Insert(T entity, string? id = null)
-        {
-            // Inserts aren’t exercised in these tests; no-op keeps behavior predictable.
-        }
+        public void Insert(T entity, string? id = null) { }
 
         public void Update(string id, object delta)
         {
@@ -115,13 +112,13 @@ public sealed class RoomMutationDispatcherTests
             Updates.Add((id, json));
         }
 
-        public void Update(T entity, object delta) => throw new NotImplementedException();
+        public void Update(T entity, object delta) => Update(string.Empty, delta);
 
         public void Remove(string id) => Removals.Add(id);
-        public void Remove(T entity) => throw new NotImplementedException();
-        public void Increment(string id, string field, long amount) => throw new NotImplementedException();
-        public void AddToSet(string id, string field, object value) => throw new NotImplementedException();
-        public void Pull(string id, string field, object value) => throw new NotImplementedException();
+        public void Remove(T entity) { }
+        public void Increment(string id, string field, long amount) { }
+        public void AddToSet(string id, string field, object value) { }
+        public void Pull(string id, string field, object value) { }
 
         public Task ExecuteAsync(CancellationToken token = default)
         {
@@ -129,12 +126,19 @@ public sealed class RoomMutationDispatcherTests
             return Task.CompletedTask;
         }
 
-        public void Clear() => throw new NotImplementedException();
+        public void Clear()
+        {
+            Removals.Clear();
+            Updates.Clear();
+            ExecuteCalled = false;
+        }
     }
 
     private sealed class NullBulkWriter<T> : IBulkWriter<T>
         where T : class
     {
+        public static NullBulkWriter<T> Instance { get; } = new();
+
         public bool HasPendingOperations => false;
         public void Insert(T entity, string? id = null) { }
         public void Update(string id, object delta) { }
@@ -153,17 +157,35 @@ public sealed class RoomMutationDispatcherTests
         public string? EventLog { get; private set; }
         public string? MapView { get; private set; }
 
-        public Task<IReadOnlyList<string>> DrainActiveRoomsAsync(CancellationToken token = default) => throw new NotImplementedException();
-        public Task ActivateRoomsAsync(IEnumerable<string> roomNames, CancellationToken token = default) => throw new NotImplementedException();
-        public Task<RoomObjectsPayload> GetRoomObjectsAsync(string roomName, CancellationToken token = default) => throw new NotImplementedException();
-        public Task<IReadOnlyList<RoomFlagDocument>> GetRoomFlagsAsync(string roomName, CancellationToken token = default) => throw new NotImplementedException();
-        public Task<IReadOnlyDictionary<string, RoomTerrainDocument>> GetRoomTerrainAsync(string roomName, CancellationToken token = default) => throw new NotImplementedException();
-        public Task<RoomDocument?> GetRoomInfoAsync(string roomName, CancellationToken token = default) => throw new NotImplementedException();
-        public Task SaveRoomInfoAsync(RoomDocument room, CancellationToken token = default) => throw new NotImplementedException();
-        public Task SetRoomStatusAsync(string roomName, string status, CancellationToken token = default) => throw new NotImplementedException();
-        public Task<RoomIntentDocument?> GetRoomIntentsAsync(string roomName, CancellationToken token = default) => throw new NotImplementedException();
-        public Task ClearRoomIntentsAsync(string roomName, CancellationToken token = default) => throw new NotImplementedException();
+        public Task<IReadOnlyList<string>> DrainActiveRoomsAsync(CancellationToken token = default)
+            => Task.FromResult<IReadOnlyList<string>>(Array.Empty<string>());
 
+        public Task ActivateRoomsAsync(IEnumerable<string> roomNames, CancellationToken token = default)
+            => Task.CompletedTask;
+
+        public Task<RoomObjectsPayload> GetRoomObjectsAsync(string roomName, CancellationToken token = default)
+            => Task.FromResult(new RoomObjectsPayload(new Dictionary<string, RoomObjectDocument>(), new Dictionary<string, UserDocument>()));
+
+        public Task<IReadOnlyList<RoomFlagDocument>> GetRoomFlagsAsync(string roomName, CancellationToken token = default)
+            => Task.FromResult<IReadOnlyList<RoomFlagDocument>>(Array.Empty<RoomFlagDocument>());
+
+        public Task<IReadOnlyDictionary<string, RoomTerrainDocument>> GetRoomTerrainAsync(string roomName, CancellationToken token = default)
+            => Task.FromResult<IReadOnlyDictionary<string, RoomTerrainDocument>>(new Dictionary<string, RoomTerrainDocument>());
+
+        public Task<RoomDocument?> GetRoomInfoAsync(string roomName, CancellationToken token = default)
+            => Task.FromResult<RoomDocument?>(null);
+
+        public Task SaveRoomInfoAsync(RoomDocument room, CancellationToken token = default)
+            => Task.CompletedTask;
+
+        public Task SetRoomStatusAsync(string roomName, string status, CancellationToken token = default)
+            => Task.CompletedTask;
+
+        public Task<RoomIntentDocument?> GetRoomIntentsAsync(string roomName, CancellationToken token = default)
+            => Task.FromResult<RoomIntentDocument?>(null);
+
+        public Task ClearRoomIntentsAsync(string roomName, CancellationToken token = default)
+            => Task.CompletedTask;
         public Task SaveRoomEventLogAsync(string roomName, string eventLogJson, CancellationToken token = default)
         {
             EventLog = $"{roomName}:{eventLogJson}";
@@ -176,8 +198,14 @@ public sealed class RoomMutationDispatcherTests
             return Task.CompletedTask;
         }
 
-        public Task UpdateAccessibleRoomsListAsync(CancellationToken token = default) => throw new NotImplementedException();
-        public Task UpdateRoomStatusDataAsync(CancellationToken token = default) => throw new NotImplementedException();
-        public Task<InterRoomSnapshot> GetInterRoomSnapshotAsync(CancellationToken token = default) => throw new NotImplementedException();
+        public Task UpdateAccessibleRoomsListAsync(CancellationToken token = default) => Task.CompletedTask;
+
+        public Task UpdateRoomStatusDataAsync(CancellationToken token = default) => Task.CompletedTask;
+
+        public Task<InterRoomSnapshot> GetInterRoomSnapshotAsync(CancellationToken token = default)
+            => Task.FromResult(new InterRoomSnapshot(0, Array.Empty<RoomObjectDocument>(),
+                new Dictionary<string, RoomDocument>(), Array.Empty<RoomObjectDocument>(),
+                new InterRoomMarketSnapshot(Array.Empty<MarketOrderDocument>(), Array.Empty<UserDocument>(),
+                    Array.Empty<PowerCreepDocument>(), Array.Empty<UserIntentDocument>(), string.Empty)));
     }
 }
