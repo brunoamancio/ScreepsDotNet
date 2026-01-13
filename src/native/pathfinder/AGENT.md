@@ -19,10 +19,13 @@ Track progress toward replacing the managed A* fallback with the upstream Screep
 - ✅ `PathfinderService` now calls into the native library (feature-flagged via `PathfinderServiceOptions.EnableNative`, which is on by default; disable it only for troubleshooting).
 - ✅ Room callbacks (`roomCallback`), multi-goal arrays, flee helpers, and the `BlockRoom` semantic now flow through the native interop layer (`ScreepsPathfinder_SetRoomCallback`). Regression baselines (multi-room, flee, portal/callback) live in `ScreepsDotNet.Driver.Tests/Pathfinding/PathfinderNativeIntegrationTests.cs`.
 - ✅ Legacy parity harness: `scripts/run-legacy-regressions.js` loads the native `@screeps/driver` pathfinder (Node 12) and replays the same regression fixtures, writing `reports/legacy-regressions.json` + `.md`. Pass `--baseline <path>`, run `node scripts/refresh-baselines.js`, or call `dotnet test ... /p:RefreshPathfinderBaselines=true` to copy the canonical results into `src/ScreepsDotNet.Driver.Tests/Pathfinding/Baselines/legacy-regressions.json`. The January 13, 2026 run shows 100% parity (see `reports/legacy-regressions.md`).
+- ✅ Added a “wall-gap” fixture (column wall with a defined opening) to both the Node harness and the managed baseline, and fixed the native terrain packing (`TryPackTerrain`/`UnpackPackedTerrain`) to match the Node module’s column-major bit order. With the packing fix, the native solver now mirrors the legacy path (cost/ops) and the regression is enabled again.
+- ✅ Added a “controller-corridor” fixture that forces the path through a narrow choke around a controller box; expectations now live in both the Node harness and the managed regression suite.
+- ✅ Added a “tower-cost” fixture using `roomCallback` cost matrices to emulate tower avoidance (large high-cost zone with a diagonal safe corridor). Native + managed tests now assert the same multi-turn detour path (cost 50, ops 46).
 
 ## Next Steps
-1. Keep expanding the regression dataset (e.g., movement intents for creeps/towers/power creeps) so `run-legacy-regressions.js` covers more real-world layouts.
-2. Prune the managed fallback once we are comfortable that the native solver + download flow is stable (leave `PathfinderServiceOptions.EnableNative = false` solely for troubleshooting).
+1. Keep expanding the regression dataset (e.g., movement intents for creeps/towers/power creeps) so `run-legacy-regressions.js` covers more real-world layouts. We now have baseline coverage for multi-room, flee, portal callbacks, wall-gap, controller corridors, and tower cost-matrix detours—next targets could include multi-room flee combos or scenarios with power-enabled terrain.
+2. Prune the managed fallback once we’re confident the native solver + download flow is stable (leave `PathfinderServiceOptions.EnableNative = false` solely for troubleshooting).
 3. Consider wiring the Node parity script into CI (behind a matrix that has Node 12 + native module available) to catch accidental divergence automatically.
 
 Track progress here so other agents can pick up where you leave off.

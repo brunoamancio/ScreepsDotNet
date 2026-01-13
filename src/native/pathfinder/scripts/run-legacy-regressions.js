@@ -41,7 +41,33 @@ class RoomPosition {
 
 make({ RoomPosition });
 
+const WALL_GAP_CASE = 'wall-gap';
+const CONTROLLER_CORRIDOR_CASE = 'controller-corridor';
+const TOWER_COST_CASE = 'tower-cost';
+
 const plainTerrain = room => ({ room, terrain: '0'.repeat(2500) });
+
+function columnWallTerrain(room, columnX, gapStartY, gapLength) {
+  const tiles = [];
+  for (let y = 0; y < 50; y++) {
+    for (let x = 0; x < 50; x++) {
+      const blocked = x === columnX && (y < gapStartY || y >= gapStartY + gapLength);
+      tiles.push(blocked ? '1' : '0');
+    }
+  }
+  return { room, terrain: tiles.join('') };
+}
+
+function controllerCorridorTerrain(room) {
+  const tiles = [];
+  for (let y = 0; y < 50; y++) {
+    for (let x = 0; x < 50; x++) {
+      const blocked = x >= 24 && x <= 26 && y >= 19 && y <= 31 && !(x === 25 && y === 20);
+      tiles.push(blocked ? '1' : '0');
+    }
+  }
+  return { room, terrain: tiles.join('') };
+}
 
 const createPortalMatrix = edgeY => {
   const matrix = new Uint8Array(2500);
@@ -50,6 +76,24 @@ const createPortalMatrix = edgeY => {
       const idx = y * 50 + x;
       matrix[idx] = y === edgeY ? (x === 25 ? 0 : 255) : 0;
     }
+  }
+  return matrix;
+};
+
+const createTowerCostMatrix = () => {
+  const matrix = new Uint8Array(2500);
+  for (let y = 0; y < 50; y++) {
+    for (let x = 0; x < 50; x++) {
+      const idx = y * 50 + x;
+      matrix[idx] = (x >= 20 && x <= 30 && y >= 20 && y <= 30) ? 255 : 0;
+    }
+  }
+  // carve a diagonal corridor
+  for (let i = 0; i < 11; i++) {
+    const x = 20 + i;
+    const y = 30 - i;
+    const idx = y * 50 + x;
+    matrix[idx] = 0;
   }
   return matrix;
 };
@@ -186,6 +230,183 @@ const regressionCases = [
         ['W0N0', 13, 7],
         ['W0N0', 12, 8],
         ['W0N0', 11, 9]
+      ]
+    }
+  }
+  ,
+  {
+    name: WALL_GAP_CASE,
+    rooms: [columnWallTerrain('W0N0', 25, 20, 10)],
+    origin: new RoomPosition(5, 25, 'W0N0'),
+    goals: [new RoomPosition(45, 25, 'W0N0')],
+    options: { maxRooms: 1, maxOps: 50_000 },
+    expected: {
+      incomplete: false,
+      cost: 40,
+      ops: 67,
+      path: [
+        ['W0N0', 45, 25],
+        ['W0N0', 44, 25],
+        ['W0N0', 43, 25],
+        ['W0N0', 42, 25],
+        ['W0N0', 41, 25],
+        ['W0N0', 40, 25],
+        ['W0N0', 39, 25],
+        ['W0N0', 38, 25],
+        ['W0N0', 37, 25],
+        ['W0N0', 36, 25],
+        ['W0N0', 35, 25],
+        ['W0N0', 34, 25],
+        ['W0N0', 33, 25],
+        ['W0N0', 32, 25],
+        ['W0N0', 31, 25],
+        ['W0N0', 30, 25],
+        ['W0N0', 29, 25],
+        ['W0N0', 28, 25],
+        ['W0N0', 27, 25],
+        ['W0N0', 26, 25],
+        ['W0N0', 25, 25],
+        ['W0N0', 24, 25],
+        ['W0N0', 23, 25],
+        ['W0N0', 22, 25],
+        ['W0N0', 21, 25],
+        ['W0N0', 20, 25],
+        ['W0N0', 19, 25],
+        ['W0N0', 18, 25],
+        ['W0N0', 17, 25],
+        ['W0N0', 16, 25],
+        ['W0N0', 15, 25],
+        ['W0N0', 14, 25],
+        ['W0N0', 13, 25],
+        ['W0N0', 12, 25],
+        ['W0N0', 11, 25],
+        ['W0N0', 10, 25],
+        ['W0N0', 9, 25],
+        ['W0N0', 8, 25],
+        ['W0N0', 7, 25],
+        ['W0N0', 6, 25]
+      ]
+    }
+  },
+  {
+    name: CONTROLLER_CORRIDOR_CASE,
+    rooms: [controllerCorridorTerrain('W0N0')],
+    origin: new RoomPosition(5, 25, 'W0N0'),
+    goals: [new RoomPosition(45, 25, 'W0N0')],
+    options: { maxRooms: 1, maxOps: 50_000 },
+    expected: {
+      incomplete: false,
+      cost: 40,
+      ops: 15,
+      path: [
+        ['W0N0', 45, 25],
+        ['W0N0', 44, 25],
+        ['W0N0', 43, 25],
+        ['W0N0', 42, 25],
+        ['W0N0', 41, 25],
+        ['W0N0', 40, 25],
+        ['W0N0', 39, 25],
+        ['W0N0', 38, 25],
+        ['W0N0', 37, 25],
+        ['W0N0', 36, 25],
+        ['W0N0', 35, 25],
+        ['W0N0', 34, 25],
+        ['W0N0', 33, 25],
+        ['W0N0', 32, 26],
+        ['W0N0', 31, 27],
+        ['W0N0', 30, 28],
+        ['W0N0', 29, 29],
+        ['W0N0', 28, 30],
+        ['W0N0', 27, 31],
+        ['W0N0', 26, 32],
+        ['W0N0', 25, 32],
+        ['W0N0', 24, 32],
+        ['W0N0', 23, 32],
+        ['W0N0', 22, 32],
+        ['W0N0', 21, 32],
+        ['W0N0', 20, 32],
+        ['W0N0', 19, 32],
+        ['W0N0', 18, 32],
+        ['W0N0', 17, 32],
+        ['W0N0', 16, 32],
+        ['W0N0', 15, 32],
+        ['W0N0', 14, 32],
+        ['W0N0', 13, 32],
+        ['W0N0', 12, 32],
+        ['W0N0', 11, 31],
+        ['W0N0', 10, 30],
+        ['W0N0', 9, 29],
+        ['W0N0', 8, 28],
+        ['W0N0', 7, 27],
+        ['W0N0', 6, 26]
+      ]
+    }
+  },
+  {
+    name: TOWER_COST_CASE,
+    rooms: [plainTerrain('W0N0')],
+    origin: new RoomPosition(5, 5, 'W0N0'),
+    goals: [new RoomPosition(45, 45, 'W0N0')],
+    options: {
+      maxRooms: 1,
+      maxOps: 50_000,
+      roomCallback: roomName => roomName === 'W0N0' ? { _bits: createTowerCostMatrix() } : null
+    },
+    expected: {
+      incomplete: false,
+      cost: 50,
+      ops: 46,
+      path: [
+        ['W0N0', 45, 45],
+        ['W0N0', 44, 45],
+        ['W0N0', 43, 45],
+        ['W0N0', 42, 45],
+        ['W0N0', 41, 45],
+        ['W0N0', 40, 45],
+        ['W0N0', 39, 45],
+        ['W0N0', 38, 45],
+        ['W0N0', 37, 45],
+        ['W0N0', 36, 45],
+        ['W0N0', 35, 45],
+        ['W0N0', 34, 44],
+        ['W0N0', 33, 43],
+        ['W0N0', 32, 42],
+        ['W0N0', 31, 41],
+        ['W0N0', 30, 40],
+        ['W0N0', 29, 39],
+        ['W0N0', 28, 38],
+        ['W0N0', 27, 37],
+        ['W0N0', 26, 36],
+        ['W0N0', 25, 35],
+        ['W0N0', 24, 34],
+        ['W0N0', 23, 33],
+        ['W0N0', 22, 32],
+        ['W0N0', 21, 31],
+        ['W0N0', 20, 30],
+        ['W0N0', 19, 29],
+        ['W0N0', 19, 28],
+        ['W0N0', 19, 27],
+        ['W0N0', 19, 26],
+        ['W0N0', 19, 25],
+        ['W0N0', 19, 24],
+        ['W0N0', 19, 23],
+        ['W0N0', 19, 22],
+        ['W0N0', 19, 21],
+        ['W0N0', 19, 20],
+        ['W0N0', 19, 19],
+        ['W0N0', 18, 18],
+        ['W0N0', 17, 17],
+        ['W0N0', 16, 16],
+        ['W0N0', 15, 15],
+        ['W0N0', 14, 14],
+        ['W0N0', 13, 13],
+        ['W0N0', 12, 12],
+        ['W0N0', 11, 11],
+        ['W0N0', 10, 10],
+        ['W0N0', 9, 9],
+        ['W0N0', 8, 8],
+        ['W0N0', 7, 7],
+        ['W0N0', 6, 6]
       ]
     }
   }

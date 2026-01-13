@@ -140,12 +140,18 @@ internal sealed class PathfinderService(
             return null;
 
         var packed = new byte[PackedTerrainBytes];
-        for (var index = 0; index < RoomArea; index++)
+        for (var x = 0; x < RoomSize; x++)
         {
-            var value = (byte)(codes[index] & 0x03);
-            var bucket = index / 4;
-            var shift = (index % 4) * 2;
-            packed[bucket] = (byte)(packed[bucket] | (value << shift));
+            for (var y = 0; y < RoomSize; y++)
+            {
+                var terrainIndex = y * RoomSize + x;
+                var value = (byte)(codes[terrainIndex] & 0x03);
+                var ii = x * RoomSize + y;
+                var bucket = ii / 4;
+                var shift = (ii % 4) * 2;
+                var mask = (byte)(0x03 << shift);
+                packed[bucket] = (byte)((packed[bucket] & ~mask) | (value << shift));
+            }
         }
 
         return packed;
@@ -177,11 +183,17 @@ internal sealed class PathfinderService(
     private static byte[] UnpackPackedTerrain(byte[] packed)
     {
         var codes = new byte[RoomArea];
-        for (var i = 0; i < RoomArea; i++)
+        for (var x = 0; x < RoomSize; x++)
         {
-            var bucket = i / 4;
-            var shift = (i % 4) * 2;
-            codes[i] = (byte)((packed[bucket] >> shift) & 0x03);
+            for (var y = 0; y < RoomSize; y++)
+            {
+                var ii = x * RoomSize + y;
+                var bucket = ii / 4;
+                var shift = (ii % 4) * 2;
+                var value = (byte)((packed[bucket] >> shift) & 0x03);
+                var terrainIndex = y * RoomSize + x;
+                codes[terrainIndex] = value;
+            }
         }
 
         return codes;
