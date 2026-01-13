@@ -78,33 +78,29 @@ public sealed class RoomMutationDispatcherTests
         : IBulkWriterFactory
     {
         public IBulkWriter<RoomObjectDocument> CreateRoomObjectsWriter() => objectsWriter;
-        public IBulkWriter<RoomFlagDocument> CreateRoomFlagsWriter() => throw new NotImplementedException();
-        public IBulkWriter<UserDocument> CreateUsersWriter() => throw new NotImplementedException();
+        public IBulkWriter<RoomFlagDocument> CreateRoomFlagsWriter() => new NullBulkWriter<RoomFlagDocument>();
+        public IBulkWriter<UserDocument> CreateUsersWriter() => new NullBulkWriter<UserDocument>();
         public IBulkWriter<RoomDocument> CreateRoomsWriter() => roomsWriter;
-        public IBulkWriter<BsonDocument> CreateTransactionsWriter() => throw new NotImplementedException();
-        public IBulkWriter<MarketOrderDocument> CreateMarketOrdersWriter() => throw new NotImplementedException();
-        public IBulkWriter<MarketOrderDocument> CreateMarketIntershardOrdersWriter() => throw new NotImplementedException();
-        public IBulkWriter<UserMoneyEntryDocument> CreateUsersMoneyWriter() => throw new NotImplementedException();
-        public IBulkWriter<BsonDocument> CreateUsersResourcesWriter() => throw new NotImplementedException();
-        public IBulkWriter<PowerCreepDocument> CreateUsersPowerCreepsWriter() => throw new NotImplementedException();
+        public IBulkWriter<BsonDocument> CreateTransactionsWriter() => new NullBulkWriter<BsonDocument>();
+        public IBulkWriter<MarketOrderDocument> CreateMarketOrdersWriter() => new NullBulkWriter<MarketOrderDocument>();
+        public IBulkWriter<MarketOrderDocument> CreateMarketIntershardOrdersWriter() => new NullBulkWriter<MarketOrderDocument>();
+        public IBulkWriter<UserMoneyEntryDocument> CreateUsersMoneyWriter() => new NullBulkWriter<UserMoneyEntryDocument>();
+        public IBulkWriter<BsonDocument> CreateUsersResourcesWriter() => new NullBulkWriter<BsonDocument>();
+        public IBulkWriter<PowerCreepDocument> CreateUsersPowerCreepsWriter() => new NullBulkWriter<PowerCreepDocument>();
     }
 
     private sealed class FakeBulkWriter<T> : IBulkWriter<T>
         where T : class
     {
-        private readonly List<(string Id, string Operation)> _operations = [];
-        private readonly List<string> _inserts = new();
-
         public bool ExecuteCalled { get; private set; }
         public List<string> Removals { get; } = new();
         public List<(string Id, string DeltaJson)> Updates { get; } = new();
 
-        public bool HasPendingOperations => _inserts.Count > 0 || Removals.Count > 0 || Updates.Count > 0;
+        public bool HasPendingOperations => Removals.Count > 0 || Updates.Count > 0;
 
         public void Insert(T entity, string? id = null)
         {
-            _operations.Add((id ?? string.Empty, "insert"));
-            _inserts.Add(id ?? string.Empty);
+            // Inserts aren’t exercised in these tests; no-op keeps behavior predictable.
         }
 
         public void Update(string id, object delta)
@@ -134,6 +130,22 @@ public sealed class RoomMutationDispatcherTests
         }
 
         public void Clear() => throw new NotImplementedException();
+    }
+
+    private sealed class NullBulkWriter<T> : IBulkWriter<T>
+        where T : class
+    {
+        public bool HasPendingOperations => false;
+        public void Insert(T entity, string? id = null) { }
+        public void Update(string id, object delta) { }
+        public void Update(T entity, object delta) { }
+        public void Remove(string id) { }
+        public void Remove(T entity) { }
+        public void Increment(string id, string field, long amount) { }
+        public void AddToSet(string id, string field, object value) { }
+        public void Pull(string id, string field, object value) { }
+        public Task ExecuteAsync(CancellationToken token = default) => Task.CompletedTask;
+        public void Clear() { }
     }
 
     private sealed class StubRoomDataService : IRoomDataService
