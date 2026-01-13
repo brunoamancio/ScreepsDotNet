@@ -5,17 +5,18 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using ScreepsDotNet.Backend.Core.Seeding;
 using ScreepsDotNet.Backend.Http.Routing;
+using ScreepsDotNet.Backend.Http.Tests.TestSupport;
 using ScreepsDotNet.Storage.MongoRedis.Repositories.Documents;
 
 [Collection(IntegrationTestSuiteDefinition.Name)]
 public sealed class ObjectNameEndpointsIntegrationTests(IntegrationTestHarness harness) : IAsyncLifetime
 {
-    private readonly HttpClient _client = harness.Factory.CreateClient();
+    private readonly TestHttpClient _client = new(harness.Factory.CreateClient());
     private const string RoomObjectsCollection = "rooms.objects";
 
-    public Task InitializeAsync() => harness.ResetStateAsync();
+    public ValueTask InitializeAsync() => new(harness.ResetStateAsync());
 
-    public Task DisposeAsync() => Task.CompletedTask;
+    public ValueTask DisposeAsync() => ValueTask.CompletedTask;
 
     [Fact]
     public async Task GenerateUniqueSpawnName_ReturnsNextAvailable()
@@ -29,7 +30,7 @@ public sealed class ObjectNameEndpointsIntegrationTests(IntegrationTestHarness h
 
         var response = await _client.SendAsync(request);
         response.EnsureSuccessStatusCode();
-        using var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        using var payload = JsonDocument.Parse(await TestHttpClient.ReadAsStringAsync(response));
         var generated = payload.RootElement.GetProperty("name").GetString();
         Assert.StartsWith("Spawn", generated, StringComparison.Ordinal);
     }
@@ -47,7 +48,7 @@ public sealed class ObjectNameEndpointsIntegrationTests(IntegrationTestHarness h
             Type = "spawn",
             Name = existingName,
             Room = SeedDataDefaults.World.StartRoom
-        });
+        }, cancellationToken: TestContext.Current.CancellationToken);
 
         var request = new HttpRequestMessage(HttpMethod.Post, ApiRoutes.Game.ObjectNames.CheckUnique)
         {
@@ -68,7 +69,7 @@ public sealed class ObjectNameEndpointsIntegrationTests(IntegrationTestHarness h
         });
 
         response.EnsureSuccessStatusCode();
-        using var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        using var payload = JsonDocument.Parse(await TestHttpClient.ReadAsStringAsync(response));
         return payload.RootElement.GetProperty(AuthResponseFields.Token).GetString()!;
     }
 }

@@ -25,7 +25,7 @@ public sealed class WorldCommandsIntegrationTests(MongoMapIntegrationFixture fix
             OutputJson = true
         };
 
-        var exitCode = await command.ExecuteAsync(null!, settings, CancellationToken.None);
+        var exitCode = await command.ExecuteAsync(null!, settings, TestContext.Current.CancellationToken);
 
         Assert.Equal(0, exitCode);
         Assert.Contains(SeedDataDefaults.World.StartRoom, formatter.LastJson ?? string.Empty);
@@ -44,7 +44,7 @@ public sealed class WorldCommandsIntegrationTests(MongoMapIntegrationFixture fix
             OutputJson = true
         };
 
-        var exitCode = await command.ExecuteAsync(null!, settings, CancellationToken.None);
+        var exitCode = await command.ExecuteAsync(null!, settings, TestContext.Current.CancellationToken);
 
         Assert.Equal(0, exitCode);
         Assert.Contains(SeedDataDefaults.World.StartRoom, formatter.LastJson ?? string.Empty, StringComparison.OrdinalIgnoreCase);
@@ -65,7 +65,7 @@ public sealed class WorldCommandsIntegrationTests(MongoMapIntegrationFixture fix
             OutputJson = true
         };
 
-        var exitCode = await command.ExecuteAsync(null!, settings, CancellationToken.None);
+        var exitCode = await command.ExecuteAsync(null!, settings, TestContext.Current.CancellationToken);
 
         Assert.Equal(0, exitCode);
         Assert.Contains(SeedDataDefaults.World.StartRoom, formatter.LastJson ?? string.Empty);

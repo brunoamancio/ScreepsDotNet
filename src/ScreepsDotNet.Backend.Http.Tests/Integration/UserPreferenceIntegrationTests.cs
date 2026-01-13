@@ -5,16 +5,17 @@ using System.Text.Json;
 using MongoDB.Driver;
 using ScreepsDotNet.Backend.Core.Seeding;
 using ScreepsDotNet.Backend.Http.Routing;
+using ScreepsDotNet.Backend.Http.Tests.TestSupport;
 using ScreepsDotNet.Storage.MongoRedis.Repositories.Documents;
 
 [Collection(IntegrationTestSuiteDefinition.Name)]
 public sealed class UserPreferenceIntegrationTests(IntegrationTestHarness harness) : IAsyncLifetime
 {
-    private readonly HttpClient _client = harness.Factory.CreateClient();
+    private readonly TestHttpClient _client = new(harness.Factory.CreateClient());
 
-    public Task InitializeAsync() => harness.ResetStateAsync();
+    public ValueTask InitializeAsync() => new(harness.ResetStateAsync());
 
-    public Task DisposeAsync() => Task.CompletedTask;
+    public ValueTask DisposeAsync() => ValueTask.CompletedTask;
 
     private async Task<string> AuthenticateAsync()
     {
@@ -25,7 +26,7 @@ public sealed class UserPreferenceIntegrationTests(IntegrationTestHarness harnes
         });
 
         response.EnsureSuccessStatusCode();
-        using var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        using var payload = JsonDocument.Parse(await TestHttpClient.ReadAsStringAsync(response));
         return payload.RootElement.GetProperty("token").GetString()!;
     }
 
@@ -49,7 +50,7 @@ public sealed class UserPreferenceIntegrationTests(IntegrationTestHarness harnes
         var response = await _client.SendAsync(message);
 
         response.EnsureSuccessStatusCode();
-        var content = await response.Content.ReadFromJsonAsync<JsonElement>();
+        var content = await TestHttpClient.ReadFromJsonAsync<JsonElement>(response);
         var notifyPrefs = content.GetProperty("notifyPrefs");
         Assert.True(notifyPrefs.GetProperty("disabled").GetBoolean());
         Assert.False(notifyPrefs.GetProperty("disabledOnMessages").GetBoolean());
@@ -59,7 +60,7 @@ public sealed class UserPreferenceIntegrationTests(IntegrationTestHarness harnes
 
         // Verify DB
         var users = harness.Database.GetCollection<UserDocument>("users");
-        var user = await users.Find(u => u.Id == SeedDataDefaults.User.Id).FirstOrDefaultAsync();
+        var user = await users.Find(u => u.Id == SeedDataDefaults.User.Id).FirstOrDefaultAsync(TestContext.Current.CancellationToken);
         Assert.NotNull(user!.NotifyPrefs);
         Assert.Equal(true, user.NotifyPrefs["disabled"]);
         Assert.Equal(60, user.NotifyPrefs["interval"]);
@@ -81,7 +82,7 @@ public sealed class UserPreferenceIntegrationTests(IntegrationTestHarness harnes
 
         // Verify DB
         var users = harness.Database.GetCollection<UserDocument>("users");
-        var user = await users.Find(u => u.Id == SeedDataDefaults.User.Id).FirstOrDefaultAsync();
+        var user = await users.Find(u => u.Id == SeedDataDefaults.User.Id).FirstOrDefaultAsync(TestContext.Current.CancellationToken);
         Assert.NotNull(user!.Steam);
         Assert.Equal(false, user.Steam.SteamProfileLinkHidden);
     }
@@ -115,7 +116,7 @@ public sealed class UserPreferenceIntegrationTests(IntegrationTestHarness harnes
 
         // Verify DB
         var users = harness.Database.GetCollection<UserDocument>("users");
-        var user = await users.Find(u => u.Id == SeedDataDefaults.User.Id).FirstOrDefaultAsync();
+        var user = await users.Find(u => u.Id == SeedDataDefaults.User.Id).FirstOrDefaultAsync(TestContext.Current.CancellationToken);
         Assert.Equal(newEmail, user!.Email);
         Assert.Equal(false, user.EmailDirty);
     }
@@ -147,7 +148,7 @@ public sealed class UserPreferenceIntegrationTests(IntegrationTestHarness harnes
 
         // Verify DB
         var users = harness.Database.GetCollection<UserDocument>("users");
-        var user = await users.Find(u => u.Id == SeedDataDefaults.User.Id).FirstOrDefaultAsync();
+        var user = await users.Find(u => u.Id == SeedDataDefaults.User.Id).FirstOrDefaultAsync(TestContext.Current.CancellationToken);
         Assert.NotNull(user!.Badge);
         Assert.Equal(5, user.Badge["type"]);
         Assert.Equal("#ff0000", user.Badge["color1"]);

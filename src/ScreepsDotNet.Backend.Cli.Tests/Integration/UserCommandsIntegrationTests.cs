@@ -15,6 +15,7 @@ public sealed class UserCommandsIntegrationTests(MongoMapIntegrationFixture fixt
     public async Task UserConsoleExecCommand_EnqueuesExpression()
     {
         await fixture.ResetAsync();
+        var token = TestContext.Current.CancellationToken;
         var repository = new MongoUserConsoleRepository(fixture.DatabaseProvider);
         var command = new UserConsoleExecCommand(repository, NullLogger<UserConsoleExecCommand>.Instance);
         var settings = new UserConsoleExecCommand.Settings
@@ -25,11 +26,13 @@ public sealed class UserCommandsIntegrationTests(MongoMapIntegrationFixture fixt
             OutputJson = true
         };
 
-        var exitCode = await command.ExecuteAsync(null!, settings, CancellationToken.None);
+        var exitCode = await command.ExecuteAsync(null!, settings, token);
 
         Assert.Equal(0, exitCode);
         var entries = fixture.GetCollection<UserConsoleEntryDocument>(fixture.DatabaseProvider.Settings.UserConsoleCollection);
-        var stored = await entries.Find(doc => doc.UserId == SeedDataDefaults.User.Id && doc.Expression.Contains("hi from cli")).FirstOrDefaultAsync();
+        var stored = await entries
+            .Find(doc => doc.UserId == SeedDataDefaults.User.Id && doc.Expression.Contains("hi from cli"))
+            .FirstOrDefaultAsync(token);
         Assert.NotNull(stored);
         Assert.True(stored!.Hidden);
     }
@@ -38,6 +41,7 @@ public sealed class UserCommandsIntegrationTests(MongoMapIntegrationFixture fixt
     public async Task UserMemorySetCommand_UpdatesRootMemory()
     {
         await fixture.ResetAsync();
+        var token = TestContext.Current.CancellationToken;
         var repository = new MongoUserMemoryRepository(fixture.DatabaseProvider);
         var command = new UserMemorySetCommand(repository, NullLogger<UserMemorySetCommand>.Instance);
         var settings = new UserMemorySetCommand.Settings
@@ -47,11 +51,11 @@ public sealed class UserCommandsIntegrationTests(MongoMapIntegrationFixture fixt
             OutputJson = true
         };
 
-        var exitCode = await command.ExecuteAsync(null!, settings, CancellationToken.None);
+        var exitCode = await command.ExecuteAsync(null!, settings, token);
 
         Assert.Equal(0, exitCode);
         var collection = fixture.GetCollection<UserMemoryDocument>(fixture.DatabaseProvider.Settings.UserMemoryCollection);
-        var document = await collection.Find(doc => doc.UserId == SeedDataDefaults.User.Id).FirstOrDefaultAsync();
+        var document = await collection.Find(doc => doc.UserId == SeedDataDefaults.User.Id).FirstOrDefaultAsync(token);
         Assert.NotNull(document);
         Assert.True(document!.Memory.TryGetValue("theme", out var value));
         Assert.Equal("dark", value);
@@ -61,6 +65,7 @@ public sealed class UserCommandsIntegrationTests(MongoMapIntegrationFixture fixt
     public async Task UserMemorySetCommand_UpdatesSegment()
     {
         await fixture.ResetAsync();
+        var token = TestContext.Current.CancellationToken;
         var repository = new MongoUserMemoryRepository(fixture.DatabaseProvider);
         var command = new UserMemorySetCommand(repository, NullLogger<UserMemorySetCommand>.Instance);
         var settings = new UserMemorySetCommand.Settings
@@ -71,11 +76,11 @@ public sealed class UserCommandsIntegrationTests(MongoMapIntegrationFixture fixt
             OutputJson = true
         };
 
-        var exitCode = await command.ExecuteAsync(null!, settings, CancellationToken.None);
+        var exitCode = await command.ExecuteAsync(null!, settings, token);
 
         Assert.Equal(0, exitCode);
         var collection = fixture.GetCollection<UserMemoryDocument>(fixture.DatabaseProvider.Settings.UserMemoryCollection);
-        var document = await collection.Find(doc => doc.UserId == SeedDataDefaults.User.Id).FirstOrDefaultAsync();
+        var document = await collection.Find(doc => doc.UserId == SeedDataDefaults.User.Id).FirstOrDefaultAsync(token);
         Assert.NotNull(document);
         Assert.True(document!.Segments.TryGetValue("7", out var data));
         Assert.Equal("segment-data", data);
@@ -85,8 +90,9 @@ public sealed class UserCommandsIntegrationTests(MongoMapIntegrationFixture fixt
     public async Task UserMemoryGetCommand_ReadsSegment()
     {
         await fixture.ResetAsync();
+        var token = TestContext.Current.CancellationToken;
         var repository = new MongoUserMemoryRepository(fixture.DatabaseProvider);
-        await repository.SetMemorySegmentAsync(SeedDataDefaults.User.Id, 5, "seeded", CancellationToken.None);
+        await repository.SetMemorySegmentAsync(SeedDataDefaults.User.Id, 5, "seeded", token);
 
         var command = new UserMemoryGetCommand(repository, NullLogger<UserMemoryGetCommand>.Instance, null, new TestFormatter());
         var settings = new UserMemoryGetCommand.Settings
@@ -96,7 +102,7 @@ public sealed class UserCommandsIntegrationTests(MongoMapIntegrationFixture fixt
             OutputJson = true
         };
 
-        var exitCode = await command.ExecuteAsync(null!, settings, CancellationToken.None);
+        var exitCode = await command.ExecuteAsync(null!, settings, token);
 
         Assert.Equal(0, exitCode);
     }

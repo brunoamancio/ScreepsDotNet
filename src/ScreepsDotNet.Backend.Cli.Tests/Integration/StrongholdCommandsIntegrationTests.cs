@@ -15,7 +15,8 @@ public sealed class StrongholdCommandsIntegrationTests(MongoMapIntegrationFixtur
     {
         await fixture.ResetAsync();
         var roomName = "W44N44";
-        await GenerateRoomAsync(roomName);
+        var token = TestContext.Current.CancellationToken;
+        await GenerateRoomAsync(roomName, token);
 
         var service = CreateStrongholdService();
         var command = new StrongholdSpawnCommand(service);
@@ -24,13 +25,13 @@ public sealed class StrongholdCommandsIntegrationTests(MongoMapIntegrationFixtur
         {
             RoomName = roomName,
             TemplateName = "bunker1"
-        }, CancellationToken.None);
+        }, token);
 
         Assert.Equal(0, exitCode);
 
         var roomObjects = fixture.Database.GetCollection<BsonDocument>("rooms.objects");
         var core = await roomObjects.Find(doc => doc["room"] == roomName && doc["type"] == "invaderCore")
-                                    .FirstOrDefaultAsync();
+                                    .FirstOrDefaultAsync(token);
 
         Assert.NotNull(core);
         Assert.False(string.IsNullOrWhiteSpace(core!["strongholdId"].AsString));
@@ -42,7 +43,8 @@ public sealed class StrongholdCommandsIntegrationTests(MongoMapIntegrationFixtur
     {
         await fixture.ResetAsync();
         var roomName = "W45N45";
-        await GenerateRoomAsync(roomName);
+        var token = TestContext.Current.CancellationToken;
+        await GenerateRoomAsync(roomName, token);
 
         var service = CreateStrongholdService();
         var spawnCommand = new StrongholdSpawnCommand(service);
@@ -50,33 +52,33 @@ public sealed class StrongholdCommandsIntegrationTests(MongoMapIntegrationFixtur
         {
             RoomName = roomName,
             TemplateName = "bunker2"
-        }, CancellationToken.None);
+        }, token);
 
         var roomObjects = fixture.Database.GetCollection<BsonDocument>("rooms.objects");
         var coreFilter = Builders<BsonDocument>.Filter.And(
             Builders<BsonDocument>.Filter.Eq("room", roomName),
             Builders<BsonDocument>.Filter.Eq("type", "invaderCore"));
-        var coreBefore = await roomObjects.Find(coreFilter).FirstOrDefaultAsync();
+        var coreBefore = await roomObjects.Find(coreFilter).FirstOrDefaultAsync(token);
         Assert.NotNull(coreBefore);
         var previousNextExpand = coreBefore!["nextExpandTime"].AsInt32;
 
         var expandCommand = new StrongholdExpandCommand(service);
-        var exitCode = await expandCommand.ExecuteAsync(null!, new StrongholdExpandCommand.Settings { RoomName = roomName }, CancellationToken.None);
+        var exitCode = await expandCommand.ExecuteAsync(null!, new StrongholdExpandCommand.Settings { RoomName = roomName }, token);
         Assert.Equal(0, exitCode);
 
-        var coreAfter = await roomObjects.Find(coreFilter).FirstOrDefaultAsync();
+        var coreAfter = await roomObjects.Find(coreFilter).FirstOrDefaultAsync(token);
         Assert.NotNull(coreAfter);
         Assert.NotEqual(previousNextExpand, coreAfter!["nextExpandTime"].AsInt32);
     }
 
-    private async Task GenerateRoomAsync(string roomName)
+    private async Task GenerateRoomAsync(string roomName, CancellationToken token)
     {
         var mapCommand = new MapGenerateCommand(fixture.MapControlService);
         await mapCommand.ExecuteAsync(null!, new MapGenerateCommand.Settings
         {
             RoomName = roomName,
             Overwrite = true
-        }, CancellationToken.None);
+        }, token);
     }
 
     private IStrongholdControlService CreateStrongholdService()

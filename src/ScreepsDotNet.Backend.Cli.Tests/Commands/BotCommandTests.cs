@@ -16,7 +16,7 @@ public sealed class BotCommandTests
             Username = "AlphaBot"
         };
 
-        var exitCode = await command.ExecuteAsync(null!, settings, CancellationToken.None);
+        var exitCode = await command.ExecuteAsync(null!, settings, TestContext.Current.CancellationToken);
 
         Assert.Equal(0, exitCode);
         Assert.Equal("AlphaBot", service.LastRemovedUsername);

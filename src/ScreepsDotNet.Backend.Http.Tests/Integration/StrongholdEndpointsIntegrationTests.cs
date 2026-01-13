@@ -1,21 +1,21 @@
 ﻿namespace ScreepsDotNet.Backend.Http.Tests.Integration;
 
 using System.Net;
-using System.Net.Http.Json;
 using System.Text.Json;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using ScreepsDotNet.Backend.Core.Seeding;
 using ScreepsDotNet.Backend.Http.Routing;
+using ScreepsDotNet.Backend.Http.Tests.TestSupport;
 
 [Collection(IntegrationTestSuiteDefinition.Name)]
 public sealed class StrongholdEndpointsIntegrationTests(IntegrationTestHarness harness) : IAsyncLifetime
 {
-    private readonly HttpClient _client = harness.Factory.CreateClient();
+    private readonly TestHttpClient _client = new(harness.Factory.CreateClient());
 
-    public Task InitializeAsync() => harness.ResetStateAsync();
+    public ValueTask InitializeAsync() => new(harness.ResetStateAsync());
 
-    public Task DisposeAsync() => Task.CompletedTask;
+    public ValueTask DisposeAsync() => ValueTask.CompletedTask;
 
     [Fact]
     public async Task Templates_ReturnsData()
@@ -26,7 +26,7 @@ public sealed class StrongholdEndpointsIntegrationTests(IntegrationTestHarness h
         var response = await _client.GetAsync(ApiRoutes.Game.Stronghold.Templates);
         response.EnsureSuccessStatusCode();
 
-        var content = await response.Content.ReadFromJsonAsync<JsonElement>();
+        var content = await TestHttpClient.ReadFromJsonAsync<JsonElement>(response);
         Assert.Equal(1, content.GetProperty("ok").GetInt32());
         var templates = content.GetProperty("templates");
         Assert.True(templates.GetArrayLength() > 0);
@@ -55,7 +55,7 @@ public sealed class StrongholdEndpointsIntegrationTests(IntegrationTestHarness h
 
         var response = await _client.PostAsJsonAsync(ApiRoutes.Game.Stronghold.Spawn, payload);
         response.EnsureSuccessStatusCode();
-        var content = await response.Content.ReadFromJsonAsync<JsonElement>();
+        var content = await TestHttpClient.ReadFromJsonAsync<JsonElement>(response);
         Assert.Equal(1, content.GetProperty("ok").GetInt32());
         Assert.Equal(room, content.GetProperty("room").GetString());
         Assert.Equal(JsonValueKind.Null, content.GetProperty("shard").ValueKind);
@@ -66,7 +66,7 @@ public sealed class StrongholdEndpointsIntegrationTests(IntegrationTestHarness h
         var core = await objectsCollection.Find(Builders<BsonDocument>.Filter.And(
                                                     Builders<BsonDocument>.Filter.Eq("room", room),
                                                     Builders<BsonDocument>.Filter.Eq("type", "invaderCore")))
-                                          .FirstOrDefaultAsync();
+                                          .FirstOrDefaultAsync(TestContext.Current.CancellationToken);
         Assert.NotNull(core);
         Assert.Equal("bunker1", core["templateName"].AsString);
     }
@@ -92,7 +92,7 @@ public sealed class StrongholdEndpointsIntegrationTests(IntegrationTestHarness h
 
         var response = await _client.PostAsJsonAsync(ApiRoutes.Game.Stronghold.Spawn, payload);
         response.EnsureSuccessStatusCode();
-        var content = await response.Content.ReadFromJsonAsync<JsonElement>();
+        var content = await TestHttpClient.ReadFromJsonAsync<JsonElement>(response);
         Assert.Equal(shard, content.GetProperty("shard").GetString());
 
         var objectsCollection = harness.Database.GetCollection<BsonDocument>("rooms.objects");
@@ -100,7 +100,7 @@ public sealed class StrongholdEndpointsIntegrationTests(IntegrationTestHarness h
             Builders<BsonDocument>.Filter.Eq("room", room),
             Builders<BsonDocument>.Filter.Eq("shard", shard),
             Builders<BsonDocument>.Filter.Eq("type", "invaderCore"));
-        var core = await objectsCollection.Find(filter).FirstOrDefaultAsync();
+        var core = await objectsCollection.Find(filter).FirstOrDefaultAsync(TestContext.Current.CancellationToken);
         Assert.NotNull(core);
         Assert.Equal(shard, core["shard"].AsString);
     }
@@ -122,7 +122,7 @@ public sealed class StrongholdEndpointsIntegrationTests(IntegrationTestHarness h
         var filter = Builders<BsonDocument>.Filter.And(
             Builders<BsonDocument>.Filter.Eq("room", room),
             Builders<BsonDocument>.Filter.Eq("type", "invaderCore"));
-        var coreBefore = await objectsCollection.Find(filter).FirstOrDefaultAsync();
+        var coreBefore = await objectsCollection.Find(filter).FirstOrDefaultAsync(TestContext.Current.CancellationToken);
         Assert.NotNull(coreBefore);
         var previousNextExpand = coreBefore!["nextExpandTime"].AsInt32;
 
@@ -130,7 +130,7 @@ public sealed class StrongholdEndpointsIntegrationTests(IntegrationTestHarness h
         var expandResponse = await _client.PostAsJsonAsync(ApiRoutes.Game.Stronghold.Expand, expandPayload);
         expandResponse.EnsureSuccessStatusCode();
 
-        var coreAfter = await objectsCollection.Find(filter).FirstOrDefaultAsync();
+        var coreAfter = await objectsCollection.Find(filter).FirstOrDefaultAsync(TestContext.Current.CancellationToken);
         Assert.NotNull(coreAfter);
         Assert.NotEqual(previousNextExpand, coreAfter!["nextExpandTime"].AsInt32);
     }
@@ -144,7 +144,7 @@ public sealed class StrongholdEndpointsIntegrationTests(IntegrationTestHarness h
         var payload = new { room = "W50N50" };
         var response = await _client.PostAsJsonAsync(ApiRoutes.Game.Stronghold.Expand, payload);
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-        var content = await response.Content.ReadFromJsonAsync<JsonElement>();
+        var content = await TestHttpClient.ReadFromJsonAsync<JsonElement>(response);
         Assert.Equal("stronghold not found", content.GetProperty("error").GetString());
     }
 
@@ -162,24 +162,24 @@ public sealed class StrongholdEndpointsIntegrationTests(IntegrationTestHarness h
             Builders<BsonDocument>.Filter.Eq("room", room),
             Builders<BsonDocument>.Filter.Eq("shard", shard),
             Builders<BsonDocument>.Filter.Eq("type", "invaderCore"));
-        var seededCore = await objectsCollection.Find(shardFilter).FirstOrDefaultAsync();
+        var seededCore = await objectsCollection.Find(shardFilter).FirstOrDefaultAsync(TestContext.Current.CancellationToken);
         Assert.NotNull(seededCore);
         var originalNextExpand = seededCore["nextExpandTime"].AsInt32;
 
         var nonShardFilter = Builders<BsonDocument>.Filter.And(
             Builders<BsonDocument>.Filter.Eq("room", SeedDataDefaults.World.SecondaryRoom),
             Builders<BsonDocument>.Filter.Eq("type", "invaderCore"));
-        var nonShardCoreBefore = await objectsCollection.Find(nonShardFilter).FirstOrDefaultAsync();
+        var nonShardCoreBefore = await objectsCollection.Find(nonShardFilter).FirstOrDefaultAsync(TestContext.Current.CancellationToken);
 
         var response = await _client.PostAsJsonAsync(ApiRoutes.Game.Stronghold.Expand, new { room, shard });
         response.EnsureSuccessStatusCode();
 
-        var updatedCore = await objectsCollection.Find(shardFilter).FirstOrDefaultAsync();
+        var updatedCore = await objectsCollection.Find(shardFilter).FirstOrDefaultAsync(TestContext.Current.CancellationToken);
         Assert.NotNull(updatedCore);
         Assert.NotEqual(originalNextExpand, updatedCore["nextExpandTime"].AsInt32);
 
         if (nonShardCoreBefore is not null && nonShardCoreBefore.TryGetValue("nextExpandTime", out var beforeValue)) {
-            var nonShardCoreAfter = await objectsCollection.Find(nonShardFilter).FirstOrDefaultAsync();
+            var nonShardCoreAfter = await objectsCollection.Find(nonShardFilter).FirstOrDefaultAsync(TestContext.Current.CancellationToken);
             if (nonShardCoreAfter is not null && nonShardCoreAfter.TryGetValue("nextExpandTime", out var afterValue))
                 Assert.Equal(beforeValue, afterValue);
         }
@@ -190,7 +190,7 @@ public sealed class StrongholdEndpointsIntegrationTests(IntegrationTestHarness h
         var request = new { ticket = SeedDataDefaults.Auth.Ticket };
         var response = await _client.PostAsJsonAsync(ApiRoutes.AuthSteamTicket, request);
         response.EnsureSuccessStatusCode();
-        var content = await response.Content.ReadFromJsonAsync<JsonElement>();
+        var content = await TestHttpClient.ReadFromJsonAsync<JsonElement>(response);
         return content.GetProperty("token").GetString()!;
     }
 
@@ -209,7 +209,7 @@ public sealed class StrongholdEndpointsIntegrationTests(IntegrationTestHarness h
             roomDoc["shard"] = shard;
         await roomsCollection.ReplaceOneAsync(new BsonDocument("_id", room),
                                               roomDoc,
-                                              new ReplaceOptions { IsUpsert = true });
+                                              new ReplaceOptions { IsUpsert = true }, cancellationToken: TestContext.Current.CancellationToken);
 
         var terrainCollection = harness.Database.GetCollection<BsonDocument>("rooms.terrain");
         var terrainDoc = new BsonDocument { ["room"] = room, ["terrain"] = new string('0', 2500) };
@@ -217,10 +217,10 @@ public sealed class StrongholdEndpointsIntegrationTests(IntegrationTestHarness h
             terrainDoc["shard"] = shard;
         await terrainCollection.ReplaceOneAsync(new BsonDocument("room", room),
                                                 terrainDoc,
-                                                new ReplaceOptions { IsUpsert = true });
+                                                new ReplaceOptions { IsUpsert = true }, cancellationToken: TestContext.Current.CancellationToken);
 
         var objectsCollection = harness.Database.GetCollection<BsonDocument>("rooms.objects");
-        await objectsCollection.DeleteManyAsync(Builders<BsonDocument>.Filter.Eq("room", room));
+        await objectsCollection.DeleteManyAsync(Builders<BsonDocument>.Filter.Eq("room", room), cancellationToken: TestContext.Current.CancellationToken);
         var controllerDoc = new BsonDocument
         {
             ["type"] = "controller",
@@ -230,6 +230,6 @@ public sealed class StrongholdEndpointsIntegrationTests(IntegrationTestHarness h
         };
         if (shard is not null)
             controllerDoc["shard"] = shard;
-        await objectsCollection.InsertOneAsync(controllerDoc);
+        await objectsCollection.InsertOneAsync(controllerDoc, cancellationToken: TestContext.Current.CancellationToken);
     }
 }

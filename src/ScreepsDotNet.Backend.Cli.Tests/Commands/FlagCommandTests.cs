@@ -24,7 +24,7 @@ public sealed class FlagCommandTests
             SecondaryColor = Core.Constants.Color.Blue
         };
 
-        var exitCode = await command.ExecuteAsync(null!, settings, CancellationToken.None);
+        var exitCode = await command.ExecuteAsync(null!, settings, TestContext.Current.CancellationToken);
 
         Assert.Equal(0, exitCode);
         Assert.Equal("user-123", service.LastUserId);
@@ -44,7 +44,7 @@ public sealed class FlagCommandTests
             Name = "FlagGone"
         };
 
-        var exitCode = await command.ExecuteAsync(null!, settings, CancellationToken.None);
+        var exitCode = await command.ExecuteAsync(null!, settings, TestContext.Current.CancellationToken);
 
         Assert.Equal(0, exitCode);
         Assert.Equal("user-999", service.LastUserId);

@@ -1,23 +1,22 @@
 ﻿namespace ScreepsDotNet.Backend.Http.Tests.Integration;
 
 using System;
-using System.Linq;
 using System.Net;
-using System.Net.Http.Json;
 using System.Text.Json;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using ScreepsDotNet.Backend.Core.Seeding;
 using ScreepsDotNet.Backend.Http.Routing;
+using ScreepsDotNet.Backend.Http.Tests.TestSupport;
 
 [Collection(IntegrationTestSuiteDefinition.Name)]
 public sealed class IntentEndpointsIntegrationTests(IntegrationTestHarness harness) : IAsyncLifetime
 {
-    private readonly HttpClient _client = harness.Factory.CreateClient();
+    private readonly TestHttpClient _client = new(harness.Factory.CreateClient());
 
-    public Task InitializeAsync() => harness.ResetStateAsync();
+    public ValueTask InitializeAsync() => new(harness.ResetStateAsync());
 
-    public Task DisposeAsync() => Task.CompletedTask;
+    public ValueTask DisposeAsync() => ValueTask.CompletedTask;
 
     [Fact]
     public async Task AddObjectIntent_Success()
@@ -39,11 +38,11 @@ public sealed class IntentEndpointsIntegrationTests(IntegrationTestHarness harne
         var response = await _client.PostAsJsonAsync(ApiRoutes.Game.Intent.AddObject, request);
         response.EnsureSuccessStatusCode();
 
-        var payload = await response.Content.ReadFromJsonAsync<JsonElement>();
+        var payload = await TestHttpClient.ReadFromJsonAsync<JsonElement>(response);
         Assert.Equal(1, payload.GetProperty("ok").GetInt32());
 
         var intents = harness.Database.GetCollection<BsonDocument>("rooms.intents");
-        var document = await intents.Find(new BsonDocument("room", room)).FirstOrDefaultAsync();
+        var document = await intents.Find(new BsonDocument("room", room)).FirstOrDefaultAsync(TestContext.Current.CancellationToken);
         Assert.NotNull(document);
 
         var usersDoc = document["users"].AsBsonDocument;
@@ -80,7 +79,7 @@ public sealed class IntentEndpointsIntegrationTests(IntegrationTestHarness harne
         var shardFilter = Builders<BsonDocument>.Filter.And(
             Builders<BsonDocument>.Filter.Eq("room", room),
             Builders<BsonDocument>.Filter.Eq("shard", shard));
-        var shardDocument = await intents.Find(shardFilter).FirstOrDefaultAsync();
+        var shardDocument = await intents.Find(shardFilter).FirstOrDefaultAsync(TestContext.Current.CancellationToken);
         Assert.NotNull(shardDocument);
 
         var usersDoc = shardDocument["users"].AsBsonDocument;
@@ -94,7 +93,7 @@ public sealed class IntentEndpointsIntegrationTests(IntegrationTestHarness harne
             Builders<BsonDocument>.Filter.Or(
                 Builders<BsonDocument>.Filter.Exists("shard", false),
                 Builders<BsonDocument>.Filter.Eq("shard", BsonNull.Value)));
-        var primaryDocument = await intents.Find(primaryFilter).FirstOrDefaultAsync();
+        var primaryDocument = await intents.Find(primaryFilter).FirstOrDefaultAsync(TestContext.Current.CancellationToken);
         Assert.Null(primaryDocument);
     }
 
@@ -114,7 +113,7 @@ public sealed class IntentEndpointsIntegrationTests(IntegrationTestHarness harne
             ["room"] = room,
             ["user"] = SeedDataDefaults.User.Id,
             ["safeMode"] = SeedDataDefaults.World.GameTime + 100
-        });
+        }, cancellationToken: TestContext.Current.CancellationToken);
 
         var request = new
         {
@@ -127,7 +126,7 @@ public sealed class IntentEndpointsIntegrationTests(IntegrationTestHarness harne
         var response = await _client.PostAsJsonAsync(ApiRoutes.Game.Intent.AddObject, request);
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
 
-        var payload = await response.Content.ReadFromJsonAsync<JsonElement>();
+        var payload = await TestHttpClient.ReadFromJsonAsync<JsonElement>(response);
         Assert.Equal("safe mode active already", payload.GetProperty("error").GetString());
     }
 
@@ -146,13 +145,13 @@ public sealed class IntentEndpointsIntegrationTests(IntegrationTestHarness harne
         var response = await _client.PostAsJsonAsync(ApiRoutes.Game.Intent.AddGlobal, request);
         response.EnsureSuccessStatusCode();
 
-        var payload = await response.Content.ReadFromJsonAsync<JsonElement>();
+        var payload = await TestHttpClient.ReadFromJsonAsync<JsonElement>(response);
         Assert.Equal(1, payload.GetProperty("ok").GetInt32());
 
         var collection = harness.Database.GetCollection<BsonDocument>("users.intents");
         var document = await collection.Find(new BsonDocument("user", SeedDataDefaults.User.Id))
                                        .Sort(Builders<BsonDocument>.Sort.Descending("_id"))
-                                       .FirstOrDefaultAsync();
+                                       .FirstOrDefaultAsync(TestContext.Current.CancellationToken);
 
         Assert.NotNull(document);
         var intents = document["intents"].AsBsonDocument;
@@ -176,13 +175,13 @@ public sealed class IntentEndpointsIntegrationTests(IntegrationTestHarness harne
         var response = await _client.PostAsJsonAsync(ApiRoutes.Game.Intent.AddGlobal, request);
         response.EnsureSuccessStatusCode();
 
-        var payload = await response.Content.ReadFromJsonAsync<JsonElement>();
+        var payload = await TestHttpClient.ReadFromJsonAsync<JsonElement>(response);
         Assert.Equal(1, payload.GetProperty("ok").GetInt32());
 
         var collection = harness.Database.GetCollection<BsonDocument>("users.intents");
         var document = await collection.Find(new BsonDocument("user", SeedDataDefaults.User.Id))
                                        .Sort(Builders<BsonDocument>.Sort.Descending("_id"))
-                                       .FirstOrDefaultAsync();
+                                       .FirstOrDefaultAsync(TestContext.Current.CancellationToken);
 
         Assert.NotNull(document);
         var intents = document["intents"].AsBsonDocument;
@@ -195,7 +194,7 @@ public sealed class IntentEndpointsIntegrationTests(IntegrationTestHarness harne
     {
         var response = await _client.PostAsJsonAsync(ApiRoutes.AuthSteamTicket, new { ticket = SeedDataDefaults.Auth.Ticket });
         response.EnsureSuccessStatusCode();
-        var json = await response.Content.ReadFromJsonAsync<JsonElement>();
+        var json = await TestHttpClient.ReadFromJsonAsync<JsonElement>(response);
         return json.GetProperty("token").GetString()!;
     }
 
@@ -212,6 +211,6 @@ public sealed class IntentEndpointsIntegrationTests(IntegrationTestHarness harne
             roomDoc["shard"] = shard;
         await rooms.ReplaceOneAsync(new BsonDocument("_id", room),
                                     roomDoc,
-                                    new ReplaceOptions { IsUpsert = true });
+                                    new ReplaceOptions { IsUpsert = true }, cancellationToken: TestContext.Current.CancellationToken);
     }
 }

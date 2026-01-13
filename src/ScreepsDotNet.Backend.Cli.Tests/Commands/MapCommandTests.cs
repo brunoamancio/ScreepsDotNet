@@ -26,7 +26,7 @@ public sealed class MapCommandTests
             OutputJson = true
         };
 
-        var exitCode = await command.ExecuteAsync(null!, settings, CancellationToken.None);
+        var exitCode = await command.ExecuteAsync(null!, settings, TestContext.Current.CancellationToken);
 
         Assert.Equal(0, exitCode);
         Assert.NotNull(service.GeneratedOptions);
@@ -55,7 +55,7 @@ public sealed class MapCommandTests
             PurgeObjects = true
         };
 
-        var exitCode = await command.ExecuteAsync(null!, settings, CancellationToken.None);
+        var exitCode = await command.ExecuteAsync(null!, settings, TestContext.Current.CancellationToken);
 
         Assert.Equal(0, exitCode);
         Assert.Equal("W8S2", service.RemovedRoom);
@@ -73,7 +73,7 @@ public sealed class MapCommandTests
             RoomName = "shard3/W7N7"
         };
 
-        var exitCode = await command.ExecuteAsync(null!, settings, CancellationToken.None);
+        var exitCode = await command.ExecuteAsync(null!, settings, TestContext.Current.CancellationToken);
 
         Assert.Equal(0, exitCode);
         Assert.Equal("W7N7", service.RemovedRoom);
@@ -91,7 +91,7 @@ public sealed class MapCommandTests
             Full = true
         };
 
-        var exitCode = await command.ExecuteAsync(null!, settings, CancellationToken.None);
+        var exitCode = await command.ExecuteAsync(null!, settings, TestContext.Current.CancellationToken);
 
         Assert.Equal(0, exitCode);
         Assert.Equal("W9N9", service.AssetRoomName);
@@ -104,7 +104,7 @@ public sealed class MapCommandTests
     {
         var service = new FakeMapControlService();
         var command = new MapTerrainRefreshCommand(service);
-        var exitCode = await command.ExecuteAsync(null!, new MapTerrainRefreshCommand.Settings(), CancellationToken.None);
+        var exitCode = await command.ExecuteAsync(null!, new MapTerrainRefreshCommand.Settings(), TestContext.Current.CancellationToken);
 
         Assert.Equal(0, exitCode);
         Assert.True(service.TerrainRefreshed);
@@ -120,7 +120,7 @@ public sealed class MapCommandTests
             RoomName = "W1N1"
         };
 
-        var exitCode = await command.ExecuteAsync(null!, settings, CancellationToken.None);
+        var exitCode = await command.ExecuteAsync(null!, settings, TestContext.Current.CancellationToken);
 
         Assert.Equal(0, exitCode);
         Assert.Equal("W1N1", service.OpenedRoom);
@@ -136,7 +136,7 @@ public sealed class MapCommandTests
             RoomName = "W1N1"
         };
 
-        var exitCode = await command.ExecuteAsync(null!, settings, CancellationToken.None);
+        var exitCode = await command.ExecuteAsync(null!, settings, TestContext.Current.CancellationToken);
 
         Assert.Equal(0, exitCode);
         Assert.Equal("W1N1", service.ClosedRoom);

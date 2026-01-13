@@ -20,12 +20,13 @@ public sealed class NotificationServiceTests(MongoRedisFixture fixture) : IClass
     public async Task SendNotificationAsync_GroupsByInterval()
     {
         var service = CreateService();
-        await NotificationCollection.DeleteManyAsync(FilterDefinition<UserNotificationDocument>.Empty);
+        var token = TestContext.Current.CancellationToken;
+        await NotificationCollection.DeleteManyAsync(FilterDefinition<UserNotificationDocument>.Empty, cancellationToken: token);
 
-        await service.SendNotificationAsync("user1", "hello world", new NotificationOptions(5, "msg"));
-        await service.SendNotificationAsync("user1", "hello world", new NotificationOptions(5, "msg"));
+        await service.SendNotificationAsync("user1", "hello world", new NotificationOptions(5, "msg"), token);
+        await service.SendNotificationAsync("user1", "hello world", new NotificationOptions(5, "msg"), token);
 
-        var doc = await NotificationCollection.Find(document => document.UserId == "user1").FirstOrDefaultAsync();
+        var doc = await NotificationCollection.Find(document => document.UserId == "user1").FirstOrDefaultAsync(token);
 
         Assert.NotNull(doc);
         Assert.Equal(2, doc!.Count);
@@ -38,12 +39,13 @@ public sealed class NotificationServiceTests(MongoRedisFixture fixture) : IClass
         var mux = fixture.RedisProvider.GetConnection();
         var subscriber = mux.GetSubscriber();
         var tcs = CreateTcs();
+        var token = TestContext.Current.CancellationToken;
         await subscriber.SubscribeAsync(RedisChannel.Literal("user:user2/console"), (_, value) => tcs.TrySetResult(value!));
 
         var payload = new ConsoleMessagesPayload(["log-entry"], ["res"]);
-        await service.PublishConsoleMessagesAsync("user2", payload);
+        await service.PublishConsoleMessagesAsync("user2", payload, token);
 
-        var result = await tcs.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        var result = await tcs.Task.WaitAsync(TimeSpan.FromSeconds(5), token);
         Assert.Contains("log-entry", result);
         await subscriber.UnsubscribeAsync(RedisChannel.Literal("user:user2/console"));
     }
@@ -52,19 +54,20 @@ public sealed class NotificationServiceTests(MongoRedisFixture fixture) : IClass
     public async Task PublishConsoleErrorAsync_PersistsNotificationAndPublishes()
     {
         var service = CreateService();
-        await NotificationCollection.DeleteManyAsync(FilterDefinition<UserNotificationDocument>.Empty);
+        var token = TestContext.Current.CancellationToken;
+        await NotificationCollection.DeleteManyAsync(FilterDefinition<UserNotificationDocument>.Empty, cancellationToken: token);
 
         var mux = fixture.RedisProvider.GetConnection();
         var subscriber = mux.GetSubscriber();
         var tcs = CreateTcs();
         await subscriber.SubscribeAsync(RedisChannel.Literal("user:err/console"), (_, value) => tcs.TrySetResult(value!));
 
-        await service.PublishConsoleErrorAsync("err", "stack trace");
+        await service.PublishConsoleErrorAsync("err", "stack trace", token);
 
-        var payload = await tcs.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        var payload = await tcs.Task.WaitAsync(TimeSpan.FromSeconds(5), token);
         Assert.Contains("stack trace", payload);
 
-        var doc = await NotificationCollection.Find(d => d.UserId == "err" && d.Type == "error").FirstOrDefaultAsync();
+        var doc = await NotificationCollection.Find(d => d.UserId == "err" && d.Type == "error").FirstOrDefaultAsync(token);
         Assert.NotNull(doc);
         Assert.Equal(1, doc!.Count);
 
@@ -78,11 +81,12 @@ public sealed class NotificationServiceTests(MongoRedisFixture fixture) : IClass
         var mux = fixture.RedisProvider.GetConnection();
         var subscriber = mux.GetSubscriber();
         var tcs = CreateTcs();
+        var token = TestContext.Current.CancellationToken;
         await subscriber.SubscribeAsync(RedisChannel.Literal("roomsDone"), (_, value) => tcs.TrySetResult(value!));
 
-        await service.NotifyRoomsDoneAsync(12345);
+        await service.NotifyRoomsDoneAsync(12345, token);
 
-        var payload = await tcs.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        var payload = await tcs.Task.WaitAsync(TimeSpan.FromSeconds(5), token);
         Assert.Equal("12345", payload);
         await subscriber.UnsubscribeAsync(RedisChannel.Literal("roomsDone"));
     }

@@ -1,29 +1,29 @@
 ﻿namespace ScreepsDotNet.Backend.Http.Tests.Integration;
 
 using System;
-using System.Net.Http.Json;
 using System.Text.Json;
 using MongoDB.Driver;
 using ScreepsDotNet.Backend.Core.Constants;
 using ScreepsDotNet.Backend.Core.Seeding;
 using ScreepsDotNet.Backend.Http.Routing;
+using ScreepsDotNet.Backend.Http.Tests.TestSupport;
 using ScreepsDotNet.Storage.MongoRedis.Repositories.Documents;
 
 [Collection(IntegrationTestSuiteDefinition.Name)]
 public sealed class FlagEndpointsIntegrationTests(IntegrationTestHarness harness) : IAsyncLifetime
 {
-    private readonly HttpClient _client = harness.Factory.CreateClient();
+    private readonly TestHttpClient _client = new(harness.Factory.CreateClient());
 
-    public Task InitializeAsync() => harness.ResetStateAsync();
+    public ValueTask InitializeAsync() => new(harness.ResetStateAsync());
 
-    public Task DisposeAsync() => Task.CompletedTask;
+    public ValueTask DisposeAsync() => ValueTask.CompletedTask;
 
     private async Task<string> LoginAsync()
     {
         var request = new { ticket = SeedDataDefaults.Auth.Ticket };
         var response = await _client.PostAsJsonAsync(ApiRoutes.AuthSteamTicket, request);
         response.EnsureSuccessStatusCode();
-        var content = await response.Content.ReadFromJsonAsync<JsonElement>();
+        var content = await TestHttpClient.ReadFromJsonAsync<JsonElement>(response);
         return content.GetProperty("token").GetString()!;
     }
 
@@ -33,10 +33,10 @@ public sealed class FlagEndpointsIntegrationTests(IntegrationTestHarness harness
         var token = await LoginAsync();
         _client.DefaultRequestHeaders.Add("X-Token", token);
 
-        var response = await _client.PostAsync(ApiRoutes.Game.World.GenerateUniqueFlagName, null);
+        var response = await _client.SendAsync(new HttpRequestMessage(HttpMethod.Post, ApiRoutes.Game.World.GenerateUniqueFlagName));
 
         response.EnsureSuccessStatusCode();
-        var payload = await response.Content.ReadFromJsonAsync<JsonElement>();
+        var payload = await TestHttpClient.ReadFromJsonAsync<JsonElement>(response);
         Assert.StartsWith("Flag", payload.GetProperty("name").GetString()!, StringComparison.OrdinalIgnoreCase);
     }
 
@@ -51,7 +51,7 @@ public sealed class FlagEndpointsIntegrationTests(IntegrationTestHarness harness
             UserId = SeedDataDefaults.User.Id,
             Room = "W1N1",
             Data = "0|0|1|1"
-        });
+        }, cancellationToken: TestContext.Current.CancellationToken);
 
         _client.DefaultRequestHeaders.Add("X-Token", token);
         var response = await _client.PostAsJsonAsync(ApiRoutes.Game.World.CheckUniqueFlagName, new { name = "DuplicateFlag" });
@@ -82,12 +82,12 @@ public sealed class FlagEndpointsIntegrationTests(IntegrationTestHarness harness
 
         // Assert
         response.EnsureSuccessStatusCode();
-        var content = await response.Content.ReadFromJsonAsync<JsonElement>();
+        var content = await TestHttpClient.ReadFromJsonAsync<JsonElement>(response);
         Assert.Equal(1, content.GetProperty("ok").GetInt32());
 
         // Verify database state
         var flagsCollection = harness.Database.GetCollection<RoomFlagDocument>("rooms.flags");
-        var flag = await flagsCollection.Find(f => f.Id == name).FirstOrDefaultAsync();
+        var flag = await flagsCollection.Find(f => f.Id == name).FirstOrDefaultAsync(TestContext.Current.CancellationToken);
         Assert.NotNull(flag);
         Assert.Equal(SeedDataDefaults.User.Id, flag.UserId);
         Assert.Equal(room, flag.Room);
@@ -117,7 +117,7 @@ public sealed class FlagEndpointsIntegrationTests(IntegrationTestHarness harness
         response.EnsureSuccessStatusCode();
 
         var flagsCollection = harness.Database.GetCollection<RoomFlagDocument>("rooms.flags");
-        var flag = await flagsCollection.Find(f => f.Id == name).FirstOrDefaultAsync();
+        var flag = await flagsCollection.Find(f => f.Id == name).FirstOrDefaultAsync(TestContext.Current.CancellationToken);
         Assert.NotNull(flag);
         Assert.Equal(shard, flag.Shard);
     }
@@ -135,7 +135,7 @@ public sealed class FlagEndpointsIntegrationTests(IntegrationTestHarness harness
             UserId = SeedDataDefaults.User.Id,
             Room = "W1N1",
             Data = "10|10|1|1"
-        });
+        }, cancellationToken: TestContext.Current.CancellationToken);
 
         var request = new
         {
@@ -155,7 +155,7 @@ public sealed class FlagEndpointsIntegrationTests(IntegrationTestHarness harness
         response.EnsureSuccessStatusCode();
 
         // Verify database state
-        var flags = await flagsCollection.Find(f => f.Id == name).ToListAsync();
+        var flags = await flagsCollection.Find(f => f.Id == name).ToListAsync(TestContext.Current.CancellationToken);
         Assert.Single(flags);
         var flag = flags[0];
         Assert.Equal("W2N2", flag.Room);
@@ -176,7 +176,7 @@ public sealed class FlagEndpointsIntegrationTests(IntegrationTestHarness harness
             UserId = SeedDataDefaults.User.Id,
             Room = room,
             Data = "10|10|1|1"
-        });
+        }, cancellationToken: TestContext.Current.CancellationToken);
 
         var request = new
         {
@@ -194,7 +194,7 @@ public sealed class FlagEndpointsIntegrationTests(IntegrationTestHarness harness
         response.EnsureSuccessStatusCode();
 
         // Verify database state
-        var flag = await flagsCollection.Find(f => f.Id == name).FirstOrDefaultAsync();
+        var flag = await flagsCollection.Find(f => f.Id == name).FirstOrDefaultAsync(TestContext.Current.CancellationToken);
         Assert.Equal("10|10|2|4", flag.Data);
     }
 
@@ -212,7 +212,7 @@ public sealed class FlagEndpointsIntegrationTests(IntegrationTestHarness harness
             UserId = SeedDataDefaults.User.Id,
             Room = room,
             Data = "10|10|1|1"
-        });
+        }, cancellationToken: TestContext.Current.CancellationToken);
 
         var request = new
         {
@@ -228,7 +228,7 @@ public sealed class FlagEndpointsIntegrationTests(IntegrationTestHarness harness
         response.EnsureSuccessStatusCode();
 
         // Verify database state
-        var flag = await flagsCollection.Find(f => f.Id == name).FirstOrDefaultAsync();
+        var flag = await flagsCollection.Find(f => f.Id == name).FirstOrDefaultAsync(TestContext.Current.CancellationToken);
         Assert.Null(flag);
     }
 

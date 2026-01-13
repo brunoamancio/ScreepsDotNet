@@ -34,7 +34,7 @@ public sealed class SystemCommandsIntegrationFixture : IAsyncLifetime
     public IRedisConnectionProvider RedisProvider => _redisProvider;
     public IConnectionMultiplexer RedisConnection => _redisProvider.GetConnection();
 
-    public async Task InitializeAsync()
+    public async ValueTask InitializeAsync()
     {
         await _mongoContainer.StartAsync();
         await _redisContainer.StartAsync();
@@ -68,7 +68,7 @@ public sealed class SystemCommandsIntegrationFixture : IAsyncLifetime
     public IMongoCollection<TDocument> GetCollection<TDocument>(string name)
         => Database.GetCollection<TDocument>(name);
 
-    public async Task DisposeAsync()
+    public async ValueTask DisposeAsync()
     {
         _redisProvider.Dispose();
         await _mongoContainer.DisposeAsync();

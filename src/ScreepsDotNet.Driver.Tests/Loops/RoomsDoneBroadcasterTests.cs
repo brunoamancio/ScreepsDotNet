@@ -24,10 +24,11 @@ public sealed class RoomsDoneBroadcasterTests
                 received.Add(tick);
         });
 
-        await broadcaster.PublishAsync(1);
-        await broadcaster.PublishAsync(2);
-        await Task.Delay(150);
-        await broadcaster.PublishAsync(3);
+        var token = TestContext.Current.CancellationToken;
+        await broadcaster.PublishAsync(1, token);
+        await broadcaster.PublishAsync(2, token);
+        await Task.Delay(150, token);
+        await broadcaster.PublishAsync(3, token);
 
         Assert.Equal(ExpectedSequence, received);
     }

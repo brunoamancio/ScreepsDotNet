@@ -16,7 +16,7 @@ public sealed class RootCommandTests
             Format = "markdown"
         };
 
-        var exitCode = await command.ExecuteAsync(null!, settings, CancellationToken.None);
+        var exitCode = await command.ExecuteAsync(null!, settings, TestContext.Current.CancellationToken);
 
         Assert.Equal(0, exitCode);
         Assert.True(formatter.MarkdownRequested);

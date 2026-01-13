@@ -37,6 +37,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IHistoryService, HistoryService>();
         services.AddSingleton<INotificationService, NotificationService>();
         services.AddSingleton<IPathfinderService, PathfinderService>();
+        services.AddOptions<PathfinderServiceOptions>();
         services.AddSingleton<IDriverLoopHooks, DriverLoopHooks>();
         services.AddOptions<RuntimeSandboxOptions>();
         services.AddOptions<MainLoopOptions>();

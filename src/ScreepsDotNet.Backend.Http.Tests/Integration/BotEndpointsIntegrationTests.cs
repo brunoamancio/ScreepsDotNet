@@ -1,22 +1,22 @@
-﻿namespace ScreepsDotNet.Backend.Http.Tests.Integration;
+namespace ScreepsDotNet.Backend.Http.Tests.Integration;
 
 using System.Net;
-using System.Net.Http.Json;
 using System.Text.Json;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using ScreepsDotNet.Backend.Core.Seeding;
 using ScreepsDotNet.Backend.Http.Routing;
+using ScreepsDotNet.Backend.Http.Tests.TestSupport;
 using Xunit.Sdk;
 
 [Collection(IntegrationTestSuiteDefinition.Name)]
 public sealed class BotEndpointsIntegrationTests(IntegrationTestHarness harness) : IAsyncLifetime
 {
-    private readonly HttpClient _client = harness.Factory.CreateClient();
+    private readonly TestHttpClient _client = new(harness.Factory.CreateClient());
 
-    public Task InitializeAsync() => harness.ResetStateAsync();
+    public ValueTask InitializeAsync() => new(harness.ResetStateAsync());
 
-    public Task DisposeAsync() => Task.CompletedTask;
+    public ValueTask DisposeAsync() => ValueTask.CompletedTask;
 
     [Fact]
     public async Task ListBots_ReturnsDefinitions()
@@ -59,7 +59,7 @@ public sealed class BotEndpointsIntegrationTests(IntegrationTestHarness harness)
         Assert.Equal("AlphaCommander", username);
 
         var usersCollection = harness.Database.GetCollection<BsonDocument>("users");
-        var userDoc = await usersCollection.Find(Builders<BsonDocument>.Filter.Eq("_id", userId)).FirstOrDefaultAsync();
+        var userDoc = await usersCollection.Find(Builders<BsonDocument>.Filter.Eq("_id", userId)).FirstOrDefaultAsync(TestContext.Current.CancellationToken);
         Assert.NotNull(userDoc);
         Assert.Equal("alpha", userDoc["bot"].AsString);
         Assert.Equal("alphacommander", userDoc["usernameLower"].AsString);
@@ -69,7 +69,7 @@ public sealed class BotEndpointsIntegrationTests(IntegrationTestHarness harness)
             Builders<BsonDocument>.Filter.Eq("room", room),
             Builders<BsonDocument>.Filter.Eq("type", "spawn"),
             Builders<BsonDocument>.Filter.Eq("user", userId)))
-            .FirstOrDefaultAsync();
+            .FirstOrDefaultAsync(TestContext.Current.CancellationToken);
         Assert.NotNull(spawnDoc);
     }
 
@@ -105,7 +105,7 @@ public sealed class BotEndpointsIntegrationTests(IntegrationTestHarness harness)
         Assert.Equal(1, content.GetProperty("ok").GetInt32());
 
         var usersCollection = harness.Database.GetCollection<BsonDocument>("users");
-        var userDoc = await usersCollection.Find(Builders<BsonDocument>.Filter.Eq("username", username)).FirstOrDefaultAsync();
+        var userDoc = await usersCollection.Find(Builders<BsonDocument>.Filter.Eq("username", username)).FirstOrDefaultAsync(TestContext.Current.CancellationToken);
         Assert.Null(userDoc);
     }
 
@@ -119,7 +119,7 @@ public sealed class BotEndpointsIntegrationTests(IntegrationTestHarness harness)
         var response = await _client.PostAsJsonAsync(ApiRoutes.Game.Bot.Remove, payload);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-        var content = await response.Content.ReadFromJsonAsync<JsonElement>();
+        var content = await TestHttpClient.ReadFromJsonAsync<JsonElement>(response);
         Assert.Equal("user not found", content.GetProperty("error").GetString());
     }
 
@@ -153,11 +153,11 @@ public sealed class BotEndpointsIntegrationTests(IntegrationTestHarness harness)
             Builders<BsonDocument>.Filter.Eq("shard", shard),
             Builders<BsonDocument>.Filter.Eq("type", "spawn"),
             Builders<BsonDocument>.Filter.Eq("user", userId));
-        var spawnDocument = await objectsCollection.Find(spawnFilter).FirstOrDefaultAsync();
+        var spawnDocument = await objectsCollection.Find(spawnFilter).FirstOrDefaultAsync(TestContext.Current.CancellationToken);
         Assert.NotNull(spawnDocument);
 
         var roomsCollection = harness.Database.GetCollection<BsonDocument>("rooms");
-        var roomDocument = await roomsCollection.Find(Builders<BsonDocument>.Filter.Eq("_id", room)).FirstOrDefaultAsync();
+        var roomDocument = await roomsCollection.Find(Builders<BsonDocument>.Filter.Eq("_id", room)).FirstOrDefaultAsync(TestContext.Current.CancellationToken);
         Assert.NotNull(roomDocument);
         Assert.Equal(shard, roomDocument["shard"].AsString);
     }
@@ -183,13 +183,13 @@ public sealed class BotEndpointsIntegrationTests(IntegrationTestHarness harness)
         response.EnsureSuccessStatusCode();
 
         var users = harness.Database.GetCollection<BsonDocument>("users");
-        Assert.True(await users.Find(Builders<BsonDocument>.Filter.Eq("username", primaryUsername)).AnyAsync());
-        Assert.False(await users.Find(Builders<BsonDocument>.Filter.Eq("username", shardUsername)).AnyAsync());
+        Assert.True(await users.Find(Builders<BsonDocument>.Filter.Eq("username", primaryUsername)).AnyAsync(TestContext.Current.CancellationToken));
+        Assert.False(await users.Find(Builders<BsonDocument>.Filter.Eq("username", shardUsername)).AnyAsync(TestContext.Current.CancellationToken));
 
         var objects = harness.Database.GetCollection<BsonDocument>("rooms.objects");
         Assert.True(await objects.Find(Builders<BsonDocument>.Filter.And(
             Builders<BsonDocument>.Filter.Eq("room", primaryRoom),
-            Builders<BsonDocument>.Filter.Eq("type", "spawn"))).AnyAsync());
+            Builders<BsonDocument>.Filter.Eq("type", "spawn"))).AnyAsync(TestContext.Current.CancellationToken));
     }
 
     private async Task<JsonElement> SpawnBotAsync(string room, string? shard = null, string? username = null)
@@ -210,7 +210,7 @@ public sealed class BotEndpointsIntegrationTests(IntegrationTestHarness harness)
         var request = new { ticket = SeedDataDefaults.Auth.Ticket };
         var response = await _client.PostAsJsonAsync(ApiRoutes.AuthSteamTicket, request);
         response.EnsureSuccessStatusCode();
-        var content = await response.Content.ReadFromJsonAsync<JsonElement>();
+        var content = await TestHttpClient.ReadFromJsonAsync<JsonElement>(response);
         return content.GetProperty("token").GetString()!;
     }
 
@@ -229,7 +229,7 @@ public sealed class BotEndpointsIntegrationTests(IntegrationTestHarness harness)
             roomDoc["shard"] = shard;
         await roomsCollection.ReplaceOneAsync(new BsonDocument("_id", room),
                                               roomDoc,
-                                              new ReplaceOptions { IsUpsert = true });
+                                              new ReplaceOptions { IsUpsert = true }, cancellationToken: TestContext.Current.CancellationToken);
 
         var terrainCollection = harness.Database.GetCollection<BsonDocument>("rooms.terrain");
         var terrainDoc = new BsonDocument { ["room"] = room, ["terrain"] = new string('0', 2500) };
@@ -237,10 +237,10 @@ public sealed class BotEndpointsIntegrationTests(IntegrationTestHarness harness)
             terrainDoc["shard"] = shard;
         await terrainCollection.ReplaceOneAsync(new BsonDocument("room", room),
                                                 terrainDoc,
-                                                new ReplaceOptions { IsUpsert = true });
+                                                new ReplaceOptions { IsUpsert = true }, cancellationToken: TestContext.Current.CancellationToken);
 
         var objectsCollection = harness.Database.GetCollection<BsonDocument>("rooms.objects");
-        await objectsCollection.DeleteManyAsync(Builders<BsonDocument>.Filter.Eq("room", room));
+        await objectsCollection.DeleteManyAsync(Builders<BsonDocument>.Filter.Eq("room", room), cancellationToken: TestContext.Current.CancellationToken);
         var controllerDoc = new BsonDocument
         {
             ["type"] = "controller",
@@ -251,11 +251,11 @@ public sealed class BotEndpointsIntegrationTests(IntegrationTestHarness harness)
         };
         if (shard is not null)
             controllerDoc["shard"] = shard;
-        await objectsCollection.InsertOneAsync(controllerDoc);
+        await objectsCollection.InsertOneAsync(controllerDoc, cancellationToken: TestContext.Current.CancellationToken);
     }
     private static async Task<JsonElement> ReadJsonAsync(HttpResponseMessage response)
     {
-        var json = await response.Content.ReadAsStringAsync();
+        var json = await TestHttpClient.ReadAsStringAsync(response);
         if (!response.IsSuccessStatusCode)
             throw new XunitException($"Expected success but received {(int)response.StatusCode} {response.StatusCode}. Payload: {json}");
 

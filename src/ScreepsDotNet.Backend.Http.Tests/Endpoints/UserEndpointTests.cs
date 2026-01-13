@@ -9,12 +9,13 @@ using ScreepsDotNet.Backend.Core.Services;
 using ScreepsDotNet.Backend.Http.Constants;
 using ScreepsDotNet.Backend.Http.Routing;
 using ScreepsDotNet.Backend.Http.Tests.Web;
+using ScreepsDotNet.Backend.Http.Tests.TestSupport;
 
 namespace ScreepsDotNet.Backend.Http.Tests.Endpoints;
 
 public class UserEndpointTests : IClassFixture<TestWebApplicationFactory>
 {
-    private readonly HttpClient _client;
+    private readonly TestHttpClient _client;
     private readonly FakeUserWorldRepository _userWorldRepository;
     private readonly FakeUserRepository _userRepository;
     private readonly FakeUserRespawnService _userRespawnService;
@@ -36,12 +37,13 @@ public class UserEndpointTests : IClassFixture<TestWebApplicationFactory>
 
     public UserEndpointTests(TestWebApplicationFactory factory)
     {
-        _client = factory.CreateClient();
+        _client = new TestHttpClient(factory.CreateClient());
         var services = factory.Services;
         _userWorldRepository = (FakeUserWorldRepository)services.GetRequiredService<IUserWorldRepository>();
         _userRepository = (FakeUserRepository)services.GetRequiredService<IUserRepository>();
         _userRespawnService = (FakeUserRespawnService)services.GetRequiredService<IUserRespawnService>();
     }
+
 
     [Fact]
     public async Task WorldStartRoom_WithoutToken_ReturnsUnauthorized()
@@ -49,7 +51,7 @@ public class UserEndpointTests : IClassFixture<TestWebApplicationFactory>
         var response = await _client.GetAsync(ApiRoutes.User.WorldStartRoom);
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
-        using var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        using var payload = JsonDocument.Parse(await TestHttpClient.ReadAsStringAsync(response));
         Assert.Equal(AuthResponseMessages.Unauthorized, payload.RootElement.GetProperty(AuthResponseFields.Error).GetString());
     }
 
@@ -65,7 +67,7 @@ public class UserEndpointTests : IClassFixture<TestWebApplicationFactory>
         var response = await _client.SendAsync(request);
 
         response.EnsureSuccessStatusCode();
-        using var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        using var payload = JsonDocument.Parse(await TestHttpClient.ReadAsStringAsync(response));
         var rooms = payload.RootElement.GetProperty(UserResponseFields.Room).EnumerateArray().Select(element => element.GetString()).ToList();
         Assert.Contains(CustomControllerRoom, rooms);
     }
@@ -82,7 +84,7 @@ public class UserEndpointTests : IClassFixture<TestWebApplicationFactory>
         var response = await _client.SendAsync(request);
 
         response.EnsureSuccessStatusCode();
-        using var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        using var payload = JsonDocument.Parse(await TestHttpClient.ReadAsStringAsync(response));
         var expectedStatus = nameof(UserWorldStatus.Lost).ToLowerInvariant();
         Assert.Equal(expectedStatus, payload.RootElement.GetProperty(UserResponseFields.Status).GetString());
     }
@@ -97,7 +99,7 @@ public class UserEndpointTests : IClassFixture<TestWebApplicationFactory>
         var response = await _client.SendAsync(request);
 
         response.EnsureSuccessStatusCode();
-        using var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        using var payload = JsonDocument.Parse(await TestHttpClient.ReadAsStringAsync(response));
         Assert.Empty(payload.RootElement.GetProperty(UserResponseFields.Rooms).EnumerateArray());
     }
 
@@ -113,7 +115,7 @@ public class UserEndpointTests : IClassFixture<TestWebApplicationFactory>
         var response = await _client.SendAsync(request);
 
         response.EnsureSuccessStatusCode();
-        using var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        using var payload = JsonDocument.Parse(await TestHttpClient.ReadAsStringAsync(response));
         Assert.True(payload.RootElement.TryGetProperty(UserResponseFields.Timestamp, out _));
     }
 
@@ -140,7 +142,7 @@ public class UserEndpointTests : IClassFixture<TestWebApplicationFactory>
         var response = await _client.SendAsync(request);
 
         response.EnsureSuccessStatusCode();
-        using var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        using var payload = JsonDocument.Parse(await TestHttpClient.ReadAsStringAsync(response));
         var data = payload.RootElement.GetProperty(UserResponseFields.Data).GetString();
         Assert.False(string.IsNullOrWhiteSpace(data));
         Assert.StartsWith(MemoryConstants.GzipPrefix, data, StringComparison.Ordinal);
@@ -184,7 +186,7 @@ public class UserEndpointTests : IClassFixture<TestWebApplicationFactory>
         var response = await _client.SendAsync(request);
 
         response.EnsureSuccessStatusCode();
-        using var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        using var payload = JsonDocument.Parse(await TestHttpClient.ReadAsStringAsync(response));
         Assert.Equal(string.Empty, payload.RootElement.GetProperty(UserResponseFields.Data).GetString());
     }
 
@@ -199,7 +201,7 @@ public class UserEndpointTests : IClassFixture<TestWebApplicationFactory>
         var response = await _client.SendAsync(request);
 
         response.EnsureSuccessStatusCode();
-        using var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        using var payload = JsonDocument.Parse(await TestHttpClient.ReadAsStringAsync(response));
         Assert.Equal(JsonValueKind.Object, payload.RootElement.ValueKind);
         Assert.Empty(payload.RootElement.EnumerateObject());
     }
@@ -215,7 +217,7 @@ public class UserEndpointTests : IClassFixture<TestWebApplicationFactory>
         var response = await _client.SendAsync(request);
 
         response.EnsureSuccessStatusCode();
-        using var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        using var payload = JsonDocument.Parse(await TestHttpClient.ReadAsStringAsync(response));
         var root = payload.RootElement;
         var rooms = root.GetProperty(UserResponseFields.Rooms).EnumerateArray().Select(element => element.GetString()!).ToList();
         var expectedRooms = SampleRooms.Select(RoomReferenceParser.Format).ToList();
@@ -257,7 +259,7 @@ public class UserEndpointTests : IClassFixture<TestWebApplicationFactory>
         var response = await _client.SendAsync(request);
 
         response.EnsureSuccessStatusCode();
-        using var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        using var payload = JsonDocument.Parse(await TestHttpClient.ReadAsStringAsync(response));
         Assert.True(payload.RootElement.TryGetProperty(UserResponseFields.Timestamp, out _));
     }
 
@@ -285,7 +287,7 @@ public class UserEndpointTests : IClassFixture<TestWebApplicationFactory>
         var response = await _client.SendAsync(request);
 
         response.EnsureSuccessStatusCode();
-        using var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        using var payload = JsonDocument.Parse(await TestHttpClient.ReadAsStringAsync(response));
         Assert.True(payload.RootElement.TryGetProperty(UserResponseFields.Timestamp, out _));
     }
 
@@ -300,7 +302,7 @@ public class UserEndpointTests : IClassFixture<TestWebApplicationFactory>
         var response = await _client.SendAsync(request);
 
         response.EnsureSuccessStatusCode();
-        using var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        using var payload = JsonDocument.Parse(await TestHttpClient.ReadAsStringAsync(response));
         Assert.True(payload.RootElement.TryGetProperty(UserResponseFields.Timestamp, out _));
     }
 
@@ -314,7 +316,7 @@ public class UserEndpointTests : IClassFixture<TestWebApplicationFactory>
         var response = await _client.SendAsync(request);
 
         response.EnsureSuccessStatusCode();
-        using var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        using var payload = JsonDocument.Parse(await TestHttpClient.ReadAsStringAsync(response));
         var root = payload.RootElement;
         Assert.Equal(0, root.GetProperty(UserResponseFields.Page).GetInt32());
         Assert.True(root.GetProperty(UserResponseFields.List).EnumerateArray().Any());
@@ -339,7 +341,7 @@ public class UserEndpointTests : IClassFixture<TestWebApplicationFactory>
         var response = await _client.SendAsync(request);
 
         response.EnsureSuccessStatusCode();
-        using var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        using var payload = JsonDocument.Parse(await TestHttpClient.ReadAsStringAsync(response));
         Assert.True(payload.RootElement.TryGetProperty(UserResponseFields.Timestamp, out _));
     }
 
@@ -353,7 +355,7 @@ public class UserEndpointTests : IClassFixture<TestWebApplicationFactory>
         var response = await _client.SendAsync(request);
 
         response.EnsureSuccessStatusCode();
-        using var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        using var payload = JsonDocument.Parse(await TestHttpClient.ReadAsStringAsync(response));
         Assert.Equal(JsonValueKind.Object, payload.RootElement.ValueKind);
         Assert.Empty(payload.RootElement.EnumerateObject());
     }
@@ -372,7 +374,7 @@ public class UserEndpointTests : IClassFixture<TestWebApplicationFactory>
         var response = await _client.GetAsync(ApiRoutes.User.Find + UsernameQueryParameter);
 
         response.EnsureSuccessStatusCode();
-        using var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        using var payload = JsonDocument.Parse(await TestHttpClient.ReadAsStringAsync(response));
         var userElement = payload.RootElement.GetProperty(UserResponseFields.User);
         Assert.Equal(AuthTestValues.UserId, userElement.GetProperty(UserResponseFields.Id).GetString());
     }
@@ -393,7 +395,7 @@ public class UserEndpointTests : IClassFixture<TestWebApplicationFactory>
         var response = await _client.GetAsync(ApiRoutes.User.Rooms + RoomsQueryParameter);
 
         response.EnsureSuccessStatusCode();
-        using var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        using var payload = JsonDocument.Parse(await TestHttpClient.ReadAsStringAsync(response));
         var rooms = payload.RootElement.GetProperty(UserResponseFields.Rooms).EnumerateArray().Select(element => element.GetString()).ToList();
         Assert.Contains(RoomReferenceParser.Format(SampleRooms[0]), rooms);
         Assert.Contains(RoomReferenceParser.Format(SampleRooms[1]), rooms);
@@ -413,7 +415,7 @@ public class UserEndpointTests : IClassFixture<TestWebApplicationFactory>
         var response = await _client.GetAsync(ApiRoutes.User.Stats + StatsValidQueryParameter);
 
         response.EnsureSuccessStatusCode();
-        using var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        using var payload = JsonDocument.Parse(await TestHttpClient.ReadAsStringAsync(response));
         var stats = payload.RootElement.GetProperty(UserResponseFields.Stats);
         Assert.Equal(int.Parse(StatsValidInterval, System.Globalization.CultureInfo.InvariantCulture),
                      stats.GetProperty(UserResponseFields.Interval).GetInt32());
@@ -459,7 +461,7 @@ public class UserEndpointTests : IClassFixture<TestWebApplicationFactory>
 
         response.EnsureSuccessStatusCode();
         Assert.Equal(ContentTypes.Svg, response.Content.Headers.ContentType?.MediaType);
-        var svg = await response.Content.ReadAsStringAsync();
+        var svg = await TestHttpClient.ReadAsStringAsync(response);
         Assert.Contains("<svg", svg, StringComparison.OrdinalIgnoreCase);
     }
 
@@ -473,7 +475,7 @@ public class UserEndpointTests : IClassFixture<TestWebApplicationFactory>
         var response = await _client.SendAsync(request);
 
         response.EnsureSuccessStatusCode();
-        using var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        using var payload = JsonDocument.Parse(await TestHttpClient.ReadAsStringAsync(response));
         var list = payload.RootElement.GetProperty(UserResponseFields.List);
         Assert.True(list.GetArrayLength() > 0);
     }
@@ -488,7 +490,7 @@ public class UserEndpointTests : IClassFixture<TestWebApplicationFactory>
         var response = await _client.SendAsync(request);
 
         response.EnsureSuccessStatusCode();
-        using var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        using var payload = JsonDocument.Parse(await TestHttpClient.ReadAsStringAsync(response));
         Assert.True(payload.RootElement.TryGetProperty(UserResponseFields.Modules, out _));
     }
 
@@ -605,7 +607,7 @@ public class UserEndpointTests : IClassFixture<TestWebApplicationFactory>
         });
 
         response.EnsureSuccessStatusCode();
-        using var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        using var payload = JsonDocument.Parse(await TestHttpClient.ReadAsStringAsync(response));
         return payload.RootElement.GetProperty(AuthResponseFields.Token).GetString()!;
     }
 }

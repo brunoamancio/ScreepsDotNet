@@ -7,16 +7,17 @@ using MongoDB.Driver;
 using ScreepsDotNet.Backend.Core.Constants;
 using ScreepsDotNet.Backend.Core.Seeding;
 using ScreepsDotNet.Backend.Http.Routing;
+using ScreepsDotNet.Backend.Http.Tests.TestSupport;
 using StackExchange.Redis;
 
 [Collection(IntegrationTestSuiteDefinition.Name)]
 public sealed class SystemEndpointsIntegrationTests(IntegrationTestHarness harness) : IAsyncLifetime
 {
-    private readonly HttpClient _client = harness.Factory.CreateClient();
+    private readonly TestHttpClient _client = new(harness.Factory.CreateClient());
 
-    public Task InitializeAsync() => harness.ResetStateAsync();
+    public ValueTask InitializeAsync() => new(harness.ResetStateAsync());
 
-    public Task DisposeAsync() => Task.CompletedTask;
+    public ValueTask DisposeAsync() => ValueTask.CompletedTask;
 
     [Fact]
     public async Task Status_ReturnsPauseState()
@@ -40,11 +41,11 @@ public sealed class SystemEndpointsIntegrationTests(IntegrationTestHarness harne
         var token = await LoginAsync();
         SetAuth(token);
 
-        var pauseResponse = await _client.PostAsync(ApiRoutes.Game.System.Pause, null);
+        var pauseResponse = await _client.SendAsync(new HttpRequestMessage(HttpMethod.Post, ApiRoutes.Game.System.Pause));
         pauseResponse.EnsureSuccessStatusCode();
         Assert.Equal("1", await GetRedisValue(SystemControlConstants.MainLoopPausedKey));
 
-        var resumeResponse = await _client.PostAsync(ApiRoutes.Game.System.Resume, null);
+        var resumeResponse = await _client.SendAsync(new HttpRequestMessage(HttpMethod.Post, ApiRoutes.Game.System.Resume));
         resumeResponse.EnsureSuccessStatusCode();
         Assert.Equal("0", await GetRedisValue(SystemControlConstants.MainLoopPausedKey));
     }
@@ -82,7 +83,7 @@ public sealed class SystemEndpointsIntegrationTests(IntegrationTestHarness harne
         var messageResponse = await _client.PostAsJsonAsync(ApiRoutes.Game.System.Message, new { message = payload });
         messageResponse.EnsureSuccessStatusCode();
 
-        var received = await tcs.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        var received = await tcs.Task.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
         Assert.Equal(payload, received);
         await subscriber.DisposeAsync();
     }
@@ -107,12 +108,13 @@ public sealed class SystemEndpointsIntegrationTests(IntegrationTestHarness harne
         var users = harness.Database.GetCollection<BsonDocument>("users");
         var filter = Builders<BsonDocument>.Filter.Eq("_id", SeedDataDefaults.User.Id);
         await users.UpdateOneAsync(filter,
-                                   Builders<BsonDocument>.Update.Set("username", "TamperedUser"));
+                                   Builders<BsonDocument>.Update.Set("username", "TamperedUser"),
+                                   cancellationToken: TestContext.Current.CancellationToken);
 
         var response = await _client.PostAsJsonAsync(ApiRoutes.Game.System.Reset, new { confirm = "RESET" });
         response.EnsureSuccessStatusCode();
 
-        var restored = await users.Find(filter).FirstOrDefaultAsync();
+        var restored = await users.Find(filter).FirstOrDefaultAsync(TestContext.Current.CancellationToken);
         Assert.NotNull(restored);
         Assert.Equal(SeedDataDefaults.User.Username, restored["username"].AsString);
     }
@@ -138,12 +140,13 @@ public sealed class SystemEndpointsIntegrationTests(IntegrationTestHarness harne
         var users = harness.Database.GetCollection<BsonDocument>("users");
         var filter = Builders<BsonDocument>.Filter.Eq("_id", SeedDataDefaults.User.Id);
         await users.UpdateOneAsync(filter,
-                                   Builders<BsonDocument>.Update.Set("username", "TamperedStorageUser"));
+                                   Builders<BsonDocument>.Update.Set("username", "TamperedStorageUser"),
+                                   cancellationToken: TestContext.Current.CancellationToken);
 
         var response = await _client.PostAsJsonAsync(ApiRoutes.Game.System.StorageReseed, new { confirm = "RESET" });
         response.EnsureSuccessStatusCode();
 
-        var restored = await users.Find(filter).FirstOrDefaultAsync();
+        var restored = await users.Find(filter).FirstOrDefaultAsync(TestContext.Current.CancellationToken);
         Assert.NotNull(restored);
         Assert.Equal(SeedDataDefaults.User.Username, restored["username"].AsString);
     }
@@ -153,7 +156,7 @@ public sealed class SystemEndpointsIntegrationTests(IntegrationTestHarness harne
         var request = new { ticket = SeedDataDefaults.Auth.Ticket };
         var response = await _client.PostAsJsonAsync(ApiRoutes.AuthSteamTicket, request);
         response.EnsureSuccessStatusCode();
-        var content = await response.Content.ReadFromJsonAsync<JsonElement>();
+        var content = await TestHttpClient.ReadFromJsonAsync<JsonElement>(response);
         return content.GetProperty("token").GetString()!;
     }
 
@@ -179,7 +182,7 @@ public sealed class SystemEndpointsIntegrationTests(IntegrationTestHarness harne
 
     private static async Task<JsonElement> ReadJsonAsync(HttpResponseMessage response)
     {
-        var json = await response.Content.ReadAsStringAsync();
+        var json = await TestHttpClient.ReadAsStringAsync(response);
         return JsonSerializer.Deserialize<JsonElement>(json);
     }
 }

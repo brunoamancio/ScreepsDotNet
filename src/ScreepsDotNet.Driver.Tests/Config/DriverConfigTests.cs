@@ -10,13 +10,14 @@ public sealed class DriverConfigTests
     {
         var environment = new FakeEnvironmentService();
         var config = new DriverConfig(environment);
+        var token = TestContext.Current.CancellationToken;
         var received = new TaskCompletionSource<object?[]>(TaskCreationOptions.RunContinuationsAsynchronously);
 
         using var subscription = config.Subscribe("mainLoopStage", args => received.TrySetResult(args ?? []));
 
         config.EmitMainLoopStage("start", new { Rooms = 1 });
 
-        var args = await received.Task.WaitAsync(TimeSpan.FromSeconds(1));
+        var args = await received.Task.WaitAsync(TimeSpan.FromSeconds(1), token);
         Assert.NotNull(args);
         Assert.Equal("start", args[0]);
     }

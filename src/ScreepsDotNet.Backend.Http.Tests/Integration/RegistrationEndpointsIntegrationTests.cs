@@ -6,17 +6,18 @@ using System.Text.Json;
 using MongoDB.Driver;
 using ScreepsDotNet.Backend.Core.Seeding;
 using ScreepsDotNet.Backend.Http.Routing;
+using ScreepsDotNet.Backend.Http.Tests.TestSupport;
 using ScreepsDotNet.Storage.MongoRedis.Repositories.Documents;
 
 [Collection(IntegrationTestSuiteDefinition.Name)]
 public sealed class RegistrationEndpointsIntegrationTests(IntegrationTestHarness harness) : IAsyncLifetime
 {
-    private readonly HttpClient _client = harness.Factory.CreateClient();
+    private readonly TestHttpClient _client = new(harness.Factory.CreateClient());
     private const string UsersCollectionName = "users";
 
-    public Task InitializeAsync() => harness.ResetStateAsync();
+    public ValueTask InitializeAsync() => new(harness.ResetStateAsync());
 
-    public Task DisposeAsync() => Task.CompletedTask;
+    public ValueTask DisposeAsync() => ValueTask.CompletedTask;
 
     [Fact]
     public async Task CheckEmail_InvalidFormat_ReturnsBadRequest()
@@ -37,7 +38,7 @@ public sealed class RegistrationEndpointsIntegrationTests(IntegrationTestHarness
     {
         var response = await _client.GetAsync($"{ApiRoutes.Register.CheckEmail}?email=fresh@example.com");
         response.EnsureSuccessStatusCode();
-        using var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        using var payload = JsonDocument.Parse(await TestHttpClient.ReadAsStringAsync(response));
         Assert.Equal(JsonValueKind.Object, payload.RootElement.ValueKind);
         Assert.Empty(payload.RootElement.EnumerateObject());
     }
@@ -61,7 +62,7 @@ public sealed class RegistrationEndpointsIntegrationTests(IntegrationTestHarness
     {
         var response = await _client.GetAsync($"{ApiRoutes.Register.CheckUsername}?username=NewUser123");
         response.EnsureSuccessStatusCode();
-        using var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        using var payload = JsonDocument.Parse(await TestHttpClient.ReadAsStringAsync(response));
         Assert.Empty(payload.RootElement.EnumerateObject());
     }
 
@@ -85,7 +86,8 @@ public sealed class RegistrationEndpointsIntegrationTests(IntegrationTestHarness
         var users = harness.Database.GetCollection<UserDocument>(UsersCollectionName);
         await users.UpdateOneAsync(user => user.Id == SeedDataDefaults.User.Id,
                                    Builders<UserDocument>.Update.Set(user => user.Username, null)
-                                                                 .Set(user => user.UsernameLower, null));
+                                                                 .Set(user => user.UsernameLower, null),
+                                   cancellationToken: TestContext.Current.CancellationToken);
 
         var token = await AuthenticateAsync();
         var payload = new
@@ -103,7 +105,7 @@ public sealed class RegistrationEndpointsIntegrationTests(IntegrationTestHarness
         response.EnsureSuccessStatusCode();
 
         var updated = await users.Find(user => user.Id == SeedDataDefaults.User.Id)
-                                 .FirstOrDefaultAsync();
+                                 .FirstOrDefaultAsync(TestContext.Current.CancellationToken);
         Assert.NotNull(updated);
         Assert.Equal(payload.username, updated!.Username);
         Assert.Equal(payload.username.ToLowerInvariant(), updated.UsernameLower);
@@ -119,7 +121,7 @@ public sealed class RegistrationEndpointsIntegrationTests(IntegrationTestHarness
         });
 
         response.EnsureSuccessStatusCode();
-        using var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        using var payload = JsonDocument.Parse(await TestHttpClient.ReadAsStringAsync(response));
         return payload.RootElement.GetProperty(AuthResponseFields.Token).GetString()!;
     }
 }

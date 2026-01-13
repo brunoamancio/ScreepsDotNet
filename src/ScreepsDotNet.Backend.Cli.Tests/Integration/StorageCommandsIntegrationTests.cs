@@ -15,7 +15,7 @@ public sealed class StorageCommandsIntegrationTests(SystemCommandsIntegrationFix
         var adapter = new MongoRedisStorageAdapter(fixture.DatabaseProvider, fixture.RedisProvider, NullLogger<MongoRedisStorageAdapter>.Instance);
         var command = new StorageStatusCommand(adapter, NullLogger<StorageStatusCommand>.Instance, null, new TestFormatter());
 
-        var exitCode = await command.ExecuteAsync(null!, new StorageStatusCommand.Settings { OutputJson = true }, CancellationToken.None);
+        var exitCode = await command.ExecuteAsync(null!, new StorageStatusCommand.Settings { OutputJson = true }, TestContext.Current.CancellationToken);
 
         Assert.Equal(0, exitCode);
     }

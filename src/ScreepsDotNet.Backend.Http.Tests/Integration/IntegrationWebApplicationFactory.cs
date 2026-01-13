@@ -1,4 +1,4 @@
-﻿namespace ScreepsDotNet.Backend.Http.Tests.Integration;
+namespace ScreepsDotNet.Backend.Http.Tests.Integration;
 
 using System;
 using System.IO;

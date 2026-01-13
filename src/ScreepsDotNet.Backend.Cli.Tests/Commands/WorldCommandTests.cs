@@ -21,7 +21,7 @@ public sealed class WorldCommandTests
             OutputJson = true
         };
 
-        var exitCode = await command.ExecuteAsync(null!, settings, CancellationToken.None);
+        var exitCode = await command.ExecuteAsync(null!, settings, TestContext.Current.CancellationToken);
 
         Assert.Equal(0, exitCode);
         Assert.NotNull(repository.Request);
@@ -42,7 +42,7 @@ public sealed class WorldCommandTests
             OutputJson = true
         };
 
-        var exitCode = await command.ExecuteAsync(null!, settings, CancellationToken.None);
+        var exitCode = await command.ExecuteAsync(null!, settings, TestContext.Current.CancellationToken);
 
         Assert.Equal(0, exitCode);
         Assert.NotNull(repository.Reference);

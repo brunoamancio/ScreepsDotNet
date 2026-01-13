@@ -8,12 +8,13 @@ using System.Text.Json;
 using MongoDB.Driver;
 using ScreepsDotNet.Backend.Core.Seeding;
 using ScreepsDotNet.Backend.Http.Routing;
+using ScreepsDotNet.Backend.Http.Tests.TestSupport;
 using ScreepsDotNet.Storage.MongoRedis.Repositories.Documents;
 
 [Collection(IntegrationTestSuiteDefinition.Name)]
 public sealed class UserEndpointsIntegrationTests(IntegrationTestHarness harness) : IAsyncLifetime
 {
-    private readonly HttpClient _client = harness.Factory.CreateClient();
+    private readonly TestHttpClient _client = new(harness.Factory.CreateClient());
     private const string RoomsObjectsCollectionName = "rooms.objects";
     private const string UsersCollectionName = "users";
     private const string UserConsoleCollectionName = "users.console";
@@ -21,9 +22,9 @@ public sealed class UserEndpointsIntegrationTests(IntegrationTestHarness harness
     private const string UserMessagesCollectionName = "users.messages";
     private const string UserNotificationsCollectionName = "users.notifications";
 
-    public Task InitializeAsync() => harness.ResetStateAsync();
+    public ValueTask InitializeAsync() => new(harness.ResetStateAsync());
 
-    public Task DisposeAsync() => Task.CompletedTask;
+    public ValueTask DisposeAsync() => ValueTask.CompletedTask;
 
     [Fact]
     public async Task Respawn_RemovesRoomsAndUpdatesLastRespawn()
@@ -35,16 +36,18 @@ public sealed class UserEndpointsIntegrationTests(IntegrationTestHarness harness
         var response = await _client.SendAsync(request);
 
         response.EnsureSuccessStatusCode();
-        using var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        using var payload = JsonDocument.Parse(await TestHttpClient.ReadAsStringAsync(response));
         Assert.True(payload.RootElement.TryGetProperty(UserResponseFields.Timestamp, out _));
 
         var roomsCollection = harness.Database.GetCollection<RoomObjectDocument>(RoomsObjectsCollectionName);
-        var remainingRooms = await roomsCollection.CountDocumentsAsync(room => room.UserId == SeedDataDefaults.User.Id);
+        var remainingRooms = await roomsCollection.CountDocumentsAsync(
+            room => room.UserId == SeedDataDefaults.User.Id,
+            cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal(0, remainingRooms);
 
         var usersCollection = harness.Database.GetCollection<UserDocument>(UsersCollectionName);
         var user = await usersCollection.Find(u => u.Id == SeedDataDefaults.User.Id)
-                                        .FirstOrDefaultAsync();
+                                        .FirstOrDefaultAsync(TestContext.Current.CancellationToken);
 
         Assert.NotNull(user);
         Assert.True(user!.LastRespawnDate >= harness.InitializedAtUtc.AddMinutes(-1));
@@ -60,7 +63,7 @@ public sealed class UserEndpointsIntegrationTests(IntegrationTestHarness harness
         var response = await _client.SendAsync(request);
 
         response.EnsureSuccessStatusCode();
-        using var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        using var payload = JsonDocument.Parse(await TestHttpClient.ReadAsStringAsync(response));
         var list = payload.RootElement.GetProperty(UserResponseFields.List).EnumerateArray().ToList();
         Assert.NotEmpty(list);
         var first = list.First();
@@ -84,7 +87,7 @@ public sealed class UserEndpointsIntegrationTests(IntegrationTestHarness harness
         var consoleCollection = harness.Database.GetCollection<UserConsoleEntryDocument>(UserConsoleCollectionName);
         var entry = await consoleCollection.Find(doc => doc.UserId == SeedDataDefaults.User.Id)
                                            .SortByDescending(doc => doc.CreatedAt)
-                                           .FirstOrDefaultAsync();
+                                           .FirstOrDefaultAsync(TestContext.Current.CancellationToken);
         Assert.NotNull(entry);
         Assert.Equal(expression, entry!.Expression);
     }
@@ -99,7 +102,7 @@ public sealed class UserEndpointsIntegrationTests(IntegrationTestHarness harness
         var response = await _client.SendAsync(request);
 
         response.EnsureSuccessStatusCode();
-        using var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        using var payload = JsonDocument.Parse(await TestHttpClient.ReadAsStringAsync(response));
         Assert.Equal(SeedDataDefaults.Memory.SegmentValue, payload.RootElement.GetProperty(UserResponseFields.Data).GetString());
     }
 
@@ -122,7 +125,7 @@ public sealed class UserEndpointsIntegrationTests(IntegrationTestHarness harness
 
         var memoryCollection = harness.Database.GetCollection<UserMemoryDocument>(UserMemoryCollectionName);
         var document = await memoryCollection.Find(doc => doc.UserId == SeedDataDefaults.User.Id)
-                                             .FirstOrDefaultAsync();
+                                             .FirstOrDefaultAsync(TestContext.Current.CancellationToken);
         Assert.NotNull(document);
         var key = SeedDataDefaults.Memory.SegmentId.ToString(CultureInfo.InvariantCulture);
         Assert.True(document!.Segments.TryGetValue(key, out var data));
@@ -135,7 +138,7 @@ public sealed class UserEndpointsIntegrationTests(IntegrationTestHarness harness
         var response = await _client.GetAsync(ApiRoutes.User.Stats + "?interval=8");
 
         response.EnsureSuccessStatusCode();
-        using var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        using var payload = JsonDocument.Parse(await TestHttpClient.ReadAsStringAsync(response));
         var stats = payload.RootElement.GetProperty(UserResponseFields.Stats);
         Assert.Equal(8, stats.GetProperty(UserResponseFields.Interval).GetInt32());
         Assert.True(stats.GetProperty(UserResponseFields.ActiveUsers).GetInt32() > 0);
@@ -177,7 +180,7 @@ public sealed class UserEndpointsIntegrationTests(IntegrationTestHarness harness
         var response = await _client.SendAsync(request);
 
         response.EnsureSuccessStatusCode();
-        using var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        using var payload = JsonDocument.Parse(await TestHttpClient.ReadAsStringAsync(response));
         var messages = payload.RootElement.GetProperty("messages").EnumerateArray().ToList();
         Assert.Single(messages);
         var inbound = messages[0];
@@ -197,7 +200,7 @@ public sealed class UserEndpointsIntegrationTests(IntegrationTestHarness harness
         var response = await _client.SendAsync(request);
 
         response.EnsureSuccessStatusCode();
-        using var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        using var payload = JsonDocument.Parse(await TestHttpClient.ReadAsStringAsync(response));
         var root = payload.RootElement;
         var messages = root.GetProperty("messages").EnumerateArray().ToList();
         Assert.NotEmpty(messages);
@@ -228,7 +231,7 @@ public sealed class UserEndpointsIntegrationTests(IntegrationTestHarness harness
 
         var messagesCollection = harness.Database.GetCollection<UserMessageDocument>(UserMessagesCollectionName);
         var documents = await messagesCollection.Find(doc => doc.Text == text)
-                                                .ToListAsync();
+                                                .ToListAsync(TestContext.Current.CancellationToken);
         Assert.Equal(2, documents.Count);
         var outbound = Assert.Single(documents, doc => doc.UserId == SeedDataDefaults.User.Id);
         Assert.Equal("out", outbound.Type);
@@ -238,7 +241,7 @@ public sealed class UserEndpointsIntegrationTests(IntegrationTestHarness harness
 
         var notifications = harness.Database.GetCollection<UserNotificationDocument>(UserNotificationsCollectionName);
         var notification = await notifications.Find(doc => doc.UserId == SeedDataDefaults.Messaging.RespondentId)
-                                              .FirstOrDefaultAsync();
+                                              .FirstOrDefaultAsync(TestContext.Current.CancellationToken);
         Assert.NotNull(notification);
         Assert.Equal("msg", notification!.Type);
         Assert.True(notification.Count >= 1);
@@ -250,7 +253,7 @@ public sealed class UserEndpointsIntegrationTests(IntegrationTestHarness harness
         await harness.ResetStateAsync();
         var messagesCollection = harness.Database.GetCollection<UserMessageDocument>(UserMessagesCollectionName);
         var inbound = await messagesCollection.Find(doc => doc.UserId == SeedDataDefaults.User.Id && doc.Type == "in")
-                                              .FirstOrDefaultAsync();
+                                              .FirstOrDefaultAsync(TestContext.Current.CancellationToken);
         Assert.NotNull(inbound);
         Assert.True(inbound!.Unread);
 
@@ -268,14 +271,14 @@ public sealed class UserEndpointsIntegrationTests(IntegrationTestHarness harness
         response.EnsureSuccessStatusCode();
 
         var updatedInbound = await messagesCollection.Find(doc => doc.Id == inbound.Id)
-                                                     .FirstOrDefaultAsync();
+                                                     .FirstOrDefaultAsync(TestContext.Current.CancellationToken);
         Assert.NotNull(updatedInbound);
         Assert.False(updatedInbound!.Unread);
 
         if (inbound.OutMessageId != default)
         {
             var counterpart = await messagesCollection.Find(doc => doc.Id == inbound.OutMessageId)
-                                                      .FirstOrDefaultAsync();
+                                                      .FirstOrDefaultAsync(TestContext.Current.CancellationToken);
             Assert.NotNull(counterpart);
             Assert.False(counterpart!.Unread);
         }
@@ -291,7 +294,7 @@ public sealed class UserEndpointsIntegrationTests(IntegrationTestHarness harness
 
         var response = await _client.SendAsync(request);
         response.EnsureSuccessStatusCode();
-        using var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        using var payload = JsonDocument.Parse(await TestHttpClient.ReadAsStringAsync(response));
         Assert.Equal(1, payload.RootElement.GetProperty("count").GetInt32());
     }
 
@@ -304,7 +307,7 @@ public sealed class UserEndpointsIntegrationTests(IntegrationTestHarness harness
         });
 
         response.EnsureSuccessStatusCode();
-        using var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        using var payload = JsonDocument.Parse(await TestHttpClient.ReadAsStringAsync(response));
         return payload.RootElement.GetProperty(AuthResponseFields.Token).GetString()!;
     }
 }

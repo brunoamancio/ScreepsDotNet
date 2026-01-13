@@ -19,7 +19,8 @@ public sealed class BotCommandsIntegrationTests(MongoMapIntegrationFixture fixtu
     {
         await fixture.ResetAsync();
         var roomName = "W41N41";
-        await GenerateRoomAsync(roomName);
+        var token = TestContext.Current.CancellationToken;
+        await GenerateRoomAsync(roomName, token);
 
         var botProvider = new InMemoryBotDefinitionProvider("alpha");
         var service = CreateBotControlService(botProvider);
@@ -33,18 +34,19 @@ public sealed class BotCommandsIntegrationTests(MongoMapIntegrationFixture fixtu
             GlobalControlLevel = 3
         };
 
-        var exitCode = await command.ExecuteAsync(null!, settings, CancellationToken.None);
+        var exitCode = await command.ExecuteAsync(null!, settings, token);
 
         Assert.Equal(0, exitCode);
 
         var users = fixture.Database.GetCollection<UserDocument>("users");
-        var user = await users.Find(document => document.Username == "AlphaIntegration").FirstOrDefaultAsync();
+        var user = await users.Find(document => document.Username == "AlphaIntegration").FirstOrDefaultAsync(token);
         Assert.NotNull(user);
         Assert.Equal("alpha", user!.Bot);
 
         var roomObjects = fixture.Database.GetCollection<BsonDocument>("rooms.objects");
-        var spawnExists = await roomObjects.Find(doc => doc["room"] == roomName && doc["type"] == StructureType.Spawn.ToDocumentValue() && doc["user"] == user.Id)
-                                           .AnyAsync();
+        var spawnExists = await roomObjects
+            .Find(doc => doc["room"] == roomName && doc["type"] == StructureType.Spawn.ToDocumentValue() && doc["user"] == user.Id)
+            .AnyAsync(token);
         Assert.True(spawnExists);
     }
 
@@ -53,7 +55,8 @@ public sealed class BotCommandsIntegrationTests(MongoMapIntegrationFixture fixtu
     {
         await fixture.ResetAsync();
         var roomName = "W42N42";
-        await GenerateRoomAsync(roomName);
+        var token = TestContext.Current.CancellationToken;
+        await GenerateRoomAsync(roomName, token);
 
         var botProvider = new InMemoryBotDefinitionProvider("beta");
         var service = CreateBotControlService(botProvider);
@@ -64,21 +67,21 @@ public sealed class BotCommandsIntegrationTests(MongoMapIntegrationFixture fixtu
             BotName = "beta",
             RoomName = roomName,
             Username = username
-        }, CancellationToken.None);
+        }, token);
 
         var users = fixture.Database.GetCollection<UserDocument>("users");
-        var user = await users.Find(doc => doc.Username == username).FirstOrDefaultAsync();
+        var user = await users.Find(doc => doc.Username == username).FirstOrDefaultAsync(token);
         Assert.NotNull(user);
 
         var userCode = fixture.Database.GetCollection<UserCodeDocument>("users.code");
-        var before = await userCode.Find(doc => doc.UserId == user!.Id).FirstOrDefaultAsync();
+        var before = await userCode.Find(doc => doc.UserId == user!.Id).FirstOrDefaultAsync(token);
         Assert.NotNull(before);
 
         var reloadCommand = new BotReloadCommand(service);
-        var exitCode = await reloadCommand.ExecuteAsync(null!, new BotReloadCommand.Settings { BotName = "beta" }, CancellationToken.None);
+        var exitCode = await reloadCommand.ExecuteAsync(null!, new BotReloadCommand.Settings { BotName = "beta" }, token);
         Assert.Equal(0, exitCode);
 
-        var after = await userCode.Find(doc => doc.UserId == user.Id).ToListAsync();
+        var after = await userCode.Find(doc => doc.UserId == user.Id).ToListAsync(token);
         Assert.Single(after);
         Assert.NotEqual(before!.Branch, after[0].Branch);
     }
@@ -88,7 +91,8 @@ public sealed class BotCommandsIntegrationTests(MongoMapIntegrationFixture fixtu
     {
         await fixture.ResetAsync();
         var roomName = "W43N43";
-        await GenerateRoomAsync(roomName);
+        var token = TestContext.Current.CancellationToken;
+        await GenerateRoomAsync(roomName, token);
 
         var botProvider = new InMemoryBotDefinitionProvider("gamma");
         var service = CreateBotControlService(botProvider);
@@ -99,29 +103,29 @@ public sealed class BotCommandsIntegrationTests(MongoMapIntegrationFixture fixtu
             BotName = "gamma",
             RoomName = roomName,
             Username = username
-        }, CancellationToken.None);
+        }, token);
 
         var removeCommand = new BotRemoveCommand(service);
-        var exitCode = await removeCommand.ExecuteAsync(null!, new BotRemoveCommand.Settings { Username = username }, CancellationToken.None);
+        var exitCode = await removeCommand.ExecuteAsync(null!, new BotRemoveCommand.Settings { Username = username }, token);
         Assert.Equal(0, exitCode);
 
         var users = fixture.Database.GetCollection<UserDocument>("users");
-        var user = await users.Find(doc => doc.Username == username).FirstOrDefaultAsync();
+        var user = await users.Find(doc => doc.Username == username).FirstOrDefaultAsync(token);
         Assert.Null(user);
 
         var roomObjects = fixture.Database.GetCollection<BsonDocument>("rooms.objects");
-        var spawnExists = await roomObjects.Find(doc => doc["room"] == roomName && doc["type"] == "spawn").AnyAsync();
+        var spawnExists = await roomObjects.Find(doc => doc["room"] == roomName && doc["type"] == "spawn").AnyAsync(token);
         Assert.False(spawnExists);
     }
 
-    private async Task GenerateRoomAsync(string roomName)
+    private async Task GenerateRoomAsync(string roomName, CancellationToken token)
     {
         var mapCommand = new MapGenerateCommand(fixture.MapControlService);
         await mapCommand.ExecuteAsync(null!, new MapGenerateCommand.Settings
         {
             RoomName = roomName,
             Overwrite = true
-        }, CancellationToken.None);
+        }, token);
     }
 
     private MongoBotControlService CreateBotControlService(IBotDefinitionProvider provider)

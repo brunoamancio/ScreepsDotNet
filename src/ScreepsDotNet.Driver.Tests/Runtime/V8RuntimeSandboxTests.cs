@@ -24,7 +24,8 @@ public sealed class V8RuntimeSandboxTests
                 ["script"] = "const snapshot = Memory.counter;"
             });
 
-        var result = await _sandbox.ExecuteAsync(context);
+        var token = TestContext.Current.CancellationToken;
+        var result = await _sandbox.ExecuteAsync(context, token);
         Assert.Null(result.Memory);
         Assert.False(result.Metrics.TimedOut);
         Assert.False(result.Metrics.ScriptError);
@@ -47,7 +48,8 @@ public sealed class V8RuntimeSandboxTests
                 ["script"] = "RawMemory.set('{\"foo\":1}');"
             });
 
-        var result = await _sandbox.ExecuteAsync(context);
+        var token = TestContext.Current.CancellationToken;
+        var result = await _sandbox.ExecuteAsync(context, token);
         Assert.Equal("{\"foo\":1}", result.Memory);
         Assert.False(result.Metrics.TimedOut);
         Assert.False(result.Metrics.ScriptError);
@@ -77,7 +79,8 @@ RawMemory.interShardSegment = "updated";
 """
             });
 
-        var result = await _sandbox.ExecuteAsync(context);
+        var token = TestContext.Current.CancellationToken;
+        var result = await _sandbox.ExecuteAsync(context, token);
         Assert.NotNull(result.MemorySegments);
         Assert.Equal("updated", result.MemorySegments![3]);
         Assert.Equal("new", result.MemorySegments[5]);

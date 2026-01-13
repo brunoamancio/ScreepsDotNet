@@ -27,7 +27,7 @@ public sealed class MongoMapIntegrationFixture : IAsyncLifetime
 
     public MongoMapControlService MapControlService { get; private set; } = null!;
 
-    public async Task InitializeAsync()
+    public async ValueTask InitializeAsync()
     {
         await _mongoContainer.StartAsync();
         var connectionString = _mongoContainer.GetConnectionString();
@@ -52,6 +52,6 @@ public sealed class MongoMapIntegrationFixture : IAsyncLifetime
     public IMongoCollection<TDocument> GetCollection<TDocument>(string collectionName)
         => Database.GetCollection<TDocument>(collectionName);
 
-    public async Task DisposeAsync()
+    public async ValueTask DisposeAsync()
         => await _mongoContainer.DisposeAsync();
 }

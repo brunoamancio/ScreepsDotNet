@@ -21,7 +21,7 @@ public sealed class AuthCommandTests
             OutputJson = true
         };
 
-        var exitCode = await command.ExecuteAsync(null!, settings, CancellationToken.None);
+        var exitCode = await command.ExecuteAsync(null!, settings, TestContext.Current.CancellationToken);
 
         Assert.Equal(0, exitCode);
         Assert.Equal("user-1", service.LastIssuedUserId);
@@ -37,7 +37,7 @@ public sealed class AuthCommandTests
             Token = "missing-token"
         };
 
-        var exitCode = await command.ExecuteAsync(null!, settings, CancellationToken.None);
+        var exitCode = await command.ExecuteAsync(null!, settings, TestContext.Current.CancellationToken);
 
         Assert.Equal(1, exitCode);
         Assert.Equal("missing-token", service.LastResolvedToken);
@@ -53,7 +53,7 @@ public sealed class AuthCommandTests
             UserId = "user-2"
         };
 
-        var exitCode = await command.ExecuteAsync(null!, settings, CancellationToken.None);
+        var exitCode = await command.ExecuteAsync(null!, settings, TestContext.Current.CancellationToken);
 
         Assert.Equal(0, exitCode);
         Assert.Equal("user-2", service.LastListedUserId);
@@ -69,7 +69,7 @@ public sealed class AuthCommandTests
             Token = "token-xyz"
         };
 
-        var exitCode = await command.ExecuteAsync(null!, settings, CancellationToken.None);
+        var exitCode = await command.ExecuteAsync(null!, settings, TestContext.Current.CancellationToken);
 
         Assert.Equal(1, exitCode);
         Assert.Equal("token-xyz", service.LastRevokedToken);

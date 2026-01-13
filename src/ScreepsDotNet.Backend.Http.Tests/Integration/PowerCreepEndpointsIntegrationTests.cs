@@ -3,21 +3,21 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
-using System.Net.Http.Json;
 using System.Text.Json;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using ScreepsDotNet.Backend.Core.Seeding;
 using ScreepsDotNet.Backend.Http.Routing;
+using ScreepsDotNet.Backend.Http.Tests.TestSupport;
 
 [Collection(IntegrationTestSuiteDefinition.Name)]
 public sealed class PowerCreepEndpointsIntegrationTests(IntegrationTestHarness harness) : IAsyncLifetime
 {
-    private readonly HttpClient _client = harness.Factory.CreateClient();
+    private readonly TestHttpClient _client = new(harness.Factory.CreateClient());
 
-    public Task InitializeAsync() => harness.ResetStateAsync();
+    public ValueTask InitializeAsync() => new(harness.ResetStateAsync());
 
-    public Task DisposeAsync() => Task.CompletedTask;
+    public ValueTask DisposeAsync() => ValueTask.CompletedTask;
 
     [Fact]
     public async Task List_ReturnsSeededCreeps()
@@ -27,7 +27,7 @@ public sealed class PowerCreepEndpointsIntegrationTests(IntegrationTestHarness h
 
         var response = await _client.GetAsync(ApiRoutes.Game.PowerCreeps.List);
         response.EnsureSuccessStatusCode();
-        var json = await response.Content.ReadFromJsonAsync<JsonElement>();
+        var json = await TestHttpClient.ReadFromJsonAsync<JsonElement>(response);
 
         Assert.Equal(1, json.GetProperty("ok").GetInt32());
         var creeps = json.GetProperty("list").EnumerateArray().ToList();
@@ -47,7 +47,7 @@ public sealed class PowerCreepEndpointsIntegrationTests(IntegrationTestHarness h
         var payload = new { name = "PowerIntegration", className = SeedDataDefaults.PowerCreeps.ClassName };
         var response = await _client.PostAsJsonAsync(ApiRoutes.Game.PowerCreeps.Create, payload);
         response.EnsureSuccessStatusCode();
-        var json = await response.Content.ReadFromJsonAsync<JsonElement>();
+        var json = await TestHttpClient.ReadFromJsonAsync<JsonElement>(response);
 
         Assert.Equal(1, json.GetProperty("ok").GetInt32());
         var creepId = json.GetProperty("creep").GetProperty("_id").GetString();
@@ -121,11 +121,12 @@ public sealed class PowerCreepEndpointsIntegrationTests(IntegrationTestHarness h
         var token = await LoginAsync();
         SetAuth(token);
 
-        var response = await _client.PostAsync(ApiRoutes.Game.PowerCreeps.Experimentation, null);
+        var response = await _client.SendAsync(new HttpRequestMessage(HttpMethod.Post, ApiRoutes.Game.PowerCreeps.Experimentation));
         response.EnsureSuccessStatusCode();
 
         var users = harness.Database.GetCollection<BsonDocument>("users");
-        var user = await users.Find(doc => doc["_id"] == SeedDataDefaults.User.Id).FirstAsync();
+        var user = await users.Find(doc => doc["_id"] == SeedDataDefaults.User.Id)
+                              .FirstAsync(TestContext.Current.CancellationToken);
         Assert.Equal(1, user["powerExperimentations"].ToInt32());
         Assert.True(user["powerExperimentationTime"].ToInt64() > 0);
     }
@@ -144,7 +145,7 @@ public sealed class PowerCreepEndpointsIntegrationTests(IntegrationTestHarness h
     {
         var response = await _client.PostAsJsonAsync(ApiRoutes.AuthSteamTicket, new { ticket = SeedDataDefaults.Auth.Ticket });
         response.EnsureSuccessStatusCode();
-        var json = await response.Content.ReadFromJsonAsync<JsonElement>();
+        var json = await TestHttpClient.ReadFromJsonAsync<JsonElement>(response);
         return json.GetProperty("token").GetString()!;
     }
 

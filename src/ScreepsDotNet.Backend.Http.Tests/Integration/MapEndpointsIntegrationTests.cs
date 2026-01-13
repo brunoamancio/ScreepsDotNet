@@ -1,21 +1,21 @@
 ﻿namespace ScreepsDotNet.Backend.Http.Tests.Integration;
 
 using System.Net;
-using System.Net.Http.Json;
 using System.Text.Json;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using ScreepsDotNet.Backend.Core.Seeding;
 using ScreepsDotNet.Backend.Http.Routing;
+using ScreepsDotNet.Backend.Http.Tests.TestSupport;
 
 [Collection(IntegrationTestSuiteDefinition.Name)]
 public sealed class MapEndpointsIntegrationTests(IntegrationTestHarness harness) : IAsyncLifetime
 {
-    private readonly HttpClient _client = harness.Factory.CreateClient();
+    private readonly TestHttpClient _client = new(harness.Factory.CreateClient());
 
-    public Task InitializeAsync() => harness.ResetStateAsync();
+    public ValueTask InitializeAsync() => new(harness.ResetStateAsync());
 
-    public Task DisposeAsync() => Task.CompletedTask;
+    public ValueTask DisposeAsync() => ValueTask.CompletedTask;
 
     [Fact]
     public async Task Generate_CreatesRoomAndObjects()
@@ -35,12 +35,12 @@ public sealed class MapEndpointsIntegrationTests(IntegrationTestHarness harness)
 
         var response = await _client.PostAsJsonAsync(ApiRoutes.Game.Map.Generate, payload);
         response.EnsureSuccessStatusCode();
-        var content = await response.Content.ReadFromJsonAsync<JsonElement>();
+        var content = await TestHttpClient.ReadFromJsonAsync<JsonElement>(response);
         Assert.Equal("W30N30", content.GetProperty("room").GetString());
         Assert.True(content.GetProperty("objects").GetInt32() > 0);
 
         var rooms = harness.Database.GetCollection<BsonDocument>("rooms");
-        var roomDoc = await rooms.Find(doc => doc["_id"] == "W30N30").FirstOrDefaultAsync();
+        var roomDoc = await rooms.Find(doc => doc["_id"] == "W30N30").FirstOrDefaultAsync(TestContext.Current.CancellationToken);
         Assert.NotNull(roomDoc);
         Assert.Equal("normal", roomDoc["status"].AsString);
     }
@@ -60,19 +60,19 @@ public sealed class MapEndpointsIntegrationTests(IntegrationTestHarness harness)
 
         var response = await _client.PostAsJsonAsync(ApiRoutes.Game.Map.Generate, payload);
         response.EnsureSuccessStatusCode();
-        var content = await response.Content.ReadFromJsonAsync<JsonElement>();
+        var content = await TestHttpClient.ReadFromJsonAsync<JsonElement>(response);
         Assert.Equal("shard8", content.GetProperty("shard").GetString());
 
         var rooms = harness.Database.GetCollection<BsonDocument>("rooms");
-        var roomDoc = await rooms.Find(doc => doc["_id"] == "W43N43" && doc["shard"] == "shard8").FirstOrDefaultAsync();
+        var roomDoc = await rooms.Find(doc => doc["_id"] == "W43N43" && doc["shard"] == "shard8").FirstOrDefaultAsync(TestContext.Current.CancellationToken);
         Assert.NotNull(roomDoc);
 
         var terrain = harness.Database.GetCollection<BsonDocument>("rooms.terrain");
-        var terrainDoc = await terrain.Find(doc => doc["room"] == "W43N43" && doc["shard"] == "shard8").FirstOrDefaultAsync();
+        var terrainDoc = await terrain.Find(doc => doc["room"] == "W43N43" && doc["shard"] == "shard8").FirstOrDefaultAsync(TestContext.Current.CancellationToken);
         Assert.NotNull(terrainDoc);
 
         var objects = harness.Database.GetCollection<BsonDocument>("rooms.objects");
-        Assert.True(await objects.Find(doc => doc["room"] == "W43N43" && doc["shard"] == "shard8").AnyAsync());
+        Assert.True(await objects.Find(doc => doc["room"] == "W43N43" && doc["shard"] == "shard8").AnyAsync(TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -112,7 +112,7 @@ public sealed class MapEndpointsIntegrationTests(IntegrationTestHarness harness)
     {
         await SeedRoomAsync("W32N32");
         var objects = harness.Database.GetCollection<BsonDocument>("rooms.objects");
-        await objects.InsertOneAsync(new BsonDocument { ["room"] = "W32N32", ["type"] = "source" });
+        await objects.InsertOneAsync(new BsonDocument { ["room"] = "W32N32", ["type"] = "source" }, cancellationToken: TestContext.Current.CancellationToken);
 
         var token = await LoginAsync();
         SetAuth(token);
@@ -121,8 +121,8 @@ public sealed class MapEndpointsIntegrationTests(IntegrationTestHarness harness)
         response.EnsureSuccessStatusCode();
 
         var rooms = harness.Database.GetCollection<BsonDocument>("rooms");
-        Assert.False(await rooms.Find(doc => doc["_id"] == "W32N32").AnyAsync());
-        Assert.False(await objects.Find(doc => doc["room"] == "W32N32").AnyAsync());
+        Assert.False(await rooms.Find(doc => doc["_id"] == "W32N32").AnyAsync(TestContext.Current.CancellationToken));
+        Assert.False(await objects.Find(doc => doc["room"] == "W32N32").AnyAsync(TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -173,15 +173,16 @@ public sealed class MapEndpointsIntegrationTests(IntegrationTestHarness harness)
         await SeedRoomAsync("W34N34");
         var terrain = harness.Database.GetCollection<BsonDocument>("rooms.terrain");
         await terrain.UpdateOneAsync(doc => doc["room"] == "W34N34",
-                                     Builders<BsonDocument>.Update.Set("type", "stale"));
+                                     Builders<BsonDocument>.Update.Set("type", "stale"),
+                                     cancellationToken: TestContext.Current.CancellationToken);
 
         var token = await LoginAsync();
         SetAuth(token);
 
-        var response = await _client.PostAsync(ApiRoutes.Game.Map.TerrainRefresh, null);
+        var response = await _client.SendAsync(new HttpRequestMessage(HttpMethod.Post, ApiRoutes.Game.Map.TerrainRefresh));
         response.EnsureSuccessStatusCode();
 
-        var updated = await terrain.Find(doc => doc["room"] == "W34N34").FirstOrDefaultAsync();
+        var updated = await terrain.Find(doc => doc["room"] == "W34N34").FirstOrDefaultAsync(TestContext.Current.CancellationToken);
         Assert.Equal("terrain", updated["type"].AsString);
     }
 
@@ -200,7 +201,7 @@ public sealed class MapEndpointsIntegrationTests(IntegrationTestHarness harness)
     {
         var response = await _client.PostAsJsonAsync(ApiRoutes.AuthSteamTicket, new { ticket = SeedDataDefaults.Auth.Ticket });
         response.EnsureSuccessStatusCode();
-        var json = await response.Content.ReadFromJsonAsync<JsonElement>();
+        var json = await TestHttpClient.ReadFromJsonAsync<JsonElement>(response);
         return json.GetProperty("token").GetString()!;
     }
 
@@ -219,7 +220,7 @@ public sealed class MapEndpointsIntegrationTests(IntegrationTestHarness harness)
             roomDoc["shard"] = shard;
         await rooms.ReplaceOneAsync(new BsonDocument("_id", roomName),
                                     roomDoc,
-                                    new ReplaceOptions { IsUpsert = true });
+                                    new ReplaceOptions { IsUpsert = true }, cancellationToken: TestContext.Current.CancellationToken);
 
         var terrain = harness.Database.GetCollection<BsonDocument>("rooms.terrain");
         var terrainDoc = new BsonDocument { ["room"] = roomName, ["type"] = "terrain", ["terrain"] = new string('0', 2500) };
@@ -227,13 +228,13 @@ public sealed class MapEndpointsIntegrationTests(IntegrationTestHarness harness)
             terrainDoc["shard"] = shard;
         await terrain.ReplaceOneAsync(new BsonDocument("room", roomName),
                                       terrainDoc,
-                                      new ReplaceOptions { IsUpsert = true });
+                                      new ReplaceOptions { IsUpsert = true }, cancellationToken: TestContext.Current.CancellationToken);
     }
 
     private async Task<string> GetRoomStatusAsync(string roomName)
     {
         var rooms = harness.Database.GetCollection<BsonDocument>("rooms");
-        var doc = await rooms.Find(r => r["_id"] == roomName).FirstOrDefaultAsync();
+        var doc = await rooms.Find(r => r["_id"] == roomName).FirstOrDefaultAsync(TestContext.Current.CancellationToken);
         return doc["status"].AsString;
     }
 }

@@ -1,8 +1,8 @@
 ﻿using System.Net;
-using System.Net.Http.Json;
 using System.Text.Json;
 using ScreepsDotNet.Backend.Http.Routing;
 using ScreepsDotNet.Backend.Http.Tests.Web;
+using ScreepsDotNet.Backend.Http.Tests.TestSupport;
 
 namespace ScreepsDotNet.Backend.Http.Tests.Endpoints;
 
@@ -10,7 +10,7 @@ public class AuthEndpointTests(TestWebApplicationFactory factory) : IClassFixtur
 {
     private const string InvalidTokenValue = "invalid";
 
-    private readonly HttpClient _client = factory.CreateClient();
+    private readonly TestHttpClient _client = new(factory.CreateClient());
 
     [Fact]
     public async Task SteamTicket_ReturnsTokenAndSteamId()
@@ -22,7 +22,7 @@ public class AuthEndpointTests(TestWebApplicationFactory factory) : IClassFixtur
         });
 
         response.EnsureSuccessStatusCode();
-        using var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        using var payload = JsonDocument.Parse(await TestHttpClient.ReadAsStringAsync(response));
         var root = payload.RootElement;
         Assert.False(string.IsNullOrWhiteSpace(root.GetProperty(AuthResponseFields.Token).GetString()));
         Assert.Equal(AuthTestValues.SteamId, root.GetProperty(AuthResponseFields.SteamId).GetString());
@@ -38,7 +38,7 @@ public class AuthEndpointTests(TestWebApplicationFactory factory) : IClassFixtur
         });
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-        using var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        using var payload = JsonDocument.Parse(await TestHttpClient.ReadAsStringAsync(response));
         Assert.Equal(AuthResponseMessages.UnsupportedAuthMethod, payload.RootElement.GetProperty(AuthResponseFields.Error).GetString());
     }
 
@@ -52,7 +52,7 @@ public class AuthEndpointTests(TestWebApplicationFactory factory) : IClassFixtur
         });
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-        using var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        using var payload = JsonDocument.Parse(await TestHttpClient.ReadAsStringAsync(response));
         Assert.Equal(AuthResponseMessages.CouldNotAuthenticate, payload.RootElement.GetProperty(AuthResponseFields.Error).GetString());
     }
 
@@ -62,7 +62,7 @@ public class AuthEndpointTests(TestWebApplicationFactory factory) : IClassFixtur
         var response = await _client.GetAsync(ApiRoutes.AuthMe);
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
-        using var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        using var payload = JsonDocument.Parse(await TestHttpClient.ReadAsStringAsync(response));
         Assert.Equal(AuthResponseMessages.Unauthorized, payload.RootElement.GetProperty(AuthResponseFields.Error).GetString());
     }
 
@@ -75,7 +75,7 @@ public class AuthEndpointTests(TestWebApplicationFactory factory) : IClassFixtur
         var response = await _client.SendAsync(request);
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
-        using var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        using var payload = JsonDocument.Parse(await TestHttpClient.ReadAsStringAsync(response));
         Assert.Equal(AuthResponseMessages.Unauthorized, payload.RootElement.GetProperty(AuthResponseFields.Error).GetString());
     }
 
@@ -88,7 +88,7 @@ public class AuthEndpointTests(TestWebApplicationFactory factory) : IClassFixtur
             useNativeAuth = false
         });
         loginResponse.EnsureSuccessStatusCode();
-        using var loginPayload = JsonDocument.Parse(await loginResponse.Content.ReadAsStringAsync());
+        using var loginPayload = JsonDocument.Parse(await TestHttpClient.ReadAsStringAsync(loginResponse));
         var token = loginPayload.RootElement.GetProperty(AuthResponseFields.Token).GetString()!;
 
         var request = new HttpRequestMessage(HttpMethod.Get, ApiRoutes.AuthMe);
@@ -100,7 +100,7 @@ public class AuthEndpointTests(TestWebApplicationFactory factory) : IClassFixtur
         Assert.True(response.Headers.TryGetValues(AuthHeaderNames.Token, out var refreshedTokens));
         Assert.False(string.IsNullOrWhiteSpace(refreshedTokens.Single()));
 
-        using var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        using var payload = JsonDocument.Parse(await TestHttpClient.ReadAsStringAsync(response));
         var root = payload.RootElement;
         Assert.Equal(AuthTestValues.UserId, root.GetProperty(AuthResponseFields.UserId).GetString());
         Assert.Equal(AuthTestValues.Username, root.GetProperty(AuthResponseFields.Username).GetString());

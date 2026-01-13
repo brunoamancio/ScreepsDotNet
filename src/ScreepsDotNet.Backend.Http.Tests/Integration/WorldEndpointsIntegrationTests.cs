@@ -10,6 +10,7 @@ using MongoDB.Driver;
 using ScreepsDotNet.Backend.Core.Constants;
 using ScreepsDotNet.Backend.Core.Seeding;
 using ScreepsDotNet.Backend.Http.Routing;
+using ScreepsDotNet.Backend.Http.Tests.TestSupport;
 
 [Collection(IntegrationTestSuiteDefinition.Name)]
 public sealed class WorldEndpointsIntegrationTests(IntegrationTestHarness harness) : IAsyncLifetime
@@ -23,11 +24,11 @@ public sealed class WorldEndpointsIntegrationTests(IntegrationTestHarness harnes
         SeedDataDefaults.World.SecondaryRoom
     ];
 
-    private readonly HttpClient _client = harness.Factory.CreateClient();
+    private readonly TestHttpClient _client = new(harness.Factory.CreateClient());
 
-    public Task InitializeAsync() => harness.ResetStateAsync();
+    public ValueTask InitializeAsync() => new(harness.ResetStateAsync());
 
-    public Task DisposeAsync() => Task.CompletedTask;
+    public ValueTask DisposeAsync() => ValueTask.CompletedTask;
 
     [Fact]
     public async Task MapStats_ReturnsOwnershipAndMinerals()
@@ -44,7 +45,7 @@ public sealed class WorldEndpointsIntegrationTests(IntegrationTestHarness harnes
         var response = await _client.SendAsync(request);
 
         response.EnsureSuccessStatusCode();
-        using var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        using var payload = JsonDocument.Parse(await TestHttpClient.ReadAsStringAsync(response));
         var root = payload.RootElement;
         Assert.Equal(SeedDataDefaults.World.GameTime, root.GetProperty("gameTime").GetInt32());
 
@@ -75,7 +76,7 @@ public sealed class WorldEndpointsIntegrationTests(IntegrationTestHarness harnes
         var response = await _client.SendAsync(request);
 
         response.EnsureSuccessStatusCode();
-        using var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        using var payload = JsonDocument.Parse(await TestHttpClient.ReadAsStringAsync(response));
         var stats = payload.RootElement.GetProperty("stats");
         Assert.True(stats.TryGetProperty(SeedDataDefaults.World.SecondaryShardRoom, out _));
     }
@@ -98,7 +99,7 @@ public sealed class WorldEndpointsIntegrationTests(IntegrationTestHarness harnes
         var response = await _client.SendAsync(request);
 
         response.EnsureSuccessStatusCode();
-        using var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        using var payload = JsonDocument.Parse(await TestHttpClient.ReadAsStringAsync(response));
         var stats = payload.RootElement.GetProperty("stats");
         Assert.True(stats.TryGetProperty(SeedDataDefaults.World.SecondaryShardRoom, out _));
     }
@@ -113,7 +114,7 @@ public sealed class WorldEndpointsIntegrationTests(IntegrationTestHarness harnes
         var response = await _client.SendAsync(request);
 
         response.EnsureSuccessStatusCode();
-        using var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        using var payload = JsonDocument.Parse(await TestHttpClient.ReadAsStringAsync(response));
         Assert.Equal("normal", payload.RootElement.GetProperty("room").GetProperty("status").GetString());
     }
 
@@ -128,7 +129,7 @@ public sealed class WorldEndpointsIntegrationTests(IntegrationTestHarness harnes
         var response = await _client.SendAsync(request);
 
         response.EnsureSuccessStatusCode();
-        using var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        using var payload = JsonDocument.Parse(await TestHttpClient.ReadAsStringAsync(response));
         Assert.Equal("normal", payload.RootElement.GetProperty("room").GetProperty("status").GetString());
     }
 
@@ -143,7 +144,7 @@ public sealed class WorldEndpointsIntegrationTests(IntegrationTestHarness harnes
         var response = await _client.SendAsync(request);
 
         response.EnsureSuccessStatusCode();
-        using var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        using var payload = JsonDocument.Parse(await TestHttpClient.ReadAsStringAsync(response));
         Assert.Equal("normal", payload.RootElement.GetProperty("room").GetProperty("status").GetString());
     }
 
@@ -153,7 +154,7 @@ public sealed class WorldEndpointsIntegrationTests(IntegrationTestHarness harnes
         var response = await _client.GetAsync($"{ApiRoutes.Game.World.RoomTerrain}?room={SeedDataDefaults.World.StartRoom}&encoded=1");
 
         response.EnsureSuccessStatusCode();
-        using var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        using var payload = JsonDocument.Parse(await TestHttpClient.ReadAsStringAsync(response));
         var terrain = payload.RootElement.GetProperty("terrain").EnumerateArray().First();
         Assert.Equal(2500, terrain.GetProperty("terrain").GetString()!.Length);
     }
@@ -164,7 +165,7 @@ public sealed class WorldEndpointsIntegrationTests(IntegrationTestHarness harnes
         var response = await _client.GetAsync($"{ApiRoutes.Game.World.RoomTerrain}?room={SeedDataDefaults.World.StartRoom}");
 
         response.EnsureSuccessStatusCode();
-        using var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        using var payload = JsonDocument.Parse(await TestHttpClient.ReadAsStringAsync(response));
         var terrain = payload.RootElement.GetProperty("terrain").EnumerateArray().First();
         var tiles = terrain.GetProperty("terrain").EnumerateArray().ToList();
         Assert.Equal(2500, tiles.Count);
@@ -178,7 +179,7 @@ public sealed class WorldEndpointsIntegrationTests(IntegrationTestHarness harnes
         var response = await _client.GetAsync(url);
 
         response.EnsureSuccessStatusCode();
-        using var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        using var payload = JsonDocument.Parse(await TestHttpClient.ReadAsStringAsync(response));
         var terrain = payload.RootElement.GetProperty("terrain").EnumerateArray().First();
         Assert.Equal(SeedDataDefaults.World.SecondaryShardRoom, terrain.GetProperty("room").GetString());
     }
@@ -190,7 +191,7 @@ public sealed class WorldEndpointsIntegrationTests(IntegrationTestHarness harnes
         var response = await _client.GetAsync(url);
 
         response.EnsureSuccessStatusCode();
-        using var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        using var payload = JsonDocument.Parse(await TestHttpClient.ReadAsStringAsync(response));
         var terrain = payload.RootElement.GetProperty("terrain").EnumerateArray().First();
         Assert.Equal(SeedDataDefaults.World.SecondaryShardRoom, terrain.GetProperty("room").GetString());
     }
@@ -204,7 +205,7 @@ public sealed class WorldEndpointsIntegrationTests(IntegrationTestHarness harnes
         });
 
         response.EnsureSuccessStatusCode();
-        using var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        using var payload = JsonDocument.Parse(await TestHttpClient.ReadAsStringAsync(response));
         var rooms = payload.RootElement.GetProperty("rooms").EnumerateArray().ToList();
         Assert.Equal(2, rooms.Count);
     }
@@ -219,7 +220,7 @@ public sealed class WorldEndpointsIntegrationTests(IntegrationTestHarness harnes
         });
 
         response.EnsureSuccessStatusCode();
-        using var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        using var payload = JsonDocument.Parse(await TestHttpClient.ReadAsStringAsync(response));
         var rooms = payload.RootElement.GetProperty("rooms").EnumerateArray().ToList();
         Assert.Single(rooms);
         Assert.Equal(SeedDataDefaults.World.SecondaryShardRoom, rooms[0].GetProperty("room").GetString());
@@ -237,7 +238,7 @@ public sealed class WorldEndpointsIntegrationTests(IntegrationTestHarness harnes
         });
 
         response.EnsureSuccessStatusCode();
-        using var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        using var payload = JsonDocument.Parse(await TestHttpClient.ReadAsStringAsync(response));
         var rooms = payload.RootElement.GetProperty("rooms").EnumerateArray().ToList();
         Assert.Single(rooms);
         Assert.Equal(SeedDataDefaults.World.SecondaryShardRoom, rooms[0].GetProperty("room").GetString());
@@ -249,7 +250,7 @@ public sealed class WorldEndpointsIntegrationTests(IntegrationTestHarness harnes
         var response = await _client.GetAsync(ApiRoutes.Game.World.WorldSize);
 
         response.EnsureSuccessStatusCode();
-        using var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        using var payload = JsonDocument.Parse(await TestHttpClient.ReadAsStringAsync(response));
         var expectedWidth = CalculateExpectedWidth();
         var expectedHeight = CalculateExpectedHeight();
         Assert.Equal(expectedWidth, payload.RootElement.GetProperty("width").GetInt32());
@@ -262,7 +263,7 @@ public sealed class WorldEndpointsIntegrationTests(IntegrationTestHarness harnes
         var response = await _client.GetAsync(ApiRoutes.Game.World.Time);
 
         response.EnsureSuccessStatusCode();
-        using var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        using var payload = JsonDocument.Parse(await TestHttpClient.ReadAsStringAsync(response));
         Assert.Equal(SeedDataDefaults.World.GameTime, payload.RootElement.GetProperty("time").GetInt32());
     }
 
@@ -272,7 +273,7 @@ public sealed class WorldEndpointsIntegrationTests(IntegrationTestHarness harnes
         var response = await _client.GetAsync(ApiRoutes.Game.World.Tick);
 
         response.EnsureSuccessStatusCode();
-        using var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        using var payload = JsonDocument.Parse(await TestHttpClient.ReadAsStringAsync(response));
         Assert.Equal(SeedDataDefaults.World.TickDuration, payload.RootElement.GetProperty("tick").GetInt32());
     }
 
@@ -281,14 +282,14 @@ public sealed class WorldEndpointsIntegrationTests(IntegrationTestHarness harnes
     {
         var roomsCollection = harness.Database.GetCollection<BsonDocument>("rooms");
         var shardRoomFilter = Builders<BsonDocument>.Filter.Eq("_id", SeedDataDefaults.World.SecondaryShardRoom);
-        var shardRoom = await roomsCollection.Find(shardRoomFilter).FirstOrDefaultAsync();
+        var shardRoom = await roomsCollection.Find(shardRoomFilter).FirstOrDefaultAsync(TestContext.Current.CancellationToken);
         Assert.NotNull(shardRoom);
         Assert.True(shardRoom.TryGetValue("shard", out var roomShard));
         Assert.Equal(SeedDataDefaults.World.SecondaryShardName, roomShard.AsString);
 
         var terrainCollection = harness.Database.GetCollection<BsonDocument>("rooms.terrain");
         var terrain = await terrainCollection.Find(Builders<BsonDocument>.Filter.Eq("room", SeedDataDefaults.World.SecondaryShardRoom))
-                                             .FirstOrDefaultAsync();
+                                             .FirstOrDefaultAsync(TestContext.Current.CancellationToken);
         Assert.NotNull(terrain);
         Assert.True(terrain.TryGetValue("shard", out var terrainShard));
         Assert.Equal(SeedDataDefaults.World.SecondaryShardName, terrainShard.AsString);
@@ -297,7 +298,7 @@ public sealed class WorldEndpointsIntegrationTests(IntegrationTestHarness harnes
         var controllerFilter = Builders<BsonDocument>.Filter.And(
             Builders<BsonDocument>.Filter.Eq("room", SeedDataDefaults.World.SecondaryShardRoom),
             Builders<BsonDocument>.Filter.Eq("type", RoomObjectType.Controller.ToDocumentValue()));
-        var controller = await objects.Find(controllerFilter).FirstOrDefaultAsync();
+        var controller = await objects.Find(controllerFilter).FirstOrDefaultAsync(TestContext.Current.CancellationToken);
         Assert.NotNull(controller);
         Assert.True(controller.TryGetValue("shard", out var controllerShard));
         Assert.Equal(SeedDataDefaults.World.SecondaryShardName, controllerShard.AsString);
@@ -312,7 +313,7 @@ public sealed class WorldEndpointsIntegrationTests(IntegrationTestHarness harnes
         });
 
         response.EnsureSuccessStatusCode();
-        using var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        using var payload = JsonDocument.Parse(await TestHttpClient.ReadAsStringAsync(response));
         return payload.RootElement.GetProperty(AuthResponseFields.Token).GetString()!;
     }
 

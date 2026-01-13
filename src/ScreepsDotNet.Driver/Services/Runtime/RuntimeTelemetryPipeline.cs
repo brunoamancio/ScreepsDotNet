@@ -11,7 +11,7 @@ internal sealed class RuntimeTelemetryPipeline : IRuntimeTelemetrySink
 
     public RuntimeTelemetryPipeline(IEnumerable<IRuntimeTelemetryListener> listeners, ILogger<RuntimeTelemetryPipeline>? logger = null)
     {
-        _listeners = listeners?.ToArray() ?? Array.Empty<IRuntimeTelemetryListener>();
+        _listeners = listeners?.ToArray() ?? [];
         _logger = logger;
     }
 

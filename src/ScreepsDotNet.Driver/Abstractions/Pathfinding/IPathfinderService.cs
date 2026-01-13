@@ -4,6 +4,7 @@ public interface IPathfinderService
 {
     Task InitializeAsync(IEnumerable<TerrainRoomData> terrainData, CancellationToken token = default);
     PathfinderResult Search(RoomPosition origin, PathfinderGoal goal, PathfinderOptions options);
+    PathfinderResult Search(RoomPosition origin, IReadOnlyList<PathfinderGoal> goals, PathfinderOptions options);
 }
 
 public sealed record TerrainRoomData(string RoomName, byte[] TerrainBytes);
@@ -19,10 +20,17 @@ public sealed record PathfinderOptions(
     int PlainCost = 1,
     int SwampCost = 5,
     bool IgnoreRoads = false,
-    bool IgnoreDestructibleStructures = false);
+    bool IgnoreDestructibleStructures = false,
+    int? MaxCost = null,
+    double HeuristicWeight = 1.2,
+    PathfinderRoomCallback? RoomCallback = null);
 
 public sealed record PathfinderResult(
     IReadOnlyList<RoomPosition> Path,
     int Operations,
     int Cost,
     bool Incomplete);
+
+public delegate PathfinderRoomCallbackResult? PathfinderRoomCallback(string roomName);
+
+public sealed record PathfinderRoomCallbackResult(byte[]? CostMatrix, bool BlockRoom = false);

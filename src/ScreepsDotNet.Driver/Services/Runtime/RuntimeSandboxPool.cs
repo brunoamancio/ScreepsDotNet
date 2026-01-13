@@ -5,7 +5,7 @@ namespace ScreepsDotNet.Driver.Services.Runtime;
 
 internal sealed class RuntimeSandboxPool(IRuntimeSandboxFactory factory, ILogger<RuntimeSandboxPool>? logger = null) : IRuntimeSandboxPool
 {
-    private readonly ConcurrentBag<IRuntimeSandbox> _pool = new();
+    private readonly ConcurrentBag<IRuntimeSandbox> _pool = [];
 
     public IRuntimeSandbox Rent()
     {

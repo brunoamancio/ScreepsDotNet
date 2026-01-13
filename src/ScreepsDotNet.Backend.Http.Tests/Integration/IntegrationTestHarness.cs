@@ -1,4 +1,4 @@
-﻿namespace ScreepsDotNet.Backend.Http.Tests.Integration;
+namespace ScreepsDotNet.Backend.Http.Tests.Integration;
 
 using System;
 using MongoDB.Driver;
@@ -27,7 +27,7 @@ public sealed class IntegrationTestHarness : IAsyncLifetime
 
     public DateTime InitializedAtUtc { get; private set; }
 
-    public async Task InitializeAsync()
+    public async ValueTask InitializeAsync()
     {
         await _mongoContainer.StartAsync();
         await _redisContainer.StartAsync();
@@ -54,7 +54,7 @@ public sealed class IntegrationTestHarness : IAsyncLifetime
         await ResetRedisStateAsync().ConfigureAwait(false);
     }
 
-    public async Task DisposeAsync()
+    public async ValueTask DisposeAsync()
     {
         await Factory.DisposeAsync();
         await _mongoContainer.DisposeAsync();

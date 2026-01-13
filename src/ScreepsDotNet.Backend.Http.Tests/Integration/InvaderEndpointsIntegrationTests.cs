@@ -1,7 +1,6 @@
 ﻿namespace ScreepsDotNet.Backend.Http.Tests.Integration;
 
 using System.Net;
-using System.Net.Http.Json;
 using System.Text.Json;
 using MongoDB.Bson;
 using MongoDB.Driver;
@@ -9,22 +8,23 @@ using ScreepsDotNet.Backend.Core.Constants;
 using ScreepsDotNet.Backend.Core.Models;
 using ScreepsDotNet.Backend.Core.Seeding;
 using ScreepsDotNet.Backend.Http.Routing;
+using ScreepsDotNet.Backend.Http.Tests.TestSupport;
 
 [Collection(IntegrationTestSuiteDefinition.Name)]
 public sealed class InvaderEndpointsIntegrationTests(IntegrationTestHarness harness) : IAsyncLifetime
 {
-    private readonly HttpClient _client = harness.Factory.CreateClient();
+    private readonly TestHttpClient _client = new(harness.Factory.CreateClient());
 
-    public Task InitializeAsync() => harness.ResetStateAsync();
+    public ValueTask InitializeAsync() => new(harness.ResetStateAsync());
 
-    public Task DisposeAsync() => Task.CompletedTask;
+    public ValueTask DisposeAsync() => ValueTask.CompletedTask;
 
     private async Task<string> LoginAsync()
     {
         var request = new { ticket = SeedDataDefaults.Auth.Ticket };
         var response = await _client.PostAsJsonAsync(ApiRoutes.AuthSteamTicket, request);
         response.EnsureSuccessStatusCode();
-        var content = await response.Content.ReadFromJsonAsync<JsonElement>();
+        var content = await TestHttpClient.ReadFromJsonAsync<JsonElement>(response);
         return content.GetProperty("token").GetString()!;
     }
 
@@ -44,14 +44,14 @@ public sealed class InvaderEndpointsIntegrationTests(IntegrationTestHarness harn
 
         // Assert
         response.EnsureSuccessStatusCode();
-        var content = await response.Content.ReadFromJsonAsync<JsonElement>();
+        var content = await TestHttpClient.ReadFromJsonAsync<JsonElement>(response);
         Assert.Equal(1, content.GetProperty("ok").GetInt32());
         var invaderId = content.GetProperty("_id").GetString();
         Assert.NotNull(invaderId);
 
         // Verify database state
         var objectsCollection = harness.Database.GetCollection<BsonDocument>("rooms.objects");
-        var invader = await objectsCollection.Find(Builders<BsonDocument>.Filter.Eq("_id", ObjectId.Parse(invaderId))).FirstOrDefaultAsync();
+        var invader = await objectsCollection.Find(Builders<BsonDocument>.Filter.Eq("_id", ObjectId.Parse(invaderId))).FirstOrDefaultAsync(TestContext.Current.CancellationToken);
         Assert.NotNull(invader);
         Assert.Equal(StructureType.Creep.ToDocumentValue(), invader["type"].AsString);
         Assert.Equal(SeedDataDefaults.World.InvaderUser, invader["user"].AsString);
@@ -74,7 +74,7 @@ public sealed class InvaderEndpointsIntegrationTests(IntegrationTestHarness harn
 
         // Assert
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-        var content = await response.Content.ReadFromJsonAsync<JsonElement>();
+        var content = await TestHttpClient.ReadFromJsonAsync<JsonElement>(response);
         Assert.Equal("not owned", content.GetProperty("error").GetString());
     }
 
@@ -89,7 +89,7 @@ public sealed class InvaderEndpointsIntegrationTests(IntegrationTestHarness harn
         var createRequest = new CreateInvaderRequest(room, 25, 25, InvaderType.Melee, InvaderSize.Small, false);
         _client.DefaultRequestHeaders.Add("X-Token", token);
         var createResponse = await _client.PostAsJsonAsync(ApiRoutes.Game.World.CreateInvader, createRequest);
-        var createContent = await createResponse.Content.ReadFromJsonAsync<JsonElement>();
+        var createContent = await TestHttpClient.ReadFromJsonAsync<JsonElement>(createResponse);
         var invaderId = createContent.GetProperty("_id").GetString()!;
 
         var removeRequest = new RemoveInvaderRequest(invaderId);
@@ -99,12 +99,12 @@ public sealed class InvaderEndpointsIntegrationTests(IntegrationTestHarness harn
 
         // Assert
         response.EnsureSuccessStatusCode();
-        var content = await response.Content.ReadFromJsonAsync<JsonElement>();
+        var content = await TestHttpClient.ReadFromJsonAsync<JsonElement>(response);
         Assert.Equal(1, content.GetProperty("ok").GetInt32());
 
         // Verify database state
         var objectsCollection = harness.Database.GetCollection<BsonDocument>("rooms.objects");
-        var invader = await objectsCollection.Find(Builders<BsonDocument>.Filter.Eq("_id", ObjectId.Parse(invaderId))).FirstOrDefaultAsync();
+        var invader = await objectsCollection.Find(Builders<BsonDocument>.Filter.Eq("_id", ObjectId.Parse(invaderId))).FirstOrDefaultAsync(TestContext.Current.CancellationToken);
         Assert.Null(invader);
     }
 
@@ -122,11 +122,11 @@ public sealed class InvaderEndpointsIntegrationTests(IntegrationTestHarness harn
         var response = await _client.PostAsJsonAsync(ApiRoutes.Game.World.CreateInvader, request);
         response.EnsureSuccessStatusCode();
 
-        var payload = await response.Content.ReadFromJsonAsync<JsonElement>();
+        var payload = await TestHttpClient.ReadFromJsonAsync<JsonElement>(response);
         var invaderId = payload.GetProperty("_id").GetString()!;
 
         var objectsCollection = harness.Database.GetCollection<BsonDocument>("rooms.objects");
-        var invader = await objectsCollection.Find(Builders<BsonDocument>.Filter.Eq("_id", ObjectId.Parse(invaderId))).FirstOrDefaultAsync();
+        var invader = await objectsCollection.Find(Builders<BsonDocument>.Filter.Eq("_id", ObjectId.Parse(invaderId))).FirstOrDefaultAsync(TestContext.Current.CancellationToken);
         Assert.NotNull(invader);
         Assert.Equal(shard, invader.GetValue("shard", shard).AsString);
     }
@@ -137,13 +137,13 @@ public sealed class InvaderEndpointsIntegrationTests(IntegrationTestHarness harn
         var roomDoc = new BsonDocument { ["_id"] = room, ["status"] = "normal" };
         if (!string.IsNullOrWhiteSpace(shard))
             roomDoc["shard"] = shard;
-        await roomsCollection.ReplaceOneAsync(new BsonDocument { ["_id"] = room }, roomDoc, new ReplaceOptions { IsUpsert = true });
+        await roomsCollection.ReplaceOneAsync(new BsonDocument { ["_id"] = room }, roomDoc, new ReplaceOptions { IsUpsert = true }, cancellationToken: TestContext.Current.CancellationToken);
 
         var terrainCollection = harness.Database.GetCollection<BsonDocument>("rooms.terrain");
         var terrainDoc = new BsonDocument { ["room"] = room, ["terrain"] = new string('0', 2500) };
         if (!string.IsNullOrWhiteSpace(shard))
             terrainDoc["shard"] = shard;
-        await terrainCollection.ReplaceOneAsync(new BsonDocument { ["room"] = room }, terrainDoc, new ReplaceOptions { IsUpsert = true });
+        await terrainCollection.ReplaceOneAsync(new BsonDocument { ["room"] = room }, terrainDoc, new ReplaceOptions { IsUpsert = true }, cancellationToken: TestContext.Current.CancellationToken);
 
         var objectsCollection = harness.Database.GetCollection<BsonDocument>("rooms.objects");
         var controllerDoc = new BsonDocument
@@ -158,6 +158,6 @@ public sealed class InvaderEndpointsIntegrationTests(IntegrationTestHarness harn
         if (!string.IsNullOrWhiteSpace(shard))
             controllerDoc["shard"] = shard;
 
-        await objectsCollection.InsertOneAsync(controllerDoc);
+        await objectsCollection.InsertOneAsync(controllerDoc, cancellationToken: TestContext.Current.CancellationToken);
     }
 }

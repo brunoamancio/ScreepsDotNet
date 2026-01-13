@@ -33,7 +33,7 @@ public sealed class StorageCommandTests
             Format = "table"
         };
 
-        var exitCode = await command.ExecuteAsync(null!, settings, CancellationToken.None);
+        var exitCode = await command.ExecuteAsync(null!, settings, TestContext.Current.CancellationToken);
 
         Assert.Equal(1, exitCode);
     }

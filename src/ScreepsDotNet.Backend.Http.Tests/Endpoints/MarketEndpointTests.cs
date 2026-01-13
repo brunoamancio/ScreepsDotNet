@@ -1,8 +1,8 @@
 ﻿using System.Net;
-using System.Net.Http.Json;
 using System.Text.Json;
 using ScreepsDotNet.Backend.Http.Routing;
 using ScreepsDotNet.Backend.Http.Tests.Web;
+using ScreepsDotNet.Backend.Http.Tests.TestSupport;
 
 namespace ScreepsDotNet.Backend.Http.Tests.Endpoints;
 
@@ -10,7 +10,7 @@ public sealed class MarketEndpointTests(TestWebApplicationFactory factory) : ICl
 {
     private const string ResourceTypeQuery = "?resourceType=energy";
 
-    private readonly HttpClient _client = factory.CreateClient();
+    private readonly TestHttpClient _client = new(factory.CreateClient());
 
     [Fact]
     public async Task OrdersIndex_WithToken_ReturnsSummaries()
@@ -22,7 +22,7 @@ public sealed class MarketEndpointTests(TestWebApplicationFactory factory) : ICl
         var response = await _client.SendAsync(request);
 
         response.EnsureSuccessStatusCode();
-        using var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        using var payload = JsonDocument.Parse(await TestHttpClient.ReadAsStringAsync(response));
         var list = payload.RootElement.GetProperty("list").EnumerateArray().ToList();
         Assert.NotEmpty(list);
         Assert.Equal("energy", list.First().GetProperty("_id").GetString());
@@ -50,7 +50,7 @@ public sealed class MarketEndpointTests(TestWebApplicationFactory factory) : ICl
         var response = await _client.SendAsync(request);
 
         response.EnsureSuccessStatusCode();
-        using var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        using var payload = JsonDocument.Parse(await TestHttpClient.ReadAsStringAsync(response));
         var list = payload.RootElement.GetProperty("list").EnumerateArray().ToList();
         Assert.NotEmpty(list);
         Assert.Equal("energy", list.First().GetProperty("resourceType").GetString());
@@ -66,7 +66,7 @@ public sealed class MarketEndpointTests(TestWebApplicationFactory factory) : ICl
         var response = await _client.SendAsync(request);
 
         response.EnsureSuccessStatusCode();
-        using var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        using var payload = JsonDocument.Parse(await TestHttpClient.ReadAsStringAsync(response));
         var list = payload.RootElement.GetProperty("list").EnumerateArray().ToList();
         Assert.Single(list);
         Assert.Equal(AuthTestValues.UserId, list.First().GetProperty("user").GetString());
@@ -94,7 +94,7 @@ public sealed class MarketEndpointTests(TestWebApplicationFactory factory) : ICl
         var response = await _client.SendAsync(request);
 
         response.EnsureSuccessStatusCode();
-        using var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        using var payload = JsonDocument.Parse(await TestHttpClient.ReadAsStringAsync(response));
         var stats = payload.RootElement.GetProperty("stats").EnumerateArray().ToList();
         Assert.NotEmpty(stats);
         Assert.Equal("energy", stats.First().GetProperty("resourceType").GetString());
@@ -109,7 +109,7 @@ public sealed class MarketEndpointTests(TestWebApplicationFactory factory) : ICl
         });
 
         response.EnsureSuccessStatusCode();
-        using var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        using var payload = JsonDocument.Parse(await TestHttpClient.ReadAsStringAsync(response));
         return payload.RootElement.GetProperty(AuthResponseFields.Token).GetString()!;
     }
 }

@@ -3,10 +3,12 @@
 using System.Text.Json;
 using ScreepsDotNet.Backend.Http.Routing;
 using ScreepsDotNet.Backend.Http.Tests.Web;
+using ScreepsDotNet.Backend.Http.Tests.TestSupport;
 
 public class ServerEndpointTests(TestWebApplicationFactory factory) : IClassFixture<TestWebApplicationFactory>
 {
-    private readonly HttpClient _client = factory.CreateClient();
+    private readonly TestHttpClient _client = new(factory.CreateClient());
+    private static CancellationToken Token => TestContext.Current.CancellationToken;
 
     [Fact]
     public async Task ServerInfo_ReturnsConfiguredServerData()
@@ -14,7 +16,7 @@ public class ServerEndpointTests(TestWebApplicationFactory factory) : IClassFixt
         var response = await _client.GetAsync(ApiRoutes.Server.Info);
 
         response.EnsureSuccessStatusCode();
-        using var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        using var payload = JsonDocument.Parse(await TestHttpClient.ReadAsStringAsync(response));
         var root = payload.RootElement;
         Assert.Equal(VersionTestValues.WelcomeText, root.GetProperty(ServerDataResponseFields.WelcomeText).GetString());
         Assert.Equal(VersionTestValues.HistoryChunkSize, root.GetProperty(ServerDataResponseFields.HistoryChunkSize).GetInt32());

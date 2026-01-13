@@ -15,6 +15,7 @@ public sealed class FlagCommandsIntegrationTests(MongoMapIntegrationFixture fixt
     public async Task FlagCreateCommand_CreatesFlagInMongo()
     {
         await fixture.ResetAsync();
+        var token = TestContext.Current.CancellationToken;
         var service = CreateFlagService();
         var userRepository = new MongoUserRepository(fixture.DatabaseProvider);
         var command = new FlagCreateCommand(service, userRepository);
@@ -30,12 +31,12 @@ public sealed class FlagCommandsIntegrationTests(MongoMapIntegrationFixture fixt
             SecondaryColor = Color.Blue
         };
 
-        var exitCode = await command.ExecuteAsync(null!, settings, CancellationToken.None);
+        var exitCode = await command.ExecuteAsync(null!, settings, token);
 
         Assert.Equal(0, exitCode);
 
         var flags = fixture.GetCollection<RoomFlagDocument>("rooms.flags");
-        var flag = await flags.Find(f => f.Id == "CliFlag").FirstOrDefaultAsync();
+        var flag = await flags.Find(f => f.Id == "CliFlag").FirstOrDefaultAsync(token);
         Assert.NotNull(flag);
         Assert.Equal("25|25|1|3", flag.Data);
     }
@@ -44,6 +45,7 @@ public sealed class FlagCommandsIntegrationTests(MongoMapIntegrationFixture fixt
     public async Task FlagChangeColorCommand_UpdatesFlagInMongo()
     {
         await fixture.ResetAsync();
+        var token = TestContext.Current.CancellationToken;
         var service = CreateFlagService();
         var userRepository = new MongoUserRepository(fixture.DatabaseProvider);
 
@@ -54,7 +56,7 @@ public sealed class FlagCommandsIntegrationTests(MongoMapIntegrationFixture fixt
             UserId = SeedDataDefaults.User.Id,
             Room = "W1N1",
             Data = "10|10|1|1"
-        });
+        }, cancellationToken: token);
 
         var command = new FlagChangeColorCommand(service, userRepository);
         var settings = new FlagChangeColorCommand.Settings
@@ -66,11 +68,11 @@ public sealed class FlagCommandsIntegrationTests(MongoMapIntegrationFixture fixt
             SecondaryColor = Color.Cyan
         };
 
-        var exitCode = await command.ExecuteAsync(null!, settings, CancellationToken.None);
+        var exitCode = await command.ExecuteAsync(null!, settings, token);
 
         Assert.Equal(0, exitCode);
 
-        var flag = await flags.Find(f => f.Id == "ColorFlag").FirstOrDefaultAsync();
+        var flag = await flags.Find(f => f.Id == "ColorFlag").FirstOrDefaultAsync(token);
         Assert.Equal("10|10|2|4", flag.Data);
     }
 
@@ -78,6 +80,7 @@ public sealed class FlagCommandsIntegrationTests(MongoMapIntegrationFixture fixt
     public async Task FlagRemoveCommand_DeletesFlagFromMongo()
     {
         await fixture.ResetAsync();
+        var token = TestContext.Current.CancellationToken;
         var service = CreateFlagService();
         var userRepository = new MongoUserRepository(fixture.DatabaseProvider);
 
@@ -88,7 +91,7 @@ public sealed class FlagCommandsIntegrationTests(MongoMapIntegrationFixture fixt
             UserId = SeedDataDefaults.User.Id,
             Room = "W1N1",
             Data = "10|10|1|1"
-        });
+        }, cancellationToken: token);
 
         var command = new FlagRemoveCommand(service, userRepository);
         var settings = new FlagRemoveCommand.Settings
@@ -98,11 +101,11 @@ public sealed class FlagCommandsIntegrationTests(MongoMapIntegrationFixture fixt
             Name = "RemoveFlag"
         };
 
-        var exitCode = await command.ExecuteAsync(null!, settings, CancellationToken.None);
+        var exitCode = await command.ExecuteAsync(null!, settings, token);
 
         Assert.Equal(0, exitCode);
 
-        var flag = await flags.Find(f => f.Id == "RemoveFlag").FirstOrDefaultAsync();
+        var flag = await flags.Find(f => f.Id == "RemoveFlag").FirstOrDefaultAsync(token);
         Assert.Null(flag);
     }
 

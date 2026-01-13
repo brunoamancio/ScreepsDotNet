@@ -15,7 +15,7 @@ public sealed class SystemCommandTests
             Message = "Server restart in 5 minutes"
         };
 
-        var exitCode = await command.ExecuteAsync(null!, settings, CancellationToken.None);
+        var exitCode = await command.ExecuteAsync(null!, settings, TestContext.Current.CancellationToken);
 
         Assert.Equal(0, exitCode);
         Assert.Equal("Server restart in 5 minutes", service.LastMessage);

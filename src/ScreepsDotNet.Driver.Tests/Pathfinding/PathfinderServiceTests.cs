@@ -9,7 +9,8 @@ public sealed class PathfinderServiceTests
     public async Task Search_ReturnsSimplePath()
     {
         var service = new PathfinderService();
-        await service.InitializeAsync([new TerrainRoomData("W1N1", CreatePlainTerrain())]);
+        var token = TestContext.Current.CancellationToken;
+        await service.InitializeAsync([new TerrainRoomData("W1N1", CreatePlainTerrain())], token);
 
         var origin = new RoomPosition(25, 25, "W1N1");
         var goal = new PathfinderGoal(new RoomPosition(30, 25, "W1N1"));
@@ -28,7 +29,8 @@ public sealed class PathfinderServiceTests
     public async Task Search_DifferentRooms_ReturnsIncomplete()
     {
         var service = new PathfinderService();
-        await service.InitializeAsync([new TerrainRoomData("W1N1", CreatePlainTerrain())]);
+        var token = TestContext.Current.CancellationToken;
+        await service.InitializeAsync([new TerrainRoomData("W1N1", CreatePlainTerrain())], token);
 
         var origin = new RoomPosition(10, 10, "W1N1");
         var goal = new PathfinderGoal(new RoomPosition(10, 10, "W2N2"));

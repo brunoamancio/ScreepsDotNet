@@ -1,12 +1,13 @@
 ﻿using System.Text.Json;
 using ScreepsDotNet.Backend.Http.Routing;
 using ScreepsDotNet.Backend.Http.Tests.Web;
+using ScreepsDotNet.Backend.Http.Tests.TestSupport;
 
 namespace ScreepsDotNet.Backend.Http.Tests.Endpoints;
 
 public class VersionEndpointTests(TestWebApplicationFactory factory) : IClassFixture<TestWebApplicationFactory>
 {
-    private readonly HttpClient _client = factory.CreateClient();
+    private readonly TestHttpClient _client = new(factory.CreateClient());
 
     [Fact]
     public async Task Version_ReturnsExpectedShape()
@@ -14,7 +15,7 @@ public class VersionEndpointTests(TestWebApplicationFactory factory) : IClassFix
         var response = await _client.GetAsync(ApiRoutes.Version);
 
         response.EnsureSuccessStatusCode();
-        var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        var payload = JsonDocument.Parse(await TestHttpClient.ReadAsStringAsync(response));
         var root = payload.RootElement;
 
         Assert.Equal(VersionTestValues.Protocol, root.GetProperty(VersionResponseFields.Protocol).GetInt32());

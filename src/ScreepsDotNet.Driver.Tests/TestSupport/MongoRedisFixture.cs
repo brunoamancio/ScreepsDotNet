@@ -24,7 +24,7 @@ public sealed class MongoRedisFixture : IAsyncLifetime
     public IMongoCollection<TDocument> GetCollection<TDocument>(string name)
         => _mongoProvider.GetCollection<TDocument>(name);
 
-    public async Task InitializeAsync()
+    public async ValueTask InitializeAsync()
     {
         await _mongo.StartAsync();
         await _redis.StartAsync();
@@ -45,7 +45,7 @@ public sealed class MongoRedisFixture : IAsyncLifetime
         await database.CreateCollectionAsync(Options.RoomHistoryCollection);
     }
 
-    public async Task DisposeAsync()
+    public async ValueTask DisposeAsync()
     {
         _redisProvider?.Dispose();
         await _mongo.DisposeAsync();

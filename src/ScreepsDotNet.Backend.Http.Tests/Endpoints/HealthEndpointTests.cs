@@ -2,12 +2,14 @@
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using ScreepsDotNet.Backend.Http.Health;
 using ScreepsDotNet.Backend.Http.Tests.Web;
+using ScreepsDotNet.Backend.Http.Tests.TestSupport;
 
 namespace ScreepsDotNet.Backend.Http.Tests.Endpoints;
 
 public class HealthEndpointTests(TestWebApplicationFactory factory) : IClassFixture<TestWebApplicationFactory>
 {
-    private readonly HttpClient _client = factory.CreateClient();
+    private readonly TestHttpClient _client = new(factory.CreateClient());
+    private static CancellationToken Token => TestContext.Current.CancellationToken;
 
     [Fact]
     public async Task Health_ReturnsHealthyPayload()
@@ -15,7 +17,7 @@ public class HealthEndpointTests(TestWebApplicationFactory factory) : IClassFixt
         var response = await _client.GetAsync(HealthCheckOptionsFactory.HealthEndpoint);
 
         response.EnsureSuccessStatusCode();
-        var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        var payload = JsonDocument.Parse(await TestHttpClient.ReadAsStringAsync(response));
         var root = payload.RootElement;
 
         Assert.Equal(nameof(HealthStatus.Healthy), root.GetProperty(HealthResponseFields.Status).GetString());

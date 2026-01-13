@@ -55,12 +55,14 @@ public interface IPathfinderService
 - Temporarily host the Node pathfinder via an IPC bridge (e.g., small Node worker) while the native port is underway. This keeps the pipeline moving even if C++ work takes longer.
 
 ### Current Status (January 12, 2026)
-- `IPathfinderService` is registered and backed by a managed A*-based implementation that caches per-room terrain (50 × 50) and supports single-room searches (including swamp/plain cost tuning). This lets the processor exercise intents without the native dependency.
+- `PathfinderService` now bootstraps the native solver via `PathfinderNative` whenever binaries are available for the current RID. The feature is controlled by `PathfinderServiceOptions.EnableNative` (default `true`) and automatically falls back to the managed A* implementation if the native library fails to load.
+- Terrain ingestion accepts legacy 2 500-byte strings or packed 625-byte buffers; the service repacks the former before passing them to the native API.
+- Native binaries are published per RID and downloaded during `dotnet build` (hash verified); setting `NativePathfinderSkipDownload=true` keeps the old behavior for local experiments.
 - Limitations:
-  - Multi-room searches, flee logic, roads/structures, and parity with the legacy C++ solver are not implemented yet.
-  - Terrain ingestion currently expects 2 500-byte grids (legacy `rooms.terrain` output) and logs a warning for unrecognized formats.
+  - Room callbacks (`roomCallback`), multi-goal arrays, and flee/road tuning are still handled only by the legacy Node setup; the managed surface currently exposes a single-goal search without callback hooks.
+  - Processor tests still exercise the managed fallback; we need regression data that proves native vs. legacy parity before flipping the default permanently.
+
 - Next steps:
-  1. Replace the managed A* core with the native Screeps pathfinder via P/Invoke.
-  2. Extend the terrain cache/initialization path so processor/main loops automatically seed the service at startup.
-  3. Add multi-room routing, flee mode, and additional options once the native layer is wired.
-  4. Update the compatibility shim/tests to validate native-vs-managed parity before flipping the default.
+  1. Expose room callback plumbing and multi-goal helpers so `roomCallback`/`goals[]` in processor code behave like the legacy driver.
+  2. Add regression tests comparing native output to the Node driver (multi-room, flee, portal cases) and cover hash/download errors.
+  3. Document the feature flag + troubleshooting steps in `docs/driver.md`/`AGENT.md`, then remove the managed fallback once parity is proven.

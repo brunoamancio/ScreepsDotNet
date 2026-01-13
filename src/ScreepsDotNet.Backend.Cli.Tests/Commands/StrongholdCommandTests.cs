@@ -21,7 +21,7 @@ public sealed class StrongholdCommandTests
             DeployDelayTicks = 10
         };
 
-        var exitCode = await command.ExecuteAsync(null!, settings, CancellationToken.None);
+        var exitCode = await command.ExecuteAsync(null!, settings, TestContext.Current.CancellationToken);
 
         Assert.Equal(0, exitCode);
         Assert.NotNull(service.SpawnArguments);
@@ -46,7 +46,7 @@ public sealed class StrongholdCommandTests
             Shard = "shard2"
         };
 
-        var exitCode = await command.ExecuteAsync(null!, settings, CancellationToken.None);
+        var exitCode = await command.ExecuteAsync(null!, settings, TestContext.Current.CancellationToken);
 
         Assert.Equal(0, exitCode);
         Assert.Equal("shard2", service.SpawnArguments!.Value.ShardName);
@@ -74,7 +74,7 @@ public sealed class StrongholdCommandTests
         var command = new StrongholdExpandCommand(service);
         var settings = new StrongholdExpandCommand.Settings { RoomName = "W5N3", Shard = "shard1" };
 
-        var exitCode = await command.ExecuteAsync(null!, settings, CancellationToken.None);
+        var exitCode = await command.ExecuteAsync(null!, settings, TestContext.Current.CancellationToken);
 
         Assert.Equal(1, exitCode);
         Assert.Equal(("W5N3", "shard1"), service.ExpandArguments);

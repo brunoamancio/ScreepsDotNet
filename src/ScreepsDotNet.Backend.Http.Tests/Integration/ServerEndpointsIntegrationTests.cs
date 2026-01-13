@@ -3,15 +3,16 @@
 using System.Text.Json;
 using ScreepsDotNet.Backend.Core.Seeding;
 using ScreepsDotNet.Backend.Http.Routing;
+using ScreepsDotNet.Backend.Http.Tests.TestSupport;
 
 [Collection(IntegrationTestSuiteDefinition.Name)]
 public sealed class ServerEndpointsIntegrationTests(IntegrationTestHarness harness) : IAsyncLifetime
 {
-    private readonly HttpClient _client = harness.Factory.CreateClient();
+    private readonly TestHttpClient _client = new(harness.Factory.CreateClient());
 
-    public Task InitializeAsync() => harness.ResetStateAsync();
+    public ValueTask InitializeAsync() => new(harness.ResetStateAsync());
 
-    public Task DisposeAsync() => Task.CompletedTask;
+    public ValueTask DisposeAsync() => ValueTask.CompletedTask;
 
     [Fact]
     public async Task ServerInfo_ReturnsMongoValues()
@@ -19,7 +20,7 @@ public sealed class ServerEndpointsIntegrationTests(IntegrationTestHarness harne
         var response = await _client.GetAsync(ApiRoutes.Server.Info);
 
         response.EnsureSuccessStatusCode();
-        using var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        using var payload = JsonDocument.Parse(await TestHttpClient.ReadAsStringAsync(response));
         var root = payload.RootElement;
         Assert.Equal(SeedDataDefaults.ServerData.WelcomeText, root.GetProperty(ServerDataResponseFields.WelcomeText).GetString());
         Assert.Equal(SeedDataDefaults.ServerData.HistoryChunkSize, root.GetProperty(ServerDataResponseFields.HistoryChunkSize).GetInt32());
@@ -37,7 +38,7 @@ public sealed class ServerEndpointsIntegrationTests(IntegrationTestHarness harne
         var response = await _client.GetAsync(ApiRoutes.Version);
 
         response.EnsureSuccessStatusCode();
-        using var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        using var payload = JsonDocument.Parse(await TestHttpClient.ReadAsStringAsync(response));
         var root = payload.RootElement;
         Assert.Equal(SeedDataDefaults.Version.Protocol, root.GetProperty(VersionResponseFields.Protocol).GetInt32());
         Assert.Equal(SeedDataDefaults.Version.UseNativeAuth, root.GetProperty(VersionResponseFields.UseNativeAuth).GetBoolean());

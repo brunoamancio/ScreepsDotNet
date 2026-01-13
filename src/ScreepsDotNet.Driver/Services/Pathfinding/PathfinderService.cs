@@ -1,22 +1,32 @@
 using System.Collections.Concurrent;
 using System.Text;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using ScreepsDotNet.Driver.Abstractions.Pathfinding;
 
 namespace ScreepsDotNet.Driver.Services.Pathfinding;
 
-internal sealed class PathfinderService(ILogger<PathfinderService>? logger = null) : IPathfinderService
+internal sealed class PathfinderService(
+    ILogger<PathfinderService>? logger = null,
+    IOptions<PathfinderServiceOptions>? serviceOptions = null) : IPathfinderService
 {
     private const int RoomSize = 50;
     private const int RoomArea = RoomSize * RoomSize;
+    private const int PackedTerrainBytes = RoomArea / 4;
+    private static readonly Encoding Utf8 = Encoding.UTF8;
+    private readonly ILogger<PathfinderService>? _logger = logger;
+    private readonly bool _nativeFeatureEnabled = serviceOptions?.Value.EnableNative ?? true;
     private readonly ConcurrentDictionary<string, TerrainGrid> _terrain = new(StringComparer.OrdinalIgnoreCase);
     private volatile bool _initialized;
+    private volatile bool _nativeReady;
 
     public Task InitializeAsync(IEnumerable<TerrainRoomData> terrainData, CancellationToken token = default)
     {
         ArgumentNullException.ThrowIfNull(terrainData);
 
+        var nativeRooms = _nativeFeatureEnabled ? new List<TerrainRoomData>() : null;
         var loaded = 0;
+
         foreach (var room in terrainData)
         {
             token.ThrowIfCancellationRequested();
@@ -27,36 +37,177 @@ internal sealed class PathfinderService(ILogger<PathfinderService>? logger = nul
             var grid = TerrainGrid.TryCreate(room.RoomName, room.TerrainBytes);
             if (grid is null)
             {
-                logger?.LogWarning("Unable to parse terrain data for room {Room}.", room.RoomName);
+                _logger?.LogWarning("Unable to parse terrain data for room {Room}.", room.RoomName);
                 continue;
             }
 
             _terrain[room.RoomName] = grid;
             loaded++;
+
+            if (nativeRooms is null)
+                continue;
+
+            var packed = TryPackTerrain(room.TerrainBytes);
+            if (packed is null)
+            {
+                _logger?.LogWarning("Room {Room} terrain could not be converted for the native pathfinder.", room.RoomName);
+                continue;
+            }
+
+            nativeRooms.Add(new TerrainRoomData(room.RoomName, packed));
         }
 
+        if (nativeRooms is { Count: > 0 })
+        {
+            if (PathfinderNative.TryInitialize(_logger))
+            {
+                try
+                {
+                    PathfinderNative.LoadTerrain(nativeRooms);
+                    _nativeReady = true;
+                    _logger?.LogInformation("Native pathfinder initialized with {Count} rooms.", nativeRooms.Count);
+                }
+                catch (Exception ex)
+                {
+                    _nativeReady = false;
+                    _logger?.LogWarning(ex, "Native pathfinder initialization failed. Falling back to managed A*.");
+                }
+            }
+        }
+        else if (!_nativeFeatureEnabled)
+            _logger?.LogInformation("Native pathfinder disabled via configuration; using managed fallback.");
+
         _initialized = true;
-        logger?.LogInformation("Pathfinder initialized with {Count} rooms.", loaded);
+        _logger?.LogInformation("Pathfinder initialized with {Count} rooms.", loaded);
         return Task.CompletedTask;
     }
 
     public PathfinderResult Search(RoomPosition origin, PathfinderGoal goal, PathfinderOptions options)
+        => Search(origin, [goal], options);
+
+    public PathfinderResult Search(RoomPosition origin, IReadOnlyList<PathfinderGoal> goals, PathfinderOptions options)
     {
+        ArgumentNullException.ThrowIfNull(goals);
+        if (goals.Count == 0)
+            throw new ArgumentException("At least one goal must be provided.", nameof(goals));
+        ArgumentNullException.ThrowIfNull(options);
+
         if (!_initialized)
             throw new InvalidOperationException("InitializeAsync must be called before Search.");
 
-        if (!string.Equals(origin.RoomName, goal.Target.RoomName, StringComparison.OrdinalIgnoreCase))
+        if (_nativeReady)
         {
-            logger?.LogWarning("Multi-room pathfinding is not supported yet. Origin {OriginRoom}, Target {TargetRoom}.",
-                origin.RoomName, goal.Target.RoomName);
+            try
+            {
+                return PathfinderNative.Search(origin, goals, options);
+            }
+            catch (Exception ex)
+            {
+                _nativeReady = false;
+                _logger?.LogWarning(ex, "Native pathfinder search failed; reverting to managed fallback.");
+            }
+        }
+
+        var primaryGoal = goals[0];
+        if (goals.Count > 1) _logger?.LogWarning("Managed pathfinder fallback only considers the first goal; native solver is required for multi-goal searches.");
+
+        if (!string.Equals(origin.RoomName, primaryGoal.Target.RoomName, StringComparison.OrdinalIgnoreCase))
+        {
+            _logger?.LogWarning("Multi-room pathfinding requires the native solver. Origin {OriginRoom}, Target {TargetRoom}.",
+                origin.RoomName, primaryGoal.Target.RoomName);
             return CreateIncompleteResult();
         }
 
         if (!_terrain.TryGetValue(origin.RoomName, out var grid))
             throw new InvalidOperationException($"Terrain data for room '{origin.RoomName}' is not loaded.");
 
-        var result = AStar(grid, origin, goal, options);
+        var result = AStar(grid, origin, primaryGoal, options);
         return result;
+    }
+
+    private static byte[]? TryPackTerrain(byte[] data)
+    {
+        if (data.Length == PackedTerrainBytes)
+            return data;
+
+        var codes = TryExtractTerrainCodes(data);
+        if (codes is null)
+            return null;
+
+        var packed = new byte[PackedTerrainBytes];
+        for (var index = 0; index < RoomArea; index++)
+        {
+            var value = (byte)(codes[index] & 0x03);
+            var bucket = index / 4;
+            var shift = (index % 4) * 2;
+            packed[bucket] = (byte)(packed[bucket] | (value << shift));
+        }
+
+        return packed;
+    }
+
+    private static byte[]? TryExtractTerrainCodes(byte[] data)
+    {
+        if (data.Length == PackedTerrainBytes)
+            return UnpackPackedTerrain(data);
+
+        if (data.Length == RoomArea)
+        {
+            var codes = new byte[RoomArea];
+            for (var i = 0; i < RoomArea; i++)
+                codes[i] = NormalizeCode(data[i]);
+            return codes;
+        }
+
+        var text = Utf8.GetString(data);
+        if (text.Length != RoomArea)
+            return null;
+
+        var buffer = new byte[RoomArea];
+        for (var i = 0; i < text.Length; i++)
+            buffer[i] = NormalizeCode((byte)text[i]);
+        return buffer;
+    }
+
+    private static byte[] UnpackPackedTerrain(byte[] packed)
+    {
+        var codes = new byte[RoomArea];
+        for (var i = 0; i < RoomArea; i++)
+        {
+            var bucket = i / 4;
+            var shift = (i % 4) * 2;
+            codes[i] = (byte)((packed[bucket] >> shift) & 0x03);
+        }
+
+        return codes;
+    }
+
+    private static byte NormalizeCode(byte value) =>
+        value switch
+        {
+            (byte)'0' or 0 => 0,
+            (byte)'1' or 1 => 1,
+            (byte)'2' or 2 => 2,
+            (byte)'3' or 3 => 3,
+            _ => (byte)(value & 0x03)
+        };
+
+    private static byte[]? NormalizeForGrid(byte[] data)
+    {
+        if (data.Length == RoomArea)
+            return data;
+
+        if (data.Length == PackedTerrainBytes)
+            return UnpackPackedTerrain(data);
+
+        var text = Utf8.GetString(data);
+        if (text.Length != RoomArea)
+            return null;
+
+        var buffer = new byte[RoomArea];
+        for (var i = 0; i < text.Length; i++)
+            buffer[i] = (byte)text[i];
+        return buffer;
     }
 
     private static PathfinderResult AStar(TerrainGrid grid, RoomPosition origin, PathfinderGoal goal, PathfinderOptions options)
@@ -137,7 +288,7 @@ internal sealed class PathfinderService(ILogger<PathfinderService>? logger = nul
     }
 
     private static PathfinderResult CreateIncompleteResult()
-        => new(Array.Empty<RoomPosition>(), Operations: 0, Cost: 0, Incomplete: true);
+        => new([], Operations: 0, Cost: 0, Incomplete: true);
 
     private static bool InRange(int x, int y, RoomPosition target, int range)
         => Math.Max(Math.Abs(x - target.X), Math.Abs(y - target.Y)) <= range;
@@ -172,19 +323,8 @@ internal sealed class PathfinderService(ILogger<PathfinderService>? logger = nul
 
         public static TerrainGrid? TryCreate(string roomName, byte[] data)
         {
-            if (data.Length == RoomArea)
-                return new TerrainGrid(DecodeSpan(data));
-
-            var text = Encoding.UTF8.GetString(data);
-            if (text.Length == RoomArea)
-            {
-                var temp = new byte[RoomArea];
-                for (var i = 0; i < text.Length; i++)
-                    temp[i] = (byte)text[i];
-                return new TerrainGrid(DecodeSpan(temp));
-            }
-
-            return null;
+            var normalized = NormalizeForGrid(data);
+            return normalized is null ? null : new TerrainGrid(DecodeSpan(normalized));
         }
 
         private static TerrainCell[] DecodeSpan(IReadOnlyList<byte> source)

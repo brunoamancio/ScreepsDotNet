@@ -21,7 +21,7 @@ public sealed class InvaderCommandTests
             InvaderId = "507f1f77bcf86cd799439011"
         };
 
-        var exitCode = await command.ExecuteAsync(null!, settings, CancellationToken.None);
+        var exitCode = await command.ExecuteAsync(null!, settings, TestContext.Current.CancellationToken);
 
         Assert.Equal(0, exitCode);
         Assert.Equal("user-abc", service.LastUserId);

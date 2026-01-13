@@ -29,7 +29,8 @@ console.log('tick', GameTime);
 """
             });
 
-        var result = await _service.ExecuteAsync(context);
+        var token = TestContext.Current.CancellationToken;
+        var result = await _service.ExecuteAsync(context, token);
         Assert.True(string.IsNullOrEmpty(result.Error), result.Error);
 
         Assert.True(result.RoomIntents.TryGetValue("W1N1", out var roomIntents)
@@ -63,7 +64,8 @@ console.log('tick', GameTime);
             },
             ForceColdSandbox: true);
 
-        await service.ExecuteAsync(context);
+        var token = TestContext.Current.CancellationToken;
+        await service.ExecuteAsync(context, token);
 
         Assert.True(pool.Invalidated);
         Assert.False(pool.Returned);
