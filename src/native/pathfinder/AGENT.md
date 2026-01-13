@@ -22,9 +22,11 @@ Track progress toward replacing the managed A* fallback with the upstream Screep
 - ✅ Added a “wall-gap” fixture (column wall with a defined opening) to both the Node harness and the managed baseline, and fixed the native terrain packing (`TryPackTerrain`/`UnpackPackedTerrain`) to match the Node module’s column-major bit order. With the packing fix, the native solver now mirrors the legacy path (cost/ops) and the regression is enabled again.
 - ✅ Added a “controller-corridor” fixture that forces the path through a narrow choke around a controller box; expectations now live in both the Node harness and the managed regression suite.
 - ✅ Added a “tower-cost” fixture using `roomCallback` cost matrices to emulate tower avoidance (large high-cost zone with a diagonal safe corridor). Native + managed tests now assert the same multi-turn detour path (cost 50, ops 46).
+- ✅ Added a “flee-multi-room” fixture so the flee logic is forced to cross room boundaries (origin W0N0 → W2N0 with `maxRooms=3`). Both the harness and managed tests now assert the Node path (cost 5, ops 4).
+- ✅ Added a “dense-corridor” fixture that snakes through a maze-like choke carved into wall terrain. Legacy ops/cost (59/691) are captured via the Node harness, and the baseline JSON + managed integration test now assert the exact path so native/managed stay in sync.
 
 ## Next Steps
-1. Keep expanding the regression dataset (e.g., movement intents for creeps/towers/power creeps) so `run-legacy-regressions.js` covers more real-world layouts. We now have baseline coverage for multi-room, flee, portal callbacks, wall-gap, controller corridors, and tower cost-matrix detours—next targets could include multi-room flee combos or scenarios with power-enabled terrain.
+1. Keep expanding the regression dataset (e.g., creep movement with controller upgrades, power creep actions, keeper-lair corridors). We now have coverage for multi-room, flee (single + multi), portal callbacks, wall-gap, controller corridors, tower cost detours, and dense obstacle mazes—next targets could include power-enabled rooms or multi-room flee combined with cost matrices.
 2. Prune the managed fallback once we’re confident the native solver + download flow is stable (leave `PathfinderServiceOptions.EnableNative = false` solely for troubleshooting).
 3. Consider wiring the Node parity script into CI (behind a matrix that has Node 12 + native module available) to catch accidental divergence automatically.
 

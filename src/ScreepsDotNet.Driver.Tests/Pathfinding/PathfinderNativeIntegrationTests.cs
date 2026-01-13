@@ -10,6 +10,7 @@ public sealed class PathfinderNativeIntegrationTests
     private const int RoomArea = 50 * 50;
     private const string WallGapCaseName = "wall-gap";
     private const string ControllerCorridorCaseName = "controller-corridor";
+    private const string FleeMultiRoomCaseName = "flee-multi-room";
     private const string TowerCostCaseName = "tower-cost";
 
     [Fact]
@@ -254,6 +255,21 @@ public sealed class PathfinderNativeIntegrationTests
                                       ],
                                       2,
                                       3,
+                                      false)),
+        new(FleeMultiRoomCaseName,
+            [PlainTerrain("W0N0"), PlainTerrain("W1N0"), PlainTerrain("W2N0")],
+            new RoomPosition(10, 25, "W0N0"),
+            [new PathfinderGoal(new RoomPosition(10, 25, "W0N0"), Range: 5)],
+            new PathfinderOptions(Flee: true, MaxRooms: 3, MaxOps: 20_000),
+            new RegressionExpectation([
+                                          new(5, 20, "W0N0"),
+                                          new(6, 21, "W0N0"),
+                                          new(7, 22, "W0N0"),
+                                          new(8, 23, "W0N0"),
+                                          new(9, 24, "W0N0")
+                                      ],
+                                      4,
+                                      5,
                                       false)),
         new("portal-callback",
             [PlainTerrain("W0N0"), PlainTerrain("W0N1")],

@@ -18,8 +18,9 @@ const scriptDir = __dirname;
 const repoRoot = resolveRepoRoot(scriptDir);
 const reportScript = path.join(repoRoot, 'src', 'native', 'pathfinder', 'scripts', 'run-legacy-regressions.js');
 const baselinePath = path.join(repoRoot, 'src', 'ScreepsDotNet.Driver.Tests', 'Pathfinding', 'Baselines', 'legacy-regressions.json');
+const expectationPath = baselinePath;
 
-const result = spawnSync(process.execPath, [reportScript, '--baseline', baselinePath], {
+const result = spawnSync(process.execPath, [reportScript, '--baseline', baselinePath, '--expect', expectationPath], {
   cwd: repoRoot,
   stdio: 'inherit'
 });

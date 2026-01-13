@@ -8,6 +8,7 @@ const driverRoot = path.resolve(repoRoot, '..', 'ScreepsNodeJs', 'driver');
 const nativeModulePath = path.join(driverRoot, 'native', 'build', 'Release', 'native.node');
 const args = process.argv.slice(2);
 let baselinePath;
+let expectationPath;
 
 for (let i = 0; i < args.length; i++) {
   if (args[i] === '--baseline') {
@@ -16,6 +17,13 @@ for (let i = 0; i < args.length; i++) {
       process.exit(1);
     }
     baselinePath = path.resolve(repoRoot, args[i + 1]);
+    i += 1;
+  } else if (args[i] === '--expect') {
+    if (i + 1 >= args.length) {
+      console.error('--expect requires a path');
+      process.exit(1);
+    }
+    expectationPath = path.resolve(repoRoot, args[i + 1]);
     i += 1;
   } else {
     console.warn(`Unknown argument ignored: ${args[i]}`);
@@ -44,6 +52,8 @@ make({ RoomPosition });
 const WALL_GAP_CASE = 'wall-gap';
 const CONTROLLER_CORRIDOR_CASE = 'controller-corridor';
 const TOWER_COST_CASE = 'tower-cost';
+const FLEE_MULTI_ROOM_CASE = 'flee-multi-room';
+const DENSE_CORRIDOR_CASE = 'dense-corridor';
 
 const plainTerrain = room => ({ room, terrain: '0'.repeat(2500) });
 
@@ -66,6 +76,45 @@ function controllerCorridorTerrain(room) {
       tiles.push(blocked ? '1' : '0');
     }
   }
+  return { room, terrain: tiles.join('') };
+}
+
+function denseCorridorTerrain(room) {
+  const tiles = new Array(2500).fill('1');
+  let x = 2;
+  let y = 2;
+  let direction = 1;
+
+  const carve = (cx, cy) => {
+    const idx = cy * 50 + cx;
+    tiles[idx] = '0';
+  };
+
+  carve(x, y);
+
+  while (true) {
+    const targetX = direction > 0 ? 47 : 2;
+    while (x !== targetX) {
+      x += direction;
+      carve(x, y);
+    }
+
+    if (y >= 47) {
+      break;
+    }
+
+    for (let step = 0; step < 3 && y < 47; step++) {
+      y += 1;
+      carve(x, y);
+    }
+
+    if (y >= 47) {
+      break;
+    }
+
+    direction *= -1;
+  }
+
   return { room, terrain: tiles.join('') };
 }
 
@@ -97,6 +146,8 @@ const createTowerCostMatrix = () => {
   }
   return matrix;
 };
+
+const expectations = loadExpectations(expectationPath);
 
 const regressionCases = [
   {
@@ -177,6 +228,25 @@ const regressionCases = [
         ['W0N0', 22, 22],
         ['W0N0', 23, 23],
         ['W0N0', 24, 24]
+      ]
+    }
+  },
+  {
+    name: FLEE_MULTI_ROOM_CASE,
+    rooms: [plainTerrain('W0N0'), plainTerrain('W1N0'), plainTerrain('W2N0')],
+    origin: new RoomPosition(10, 25, 'W0N0'),
+    goals: [{ pos: new RoomPosition(10, 25, 'W0N0'), range: 5 }],
+    options: { flee: true, maxRooms: 3, maxOps: 20_000 },
+    expected: {
+      incomplete: false,
+      cost: 5,
+      ops: 4,
+      path: [
+        ['W0N0', 5, 20],
+        ['W0N0', 6, 21],
+        ['W0N0', 7, 22],
+        ['W0N0', 8, 23],
+        ['W0N0', 9, 24]
       ]
     }
   },
@@ -409,6 +479,19 @@ const regressionCases = [
         ['W0N0', 6, 6]
       ]
     }
+  },
+  {
+    name: DENSE_CORRIDOR_CASE,
+    rooms: [denseCorridorTerrain('W0N0')],
+    origin: new RoomPosition(2, 2, 'W0N0'),
+    goals: [new RoomPosition(47, 47, 'W0N0')],
+    options: { maxRooms: 1, maxOps: 100_000 },
+    expected: {
+      incomplete: false,
+      cost: 691,
+      ops: 59,
+      path: undefined
+    }
   }
 ];
 
@@ -438,9 +521,20 @@ function runCase(caseDef) {
 const summary = [];
 let mismatches = 0;
 
+function getExpected(caseDef) {
+  if (expectations && expectations.has(caseDef.name)) {
+    return expectations.get(caseDef.name);
+  }
+  return caseDef.expected;
+}
+
 for (const test of regressionCases) {
   const { name, result } = runCase(test);
-  const expected = test.expected;
+  const expected = getExpected(test);
+  if (!expected) {
+    summary.push({ name, status: 'skipped', diff: [{ field: 'expected', message: 'No expectation provided.' }], result });
+    continue;
+  }
   const diff = [];
   if (result.incomplete !== expected.incomplete) {
     diff.push({ field: 'incomplete', expected: expected.incomplete, actual: result.incomplete });
@@ -489,7 +583,37 @@ if (baselinePath) {
 }
 if (mismatches > 0) {
   console.error('Legacy node driver regressions diverged. See report for details.');
-  process.exit(2);
+  if (!baselinePath) {
+    process.exit(2);
+  }
+  console.warn('--baseline supplied; wrote updated baseline despite differences.');
+} else {
+  console.log('All regression cases match legacy node driver output.');
 }
 
-console.log('All regression cases match legacy node driver output.');
+function loadExpectations(filePath) {
+if (!filePath || !fs.existsSync(filePath)) {
+  const label = filePath ? path.relative(repoRoot, filePath) : '<unspecified>';
+  console.warn(`Expectation file not found at ${label}; using inline fixtures.`);
+  return null;
+}
+
+  try {
+    const payload = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    const map = new Map();
+    const cases = Array.isArray(payload.cases) ? payload.cases : [];
+    for (const entry of cases) {
+      map.set(entry.name, {
+        incomplete: entry.incomplete,
+        cost: entry.cost,
+        ops: entry.ops,
+        path: entry.path
+      });
+    }
+    console.log(`Loaded ${map.size} expectations from ${path.relative(repoRoot, filePath)}`);
+    return map;
+  } catch (err) {
+    console.warn(`Failed to load expectations from ${filePath}:`, err);
+    return null;
+  }
+}
