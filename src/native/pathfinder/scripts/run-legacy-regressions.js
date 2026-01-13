@@ -56,6 +56,7 @@ const FLEE_MULTI_ROOM_CASE = 'flee-multi-room';
 const DENSE_CORRIDOR_CASE = 'dense-corridor';
 const CONTROLLER_UPGRADE_CREEPS_CASE = 'controller-upgrade-creeps';
 const TOWER_POWER_CHOKE_CASE = 'tower-power-choke';
+const KEEPER_LAIR_CORRIDOR_CASE = 'keeper-lair-corridor';
 
 const plainTerrain = room => ({ room, terrain: '0'.repeat(2500) });
 
@@ -229,6 +230,42 @@ const createTowerPowerCostMatrix = () => {
     const x = 35 + i;
     const y = 30 - i;
     matrix[y * 50 + x] = 1;
+  }
+
+  return matrix;
+};
+
+const createKeeperLairMatrix = () => {
+  const matrix = new Uint8Array(2500);
+  const lairs = [
+    { x: 15, y: 35 },
+    { x: 25, y: 20 },
+    { x: 35, y: 30 }
+  ];
+
+  for (const { x, y } of lairs) {
+    for (let dy = -5; dy <= 5; dy++) {
+      for (let dx = -5; dx <= 5; dx++) {
+        const lx = x + dx;
+        const ly = y + dy;
+        if (lx >= 0 && lx < 50 && ly >= 0 && ly < 50) {
+          const idx = ly * 50 + lx;
+          const dist = Math.max(Math.abs(dx), Math.abs(dy));
+          matrix[idx] = Math.max(matrix[idx], dist <= 2 ? 255 : 180);
+        }
+      }
+    }
+  }
+
+  const safePath = [
+    ...Array.from({ length: 20 }, (_, i) => [5 + i, 40 - i]),
+    ...Array.from({ length: 10 }, (_, i) => [25, 20 - i]),
+    ...Array.from({ length: 15 }, (_, i) => [25 + i, 10])
+  ];
+
+  for (const [x, y] of safePath) {
+    const idx = y * 50 + x;
+    matrix[idx] = Math.min(matrix[idx], 5);
   }
 
   return matrix;
@@ -606,6 +643,23 @@ const regressionCases = [
       maxRooms: 1,
       maxOps: 60_000,
       roomCallback: roomName => roomName === 'W0N0' ? { _bits: createTowerPowerCostMatrix() } : null
+    },
+    expected: {
+      incomplete: false,
+      cost: 0,
+      ops: 0,
+      path: undefined
+    }
+  },
+  {
+    name: KEEPER_LAIR_CORRIDOR_CASE,
+    rooms: [plainTerrain('W0N0')],
+    origin: new RoomPosition(5, 40, 'W0N0'),
+    goals: [new RoomPosition(45, 10, 'W0N0')],
+    options: {
+      maxRooms: 1,
+      maxOps: 70_000,
+      roomCallback: roomName => roomName === 'W0N0' ? { _bits: createKeeperLairMatrix() } : null
     },
     expected: {
       incomplete: false,

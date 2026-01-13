@@ -13,6 +13,7 @@ public sealed class PathfinderNativeIntegrationTests
     private const string FleeMultiRoomCaseName = "flee-multi-room";
     private const string TowerCostCaseName = "tower-cost";
     private const string TowerPowerChokeCaseName = "tower-power-choke";
+    private const string KeeperLairCorridorCaseName = "keeper-lair-corridor";
 
     [Fact]
     public async Task MultiGoalSearch_ChoosesNearestGoal()
@@ -177,6 +178,49 @@ public sealed class PathfinderNativeIntegrationTests
                 for (var x = x1; x <= x2; x++)
                     buffer[y * 50 + x] = cost;
             }
+        }
+    }
+
+    private static byte[] CreateKeeperLairMatrix()
+    {
+        var matrix = new byte[RoomArea];
+        foreach (var (x, y) in new (int X, int Y)[] { (15, 35), (25, 20), (35, 30) })
+        {
+            for (var dy = -5; dy <= 5; dy++)
+            {
+                for (var dx = -5; dx <= 5; dx++)
+                {
+                    var lx = x + dx;
+                    var ly = y + dy;
+                    if (lx < 0 || lx >= 50 || ly < 0 || ly >= 50)
+                        continue;
+
+                    var idx = ly * 50 + lx;
+                    var dist = Math.Max(Math.Abs(dx), Math.Abs(dy));
+                    var cost = dist <= 2 ? byte.MaxValue : (byte)180;
+                    matrix[idx] = Math.Max(matrix[idx], cost);
+                }
+            }
+        }
+
+        foreach (var (x, y) in SafeKeeperPath())
+        {
+            var idx = y * 50 + x;
+            matrix[idx] = matrix[idx] < 5 ? matrix[idx] : (byte)5;
+        }
+
+        return matrix;
+
+        static IEnumerable<(int X, int Y)> SafeKeeperPath()
+        {
+            for (var i = 0; i < 20; i++)
+                yield return (5 + i, 40 - i);
+
+            for (var i = 0; i < 10; i++)
+                yield return (25, 20 - i);
+
+            for (var i = 0; i < 15; i++)
+                yield return (25 + i, 10);
         }
     }
 
@@ -570,11 +614,72 @@ public sealed class PathfinderNativeIntegrationTests
                                           new(10, 15, "W0N0"),
                                           new(9, 14, "W0N0"),
                                           new(8, 13, "W0N0"),
-                                          new(7, 12, "W0N0"),
-                                          new(6, 11, "W0N0")
+                                      new(7, 12, "W0N0"),
+                                      new(6, 11, "W0N0")
+                                  ],
+                                  66,
+                                  41,
+                                  false)),
+        new(KeeperLairCorridorCaseName,
+            [PlainTerrain("W0N0")],
+            new RoomPosition(5, 40, "W0N0"),
+            [new PathfinderGoal(new RoomPosition(45, 10, "W0N0"))],
+            new PathfinderOptions(MaxRooms: 1, MaxOps: 70_000, RoomCallback: room => room == "W0N0" ? new PathfinderRoomCallbackResult(CreateKeeperLairMatrix()) : null),
+            new RegressionExpectation([
+                                          new(45, 10, "W0N0"),
+                                          new(44, 10, "W0N0"),
+                                          new(43, 10, "W0N0"),
+                                          new(42, 10, "W0N0"),
+                                          new(41, 10, "W0N0"),
+                                          new(40, 9, "W0N0"),
+                                          new(39, 9, "W0N0"),
+                                          new(38, 9, "W0N0"),
+                                          new(37, 9, "W0N0"),
+                                          new(36, 9, "W0N0"),
+                                          new(35, 9, "W0N0"),
+                                          new(34, 9, "W0N0"),
+                                          new(33, 9, "W0N0"),
+                                          new(32, 9, "W0N0"),
+                                          new(31, 9, "W0N0"),
+                                          new(30, 9, "W0N0"),
+                                          new(29, 9, "W0N0"),
+                                          new(28, 9, "W0N0"),
+                                          new(27, 9, "W0N0"),
+                                          new(26, 9, "W0N0"),
+                                          new(25, 9, "W0N0"),
+                                          new(24, 10, "W0N0"),
+                                          new(23, 11, "W0N0"),
+                                          new(22, 12, "W0N0"),
+                                          new(21, 13, "W0N0"),
+                                          new(20, 14, "W0N0"),
+                                          new(19, 15, "W0N0"),
+                                          new(18, 16, "W0N0"),
+                                          new(17, 17, "W0N0"),
+                                          new(16, 18, "W0N0"),
+                                          new(15, 19, "W0N0"),
+                                          new(14, 20, "W0N0"),
+                                          new(14, 21, "W0N0"),
+                                          new(14, 22, "W0N0"),
+                                          new(14, 23, "W0N0"),
+                                          new(14, 24, "W0N0"),
+                                          new(14, 25, "W0N0"),
+                                          new(14, 26, "W0N0"),
+                                          new(14, 27, "W0N0"),
+                                          new(14, 28, "W0N0"),
+                                          new(14, 29, "W0N0"),
+                                          new(14, 30, "W0N0"),
+                                          new(14, 31, "W0N0"),
+                                          new(13, 32, "W0N0"),
+                                          new(12, 33, "W0N0"),
+                                          new(11, 34, "W0N0"),
+                                          new(10, 35, "W0N0"),
+                                          new(9, 36, "W0N0"),
+                                          new(8, 37, "W0N0"),
+                                          new(7, 38, "W0N0"),
+                                          new(6, 39, "W0N0")
                                       ],
-                                      66,
-                                      41,
+                                      125,
+                                      51,
                                       false))
     ];
 
