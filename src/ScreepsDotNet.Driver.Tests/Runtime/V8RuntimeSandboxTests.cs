@@ -5,7 +5,13 @@ namespace ScreepsDotNet.Driver.Tests.Runtime;
 
 public sealed class V8RuntimeSandboxTests
 {
-    private readonly V8RuntimeSandbox _sandbox = new(new RuntimeSandboxOptions());
+    private static readonly RuntimeSandboxOptions TestOptions = new()
+    {
+        DefaultCpuLimitMs = 2_000,
+        ScriptInterruptBufferMs = 500
+    };
+
+    private readonly V8RuntimeSandbox _sandbox = new(TestOptions);
 
     [Fact]
     public async Task ExecuteAsync_SkipsMemoryWriteWhenUnchanged()
