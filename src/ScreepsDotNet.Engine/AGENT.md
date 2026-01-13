@@ -35,7 +35,7 @@ Rebuild the legacy Screeps engine (simulation kernel + processor) in .NET so it 
 
 ## Immediate Next Steps
 1. Socialize [`docs/engine/legacy-surface.md`](../../docs/engine/legacy-surface.md) with driver/runtime owners to confirm the proposed abstractions.
-2. Continue **E2 – Data & Storage Model** work: snapshot providers plus the new mutation/memory wrappers are in place, and `RoomProcessor` now consumes `IRoomStateProvider`, `IRoomMutationWriterFactory`, and `IUserMemorySink` via the new `RoomProcessorContext`/step pipeline. The initial suite of steps (`CreepLifecycleStep`, `StructureDecayStep`, `ControllerDowngradeStep`, `RoomIntentEventLogStep`) now mutates real creep/controller/structure state and emits event logs. Next up is to extend the set with combat/movement/power modules so each tick mirrors the legacy processor.
+2. Continue **E2 – Data & Storage Model** work: snapshot providers plus the new mutation/memory wrappers are in place, and `RoomProcessor` now consumes `IRoomStateProvider`, `IRoomMutationWriterFactory`, and `IUserMemorySink` via the new `RoomProcessorContext`/step pipeline. The step suite now includes movement (`MovementIntentStep`), combat (`CombatResolutionStep`), creep lifecycle, structure decay, controller downgrade, power cooldown, and intent event logging—so each tick produces meaningful mutations. Next up is to port additional legacy handlers (spawn logic, lab reactions, notification fan-out) before closing E2.
 3. In parallel, spike **E3 – Intent Gathering & Validation** so the data contracts from E2 immediately flow into an `IIntentPipeline` prototype.
 
 Keep this AGENT log authoritative; other documentation should link back here for canonical status.***

@@ -39,7 +39,7 @@ These DTOs live in the driver assembly so both the engine and driver loops share
 2. **Add snapshot providers (Step E2.2).** ✅ Driver now exposes `IRoomSnapshotProvider` + `IInterRoomSnapshotProvider`; the engine wraps them via `RoomStateProvider`/`GlobalStateProvider` (registered through `AddEngineCore`).
 
 3. **Wire engine consumption (Step E2.3).**
-   - **In progress:** `RoomStateProvider`/`GlobalStateProvider` now pull `RoomSnapshot`/`GlobalSnapshot` from the driver, and `RoomProcessor` consumes them via the new `RoomProcessorContext` + `IRoomProcessorStep` pipeline. The initial step set (`CreepLifecycleStep`, `StructureDecayStep`, `ControllerDowngradeStep`, `RoomIntentEventLogStep`) mutates creep TTL/fatigue, structure hits, controller timers, and intent event logs. Next up is to add combat/movement/power steps to round out the room diff.
+   - **In progress:** `RoomStateProvider`/`GlobalStateProvider` now pull `RoomSnapshot`/`GlobalSnapshot` from the driver, and `RoomProcessor` consumes them via the new `RoomProcessorContext` + `IRoomProcessorStep` pipeline. The current step set covers creep lifecycle, movement, combat resolution, structure decay, controller downgrade, power cooldowns, and intent event logging. Remaining work: port the rest of the legacy handlers (spawn logic, labs, notifications, etc.) so room diffs match the Node processor.
 
 4. **Mutation path alignment (Step E2.4).**
    - **In progress:** `RoomMutationWriterFactory` produces per-room writers that stage JSON upserts/patches and flush via the driver `IRoomMutationDispatcher`. Upcoming work: integrate these writers into the processor/global systems and add helpers for event log/map view payloads.

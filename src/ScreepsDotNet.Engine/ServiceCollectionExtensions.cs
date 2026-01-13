@@ -17,8 +17,11 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IRoomMutationWriterFactory, RoomMutationWriterFactory>();
         services.AddSingleton<IUserMemorySink, UserMemorySink>();
         services.AddSingleton<IRoomProcessorStep, CreepLifecycleStep>();
+        services.AddSingleton<IRoomProcessorStep, MovementIntentStep>();
+        services.AddSingleton<IRoomProcessorStep, CombatResolutionStep>();
         services.AddSingleton<IRoomProcessorStep, StructureDecayStep>();
         services.AddSingleton<IRoomProcessorStep, ControllerDowngradeStep>();
+        services.AddSingleton<IRoomProcessorStep, PowerAbilityCooldownStep>();
         services.AddSingleton<IRoomProcessorStep, RoomIntentEventLogStep>();
         services.AddSingleton<IRoomProcessor, RoomProcessor>();
         return services;
