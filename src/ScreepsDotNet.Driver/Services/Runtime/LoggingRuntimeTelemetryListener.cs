@@ -11,13 +11,16 @@ internal sealed class LoggingRuntimeTelemetryListener(ILogger<LoggingRuntimeTele
         ArgumentNullException.ThrowIfNull(payload);
 
         logger?.Log(payload.TimedOut || payload.ScriptError ? LogLevel.Warning : LogLevel.Debug,
-            "Runtime telemetry for user {UserId}: cpu {CpuUsed}/{CpuLimit} ms (bucket {CpuBucket}) timedOut={TimedOut} scriptError={ScriptError} heap={HeapUsed}/{HeapLimit} bytes",
+            "Runtime telemetry ({Loop}) for user {UserId}: cpu {CpuUsed}/{CpuLimit} ms (bucket {CpuBucket}) queueDepth={QueueDepth} timedOut={TimedOut} scriptError={ScriptError} coldStart={ColdStart} heap={HeapUsed}/{HeapLimit} bytes",
+            payload.Loop,
             payload.UserId,
             payload.CpuUsed,
             payload.CpuLimit,
             payload.CpuBucket,
+            payload.QueueDepth,
             payload.TimedOut,
             payload.ScriptError,
+            payload.ColdStartRequested,
             payload.HeapUsedBytes,
             payload.HeapSizeLimitBytes);
 

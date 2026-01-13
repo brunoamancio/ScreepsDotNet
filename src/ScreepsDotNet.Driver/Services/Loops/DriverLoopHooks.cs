@@ -3,17 +3,16 @@ using ScreepsDotNet.Driver.Abstractions.History;
 using ScreepsDotNet.Driver.Abstractions.Loops;
 using ScreepsDotNet.Driver.Abstractions.Notifications;
 using ScreepsDotNet.Driver.Abstractions.Runtime;
+using ScreepsDotNet.Driver.Services.Runtime;
 
 namespace ScreepsDotNet.Driver.Services.Loops;
 
-internal sealed class DriverLoopHooks(
-    IHistoryService historyService,
-    INotificationService notificationService,
-    IRuntimeTelemetrySink telemetrySink,
-    IRoomsDoneBroadcaster roomsDoneBroadcaster,
-    ILogger<DriverLoopHooks>? logger = null) : IDriverLoopHooks
+internal sealed class DriverLoopHooks(IHistoryService historyService, INotificationService notificationService, IRuntimeTelemetrySink telemetrySink,
+                                      IRoomsDoneBroadcaster roomsDoneBroadcaster, ILogger<DriverLoopHooks>? logger = null)
+    : IDriverLoopHooks
 {
     private readonly ILogger<DriverLoopHooks>? _logger = logger;
+    private readonly IRuntimeTelemetrySink _telemetrySink = telemetrySink ?? NullRuntimeTelemetrySink.Instance;
 
     public Task SaveRoomHistoryAsync(string roomName, int gameTime, string serializedObjects, CancellationToken token = default)
         => historyService.SaveRoomHistoryAsync(roomName, gameTime, serializedObjects, token);
@@ -36,6 +35,6 @@ internal sealed class DriverLoopHooks(
         return notificationService.NotifyRoomsDoneAsync(gameTime, token);
     }
 
-    public Task PublishRuntimeTelemetryAsync(RuntimeTelemetryPayload payload, CancellationToken token = default)
-        => telemetrySink.PublishTelemetryAsync(payload, token);
+    public Task PublishRuntimeTelemetryAsync(RuntimeTelemetryPayload payload, CancellationToken token = default) =>
+        _telemetrySink.PublishTelemetryAsync(payload, token);
 }

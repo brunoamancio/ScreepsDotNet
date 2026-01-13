@@ -19,11 +19,11 @@ internal sealed class RuntimeTelemetryMonitor : IRuntimeWatchdog, IDisposable
     private const int FailureThreshold = 3;
     private bool _disposed;
 
-    public RuntimeTelemetryMonitor(IDriverConfig config, INotificationService notifications, IRuntimeTelemetrySink telemetry, ILogger<RuntimeTelemetryMonitor> logger)
+    public RuntimeTelemetryMonitor(IDriverConfig config, INotificationService notifications, IRuntimeTelemetrySink? telemetry, ILogger<RuntimeTelemetryMonitor> logger)
     {
         _config = config;
         _notifications = notifications;
-        _telemetry = telemetry;
+        _telemetry = telemetry ?? NullRuntimeTelemetrySink.Instance;
         _logger = logger;
         _config.RuntimeTelemetry += HandleTelemetry;
     }
@@ -33,16 +33,19 @@ internal sealed class RuntimeTelemetryMonitor : IRuntimeWatchdog, IDisposable
         var payload = args.Payload;
         var level = payload.TimedOut || payload.ScriptError ? LogLevel.Warning : LogLevel.Debug;
         _logger.Log(level,
-            "Runtime telemetry for user {UserId} tick {GameTime}: CPU {CpuUsed}/{CpuLimit}ms bucket {CpuBucket}, heap {HeapUsed}/{HeapLimit} bytes, timedOut={TimedOut}, scriptError={ScriptError}.",
+            "Runtime telemetry ({Loop}) for user {UserId} tick {GameTime}: CPU {CpuUsed}/{CpuLimit}ms bucket {CpuBucket}, queueDepth={QueueDepth}, heap {HeapUsed}/{HeapLimit} bytes, timedOut={TimedOut}, scriptError={ScriptError}, coldStart={ColdStart}.",
+            payload.Loop,
             payload.UserId,
             payload.GameTime,
             payload.CpuUsed,
             payload.CpuLimit,
             payload.CpuBucket,
+            payload.QueueDepth,
             payload.HeapUsedBytes,
             payload.HeapSizeLimitBytes,
             payload.TimedOut,
-            payload.ScriptError);
+            payload.ScriptError,
+            payload.ColdStartRequested);
 
         try
         {

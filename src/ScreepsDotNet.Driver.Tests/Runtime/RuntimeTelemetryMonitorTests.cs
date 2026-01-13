@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging.Abstractions;
+using ScreepsDotNet.Driver.Abstractions;
 using ScreepsDotNet.Driver.Abstractions.Config;
 using ScreepsDotNet.Driver.Abstractions.Eventing;
 using ScreepsDotNet.Driver.Abstractions.Loops;
@@ -37,11 +38,12 @@ public sealed class RuntimeTelemetryMonitorTests
     private static void EmitFailure(IDriverConfig config, string userId)
     {
         var payload = new RuntimeTelemetryPayload(
-            userId,
-            12345,
-            50,
-            1000,
-            200,
+            Loop: DriverProcessType.Runner,
+            UserId: userId,
+            GameTime: 12345,
+            CpuLimit: 50,
+            CpuBucket: 1000,
+            CpuUsed: 200,
             TimedOut: true,
             ScriptError: false,
             HeapUsedBytes: 0,
@@ -53,11 +55,12 @@ public sealed class RuntimeTelemetryMonitorTests
     private static void EmitSuccess(IDriverConfig config, string userId)
     {
         var payload = new RuntimeTelemetryPayload(
-            userId,
-            12346,
-            50,
-            1000,
-            20,
+            Loop: DriverProcessType.Runner,
+            UserId: userId,
+            GameTime: 12346,
+            CpuLimit: 50,
+            CpuBucket: 1000,
+            CpuUsed: 20,
             TimedOut: false,
             ScriptError: false,
             HeapUsedBytes: 0,

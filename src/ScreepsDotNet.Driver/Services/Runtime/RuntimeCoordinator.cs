@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using MongoDB.Driver;
+using ScreepsDotNet.Driver.Abstractions;
 using ScreepsDotNet.Driver.Abstractions.Config;
 using ScreepsDotNet.Driver.Abstractions.Environment;
 using ScreepsDotNet.Driver.Abstractions.Eventing;
@@ -104,16 +105,19 @@ internal sealed class RuntimeCoordinator(
         }
 
         var telemetry = new RuntimeTelemetryPayload(
-            userId,
-            gameTime,
-            context.CpuLimit,
-            cpuBucket,
-            result.CpuUsed,
-            result.Metrics.TimedOut,
-            result.Metrics.ScriptError,
-            result.Metrics.HeapUsedBytes,
-            result.Metrics.HeapSizeLimitBytes,
-            result.Error);
+            Loop: DriverProcessType.Runner,
+            UserId: userId,
+            GameTime: gameTime,
+            CpuLimit: context.CpuLimit,
+            CpuBucket: cpuBucket,
+            CpuUsed: result.CpuUsed,
+            TimedOut: result.Metrics.TimedOut,
+            ScriptError: result.Metrics.ScriptError,
+            HeapUsedBytes: result.Metrics.HeapUsedBytes,
+            HeapSizeLimitBytes: result.Metrics.HeapSizeLimitBytes,
+            ErrorMessage: result.Error,
+            QueueDepth: null,
+            ColdStartRequested: forceColdSandbox);
 
         await loopHooks.PublishRuntimeTelemetryAsync(telemetry, token).ConfigureAwait(false);
         config.EmitRuntimeTelemetry(new RuntimeTelemetryEventArgs(telemetry));

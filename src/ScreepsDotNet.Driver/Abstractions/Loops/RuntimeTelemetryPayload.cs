@@ -1,6 +1,7 @@
 namespace ScreepsDotNet.Driver.Abstractions.Loops;
 
 public sealed record RuntimeTelemetryPayload(
+    DriverProcessType Loop,
     string UserId,
     int GameTime,
     int CpuLimit,
@@ -10,4 +11,6 @@ public sealed record RuntimeTelemetryPayload(
     bool ScriptError,
     long HeapUsedBytes,
     long HeapSizeLimitBytes,
-    string? ErrorMessage);
+    string? ErrorMessage,
+    int? QueueDepth = null,
+    bool ColdStartRequested = false);
