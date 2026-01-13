@@ -58,6 +58,7 @@ const CONTROLLER_UPGRADE_CREEPS_CASE = 'controller-upgrade-creeps';
 const TOWER_POWER_CHOKE_CASE = 'tower-power-choke';
 const KEEPER_LAIR_CORRIDOR_CASE = 'keeper-lair-corridor';
 const PORTAL_CHAIN_CASE = 'portal-chain';
+const POWER_CREEP_FLEE_CASE = 'power-creep-flee';
 
 const plainTerrain = room => ({ room, terrain: '0'.repeat(2500) });
 
@@ -231,6 +232,50 @@ const createTowerPowerCostMatrix = () => {
     const x = 35 + i;
     const y = 30 - i;
     matrix[y * 50 + x] = 1;
+  }
+
+  return matrix;
+};
+
+const createPowerCreepFleeMatrix = roomName => {
+  const matrix = new Uint8Array(2500);
+  const hotZones = roomName === 'W0N0'
+    ? [
+        { x: 20, y: 20, radius: 5 },
+        { x: 35, y: 15, radius: 4 }
+      ]
+    : [
+        { x: 10, y: 30, radius: 4 },
+        { x: 25, y: 25, radius: 5 }
+      ];
+
+  for (const zone of hotZones) {
+    for (let dy = -zone.radius; dy <= zone.radius; dy++) {
+      for (let dx = -zone.radius; dx <= zone.radius; dx++) {
+        const x = zone.x + dx;
+        const y = zone.y + dy;
+        if (x < 0 || x >= 50 || y < 0 || y >= 50)
+          continue;
+        const idx = y * 50 + x;
+        const dist = Math.max(Math.abs(dx), Math.abs(dy));
+        matrix[idx] = dist <= 2 ? 255 : 180;
+      }
+    }
+  }
+
+  const corridor = roomName === 'W0N0'
+    ? [
+        ...Array.from({ length: 10 }, (_, i) => [5 + i, 40 - i]),
+        ...Array.from({ length: 15 }, (_, i) => [15 + i, 30])
+      ]
+    : [
+        ...Array.from({ length: 10 }, (_, i) => [0 + i, 30 + i]),
+        ...Array.from({ length: 10 }, (_, i) => [10 + i, 40])
+      ];
+
+  for (const [x, y] of corridor) {
+    const idx = y * 50 + x;
+    matrix[idx] = 1;
   }
 
   return matrix;
@@ -900,6 +945,24 @@ const regressionCases = [
         ['W0N0', 9, 11]
       ]
     }
+  }
+  ,
+  {
+    name: POWER_CREEP_FLEE_CASE,
+    rooms: [plainTerrain('W0N0'), plainTerrain('W1N0')],
+    origin: new RoomPosition(8, 38, 'W0N0'),
+    goals: [{ pos: new RoomPosition(8, 38, 'W0N0'), range: 6 }],
+    options: {
+      flee: true,
+      maxRooms: 3,
+      maxOps: 50_000,
+      roomCallback: roomName => {
+        if (roomName === 'W0N0' || roomName === 'W1N0')
+          return { _bits: createPowerCreepFleeMatrix(roomName) };
+        return null;
+      }
+    },
+    expected: null
   }
 ];
 

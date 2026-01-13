@@ -17,6 +17,8 @@ public sealed class PathfinderNativeIntegrationTests
     private const string TowerPowerChokeCaseName = "tower-power-choke";
     private const string KeeperLairCorridorCaseName = "keeper-lair-corridor";
     private const string PortalChainCaseName = "portal-chain";
+    private const string PortalCallbackCaseName = "portal-callback";
+    private const string PowerCreepFleeCaseName = "power-creep-flee";
     private const string RegressionBaselineRelativePath = "Pathfinding/Baselines/legacy-regressions.json";
 
     private static readonly Lazy<IReadOnlyDictionary<string, RegressionExpectation>> BaselineExpectationMap =
@@ -185,6 +187,65 @@ public sealed class PathfinderNativeIntegrationTests
             {
                 for (var x = x1; x <= x2; x++)
                     buffer[y * 50 + x] = cost;
+            }
+        }
+    }
+
+    private static byte[] CreatePowerCreepFleeMatrix(string roomName)
+    {
+        var matrix = new byte[RoomArea];
+        var hotZones = roomName == "W0N0"
+            ? new (int X, int Y, int Radius)[] { (20, 20, 5), (35, 15, 4) }
+            : new (int X, int Y, int Radius)[] { (10, 30, 4), (25, 25, 5) };
+
+        foreach (var zone in hotZones)
+        {
+            for (var dy = -zone.Radius; dy <= zone.Radius; dy++)
+            {
+                for (var dx = -zone.Radius; dx <= zone.Radius; dx++)
+                {
+                    var x = zone.X + dx;
+                    var y = zone.Y + dy;
+                    if (x < 0 || x >= 50 || y < 0 || y >= 50)
+                        continue;
+
+                    var idx = y * 50 + x;
+                    var dist = Math.Max(Math.Abs(dx), Math.Abs(dy));
+                    matrix[idx] = (byte)(dist <= 2 ? byte.MaxValue : 180);
+                }
+            }
+        }
+
+        var corridor = roomName == "W0N0"
+            ? SafePath([(5, 40), (15, 30), (25, 30)])
+            : SafePath([(0, 30), (10, 40), (20, 40)]);
+
+        foreach (var (x, y) in corridor)
+        {
+            var idx = y * 50 + x;
+            matrix[idx] = 1;
+        }
+
+        return matrix;
+
+        static IEnumerable<(int X, int Y)> SafePath((int X, int Y)[] points)
+        {
+            for (var i = 0; i < points.Length - 1; i++)
+            {
+                var (sx, sy) = points[i];
+                var (ex, ey) = points[i + 1];
+                var dx = Math.Sign(ex - sx);
+                var dy = Math.Sign(ey - sy);
+                var x = sx;
+                var y = sy;
+                while (x != ex || y != ey)
+                {
+                    if (x != ex)
+                        x += dx;
+                    if (y != ey)
+                        y += dy;
+                    yield return (x, y);
+                }
             }
         }
     }
@@ -525,7 +586,7 @@ public sealed class PathfinderNativeIntegrationTests
                                       4,
                                       5,
                                       false)),
-        new("portal-callback",
+        new(PortalCallbackCaseName,
             [PlainTerrain("W0N0"), PlainTerrain("W0N1")],
             new RoomPosition(10, 10, "W0N0"),
             [new PathfinderGoal(new RoomPosition(40, 40, "W0N1"))],
@@ -573,8 +634,29 @@ public sealed class PathfinderNativeIntegrationTests
                                       ],
                                       45,
                                       31,
-                                      false))
-        ,
+                                      false)),
+        new(PowerCreepFleeCaseName,
+            [PlainTerrain("W0N0"), PlainTerrain("W1N0")],
+            new RoomPosition(8, 38, "W0N0"),
+            [new PathfinderGoal(new RoomPosition(8, 38, "W0N0"), Range: 6)],
+            new PathfinderOptions(
+                Flee: true,
+                MaxRooms: 3,
+                MaxOps: 50_000,
+                RoomCallback: room => room is "W0N0" or "W1N0"
+                    ? new PathfinderRoomCallbackResult(CreatePowerCreepFleeMatrix(room))
+                    : null),
+            new RegressionExpectation([
+                                          new(7, 37, "W0N0"),
+                                          new(6, 36, "W0N0"),
+                                          new(5, 35, "W0N0"),
+                                          new(4, 34, "W0N0"),
+                                          new(3, 33, "W0N0"),
+                                          new(2, 32, "W0N0")
+                                      ],
+                                      5,
+                                      6,
+                                      false)),
         new(WallGapCaseName,
             [ColumnWallTerrain("W0N0", 25, 20, 10)],
             new RoomPosition(5, 25, "W0N0"),
