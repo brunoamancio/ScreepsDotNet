@@ -19,6 +19,7 @@ public sealed class PathfinderNativeIntegrationTests
     private const string PortalChainCaseName = "portal-chain";
     private const string PortalCallbackCaseName = "portal-callback";
     private const string PowerCreepFleeCaseName = "power-creep-flee";
+    private const string ControllerTightLimitCaseName = "controller-tight-limit";
     private const string RegressionBaselineRelativePath = "Pathfinding/Baselines/legacy-regressions.json";
 
     private static readonly Lazy<IReadOnlyDictionary<string, RegressionExpectation>> BaselineExpectationMap =
@@ -189,6 +190,31 @@ public sealed class PathfinderNativeIntegrationTests
                     buffer[y * 50 + x] = cost;
             }
         }
+    }
+
+    private static byte[] CreateControllerUpgradeCostMatrix()
+    {
+        var matrix = new byte[RoomArea];
+        foreach (var (x, y) in new (int X, int Y)[]
+                 {
+                     (25, 24), (25, 25), (25, 26),
+                     (24, 25), (26, 25),
+                     (24, 27), (26, 27),
+                     (24, 29), (25, 29), (26, 29),
+                     (24, 31), (25, 31), (26, 31)
+                 })
+            matrix[y * 50 + x] = byte.MaxValue;
+
+        for (var x = 5; x <= 45; x++)
+        {
+            var offset = x < 25 ? 1 : -1;
+            var y = 25 + offset;
+            var index = y * 50 + x;
+            if (matrix[index] != byte.MaxValue)
+                matrix[index] = 10;
+        }
+
+        return matrix;
     }
 
     private static byte[] CreatePowerCreepFleeMatrix(string roomName)
@@ -657,6 +683,63 @@ public sealed class PathfinderNativeIntegrationTests
                                       5,
                                       6,
                                       false)),
+        new(ControllerTightLimitCaseName,
+            [ControllerCorridorTerrain("W0N0"), PlainTerrain("W0N1")],
+            new RoomPosition(5, 25, "W0N0"),
+            [new PathfinderGoal(new RoomPosition(45, 25, "W0N0"))],
+            new PathfinderOptions(
+                MaxRooms: 2,
+                MaxOps: 50_000,
+                RoomCallback: room => room == "W0N0"
+                    ? new PathfinderRoomCallbackResult(CreateControllerUpgradeCostMatrix())
+                    : null),
+            ExpectationFromBaseline(
+                ControllerTightLimitCaseName,
+                new RegressionExpectation([
+                                              new(45, 25, "W0N0"),
+                                              new(44, 25, "W0N0"),
+                                              new(43, 25, "W0N0"),
+                                              new(42, 25, "W0N0"),
+                                              new(41, 25, "W0N0"),
+                                              new(40, 25, "W0N0"),
+                                              new(39, 25, "W0N0"),
+                                              new(38, 25, "W0N0"),
+                                              new(37, 25, "W0N0"),
+                                              new(36, 25, "W0N0"),
+                                              new(35, 25, "W0N0"),
+                                              new(34, 25, "W0N0"),
+                                              new(33, 25, "W0N0"),
+                                              new(32, 26, "W0N0"),
+                                              new(31, 27, "W0N0"),
+                                              new(30, 28, "W0N0"),
+                                              new(29, 29, "W0N0"),
+                                              new(28, 30, "W0N0"),
+                                              new(27, 31, "W0N0"),
+                                              new(26, 32, "W0N0"),
+                                              new(25, 32, "W0N0"),
+                                              new(24, 32, "W0N0"),
+                                              new(23, 32, "W0N0"),
+                                              new(22, 32, "W0N0"),
+                                              new(21, 32, "W0N0"),
+                                              new(20, 32, "W0N0"),
+                                              new(19, 32, "W0N0"),
+                                              new(18, 32, "W0N0"),
+                                              new(17, 32, "W0N0"),
+                                              new(16, 32, "W0N0"),
+                                              new(15, 32, "W0N0"),
+                                              new(14, 32, "W0N0"),
+                                              new(13, 32, "W0N0"),
+                                              new(12, 32, "W0N0"),
+                                              new(11, 31, "W0N0"),
+                                              new(10, 30, "W0N0"),
+                                              new(9, 29, "W0N0"),
+                                              new(8, 28, "W0N0"),
+                                              new(7, 27, "W0N0"),
+                                              new(6, 26, "W0N0")
+                                          ],
+                                      45,
+                                      35,
+                                      false))),
         new(WallGapCaseName,
             [ColumnWallTerrain("W0N0", 25, 20, 10)],
             new RoomPosition(5, 25, "W0N0"),

@@ -55,6 +55,7 @@ const TOWER_COST_CASE = 'tower-cost';
 const FLEE_MULTI_ROOM_CASE = 'flee-multi-room';
 const DENSE_CORRIDOR_CASE = 'dense-corridor';
 const CONTROLLER_UPGRADE_CREEPS_CASE = 'controller-upgrade-creeps';
+const CONTROLLER_TIGHT_LIMIT_CASE = 'controller-tight-limit';
 const TOWER_POWER_CHOKE_CASE = 'tower-power-choke';
 const KEEPER_LAIR_CORRIDOR_CASE = 'keeper-lair-corridor';
 const PORTAL_CHAIN_CASE = 'portal-chain';
@@ -756,6 +757,18 @@ const regressionCases = [
       ops: 41,
       path: undefined
     }
+  },
+  {
+    name: CONTROLLER_TIGHT_LIMIT_CASE,
+    rooms: [controllerCorridorTerrain('W0N0'), plainTerrain('W0N1')],
+    origin: new RoomPosition(5, 25, 'W0N0'),
+    goals: [new RoomPosition(45, 25, 'W0N0')],
+    options: {
+      maxRooms: 2,
+      maxOps: 50_000,
+      roomCallback: roomName => roomName === 'W0N0' ? { _bits: createControllerUpgradeCostMatrix() } : null
+    },
+    expected: null
   },
   {
     name: TOWER_POWER_CHOKE_CASE,
