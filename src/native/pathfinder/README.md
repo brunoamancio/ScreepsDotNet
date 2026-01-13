@@ -56,6 +56,24 @@ The driver now infers a runtime identifier automatically: if `dotnet build`/`dot
 - `NativePathfinderSkipDownload=true` – rely on a locally provided native binary.
 - `NativePathfinderSkipHashCheck=true` – bypass SHA verification (not recommended).
 
+### Legacy Regression Harness
+
+Use `scripts/run-legacy-regressions.js` to replay the regression fixtures (multi-room, flee, portal roomCallback) against the original Node driver:
+
+```
+cd ScreepsDotNet
+source ~/.nvm/nvm.sh
+nvm use 12
+node src/native/pathfinder/scripts/run-legacy-regressions.js
+```
+
+Prerequisites:
+
+- Build the native Node module once via `npx node-gyp rebuild -C ../ScreepsNodeJs/driver/native` (still requires Node 12 + Python 2.7).
+- Keep the regression definitions in sync with `PathfinderNativeIntegrationTests` (the script normalizes the origin→target ordering that Node returns so the canonical comparison matches the managed expectations).
+
+Outputs land under `src/native/pathfinder/reports/` (JSON + Markdown summary). Refer to the latest report before removing the managed fallback or when investigating discrepancies.
+
 ## Status / Next steps
 
 The native search pipeline and exports are now functional. Remaining work lives in `AGENT.md` (managed bindings, CI packaging, and parity tests). Until the managed driver switches over, the C# fallback in `PathfinderService` is still available as a safety valve.

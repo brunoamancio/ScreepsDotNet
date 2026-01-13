@@ -55,15 +55,34 @@ public interface IPathfinderService
 - Temporarily host the Node pathfinder via an IPC bridge (e.g., small Node worker) while the native port is underway. This keeps the pipeline moving even if C++ work takes longer.
 
 ### Current Status (January 2026)
-- `PathfinderService` now bootstraps the native solver via `PathfinderNative` whenever binaries are available for the current RID. `PathfinderServiceOptions.EnableNative` defaults to `true`; turn it off only when you explicitly want the managed solver for troubleshooting.
-- Terrain ingestion accepts legacy 2 500-byte strings or packed 625-byte buffers; the service repacks the former before passing them to the native API.
-- Native binaries are published per RID and downloaded during `dotnet build` (hash verified); setting `NativePathfinderSkipDownload=true` keeps the old behavior for local experiments.
-- `roomCallback`, multi-goal arrays, flee logic, and `BlockRoom` semantics are all handled natively. Regression fixtures (multi-room, flee, portal/callback) live in `PathfinderNativeIntegrationTests`.
-- Limitations / remaining items:
-  - We still need to run the legacy Node driver against the new regression fixtures to confirm parity and capture any deviations.
-  - The managed solver now exists only behind the troubleshooting flag; remove the remaining managed-only helpers once legacy parity is confirmed.
+  - `PathfinderService` now bootstraps the native solver via `PathfinderNative` whenever binaries are available for the current RID. `PathfinderServiceOptions.EnableNative` defaults to `true`; turn it off only when you explicitly want the managed solver for troubleshooting.
+  - Terrain ingestion accepts legacy 2 500-byte strings or packed 625-byte buffers; the service repacks the former before passing them to the native API.
+  - Native binaries are published per RID and downloaded during `dotnet build` (hash verified); setting `NativePathfinderSkipDownload=true` keeps the old behavior for local experiments.
+  - `roomCallback`, multi-goal arrays, flee logic, and `BlockRoom` semantics are all handled natively. Regression fixtures (multi-room, flee, portal/callback) live in `PathfinderNativeIntegrationTests`.
+  - `src/native/pathfinder/scripts/run-legacy-regressions.js` now replays those fixtures against the Node driver (Node 12 + native addon) and drops reports into `src/native/pathfinder/reports/`. The January 13, 2026 run matched on ops/cost/path for every case (see `legacy-regressions.{json,md}`).
+  - Limitations / remaining items:
+    - Grow the Node + managed fixture set beyond the three canonical cases (creep movement with obstacles, towers/links/power). Once confident, remove the managed A* fallback entirely (leave the flag only for emergency troubleshooting).
+    - Consider automating the Node comparison in CI so regressions are caught before release.
+
+### Legacy Regression Harness
+
+Run the Node parity check whenever you update the native bindings or tweak `PathfinderService`:
+
+```
+cd ScreepsDotNet
+source ~/.nvm/nvm.sh
+nvm use 12
+npx node-gyp rebuild -C ../ScreepsNodeJs/driver/native   # if native.node is missing
+node src/native/pathfinder/scripts/run-legacy-regressions.js
+```
+
+The script:
+1. Loads `ScreepsNodeJs/driver/lib/path-finder` + `native/build/Release/native.node`.
+2. Replays the regression fixtures (multi-room, flee, portal/callback), normalizing Node’s origin→target paths to the managed target→origin ordering before diffing.
+3. Writes `reports/legacy-regressions.json` (machine-readable) plus `reports/legacy-regressions.md` (human summary).
+
+If a case fails, inspect the JSON diff to see whether the issue is cost/ops/path ordering, then update `PathfinderNativeIntegrationTests` once the native fix lands.
 
 - Next steps:
-  1. Run the Node driver against the recorded regression cases and document the comparison process/results.
-  2. Keep the managed solver behind `EnableNative = false` for diagnostics, but plan to remove it entirely once parity holds.
-  3. Expand regression coverage as additional intent handlers (movement/controller/power) migrate to the .NET processor.
+  1. Expand the regression coverage as additional intent handlers (movement/controller/power) migrate to the .NET processor; capture fresh fixtures with the Node script above.
+  2. Keep the managed solver behind `EnableNative = false` for diagnostics only, and plan to remove it entirely once the expanded suite keeps passing.
