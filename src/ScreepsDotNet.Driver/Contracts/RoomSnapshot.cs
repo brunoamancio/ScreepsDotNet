@@ -14,5 +14,4 @@ public sealed record RoomSnapshot(
     RoomIntentSnapshot? Intents,
     IReadOnlyDictionary<string, RoomTerrainSnapshot> Terrain,
     IReadOnlyList<RoomFlagSnapshot> Flags,
-    IReadOnlyList<PowerCreepState> PowerCreeps,
     string RawRoomDocumentJson);

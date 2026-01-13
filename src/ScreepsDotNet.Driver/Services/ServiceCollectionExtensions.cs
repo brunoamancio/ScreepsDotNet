@@ -35,6 +35,9 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IQueueService, QueueService>();
         services.AddSingleton<IBulkWriterFactory, BulkWriterFactory>();
         services.AddSingleton<IRoomDataService, RoomDataService>();
+        services.AddSingleton<IRoomSnapshotBuilder, RoomSnapshotBuilder>();
+        services.AddSingleton<IRoomSnapshotProvider, RoomSnapshotProvider>();
+        services.AddSingleton<IRoomMutationDispatcher, RoomMutationDispatcher>();
         services.AddSingleton<IUserDataService, UserDataService>();
         services.AddSingleton<IHistoryService, HistoryService>();
         services.AddSingleton<INotificationService, NotificationService>();

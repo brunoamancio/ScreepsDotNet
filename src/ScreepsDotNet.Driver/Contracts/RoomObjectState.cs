@@ -24,7 +24,7 @@ public sealed record RoomObjectState(
     string? DepositType,
     string? StructureType,
     IReadOnlyDictionary<string, int> Store,
-    IReadOnlyDictionary<string, int> StoreCapacity,
+    int? StoreCapacity,
     IReadOnlyDictionary<string, int> StoreCapacityResource,
     RoomReservationSnapshot? Reservation,
     RoomSignSnapshot? Sign,
