@@ -1,6 +1,5 @@
 using System.Text;
 using System.Text.Json;
-using Microsoft.Extensions.Options;
 using ScreepsDotNet.Driver.Abstractions.Pathfinding;
 using ScreepsDotNet.Driver.Extensions;
 using ScreepsDotNet.Driver.Services.Pathfinding;
@@ -237,7 +236,6 @@ public sealed class PathfinderNativeIntegrationTests
 
         return matrix;
     }
-
     private static byte[] CreatePowerCreepFleeMatrix(string roomName)
     {
         var matrix = new byte[RoomArea];
