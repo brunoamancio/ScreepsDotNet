@@ -1,6 +1,6 @@
 # Engine Data Model Plan (E2)
 
-Status: drafted January 13, 2026.
+Status: drafted January 13, 2026. Updated January 13, 2026 (E2 now in progress; engine providers wrap driver contracts).
 
 ## Constraints
 
@@ -34,26 +34,20 @@ These DTOs live in the driver assembly so both the engine and driver loops share
 
 ## Implementation Plan
 
-1. **Introduce driver contracts (Step E2.1).**
-   - Create a new namespace (e.g., `ScreepsDotNet.Driver.Contracts`) containing `RoomSnapshot`, `RoomObjectState`, `UserState`, `IntentEnvelope`, etc.
-   - Implement builders inside driver services (likely in `RoomDataService` and a new `SnapshotFactory`) to populate these DTOs from existing Mongo documents.
-   - Ensure contracts only expose managed types (no `BsonDocument`, no `ObjectId`).
+1. **Introduce driver contracts (Step E2.1).** ✅ (handled on driver side; see D10 status)
 
-2. **Add snapshot providers (Step E2.2).**
-   - Define `IRoomSnapshotProvider` and `IGlobalSnapshotProvider` interfaces in the driver abstractions layer.
-   - Implement adapters that call existing data services, build DTOs, and cache per-tick results for reuse by both the driver processor loop and the engine.
+2. **Add snapshot providers (Step E2.2).** ✅ Driver now exposes `IRoomSnapshotProvider` + `IInterRoomSnapshotProvider`; the engine wraps them via `RoomStateProvider`/`GlobalStateProvider` (registered through `AddEngineCore`).
 
 3. **Wire engine consumption (Step E2.3).**
-   - Update `ScreepsDotNet.Engine` to depend on the new snapshot/provider interfaces instead of any Mongo-based types.
-   - Port the initial set of simulation helpers (validation, action-log bootstrap) using only DTOs.
+   - **In progress:** `RoomStateProvider`/`GlobalStateProvider` now pull `RoomSnapshot`/`GlobalSnapshot` from the driver, and `RoomProcessor` consumes them via the new `RoomProcessorContext` + `IRoomProcessorStep` pipeline. The initial step set (`CreepLifecycleStep`, `StructureDecayStep`, `ControllerDowngradeStep`, `RoomIntentEventLogStep`) mutates creep TTL/fatigue, structure hits, controller timers, and intent event logs. Next up is to add combat/movement/power steps to round out the room diff.
 
 4. **Mutation path alignment (Step E2.4).**
-   - Define a driver-facing mutation contract (e.g., `RoomMutationBatch`) that wraps the existing `IBulkWriterFactory` usage.
-   - Engine code submits mutations through this contract; the driver implementation converts it into bulk writer operations.
+   - **In progress:** `RoomMutationWriterFactory` produces per-room writers that stage JSON upserts/patches and flush via the driver `IRoomMutationDispatcher`. Upcoming work: integrate these writers into the processor/global systems and add helpers for event log/map view payloads.
+
+   - Memory surfaces: `UserMemorySink` wraps `IUserDataService` so engine code can persist raw memory, segments, and inter-shard data without touching Redis directly.
 
 5. **Tests & parity checks (Step E2.5).**
-   - Add unit tests for the snapshot builders to ensure every required field from the legacy engine is present.
-   - Build golden fixtures (JSON) to compare legacy Node snapshots vs. new DTOs for the same rooms.
+   - Driver already owns the regression fixtures for room/global snapshots; once the engine builds higher-level caches, add engine-side unit tests around `RoomStateProvider`/`GlobalStateProvider` consumers.
 
 ## Deliverables for E2 Completion
 

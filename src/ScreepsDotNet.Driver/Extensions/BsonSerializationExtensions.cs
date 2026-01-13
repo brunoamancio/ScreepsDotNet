@@ -1,6 +1,5 @@
 using System.Text.Json;
 using MongoDB.Bson;
-using MongoDB.Bson.Serialization;
 
 namespace ScreepsDotNet.Driver.Extensions;
 
