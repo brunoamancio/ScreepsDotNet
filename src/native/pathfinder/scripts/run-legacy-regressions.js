@@ -57,6 +57,7 @@ const DENSE_CORRIDOR_CASE = 'dense-corridor';
 const CONTROLLER_UPGRADE_CREEPS_CASE = 'controller-upgrade-creeps';
 const TOWER_POWER_CHOKE_CASE = 'tower-power-choke';
 const KEEPER_LAIR_CORRIDOR_CASE = 'keeper-lair-corridor';
+const PORTAL_CHAIN_CASE = 'portal-chain';
 
 const plainTerrain = room => ({ room, terrain: '0'.repeat(2500) });
 
@@ -266,6 +267,83 @@ const createKeeperLairMatrix = () => {
   for (const [x, y] of safePath) {
     const idx = y * 50 + x;
     matrix[idx] = Math.min(matrix[idx], 5);
+  }
+
+  return matrix;
+};
+
+const portalChainRooms = () => [
+  plainTerrain('W0N0'),
+  plainTerrain('W0N1'),
+  plainTerrain('W0N2'),
+  plainTerrain('W0N3'),
+  plainTerrain('E0N0'),
+  plainTerrain('E0N1'),
+  plainTerrain('E0N2'),
+  plainTerrain('E0N3'),
+  plainTerrain('W1N0'),
+  plainTerrain('W1N1'),
+  plainTerrain('W1N2'),
+  plainTerrain('W1N3'),
+  plainTerrain('W0S1'),
+  plainTerrain('E0S1'),
+  plainTerrain('W1S1')
+];
+
+const createPortalChainMatrix = roomName => {
+  const matrix = new Uint8Array(2500);
+  matrix.fill(200);
+
+  const carve = (x, y) => {
+    if (x >= 0 && x < 50 && y >= 0 && y < 50) {
+      matrix[y * 50 + x] = 0;
+    }
+  };
+
+  if (roomName === 'W0N0') {
+    let x = 10;
+    let y = 10;
+    while (y >= 0) {
+      carve(x, y);
+      x += 1;
+      y -= 1;
+    }
+    while (x <= 30) {
+      carve(x, 0);
+      x += 1;
+    }
+    for (let cx = 0; cx < 50; cx++) {
+      if (cx !== 30) {
+        matrix[cx] = 255;
+      }
+    }
+  } else if (roomName === 'W0N1') {
+    for (let cx = 0; cx < 50; cx++) {
+      matrix[49 * 50 + cx] = cx === 30 ? 0 : 255;
+    }
+    for (let cy = 49; cy >= 35; cy--) {
+      carve(30, cy);
+    }
+    for (let cx = 30; cx >= 5; cx--) {
+      carve(cx, 35);
+    }
+    for (let cy = 35; cy >= 0; cy--) {
+      carve(5, cy);
+    }
+    for (let cx = 0; cx < 50; cx++) {
+      matrix[cx] = cx === 5 ? 0 : 255;
+    }
+  } else if (roomName === 'W0N2') {
+    for (let cy = 49; cy >= 10; cy--) {
+      carve(5, cy);
+    }
+    for (let step = 0; step <= 40; step++) {
+      const px = 5 + step;
+      const py = 10 + Math.min(30, Math.round(step * 0.75));
+      carve(px, py);
+    }
+  } else {
+    matrix.fill(0);
   }
 
   return matrix;
@@ -667,6 +745,161 @@ const regressionCases = [
       ops: 0,
       path: undefined
     }
+  },
+  {
+    name: PORTAL_CHAIN_CASE,
+    rooms: portalChainRooms(),
+    origin: new RoomPosition(10, 10, 'W0N0'),
+    goals: [new RoomPosition(45, 40, 'W0N2')],
+    options: {
+      maxRooms: 4,
+      maxOps: 80_000,
+      roomCallback: roomName => {
+        if (roomName === 'W0N0' || roomName === 'W0N1' || roomName === 'W0N2') {
+          return { _bits: createPortalChainMatrix(roomName) };
+        }
+        return null;
+      }
+    },
+    expected: {
+      incomplete: true,
+      cost: 3117,
+      ops: 3933,
+      path: [
+        ['W0N1', 35, 0],
+        ['W0N1', 34, 1],
+        ['W0N1', 33, 2],
+        ['W0N1', 32, 3],
+        ['W0N1', 31, 4],
+        ['W0N1', 30, 5],
+        ['W0N1', 29, 5],
+        ['W0N1', 28, 5],
+        ['W0N1', 27, 5],
+        ['W0N1', 26, 5],
+        ['W0N1', 25, 5],
+        ['W0N1', 24, 5],
+        ['W0N1', 23, 5],
+        ['W0N1', 22, 5],
+        ['W0N1', 21, 5],
+        ['W0N1', 20, 5],
+        ['W0N1', 19, 5],
+        ['W0N1', 18, 5],
+        ['W0N1', 17, 5],
+        ['W0N1', 16, 5],
+        ['W0N1', 15, 5],
+        ['W0N1', 14, 5],
+        ['W0N1', 13, 5],
+        ['W0N1', 12, 5],
+        ['W0N1', 11, 5],
+        ['W0N1', 10, 5],
+        ['W0N1', 9, 5],
+        ['W0N1', 8, 5],
+        ['W0N1', 7, 5],
+        ['W0N1', 6, 5],
+        ['W0N1', 5, 5],
+        ['W0N1', 4, 5],
+        ['W0N1', 3, 5],
+        ['W0N1', 2, 5],
+        ['W0N1', 1, 5],
+        ['W0N1', 0, 5],
+        ['W1N1', 49, 5],
+        ['W1N1', 48, 6],
+        ['W1N1', 48, 7],
+        ['W1N1', 48, 8],
+        ['W1N1', 48, 9],
+        ['W1N1', 48, 10],
+        ['W1N1', 48, 11],
+        ['W1N1', 48, 12],
+        ['W1N1', 48, 13],
+        ['W1N1', 48, 14],
+        ['W1N1', 48, 15],
+        ['W1N1', 48, 16],
+        ['W1N1', 48, 17],
+        ['W1N1', 48, 18],
+        ['W1N1', 48, 19],
+        ['W1N1', 48, 20],
+        ['W1N1', 48, 21],
+        ['W1N1', 48, 22],
+        ['W1N1', 48, 23],
+        ['W1N1', 48, 24],
+        ['W1N1', 48, 25],
+        ['W1N1', 48, 26],
+        ['W1N1', 48, 27],
+        ['W1N1', 48, 28],
+        ['W1N1', 48, 29],
+        ['W1N1', 48, 30],
+        ['W1N1', 48, 31],
+        ['W1N1', 48, 32],
+        ['W1N1', 48, 33],
+        ['W1N1', 48, 34],
+        ['W1N1', 48, 35],
+        ['W1N1', 48, 36],
+        ['W1N1', 48, 37],
+        ['W1N1', 48, 38],
+        ['W1N1', 48, 39],
+        ['W1N1', 48, 40],
+        ['W1N1', 48, 41],
+        ['W1N1', 48, 42],
+        ['W1N1', 48, 43],
+        ['W1N1', 48, 44],
+        ['W1N1', 48, 45],
+        ['W1N1', 48, 46],
+        ['W1N1', 48, 47],
+        ['W1N1', 48, 48],
+        ['W1N1', 47, 49],
+        ['W1N0', 47, 0],
+        ['W1N0', 47, 1],
+        ['W1N0', 47, 2],
+        ['W1N0', 47, 3],
+        ['W1N0', 47, 4],
+        ['W1N0', 47, 5],
+        ['W1N0', 47, 6],
+        ['W1N0', 47, 7],
+        ['W1N0', 47, 8],
+        ['W1N0', 47, 9],
+        ['W1N0', 47, 10],
+        ['W1N0', 47, 11],
+        ['W1N0', 47, 12],
+        ['W1N0', 47, 13],
+        ['W1N0', 47, 14],
+        ['W1N0', 47, 15],
+        ['W1N0', 47, 16],
+        ['W1N0', 47, 17],
+        ['W1N0', 47, 18],
+        ['W1N0', 47, 19],
+        ['W1N0', 47, 20],
+        ['W1N0', 47, 21],
+        ['W1N0', 47, 22],
+        ['W1N0', 47, 23],
+        ['W1N0', 47, 24],
+        ['W1N0', 47, 25],
+        ['W1N0', 47, 26],
+        ['W1N0', 47, 27],
+        ['W1N0', 47, 28],
+        ['W1N0', 48, 29],
+        ['W1N0', 49, 30],
+        ['W0N0', 0, 30],
+        ['W0N0', 1, 29],
+        ['W0N0', 1, 28],
+        ['W0N0', 1, 27],
+        ['W0N0', 1, 26],
+        ['W0N0', 1, 25],
+        ['W0N0', 1, 24],
+        ['W0N0', 1, 23],
+        ['W0N0', 1, 22],
+        ['W0N0', 1, 21],
+        ['W0N0', 1, 20],
+        ['W0N0', 1, 19],
+        ['W0N0', 2, 18],
+        ['W0N0', 3, 17],
+        ['W0N0', 4, 16],
+        ['W0N0', 5, 15],
+        ['W0N0', 6, 14],
+        ['W0N0', 7, 13],
+        ['W0N0', 8, 12],
+        ['W0N0', 9, 11]
+      ]
+    }
   }
 ];
 
@@ -705,30 +938,27 @@ function getExpected(caseDef) {
 
 for (const test of regressionCases) {
   const { name, result } = runCase(test);
-  const expected = getExpected(test);
+  const expected = buildExpectedRecord(getExpected(test));
   if (!expected) {
     summary.push({ name, status: 'skipped', diff: [{ field: 'expected', message: 'No expectation provided.' }], result });
     continue;
   }
+
   const diff = [];
-  if (result.incomplete !== expected.incomplete) {
+  if (result.incomplete !== expected.incomplete)
     diff.push({ field: 'incomplete', expected: expected.incomplete, actual: result.incomplete });
-  }
-  if (result.cost !== expected.cost) {
+  if (result.cost !== expected.cost)
     diff.push({ field: 'cost', expected: expected.cost, actual: result.cost });
-  }
-  if (result.ops !== expected.ops) {
+  if (result.ops !== expected.ops)
     diff.push({ field: 'ops', expected: expected.ops, actual: result.ops });
-  }
-  const expectedPath = JSON.stringify(expected.path);
-  const actualPath = JSON.stringify(result.pathTargetFirst);
-  if (expectedPath !== actualPath) {
-    diff.push({ field: 'path', expected: expected.path, actual: result.pathTargetFirst });
-  }
+
+  if (!pathsEqual(expected.pathOriginFirst, result.pathOriginFirst))
+    diff.push({ field: 'path', expected: expected.pathOriginFirst, actual: result.pathOriginFirst });
+
   const status = diff.length === 0 ? 'match' : 'mismatch';
-  if (status === 'mismatch') {
+  if (status === 'mismatch')
     mismatches += 1;
-  }
+
   summary.push({ name, status, diff, result });
 }
 
@@ -741,16 +971,13 @@ console.log(`Legacy regression report written to ${path.relative(repoRoot, repor
 if (baselinePath) {
   const baseline = {
     generatedAt: new Date().toISOString(),
-    cases: summary.map(entry => {
-      const canonicalPath = entry.result.pathTargetFirst || entry.result.path || [];
-      return {
-        name: entry.name,
-        ops: entry.result.ops,
-        cost: entry.result.cost,
-        incomplete: entry.result.incomplete,
-        path: canonicalPath
-      };
-    })
+    cases: summary.map(entry => ({
+      name: entry.name,
+      ops: entry.result.ops,
+      cost: entry.result.cost,
+      incomplete: entry.result.incomplete,
+      path: entry.result.pathOriginFirst || []
+    }))
   };
   fs.mkdirSync(path.dirname(baselinePath), { recursive: true });
   fs.writeFileSync(baselinePath, JSON.stringify(baseline, null, 2));
@@ -767,22 +994,25 @@ if (mismatches > 0) {
 }
 
 function loadExpectations(filePath) {
-if (!filePath || !fs.existsSync(filePath)) {
-  const label = filePath ? path.relative(repoRoot, filePath) : '<unspecified>';
-  console.warn(`Expectation file not found at ${label}; using inline fixtures.`);
-  return null;
-}
+  if (!filePath || !fs.existsSync(filePath)) {
+    const label = filePath ? path.relative(repoRoot, filePath) : '<unspecified>';
+    console.warn(`Expectation file not found at ${label}; using inline fixtures.`);
+    return null;
+  }
 
   try {
     const payload = JSON.parse(fs.readFileSync(filePath, 'utf8'));
     const map = new Map();
     const cases = Array.isArray(payload.cases) ? payload.cases : [];
     for (const entry of cases) {
+      const originFirst = clonePath(entry.path || []);
+      const targetFirst = originFirst.slice().reverse();
       map.set(entry.name, {
         incomplete: entry.incomplete,
         cost: entry.cost,
         ops: entry.ops,
-        path: entry.path
+        pathOriginFirst: originFirst,
+        pathTargetFirst: targetFirst
       });
     }
     console.log(`Loaded ${map.size} expectations from ${path.relative(repoRoot, filePath)}`);
@@ -791,4 +1021,51 @@ if (!filePath || !fs.existsSync(filePath)) {
     console.warn(`Failed to load expectations from ${filePath}:`, err);
     return null;
   }
+}
+
+function buildExpectedRecord(raw) {
+  if (!raw) return null;
+
+  const expected = {
+    incomplete: raw.incomplete,
+    cost: raw.cost,
+    ops: raw.ops
+  };
+
+  const pathOriginFirst = raw.pathOriginFirst ? clonePath(raw.pathOriginFirst) : null;
+  const pathTargetFirst = raw.pathTargetFirst ? clonePath(raw.pathTargetFirst) : null;
+  const fallbackPath = Array.isArray(raw.path) ? clonePath(raw.path) : null;
+
+  if (!pathOriginFirst && !pathTargetFirst && fallbackPath)
+    expected.pathTargetFirst = fallbackPath;
+  else {
+    expected.pathOriginFirst = pathOriginFirst || null;
+    expected.pathTargetFirst = pathTargetFirst || null;
+  }
+
+  if (!expected.pathOriginFirst && expected.pathTargetFirst)
+    expected.pathOriginFirst = expected.pathTargetFirst.slice().reverse();
+  if (!expected.pathTargetFirst && expected.pathOriginFirst)
+    expected.pathTargetFirst = expected.pathOriginFirst.slice().reverse();
+
+  if (!expected.pathOriginFirst)
+    expected.pathOriginFirst = [];
+  if (!expected.pathTargetFirst)
+    expected.pathTargetFirst = [];
+  return expected;
+}
+
+function clonePath(path) {
+  return path.map(step => step.slice());
+}
+
+function pathsEqual(left, right) {
+  if (left.length !== right.length) return false;
+  for (let i = 0; i < left.length; i++) {
+    const a = left[i];
+    const b = right[i];
+    if (a[0] !== b[0] || a[1] !== b[1] || a[2] !== b[2])
+      return false;
+  }
+  return true;
 }

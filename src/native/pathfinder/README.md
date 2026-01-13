@@ -70,7 +70,7 @@ node src/native/pathfinder/scripts/run-legacy-regressions.js
 Prerequisites:
 
 - Build the native Node module once via `npx node-gyp rebuild -C ../ScreepsNodeJs/driver/native` (still requires Node 12 + Python 2.7).
-- Keep the regression definitions in sync with `PathfinderNativeIntegrationTests` (the script normalizes the origin→target ordering that Node returns so the canonical comparison matches the managed expectations).
+- Keep the regression definitions in sync with `PathfinderNativeIntegrationTests`. The script now exports **origin→goal** paths directly (legacy Node results are reversed inside the harness), so the baseline JSON always matches the orientation that the managed tests assert. If you previously captured baselines, re-run the script so they update to the new ordering.
 
 Outputs land under `src/native/pathfinder/reports/` (JSON + Markdown summary). Refer to the latest report before removing the managed fallback or when investigating discrepancies.
 
@@ -87,7 +87,7 @@ node src/native/pathfinder/scripts/refresh-baselines.js
 dotnet test src/ScreepsDotNet.Driver.Tests/ScreepsDotNet.Driver.Tests.csproj /p:RefreshPathfinderBaselines=true
 ```
 
-Both commands call `run-legacy-regressions.js --baseline …` and copy the canonical results to `src/ScreepsDotNet.Driver.Tests/Pathfinding/Baselines/legacy-regressions.json`, which is tracked in git. Make sure the shell you run them from already activated Node 12 (e.g., via `nvm use 12`) so the legacy native module loads correctly. Use these commands whenever you change the native solver or add new regression cases.
+Both commands call `run-legacy-regressions.js --baseline …` and copy the canonical (origin-first) results to `src/ScreepsDotNet.Driver.Tests/Pathfinding/Baselines/legacy-regressions.json`, which is tracked in git. Make sure the shell you run them from already activated Node 12 (e.g., via `nvm use 12`) so the legacy native module loads correctly. Use these commands whenever you change the native solver or add new regression cases.
 
 ## Status / Next steps
 
