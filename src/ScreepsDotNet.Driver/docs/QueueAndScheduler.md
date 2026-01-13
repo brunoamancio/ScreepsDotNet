@@ -71,8 +71,8 @@ public sealed class WorkerScheduler
 - In-flight workers still call `MarkDone`, ensuring items don’t get lost.
 
 ### Telemetry
-- Record queue depth metrics (pending/processing counts) periodically; helpful for diagnosing bottlenecks.
-- Log when `resetAll` fires (equivalent to watchdog resets).
+- Queue depth metrics (pending counts for both rooms/users) now flow through `IDriverLoopHooks.PublishRuntimeTelemetryAsync` with stage tags (`enqueue*`, `drain*`, `idle`, `dequeue`, etc.), so backlog charts can be driven from the unified telemetry sink.
+- Scheduler crashes emit `Stage=scheduler` telemetry via `WorkerScheduler`, replacing the old TODO about logging those errors.
 
 ## Implementation Steps
 1. Introduce `IWorkQueue`/`IQueueService` interfaces under `ScreepsDotNet.Driver.Queues`.

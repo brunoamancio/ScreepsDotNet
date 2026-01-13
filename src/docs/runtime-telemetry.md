@@ -51,6 +51,12 @@ All new optional properties default to `null`/`false`, so older components can c
 - **Main loop** produces `Stage=enqueueUsers`, `Stage=enqueueRooms`, `Stage=drainUsers`, and `Stage=drainRooms` heartbeats with queue depths so operators can see backlog evolution per tick.
 - **WorkerScheduler** (when used) sends `Stage=scheduler` telemetry with `ScriptError=true` whenever a background worker crashes before cancellation.
 
+## Observability integration
+
+- `ObservabilityTelemetryListener` bridges the telemetry sink into whatever observability pipeline you choose. Set `ObservabilityOptions.EnableExporter=true` (e.g., via configuration) to turn the exporter on; leave it `false` for local/dev builds to avoid noisy logs.
+- The default `LoggingObservabilityExporter` simply writes structured log lines, but you can replace `IObservabilityExporter` with an implementation that pushes into Prometheus/OTLP/etc. without touching loop code.
+- Watchdog alerts flow through the same exporter, meaning alerting/metrics tools get notified as soon as the watchdog requests a cold restart.
+
 ## Consuming the contract
 
 - Register additional `IRuntimeTelemetryListener` instances to push data into metrics pipelines (Prometheus, OTEL, etc.), send alerts, or drive queue throttling.
