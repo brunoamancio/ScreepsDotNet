@@ -1,8 +1,8 @@
 ﻿using MongoDB.Driver;
 using ScreepsDotNet.Backend.Core.Comparers;
-using ScreepsDotNet.Backend.Core.Constants;
 using ScreepsDotNet.Backend.Core.Models;
 using ScreepsDotNet.Backend.Core.Repositories;
+using ScreepsDotNet.Common.Constants;
 using ScreepsDotNet.Storage.MongoRedis.Providers;
 using ScreepsDotNet.Storage.MongoRedis.Repositories.Documents;
 

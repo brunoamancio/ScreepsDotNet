@@ -1,4 +1,6 @@
-﻿namespace ScreepsDotNet.Storage.MongoRedis.Services;
+﻿using ScreepsDotNet.Common.Constants;
+
+namespace ScreepsDotNet.Storage.MongoRedis.Services;
 
 using System;
 using System.Collections.Generic;
@@ -9,7 +11,6 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using MongoDB.Bson;
 using MongoDB.Driver;
-using ScreepsDotNet.Backend.Core.Constants;
 using ScreepsDotNet.Backend.Core.Intents;
 using ScreepsDotNet.Backend.Core.Repositories;
 using ScreepsDotNet.Backend.Core.Services;

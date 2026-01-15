@@ -1,8 +1,9 @@
+using ScreepsDotNet.Common.Constants;
+
 namespace ScreepsDotNet.Engine.Processors.Steps;
 
 using System.Collections.Generic;
 using System.Text.Json;
-using ScreepsDotNet.Common;
 using ScreepsDotNet.Engine.Processors;
 
 /// <summary>

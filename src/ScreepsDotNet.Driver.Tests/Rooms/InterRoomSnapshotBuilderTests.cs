@@ -4,7 +4,7 @@ using ScreepsDotNet.Driver.Abstractions.Rooms;
 using ScreepsDotNet.Driver.Services.Rooms;
 using ScreepsDotNet.Driver.Tests.TestDoubles;
 using ScreepsDotNet.Storage.MongoRedis.Repositories.Documents;
-using ScreepsDotNet.Common;
+using ScreepsDotNet.Common.Constants;
 
 namespace ScreepsDotNet.Driver.Tests.Rooms;
 

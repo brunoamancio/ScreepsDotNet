@@ -1,4 +1,6 @@
-﻿namespace ScreepsDotNet.Backend.Http.Tests.Integration;
+﻿using ScreepsDotNet.Common.Constants;
+
+namespace ScreepsDotNet.Backend.Http.Tests.Integration;
 
 using System.Buffers;
 using System.Collections.Generic;
@@ -7,7 +9,6 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using MongoDB.Bson;
 using MongoDB.Driver;
-using ScreepsDotNet.Backend.Core.Constants;
 using ScreepsDotNet.Backend.Core.Seeding;
 using ScreepsDotNet.Backend.Http.Routing;
 using ScreepsDotNet.Backend.Http.Tests.TestSupport;

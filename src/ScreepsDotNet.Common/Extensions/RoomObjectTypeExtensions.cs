@@ -1,16 +1,8 @@
-﻿namespace ScreepsDotNet.Backend.Core.Constants;
+namespace ScreepsDotNet.Common.Extensions;
 
 using System.Collections.Generic;
-using ScreepsDotNet.Common;
-
-public enum RoomObjectType
-{
-    Controller,
-    Spawn,
-    Mineral,
-    InvaderCore,
-    PowerCreep
-}
+using ScreepsDotNet.Common.Constants;
+using ScreepsDotNet.Common.Types;
 
 public static class RoomObjectTypeExtensions
 {

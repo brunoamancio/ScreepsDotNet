@@ -1,4 +1,6 @@
-﻿namespace ScreepsDotNet.Storage.MongoRedis.Services;
+﻿using ScreepsDotNet.Common.Constants;
+
+namespace ScreepsDotNet.Storage.MongoRedis.Services;
 
 using System.Security.Cryptography;
 using System.Text.RegularExpressions;

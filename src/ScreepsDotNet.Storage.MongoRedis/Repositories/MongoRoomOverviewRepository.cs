@@ -1,9 +1,10 @@
-﻿namespace ScreepsDotNet.Storage.MongoRedis.Repositories;
+﻿using ScreepsDotNet.Common.Constants;
+
+namespace ScreepsDotNet.Storage.MongoRedis.Repositories;
 
 using MongoDB.Driver;
 using ScreepsDotNet.Backend.Core.Models;
 using ScreepsDotNet.Backend.Core.Repositories;
-using ScreepsDotNet.Common;
 using ScreepsDotNet.Storage.MongoRedis.Providers;
 using ScreepsDotNet.Storage.MongoRedis.Repositories.Documents;
 
