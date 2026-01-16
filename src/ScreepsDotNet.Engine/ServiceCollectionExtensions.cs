@@ -34,6 +34,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<ISpawnIntentParser, SpawnIntentParser>();
         services.AddSingleton<ICreepDeathProcessor, CreepDeathProcessor>();
         services.AddSingleton<IStructureBlueprintProvider, StructureBlueprintProvider>();
+        services.AddSingleton<IStructureSnapshotFactory, StructureSnapshotFactory>();
         services.AddSingleton<IRoomProcessor, RoomProcessor>();
         return services;
     }
