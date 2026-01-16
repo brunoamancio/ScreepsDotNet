@@ -35,6 +35,7 @@ internal static class RoomContractMapper
             : new Dictionary<string, int>(document.StoreCapacityResource, StringComparer.Ordinal);
 
         var body = MapBody(document.Body);
+        var actionLog = MapActionLog(document.ActionLog);
 
         var spawningSnapshot = MapSpawning(document.Spawning);
         bool? isSpawning = document.Spawning is BsonBoolean boolean
@@ -78,7 +79,8 @@ internal static class RoomContractMapper
             document.CreepTicksToLive,
             document.CreepSaying,
             document.ResourceType,
-            document.ResourceAmount);
+            document.ResourceAmount,
+            actionLog);
     }
 
     public static IReadOnlyDictionary<string, UserState> MapUsers(IReadOnlyDictionary<string, UserDocument> users)
@@ -142,6 +144,107 @@ internal static class RoomContractMapper
         return result;
     }
 
+    private static BsonDocument? CreateActionLogDocument(RoomObjectActionLogSnapshot? snapshot)
+    {
+        if (snapshot is null || !snapshot.HasEntries)
+            return null;
+
+        var document = new BsonDocument();
+        if (snapshot.Die is { } die)
+        {
+            document[RoomDocumentFields.RoomObject.ActionLogFields.Die] = new BsonDocument
+            {
+                [RoomDocumentFields.RoomObject.ActionLogFields.Time] = die.Time
+            };
+        }
+
+        if (snapshot.Healed is { } healed)
+        {
+            document[RoomDocumentFields.RoomObject.ActionLogFields.Healed] = new BsonDocument
+            {
+                [RoomDocumentFields.RoomObject.ActionLogFields.X] = healed.X,
+                [RoomDocumentFields.RoomObject.ActionLogFields.Y] = healed.Y
+            };
+        }
+
+        return document.ElementCount == 0 ? null : document;
+    }
+
+    private static RoomObjectActionLogSnapshot? MapActionLog(BsonDocument? actionLog)
+    {
+        if (actionLog is null || actionLog.ElementCount == 0)
+            return null;
+
+        RoomObjectActionLogDie? die = null;
+        if (actionLog.TryGetValue(RoomDocumentFields.RoomObject.ActionLogFields.Die, out var dieValue) &&
+            dieValue is BsonDocument dieDoc &&
+            dieDoc.TryGetValue(RoomDocumentFields.RoomObject.ActionLogFields.Time, out var timeValue) &&
+            TryGetInt32(timeValue, out var dieTime))
+            die = new RoomObjectActionLogDie(dieTime);
+
+        RoomObjectActionLogHealed? healed = null;
+        if (actionLog.TryGetValue(RoomDocumentFields.RoomObject.ActionLogFields.Healed, out var healedValue) &&
+            healedValue is BsonDocument healedDoc &&
+            healedDoc.TryGetValue(RoomDocumentFields.RoomObject.ActionLogFields.X, out var xValue) &&
+            healedDoc.TryGetValue(RoomDocumentFields.RoomObject.ActionLogFields.Y, out var yValue) &&
+            TryGetInt32(xValue, out var x) &&
+            TryGetInt32(yValue, out var y))
+            healed = new RoomObjectActionLogHealed(x, y);
+
+        if (die is null && healed is null)
+            return null;
+
+        return new RoomObjectActionLogSnapshot(die, healed);
+    }
+
+    private static bool TryGetInt32(BsonValue value, out int result)
+    {
+        if (value.IsInt32)
+        {
+            result = value.AsInt32;
+            return true;
+        }
+
+        if (value.IsInt64)
+        {
+            var temp = value.AsInt64;
+            if (temp is >= int.MinValue and <= int.MaxValue)
+            {
+                result = (int)temp;
+                return true;
+            }
+        }
+
+        if (value.IsDouble)
+        {
+            var temp = value.AsDouble;
+            if (!double.IsNaN(temp) && temp is >= int.MinValue and <= int.MaxValue)
+            {
+                result = (int)temp;
+                return true;
+            }
+        }
+
+        if (value.IsDecimal128)
+        {
+            var dec = value.AsDecimal128;
+            if (dec >= int.MinValue && dec <= int.MaxValue)
+            {
+                result = (int)dec;
+                return true;
+            }
+        }
+
+        if (value.IsString && int.TryParse(value.AsString, out var parsed))
+        {
+            result = parsed;
+            return true;
+        }
+
+        result = default;
+        return false;
+    }
+
     public static RoomObjectDocument MapRoomObjectDocument(RoomObjectSnapshot snapshot)
     {
         var document = new RoomObjectDocument
@@ -165,9 +268,7 @@ internal static class RoomContractMapper
             StructureType = snapshot.StructureType,
             Store = snapshot.Store.Count == 0 ? null : new Dictionary<string, int>(snapshot.Store, StringComparer.Ordinal),
             StoreCapacity = snapshot.StoreCapacity,
-            StoreCapacityResource = snapshot.StoreCapacityResource is null
-                ? null
-                : new Dictionary<string, int>(snapshot.StoreCapacityResource, StringComparer.Ordinal),
+            StoreCapacityResource = new Dictionary<string, int>(snapshot.StoreCapacityResource, StringComparer.Ordinal),
             Reservation = snapshot.Reservation is null
                 ? null
                 : new RoomReservationDocument
@@ -196,6 +297,7 @@ internal static class RoomContractMapper
             Body = MapBodyDocuments(snapshot.Body),
             Effects = MapEffectsToBson(snapshot.Effects),
             Spawning = ResolveSpawningValue(snapshot),
+            ActionLog = CreateActionLogDocument(snapshot.ActionLog),
             StrongholdId = snapshot.StrongholdId,
             UserSummoned = snapshot.UserSummoned,
             DeathTime = snapshot.DeathTime,
@@ -374,6 +476,15 @@ internal static class RoomContractMapper
                 logDocument[RoomDocumentFields.RoomObject.ActionLogFields.Die] = new BsonDocument
                 {
                     [RoomDocumentFields.RoomObject.ActionLogFields.Time] = die.Time
+                };
+            }
+
+            if (actionLog.Healed is { } healed)
+            {
+                logDocument[RoomDocumentFields.RoomObject.ActionLogFields.Healed] = new BsonDocument
+                {
+                    [RoomDocumentFields.RoomObject.ActionLogFields.X] = healed.X,
+                    [RoomDocumentFields.RoomObject.ActionLogFields.Y] = healed.Y
                 };
             }
 

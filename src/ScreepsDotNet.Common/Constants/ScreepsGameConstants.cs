@@ -23,6 +23,13 @@ public static class ScreepsGameConstants
     public const int LabBoostMineral = 30;
     public const int TombstoneDecayPerPart = 5;
     public const int TombstoneDecayPowerCreep = 500;
+    public const int TowerEnergyCost = 10;
+    public const int TowerPowerAttack = 600;
+    public const int TowerPowerHeal = 400;
+    public const int TowerPowerRepair = 800;
+    public const int TowerOptimalRange = 5;
+    public const int TowerFalloffRange = 20;
+    public const double TowerFalloff = 0.75;
     public static IReadOnlyList<string> ResourceOrder { get; } =
     [
         ResourceTypes.Energy,

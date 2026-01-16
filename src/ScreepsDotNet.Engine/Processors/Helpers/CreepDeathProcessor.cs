@@ -14,7 +14,7 @@ internal interface ICreepDeathProcessor
 
 internal sealed record CreepDeathOptions(double DropRate = ScreepsGameConstants.CreepCorpseRate, bool ViolentDeath = false, RoomObjectSnapshot? Spawn = null);
 
-internal sealed class CreepDeathProcessor(ICreepStatsSink statsSink) : ICreepDeathProcessor
+internal sealed class CreepDeathProcessor : ICreepDeathProcessor
 {
     private static readonly StringComparer Comparer = StringComparer.Ordinal;
 
@@ -28,7 +28,7 @@ internal sealed class CreepDeathProcessor(ICreepStatsSink statsSink) : ICreepDea
         context.MutationWriter.Remove(creep.Id);
 
         if (!string.IsNullOrWhiteSpace(creep.UserId) && creep.Body.Count > 0)
-            statsSink.IncrementCreepsLost(creep.UserId!, creep.Body.Count);
+            context.Stats.IncrementCreepsLost(creep.UserId!, creep.Body.Count);
 
         var dropResources = CalculateBodyResources(creep, options.DropRate);
         MergeResourceDictionary(dropResources, creep.Store);
@@ -39,6 +39,8 @@ internal sealed class CreepDeathProcessor(ICreepStatsSink statsSink) : ICreepDea
 
         var tombstone = CreateTombstoneSnapshot(context.State.GameTime, creep, dropResources, options.ViolentDeath);
         context.MutationWriter.Upsert(tombstone);
+        if (!string.IsNullOrWhiteSpace(creep.UserId))
+            context.Stats.IncrementTombstonesCreated(creep.UserId!);
 
         if (options.Spawn is not null)
         {
@@ -275,7 +277,7 @@ internal sealed class CreepDeathProcessor(ICreepStatsSink statsSink) : ICreepDea
         return (int)Math.Floor(totalCost * ttl / (double)ScreepsGameConstants.CreepLifeTime);
     }
 
-    private void ApplyEnergyRefund(
+    private static void ApplyEnergyRefund(
         RoomProcessorContext context,
         RoomObjectSnapshot spawn,
         int refund,
@@ -302,6 +304,6 @@ internal sealed class CreepDeathProcessor(ICreepStatsSink statsSink) : ICreepDea
         });
 
         if (!string.IsNullOrWhiteSpace(spawn.UserId))
-            statsSink.IncrementEnergyCreeps(spawn.UserId!, refund);
+            context.Stats.IncrementEnergyCreeps(spawn.UserId!, refund);
     }
 }

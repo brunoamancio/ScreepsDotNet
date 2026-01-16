@@ -45,7 +45,8 @@ public sealed record RoomObjectSnapshot(
     int? CreepTicksToLive = null,
     string? CreepSaying = null,
     string? ResourceType = null,
-    int? ResourceAmount = null)
+    int? ResourceAmount = null,
+    RoomObjectActionLogSnapshot? ActionLog = null)
 {
     public int? MoveBodyParts => GetStoreValue(IntentKeys.Move);
     public int? ControllerDowngradeTimer => GetStoreValue(StoreKeys.DowngradeTimer);

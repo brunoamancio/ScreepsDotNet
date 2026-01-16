@@ -2,14 +2,17 @@ namespace ScreepsDotNet.Engine.Processors;
 
 using Microsoft.Extensions.Logging;
 using System.Linq;
+using ScreepsDotNet.Driver.Abstractions.History;
 using ScreepsDotNet.Engine.Data.Bulk;
 using ScreepsDotNet.Engine.Data.Rooms;
 using ScreepsDotNet.Engine.Data.Memory;
+using ScreepsDotNet.Engine.Processors.Helpers;
 
 internal sealed class RoomProcessor(
     IRoomStateProvider roomStateProvider,
     IRoomMutationWriterFactory mutationWriterFactory,
     IUserMemorySink memorySink,
+    IHistoryService historyService,
     IEnumerable<IRoomProcessorStep> steps,
     ILogger<RoomProcessor>? logger = null) : IRoomProcessor
 {
@@ -19,7 +22,8 @@ internal sealed class RoomProcessor(
 
         var state = await roomStateProvider.GetRoomStateAsync(roomName, gameTime, token).ConfigureAwait(false);
         var writer = mutationWriterFactory.Create(roomName);
-        var context = new RoomProcessorContext(state, writer);
+        var statsSink = new RoomStatsSink(historyService.CreateRoomStatsUpdater(roomName));
+        var context = new RoomProcessorContext(state, writer, statsSink);
 
         try
         {
@@ -31,6 +35,8 @@ internal sealed class RoomProcessor(
                 logger?.LogDebug("RoomProcessor tick {Tick} room {Room} has {ObjectCount} objects.", state.GameTime, state.RoomName, state.Objects.Count);
 
             await writer.FlushAsync(token).ConfigureAwait(false);
+
+            await context.Stats.FlushAsync(token).ConfigureAwait(false);
 
             await context.FlushMemoryAsync(memorySink, token).ConfigureAwait(false);
         }

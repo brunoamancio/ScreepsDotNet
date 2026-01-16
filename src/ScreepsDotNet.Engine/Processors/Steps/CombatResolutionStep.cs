@@ -1,13 +1,15 @@
 namespace ScreepsDotNet.Engine.Processors.Steps;
 
 using System.Collections.Generic;
+using ScreepsDotNet.Common.Constants;
 using ScreepsDotNet.Driver.Contracts;
 using ScreepsDotNet.Engine.Processors;
+using ScreepsDotNet.Engine.Processors.Helpers;
 
 /// <summary>
 /// Resolves simple attack/ranged attack intents by applying flat damage to targets.
 /// </summary>
-internal sealed class CombatResolutionStep : IRoomProcessorStep
+internal sealed class CombatResolutionStep(ICreepDeathProcessor deathProcessor) : IRoomProcessorStep
 {
     public Task ExecuteAsync(RoomProcessorContext context, CancellationToken token = default)
     {
@@ -48,8 +50,29 @@ internal sealed class CombatResolutionStep : IRoomProcessorStep
             });
         }
 
-        foreach (var id in removals)
-            context.MutationWriter.Remove(id);
+        if (removals.Count > 0)
+        {
+            var energyLedger = new Dictionary<string, int>(StringComparer.Ordinal);
+            foreach (var id in removals)
+            {
+                if (!context.State.Objects.TryGetValue(id, out var obj))
+                {
+                    context.MutationWriter.Remove(id);
+                    continue;
+                }
+
+                if (IsCreep(obj))
+                {
+                    deathProcessor.Process(
+                        context,
+                        obj,
+                        new CreepDeathOptions(ViolentDeath: true),
+                        energyLedger);
+                }
+                else
+                    context.MutationWriter.Remove(id);
+            }
+        }
 
         return Task.CompletedTask;
     }
@@ -62,4 +85,8 @@ internal sealed class CombatResolutionStep : IRoomProcessorStep
         var damage = intent.Damage ?? 30;
         hitsUpdates[intent.TargetId!] = hitsUpdates.TryGetValue(intent.TargetId!, out var existing) ? existing + damage : damage;
     }
+
+    private static bool IsCreep(RoomObjectSnapshot obj)
+        => string.Equals(obj.Type, RoomObjectTypes.Creep, StringComparison.Ordinal) ||
+           string.Equals(obj.Type, RoomObjectTypes.PowerCreep, StringComparison.Ordinal);
 }

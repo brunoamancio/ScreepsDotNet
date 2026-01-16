@@ -56,12 +56,19 @@ public sealed record RoomObjectPositionPatch(int? X = null, int? Y = null)
     public bool HasCoordinates => X.HasValue || Y.HasValue;
 }
 
-public sealed record RoomObjectActionLogPatch(RoomObjectActionLogDie? Die = null)
+public sealed record RoomObjectActionLogPatch(RoomObjectActionLogDie? Die = null, RoomObjectActionLogHealed? Healed = null)
 {
-    public bool HasEntries => Die is not null;
+    public bool HasEntries => Die is not null || Healed is not null;
 }
 
 public sealed record RoomObjectActionLogDie(int Time);
+
+public sealed record RoomObjectActionLogHealed(int X, int Y);
+
+public sealed record RoomObjectActionLogSnapshot(RoomObjectActionLogDie? Die = null, RoomObjectActionLogHealed? Healed = null)
+{
+    public bool HasEntries => Die is not null || Healed is not null;
+}
 
 public sealed record RoomInfoPatchPayload
 {

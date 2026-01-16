@@ -49,7 +49,12 @@ public static class RoomDocumentFields
         public static class ActionLogFields
         {
             public const string Die = "die";
+            public const string Healed = "healed";
+            public const string Attack = "attack";
+            public const string Repair = "repair";
             public const string Time = "time";
+            public const string X = "x";
+            public const string Y = "y";
         }
 
         public static class SpawningFields

@@ -18,7 +18,7 @@ public sealed class SpawnEnergyChargerTests
     private readonly SpawnEnergyCharger _charger;
 
     public SpawnEnergyChargerTests()
-        => _charger = new SpawnEnergyCharger(_allocator, _stats);
+        => _charger = new SpawnEnergyCharger(_allocator);
 
     [Fact]
     public void TryCharge_UsesSpawnEnergy_WhenAvailable()
@@ -72,7 +72,7 @@ public sealed class SpawnEnergyChargerTests
         Assert.Equal(0, _stats.LastEnergyIncrement);
     }
 
-    private static RoomProcessorContext CreateContext(IReadOnlyList<RoomObjectSnapshot> objects)
+    private RoomProcessorContext CreateContext(IReadOnlyList<RoomObjectSnapshot> objects)
     {
         var map = new Dictionary<string, RoomObjectSnapshot>(StringComparer.Ordinal);
         foreach (var obj in objects)
@@ -88,7 +88,7 @@ public sealed class SpawnEnergyChargerTests
             new Dictionary<string, RoomTerrainSnapshot>(StringComparer.Ordinal),
             []);
 
-        return new RoomProcessorContext(state, new FakeMutationWriter());
+        return new RoomProcessorContext(state, new FakeMutationWriter(), _stats);
     }
 
     private static RoomObjectSnapshot CreateSpawn(string id, int energy)
@@ -187,5 +187,19 @@ public sealed class SpawnEnergyChargerTests
         public void IncrementCreepsLost(string userId, int bodyParts) { }
 
         public void IncrementCreepsProduced(string userId, int bodyParts) { }
+
+        public void IncrementSpawnRenewals(string userId) { }
+
+        public void IncrementSpawnRecycles(string userId) { }
+
+        public void IncrementSpawnCreates(string userId) { }
+
+        public void IncrementTombstonesCreated(string userId) { }
+
+        public void IncrementEnergyConstruction(string userId, int amount) { }
+
+        public void IncrementEnergyHarvested(string userId, int amount) { }
+
+        public Task FlushAsync(CancellationToken token = default) => Task.CompletedTask;
     }
 }

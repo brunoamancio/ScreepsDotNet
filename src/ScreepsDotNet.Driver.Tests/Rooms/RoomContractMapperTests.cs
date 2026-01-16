@@ -1,6 +1,7 @@
 using MongoDB.Bson;
 using ScreepsDotNet.Common.Constants;
 using ScreepsDotNet.Common.Types;
+using ScreepsDotNet.Driver.Contracts;
 using ScreepsDotNet.Driver.Services.Rooms;
 using ScreepsDotNet.Storage.MongoRedis.Repositories.Documents;
 
@@ -62,5 +63,56 @@ public sealed class RoomContractMapperTests
 
         var roundtrip = RoomContractMapper.MapRoomObjectDocument(snapshot);
         Assert.True(roundtrip.Spawning is BsonBoolean flag && flag.Value);
+    }
+
+    [Fact]
+    public void MapRoomObject_MapsActionLogHealed()
+    {
+        var healedDoc = new BsonDocument
+        {
+            [RoomDocumentFields.RoomObject.ActionLogFields.X] = 10,
+            [RoomDocumentFields.RoomObject.ActionLogFields.Y] = 20
+        };
+
+        var document = new RoomObjectDocument
+        {
+            Id = ObjectId.GenerateNewId(),
+            Type = RoomObjectTypes.Creep,
+            Room = "W1N1",
+            X = 1,
+            Y = 1,
+            ActionLog = new BsonDocument
+            {
+                [RoomDocumentFields.RoomObject.ActionLogFields.Healed] = healedDoc
+            }
+        };
+
+        var snapshot = RoomContractMapper.MapRoomObject(document);
+        Assert.NotNull(snapshot.ActionLog);
+        Assert.NotNull(snapshot.ActionLog!.Healed);
+        Assert.Equal(10, snapshot.ActionLog.Healed!.X);
+        Assert.Equal(20, snapshot.ActionLog.Healed!.Y);
+
+        var roundtrip = RoomContractMapper.MapRoomObjectDocument(snapshot);
+        Assert.True(roundtrip.ActionLog?.Contains(RoomDocumentFields.RoomObject.ActionLogFields.Healed));
+    }
+
+    [Fact]
+    public void CreateRoomObjectPatchDocument_WritesActionLogHealed()
+    {
+        var patch = new RoomObjectPatchPayload
+        {
+            ActionLog = new RoomObjectActionLogPatch(
+                Healed: new RoomObjectActionLogHealed(7, 8))
+        };
+
+        var document = RoomContractMapper.CreateRoomObjectPatchDocument(patch);
+        Assert.True(document.Contains(RoomDocumentFields.RoomObject.ActionLog));
+
+        var log = document[RoomDocumentFields.RoomObject.ActionLog].AsBsonDocument;
+        var healed = log[RoomDocumentFields.RoomObject.ActionLogFields.Healed].AsBsonDocument;
+
+        Assert.Equal(7, healed[RoomDocumentFields.RoomObject.ActionLogFields.X].AsInt32);
+        Assert.Equal(8, healed[RoomDocumentFields.RoomObject.ActionLogFields.Y].AsInt32);
     }
 }

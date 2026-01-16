@@ -30,6 +30,15 @@ To decouple the engine from storage documents, the driver will expose trimmed, i
 | `RoomObjectSnapshot` | Flattened object representation with typed helpers (store, body, controller info, action logs). | Derived from `RoomObjectDocument` + computed fields (e.g., `_actionLog`). |
 | `IntentEnvelope` | Normalized intent payload grouped by user/object/intent type. | Built from `RoomIntentDocument` + runner-generated intents. |
 
+### Action Log DTOs
+
+Driver-side mapping now surfaces `_actionLog` through typed contracts:
+
+- `RoomObjectActionLogSnapshot` hangs off each `RoomObjectSnapshot`, exposing structured entries such as `Die` (time) and `Healed` (spawn coordinates). Engine steps can inspect prior tick logs without touching BSON.
+- `RoomObjectActionLogPatch` mirrors the same structure for mutations. When engine code sets `Healed` or `Die`, the driver writes the correct nested documents back to Mongo via `RoomContractMapper`.
+
+Always use these DTOs instead of ad-hoc dictionaries so action-log parity remains centralized and storage-agnostic.
+
 These DTOs live in the driver assembly so both the engine and driver loops share the same shapes. The driver remains responsible for translating to/from Mongo/Redis.
 
 ## Implementation Plan
@@ -40,6 +49,7 @@ These DTOs live in the driver assembly so both the engine and driver loops share
 
 3. **Wire engine consumption (Step E2.3).**
    - **In progress:** `RoomStateProvider`/`GlobalStateProvider` now pull `RoomSnapshot`/`GlobalSnapshot` from the driver, and `RoomProcessor` consumes them via the new `RoomProcessorContext` + `IRoomProcessorStep` pipeline. The current step set covers creep lifecycle, movement, combat resolution, structure decay, controller downgrade, power cooldowns, and intent event logging. Remaining work: port the rest of the legacy handlers (spawn logic, labs, notifications, etc.) so room diffs match the Node processor.
+   - Detailed task breakdown (dependencies, handler ports, telemetry work) lives in `docs/engine/e2.3-plan.md`.
 
 4. **Mutation path alignment (Step E2.4).**
    - **In progress:** `RoomMutationWriterFactory` produces per-room writers that stage JSON upserts/patches and flush via the driver `IRoomMutationDispatcher`. Upcoming work: integrate these writers into the processor/global systems and add helpers for event log/map view payloads.

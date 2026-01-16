@@ -16,8 +16,7 @@ internal sealed class SpawnIntentStep(
     ISpawnIntentParser parser,
     ISpawnStateReader stateReader,
     ISpawnEnergyCharger energyCharger,
-    ICreepDeathProcessor deathProcessor,
-    ICreepStatsSink statsSink) : IRoomProcessorStep
+    ICreepDeathProcessor deathProcessor) : IRoomProcessorStep
 {
     public Task ExecuteAsync(RoomProcessorContext context, CancellationToken token = default)
     {
@@ -111,7 +110,9 @@ internal sealed class SpawnIntentStep(
             intent.Directions);
 
         InsertPlaceholderCreep(context, spawn, intent);
-        IncrementCreepProduced(spawn, intent.Body.BodyParts.Count);
+        IncrementCreepProduced(context, spawn, intent.Body.BodyParts.Count);
+        if (!string.IsNullOrWhiteSpace(spawn.UserId))
+            context.Stats.IncrementSpawnCreates(spawn.UserId!);
 
         context.MutationWriter.Patch(spawn.Id, new RoomObjectPatchPayload
         {
@@ -182,12 +183,12 @@ internal sealed class SpawnIntentStep(
         context.MutationWriter.Upsert(placeholder);
     }
 
-    private void IncrementCreepProduced(RoomObjectSnapshot spawn, int bodyParts)
+    private static void IncrementCreepProduced(RoomProcessorContext context, RoomObjectSnapshot spawn, int bodyParts)
     {
         if (string.IsNullOrWhiteSpace(spawn.UserId))
             return;
 
-        statsSink.IncrementCreepsProduced(spawn.UserId!, bodyParts);
+        context.Stats.IncrementCreepsProduced(spawn.UserId!, bodyParts);
     }
 
     private static void HandleSetDirections(
@@ -210,6 +211,8 @@ internal sealed class SpawnIntentStep(
     {
         if (!runtime.IsSpawning)
             return;
+
+        RemovePendingCreep(context, runtime);
 
         context.MutationWriter.Patch(spawn.Id, new RoomObjectPatchPayload
         {
@@ -300,10 +303,15 @@ internal sealed class SpawnIntentStep(
             TicksToLive = currentTtl + effect,
             Body = cleanedBody,
             Store = storePatch is { Count: > 0 } ? storePatch : null,
-            StoreCapacity = storeCapacityPatch
+            StoreCapacity = storeCapacityPatch,
+            ActionLog = new RoomObjectActionLogPatch(
+                Healed: new RoomObjectActionLogHealed(spawn.X, spawn.Y))
         };
 
         context.MutationWriter.Patch(target.Id, patch);
+
+        if (!string.IsNullOrWhiteSpace(spawn.UserId))
+            context.Stats.IncrementSpawnRenewals(spawn.UserId!);
     }
 
     private void HandleRecycle(
@@ -322,6 +330,12 @@ internal sealed class SpawnIntentStep(
         if (!IsAdjacent(spawn, target))
             return;
 
+        context.MutationWriter.Patch(target.Id, new RoomObjectPatchPayload
+        {
+            ActionLog = new RoomObjectActionLogPatch(
+                Die: new RoomObjectActionLogDie(context.State.GameTime))
+        });
+
         deathProcessor.Process(
             context,
             target,
@@ -329,6 +343,9 @@ internal sealed class SpawnIntentStep(
                 DropRate: 1,
                 Spawn: spawn),
             energyLedger);
+
+        if (!string.IsNullOrWhiteSpace(spawn.UserId))
+            context.Stats.IncrementSpawnRecycles(spawn.UserId!);
     }
 
     private static bool TryResolveSpawn(RoomProcessorContext context, string objectId, string userId, out RoomObjectSnapshot spawn)
@@ -717,6 +734,18 @@ internal sealed class SpawnIntentStep(
         }
 
         return result;
+    }
+
+    private static void RemovePendingCreep(RoomProcessorContext context, SpawnRuntimeState runtime)
+    {
+        var pending = runtime.PendingCreep;
+        if (pending is null)
+            return;
+
+        if (pending.IsSpawning != true)
+            return;
+
+        context.MutationWriter.Remove(pending.Id);
     }
 
     private static int CalculateRenewEffect(int bodyLength)

@@ -123,6 +123,9 @@ public sealed class RoomObjectDocument
     [BsonElement("strongholdBehavior")]
     public string? StrongholdBehavior { get; set; }
 
+    [BsonElement("_actionLog")]
+    public BsonDocument? ActionLog { get; set; }
+
     [BsonElement("structure")]
     public RoomObjectStructureDocument? Structure { get; set; }
 

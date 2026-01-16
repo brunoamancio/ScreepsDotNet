@@ -3,7 +3,6 @@ namespace ScreepsDotNet.Engine.Tests.Processors.Helpers;
 using System;
 using System.Collections.Generic;
 using ScreepsDotNet.Common.Constants;
-using ScreepsDotNet.Common.Types;
 using ScreepsDotNet.Driver.Contracts;
 using ScreepsDotNet.Engine.Processors.Helpers;
 

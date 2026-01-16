@@ -15,9 +15,7 @@ internal interface ISpawnEnergyCharger
         Dictionary<string, int> energyLedger);
 }
 
-internal sealed class SpawnEnergyCharger(
-    ISpawnEnergyAllocator allocator,
-    ICreepStatsSink statsSink) : ISpawnEnergyCharger
+internal sealed class SpawnEnergyCharger(ISpawnEnergyAllocator allocator) : ISpawnEnergyCharger
 {
     public EnergyChargeResult TryCharge(
         RoomProcessorContext context,
@@ -47,7 +45,7 @@ internal sealed class SpawnEnergyCharger(
             ApplyEnergyDraw(context, draw, energyLedger);
 
         if (!string.IsNullOrWhiteSpace(spawn.UserId))
-            statsSink.IncrementEnergyCreeps(spawn.UserId!, requiredEnergy);
+            context.Stats.IncrementEnergyCreeps(spawn.UserId!, requiredEnergy);
 
         return EnergyChargeResult.SuccessResult;
     }
