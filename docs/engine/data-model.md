@@ -49,6 +49,7 @@ These DTOs live in the driver assembly so both the engine and driver loops share
 
 3. **Wire engine consumption (Step E2.3).**
    - **In progress:** `RoomStateProvider`/`GlobalStateProvider` now pull `RoomSnapshot`/`GlobalSnapshot` from the driver, and `RoomProcessor` consumes them via the new `RoomProcessorContext` + `IRoomProcessorStep` pipeline. The current step set covers creep lifecycle, movement, combat resolution, structure decay, controller downgrade, power cooldowns, and intent event logging. Remaining work: port the rest of the legacy handlers (spawn logic, labs, notifications, etc.) so room diffs match the Node processor.
+   - Shared structure metadata now lives in `ScreepsDotNet.Common.Structures.StructureBlueprintRegistry`, and the engine exposes `IStructureBlueprintProvider`/`StructureSnapshotFactory` through DI so room steps can materialize finished structures without duplicating Mongo constants.
    - Detailed task breakdown (dependencies, handler ports, telemetry work) lives in `docs/engine/e2.3-plan.md`.
 
 4. **Mutation path alignment (Step E2.4).**
