@@ -75,6 +75,33 @@ public sealed class RoomObjectDocument
     [BsonElement("notifyWhenAttacked")]
     public bool? NotifyWhenAttacked { get; set; }
 
+    [BsonElement("creepId")]
+    public string? CreepId { get; set; }
+
+    [BsonElement("creepName")]
+    public string? CreepName { get; set; }
+
+    [BsonElement("creepTicksToLive")]
+    public int? CreepTicksToLive { get; set; }
+
+    [BsonElement("creepSaying")]
+    public string? CreepSaying { get; set; }
+
+    [BsonElement("deathTime")]
+    public int? DeathTime { get; set; }
+
+    [BsonElement("decayTime")]
+    public int? DecayTime { get; set; }
+
+    [BsonElement("resourceType")]
+    public string? ResourceType { get; set; }
+
+    [BsonElement("amount")]
+    public int? ResourceAmount { get; set; }
+
+    [BsonElement("userSummoned")]
+    public bool? UserSummoned { get; set; }
+
     [BsonElement("strongholdId")]
     public string? StrongholdId { get; set; }
 

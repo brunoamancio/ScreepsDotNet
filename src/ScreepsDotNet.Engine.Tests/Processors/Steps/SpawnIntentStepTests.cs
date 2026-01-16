@@ -23,7 +23,8 @@ public sealed class SpawnIntentStepTests
         var parser = new SpawnIntentParser(bodyHelper);
         var stateReader = new SpawnStateReader();
         var energyAllocator = new SpawnEnergyAllocator();
-        _step = new SpawnIntentStep(parser, stateReader, energyAllocator);
+        var deathProcessor = new CreepDeathProcessor(new NullCreepStatsSink());
+        _step = new SpawnIntentStep(parser, stateReader, energyAllocator, deathProcessor);
     }
 
     [Fact]
@@ -141,6 +142,48 @@ public sealed class SpawnIntentStepTests
     }
 
     [Fact]
+    public async Task ExecuteAsync_RenewDropsOverflow_WhenBoostsCleared()
+    {
+        var spawn = CreateSpawn("spawn1", energy: 300);
+        var baseCreep = CreateCreep("creep1", spawn.X + 1, spawn.Y, [BodyPartType.Carry], ticksToLive: 100);
+        var boostedBody = new[]
+        {
+            new CreepBodyPartSnapshot(BodyPartType.Carry, ScreepsGameConstants.BodyPartHitPoints, "UH2O")
+        };
+        var creepStore = new Dictionary<string, int>(StringComparer.Ordinal)
+        {
+            [RoomDocumentFields.RoomObject.Store.Energy] = 100
+        };
+        var creep = baseCreep with
+        {
+            Body = boostedBody,
+            Store = creepStore,
+            StoreCapacity = 100
+        };
+
+        var envelope = new SpawnIntentEnvelope(
+            null,
+            new RenewCreepIntent(creep.Id),
+            null,
+            null,
+            false);
+
+        var context = CreateContext([spawn, creep], CreateIntents(spawn.Id, envelope));
+        var writer = (FakeMutationWriter)context.MutationWriter;
+
+        await _step.ExecuteAsync(context, TestContext.Current.CancellationToken);
+
+        var creepPatch = writer.Patches.Single(p => p.ObjectId == creep.Id);
+        Assert.NotNull(creepPatch.Payload.Body);
+        Assert.Equal(50, creepPatch.Payload.StoreCapacity);
+        Assert.Equal(50, creepPatch.Payload.Store![RoomDocumentFields.RoomObject.Store.Energy]);
+
+        var drop = Assert.Single(writer.Upserts, u => u.Type == RoomObjectTypes.Resource);
+        Assert.Equal(ResourceTypes.Energy, drop.ResourceType);
+        Assert.Equal(50, drop.ResourceAmount);
+    }
+
+    [Fact]
     public async Task ExecuteAsync_RecyclesCreep_WhenRequested()
     {
         var spawn = CreateSpawn("spawn1", energy: 200);
@@ -158,6 +201,14 @@ public sealed class SpawnIntentStepTests
         await _step.ExecuteAsync(context, TestContext.Current.CancellationToken);
 
         Assert.Contains(creep.Id, writer.Removals);
+
+        var tombstone = Assert.Single(writer.Upserts);
+        Assert.Equal(RoomObjectTypes.Tombstone, tombstone.Type);
+        Assert.Equal(creep.Name, tombstone.CreepName);
+        Assert.Equal(3, tombstone.Store.GetValueOrDefault(RoomDocumentFields.RoomObject.Store.Energy));
+
+        var spawnPatch = writer.Patches.Single(p => p.ObjectId == spawn.Id && p.Payload.Store is not null);
+        Assert.Equal(203, spawnPatch.Payload.Store![RoomDocumentFields.RoomObject.Store.Energy]);
     }
 
     private static RoomProcessorContext CreateContext(
@@ -320,8 +371,10 @@ public sealed class SpawnIntentStepTests
     {
         public List<(string ObjectId, RoomObjectPatchPayload Payload)> Patches { get; } = [];
         public List<string> Removals { get; } = [];
+        public List<RoomObjectSnapshot> Upserts { get; } = [];
 
-        public void Upsert(RoomObjectSnapshot document) { }
+        public void Upsert(RoomObjectSnapshot document)
+            => Upserts.Add(document);
 
         public void Patch(string objectId, RoomObjectPatchPayload patch)
             => Patches.Add((objectId, patch));

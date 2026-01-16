@@ -32,4 +32,5 @@ public static class RoomObjectTypes
     public const string ConstructionSite = "constructionSite";
     public const string Ruin = "ruin";
     public const string Exit = "exit";
+    public const string Resource = ResourceTypes.Energy;
 }

@@ -74,7 +74,7 @@ public sealed class InterRoomSnapshotBuilderTests
                 Room = "W0N0",
                 X = 10,
                 Y = 20,
-                Store = new Dictionary<string, int> { ["energy"] = 50 }
+                Store = new Dictionary<string, int> { [ResourceTypes.Energy] = 50 }
             };
 
             var special = new RoomObjectDocument
@@ -98,7 +98,7 @@ public sealed class InterRoomSnapshotBuilderTests
                 Id = ObjectId.Parse("64c19d382c00000000000001"),
                 UserId = "userA",
                 Type = MarketOrderTypes.Sell,
-                ResourceType = "energy",
+                ResourceType = ResourceTypes.Energy,
                 Price = 1000,
                 Amount = 100,
                 RemainingAmount = 90,

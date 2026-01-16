@@ -89,7 +89,7 @@ public sealed class SpawnStateReaderTests
             MineralType: null,
             DepositType: null,
             StructureType: RoomObjectTypes.Spawn,
-            Store: new Dictionary<string, int>(StringComparer.Ordinal) { ["energy"] = 300 },
+            Store: new Dictionary<string, int>(StringComparer.Ordinal) { [ResourceTypes.Energy] = 300 },
             StoreCapacity: 300,
             StoreCapacityResource: new Dictionary<string, int>(StringComparer.Ordinal),
             Reservation: null,

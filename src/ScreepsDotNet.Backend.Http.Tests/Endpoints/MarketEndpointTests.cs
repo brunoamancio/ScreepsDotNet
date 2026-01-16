@@ -3,12 +3,13 @@ using System.Text.Json;
 using ScreepsDotNet.Backend.Http.Routing;
 using ScreepsDotNet.Backend.Http.Tests.Web;
 using ScreepsDotNet.Backend.Http.Tests.TestSupport;
+using ScreepsDotNet.Common.Constants;
 
 namespace ScreepsDotNet.Backend.Http.Tests.Endpoints;
 
 public sealed class MarketEndpointTests(TestWebApplicationFactory factory) : IClassFixture<TestWebApplicationFactory>
 {
-    private const string ResourceTypeQuery = "?resourceType=energy";
+    private static readonly string ResourceTypeQuery = $"?resourceType={ResourceTypes.Energy}";
 
     private readonly TestHttpClient _client = new(factory.CreateClient());
 
@@ -25,7 +26,7 @@ public sealed class MarketEndpointTests(TestWebApplicationFactory factory) : ICl
         using var payload = JsonDocument.Parse(await TestHttpClient.ReadAsStringAsync(response));
         var list = payload.RootElement.GetProperty("list").EnumerateArray().ToList();
         Assert.NotEmpty(list);
-        Assert.Equal("energy", list.First().GetProperty("_id").GetString());
+        Assert.Equal(ResourceTypes.Energy, list.First().GetProperty("_id").GetString());
     }
 
     [Fact]
@@ -53,7 +54,7 @@ public sealed class MarketEndpointTests(TestWebApplicationFactory factory) : ICl
         using var payload = JsonDocument.Parse(await TestHttpClient.ReadAsStringAsync(response));
         var list = payload.RootElement.GetProperty("list").EnumerateArray().ToList();
         Assert.NotEmpty(list);
-        Assert.Equal("energy", list.First().GetProperty("resourceType").GetString());
+        Assert.Equal(ResourceTypes.Energy, list.First().GetProperty("resourceType").GetString());
     }
 
     [Fact]
@@ -97,7 +98,7 @@ public sealed class MarketEndpointTests(TestWebApplicationFactory factory) : ICl
         using var payload = JsonDocument.Parse(await TestHttpClient.ReadAsStringAsync(response));
         var stats = payload.RootElement.GetProperty("stats").EnumerateArray().ToList();
         Assert.NotEmpty(stats);
-        Assert.Equal("energy", stats.First().GetProperty("resourceType").GetString());
+        Assert.Equal(ResourceTypes.Energy, stats.First().GetProperty("resourceType").GetString());
     }
 
     private async Task<string> AuthenticateAsync()

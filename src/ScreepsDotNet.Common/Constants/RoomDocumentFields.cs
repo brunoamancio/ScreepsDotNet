@@ -24,6 +24,15 @@ public static class RoomDocumentFields
         public const string DowngradeTimer = "downgradeTimer";
         public const string UpgradeBlocked = "upgradeBlocked";
         public const string SpawnCooldownTime = "spawnCooldownTime";
+        public const string DeathTime = "deathTime";
+        public const string DecayTime = "decayTime";
+        public const string CreepId = "creepId";
+        public const string CreepName = "creepName";
+        public const string CreepTicksToLive = "creepTicksToLive";
+        public const string CreepBody = "creepBody";
+        public const string CreepSaying = "creepSaying";
+        public const string ResourceType = "resourceType";
+        public const string Amount = "amount";
         public const string Spawning = "spawning";
         public const string NotifyWhenAttacked = "notifyWhenAttacked";
         public const string InterRoom = "interRoom";
@@ -31,6 +40,7 @@ public static class RoomDocumentFields
         public const string ActionLog = "_actionLog";
         public const string Body = "body";
         public const string UserSummoned = "userSummoned";
+        public const string StrongholdId = "strongholdId";
         public const string Progress = "progress";
         public const string ProgressTotal = "progressTotal";
         public const string Reservation = "reservation";

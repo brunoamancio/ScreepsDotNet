@@ -29,6 +29,7 @@ public sealed record RoomObjectPatchPayload : IRoomObjectPatchPayload
     public int? TicksToLive { get; init; }
     public RoomObjectActionLogPatch? ActionLog { get; init; }
     public IReadOnlyDictionary<string, int>? Store { get; init; }
+    public int? StoreCapacity { get; init; }
     public RoomSpawnSpawningSnapshot? Spawning { get; init; }
     public bool ClearSpawning { get; init; }
     public IReadOnlyList<CreepBodyPartSnapshot>? Body { get; init; }
@@ -44,6 +45,7 @@ public sealed record RoomObjectPatchPayload : IRoomObjectPatchPayload
         TicksToLive.HasValue ||
         (ActionLog?.HasEntries ?? false) ||
         (Store is { Count: > 0 }) ||
+        StoreCapacity.HasValue ||
         (Body is { Count: > 0 }) ||
         Spawning is not null ||
         ClearSpawning;

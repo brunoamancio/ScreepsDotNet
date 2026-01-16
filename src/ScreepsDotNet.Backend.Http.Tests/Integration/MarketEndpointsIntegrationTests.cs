@@ -6,6 +6,7 @@ using System.Text.Json;
 using ScreepsDotNet.Backend.Core.Seeding;
 using ScreepsDotNet.Backend.Http.Routing;
 using ScreepsDotNet.Backend.Http.Tests.TestSupport;
+using ScreepsDotNet.Common.Constants;
 
 [Collection(IntegrationTestSuiteDefinition.Name)]
 public sealed class MarketEndpointsIntegrationTests(IntegrationTestHarness harness) : IAsyncLifetime
@@ -28,7 +29,7 @@ public sealed class MarketEndpointsIntegrationTests(IntegrationTestHarness harne
         response.EnsureSuccessStatusCode();
         using var payload = JsonDocument.Parse(await TestHttpClient.ReadAsStringAsync(response));
         var summary = payload.RootElement.GetProperty("list").EnumerateArray().First();
-        Assert.Equal("energy", summary.GetProperty("_id").GetString());
+        Assert.Equal(ResourceTypes.Energy, summary.GetProperty("_id").GetString());
         Assert.Equal(2, summary.GetProperty("count").GetInt32());
         Assert.Equal(1, summary.GetProperty("buying").GetInt32());
         Assert.Equal(1, summary.GetProperty("selling").GetInt32());
@@ -38,7 +39,7 @@ public sealed class MarketEndpointsIntegrationTests(IntegrationTestHarness harne
     public async Task Orders_ReturnsScaledPrices()
     {
         var token = await AuthenticateAsync();
-        var request = new HttpRequestMessage(HttpMethod.Get, $"{ApiRoutes.Game.Market.Orders}?resourceType=energy");
+        var request = new HttpRequestMessage(HttpMethod.Get, $"{ApiRoutes.Game.Market.Orders}?resourceType={ResourceTypes.Energy}");
         request.Headers.TryAddWithoutValidation(AuthHeaderNames.Token, token);
 
         var response = await _client.SendAsync(request);
@@ -69,7 +70,7 @@ public sealed class MarketEndpointsIntegrationTests(IntegrationTestHarness harne
     public async Task Stats_ReturnsLatestFirst()
     {
         var token = await AuthenticateAsync();
-        var request = new HttpRequestMessage(HttpMethod.Get, $"{ApiRoutes.Game.Market.Stats}?resourceType=energy");
+        var request = new HttpRequestMessage(HttpMethod.Get, $"{ApiRoutes.Game.Market.Stats}?resourceType={ResourceTypes.Energy}");
         request.Headers.TryAddWithoutValidation(AuthHeaderNames.Token, token);
 
         var response = await _client.SendAsync(request);

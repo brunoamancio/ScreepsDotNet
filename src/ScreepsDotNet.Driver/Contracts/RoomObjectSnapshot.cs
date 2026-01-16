@@ -34,7 +34,17 @@ public sealed record RoomObjectSnapshot(
     RoomObjectStructureSnapshot? Structure,
     IReadOnlyDictionary<string, object?> Effects,
     RoomSpawnSpawningSnapshot? Spawning,
-    IReadOnlyList<CreepBodyPartSnapshot> Body)
+    IReadOnlyList<CreepBodyPartSnapshot> Body,
+    bool? UserSummoned = null,
+    string? StrongholdId = null,
+    int? DeathTime = null,
+    int? DecayTime = null,
+    string? CreepId = null,
+    string? CreepName = null,
+    int? CreepTicksToLive = null,
+    string? CreepSaying = null,
+    string? ResourceType = null,
+    int? ResourceAmount = null)
 {
     public int? MoveBodyParts => GetStoreValue(IntentKeys.Move);
     public int? ControllerDowngradeTimer => GetStoreValue(StoreKeys.DowngradeTimer);

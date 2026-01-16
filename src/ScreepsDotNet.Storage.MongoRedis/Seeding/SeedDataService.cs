@@ -197,7 +197,7 @@ public sealed class SeedDataService : ISeedDataService
                 TicksToLive = SeedDataDefaults.PowerCreeps.ActiveTicksToLive,
                 Store = new Dictionary<string, int>(StringComparer.Ordinal)
                 {
-                    ["ops"] = SeedDataDefaults.PowerCreeps.ActiveStoreOps
+                    [ResourceTypes.Ops] = SeedDataDefaults.PowerCreeps.ActiveStoreOps
                 },
                 StoreCapacity = SeedDataDefaults.PowerCreeps.ActiveStoreCapacity,
                 Fatigue = 0
@@ -636,7 +636,7 @@ public sealed class SeedDataService : ISeedDataService
                 UserId = SeedDataDefaults.User.Id,
                 Type = MarketOrderTypes.Sell,
                 RoomName = SeedDataDefaults.World.StartRoom,
-                ResourceType = "energy",
+                ResourceType = ResourceTypes.Energy,
                 Price = 5000,
                 Amount = 1000,
                 RemainingAmount = 750,
@@ -651,7 +651,7 @@ public sealed class SeedDataService : ISeedDataService
                 UserId = null,
                 Type = MarketOrderTypes.Buy,
                 RoomName = "W2N2",
-                ResourceType = "energy",
+                ResourceType = ResourceTypes.Energy,
                 Price = 4500,
                 Amount = 800,
                 RemainingAmount = 800,
@@ -672,7 +672,7 @@ public sealed class SeedDataService : ISeedDataService
             new()
             {
                 Id = ObjectId.GenerateNewId(),
-                ResourceType = "energy",
+                ResourceType = ResourceTypes.Energy,
                 Date = DateTime.UtcNow.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
                 Transactions = 10,
                 Volume = 5000,
@@ -682,7 +682,7 @@ public sealed class SeedDataService : ISeedDataService
             new()
             {
                 Id = ObjectId.GenerateNewId(),
-                ResourceType = "energy",
+                ResourceType = ResourceTypes.Energy,
                 Date = DateTime.UtcNow.AddDays(-1).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
                 Transactions = 5,
                 Volume = 2500,
@@ -710,7 +710,7 @@ public sealed class SeedDataService : ISeedDataService
                 HitsMax = SeedDataDefaults.PowerCreeps.ActiveHitsMax,
                 Store = new Dictionary<string, int>(StringComparer.Ordinal)
                 {
-                    ["ops"] = SeedDataDefaults.PowerCreeps.ActiveStoreOps
+                    [ResourceTypes.Ops] = SeedDataDefaults.PowerCreeps.ActiveStoreOps
                 },
                 StoreCapacity = SeedDataDefaults.PowerCreeps.ActiveStoreCapacity,
                 SpawnCooldownTime = null,

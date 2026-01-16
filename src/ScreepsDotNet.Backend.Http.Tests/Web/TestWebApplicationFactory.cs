@@ -590,13 +590,13 @@ sealed file class FakeMarketOrderRepository : IMarketOrderRepository
 {
     private static readonly IReadOnlyList<MarketOrderSummary> Summaries =
     [
-        new("energy", 2, 1, 1)
+        new(ResourceTypes.Energy, 2, 1, 1)
     ];
 
     private static readonly IReadOnlyList<MarketOrder> Orders =
     [
-        new("order-1", AuthTestValues.UserId, "energy", MarketOrderTypes.Sell, "W1N1", 5.0m, 1000, 750, 1000, 1000, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()),
-        new("order-2", null, "energy", MarketOrderTypes.Buy, "W2N2", 4.5m, 500, 500, 500, 1001, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds())
+        new("order-1", AuthTestValues.UserId, ResourceTypes.Energy, MarketOrderTypes.Sell, "W1N1", 5.0m, 1000, 750, 1000, 1000, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()),
+        new("order-2", null, ResourceTypes.Energy, MarketOrderTypes.Buy, "W2N2", 4.5m, 500, 500, 500, 1001, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds())
     ];
 
     public Task<IReadOnlyList<MarketOrderSummary>> GetActiveOrderIndexAsync(CancellationToken cancellationToken = default)
@@ -613,7 +613,7 @@ sealed file class FakeMarketStatsRepository : IMarketStatsRepository
 {
     private static readonly IReadOnlyList<MarketStatsEntry> Entries =
     [
-        new("energy", "2026-01-06", 10, 5000, 4.8, 0.3)
+        new(ResourceTypes.Energy, "2026-01-06", 10, 5000, 4.8, 0.3)
     ];
 
     public Task<IReadOnlyList<MarketStatsEntry>> GetStatsAsync(string resourceType, CancellationToken cancellationToken = default)

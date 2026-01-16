@@ -62,7 +62,17 @@ internal static class RoomContractMapper
             MapStructure(document.Structure),
             MapEffects(document.Effects),
             MapSpawning(document.Spawning),
-            body);
+            body,
+            document.UserSummoned,
+            document.StrongholdId,
+            document.DeathTime,
+            document.DecayTime,
+            document.CreepId,
+            document.CreepName,
+            document.CreepTicksToLive,
+            document.CreepSaying,
+            document.ResourceType,
+            document.ResourceAmount);
     }
 
     public static IReadOnlyDictionary<string, UserState> MapUsers(IReadOnlyDictionary<string, UserDocument> users)
@@ -179,7 +189,17 @@ internal static class RoomContractMapper
                 },
             Body = MapBodyDocuments(snapshot.Body),
             Effects = MapEffectsToBson(snapshot.Effects),
-            Spawning = MapSpawning(snapshot.Spawning)
+            Spawning = MapSpawning(snapshot.Spawning),
+            StrongholdId = snapshot.StrongholdId,
+            UserSummoned = snapshot.UserSummoned,
+            DeathTime = snapshot.DeathTime,
+            DecayTime = snapshot.DecayTime,
+            CreepId = snapshot.CreepId,
+            CreepName = snapshot.CreepName,
+            CreepTicksToLive = snapshot.CreepTicksToLive,
+            CreepSaying = snapshot.CreepSaying,
+            ResourceType = snapshot.ResourceType,
+            ResourceAmount = snapshot.ResourceAmount
         };
 
         return document;
@@ -356,6 +376,9 @@ internal static class RoomContractMapper
                 document[field] = amount;
             }
         }
+
+        if (patch.StoreCapacity.HasValue)
+            document[RoomDocumentFields.RoomObject.Store.Capacity] = patch.StoreCapacity.Value;
 
         if (patch.Body is { Count: > 0 })
         {
