@@ -23,8 +23,10 @@ public sealed class SpawnIntentStepTests
         var parser = new SpawnIntentParser(bodyHelper);
         var stateReader = new SpawnStateReader();
         var energyAllocator = new SpawnEnergyAllocator();
-        var deathProcessor = new CreepDeathProcessor(new NullCreepStatsSink());
-        _step = new SpawnIntentStep(parser, stateReader, energyAllocator, deathProcessor);
+        var statsSink = new NullCreepStatsSink();
+        var energyCharger = new SpawnEnergyCharger(energyAllocator, statsSink);
+        var deathProcessor = new CreepDeathProcessor(statsSink);
+        _step = new SpawnIntentStep(parser, stateReader, energyCharger, deathProcessor);
     }
 
     [Fact]

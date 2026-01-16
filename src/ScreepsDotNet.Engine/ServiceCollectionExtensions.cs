@@ -28,6 +28,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IBodyAnalysisHelper, BodyAnalysisHelper>();
         services.AddSingleton<ISpawnStateReader, SpawnStateReader>();
         services.AddSingleton<ISpawnEnergyAllocator, SpawnEnergyAllocator>();
+        services.AddSingleton<ISpawnEnergyCharger, SpawnEnergyCharger>();
         services.AddSingleton<ISpawnIntentParser, SpawnIntentParser>();
         services.AddSingleton<ICreepStatsSink, NullCreepStatsSink>();
         services.AddSingleton<ICreepDeathProcessor, CreepDeathProcessor>();

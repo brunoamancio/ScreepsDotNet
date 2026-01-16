@@ -15,7 +15,7 @@ using ScreepsDotNet.Engine.Processors.Helpers;
 internal sealed class SpawnIntentStep(
     ISpawnIntentParser parser,
     ISpawnStateReader stateReader,
-    ISpawnEnergyAllocator energyAllocator,
+    ISpawnEnergyCharger energyCharger,
     ICreepDeathProcessor deathProcessor) : IRoomProcessorStep
 {
     public Task ExecuteAsync(RoomProcessorContext context, CancellationToken token = default)
@@ -91,17 +91,15 @@ internal sealed class SpawnIntentStep(
         if (requiredEnergy <= 0)
             return;
 
-        var allocation = energyAllocator.AllocateEnergy(
-            context.State.Objects,
+        var charge = energyCharger.TryCharge(
+            context,
             spawn,
             requiredEnergy,
             intent.EnergyStructureIds,
             energyLedger);
 
-        if (!allocation.Success)
+        if (!charge.Success)
             return;
-
-        ApplyEnergyDraws(context, allocation.Draws, energyLedger);
 
         var spawnTime = context.State.GameTime + intent.Body.SpawnTime;
         var spawning = new RoomSpawnSpawningSnapshot(
@@ -174,17 +172,15 @@ internal sealed class SpawnIntentStep(
         if (cost <= 0)
             return;
 
-        var allocation = energyAllocator.AllocateEnergy(
-            context.State.Objects,
+        var charge = energyCharger.TryCharge(
+            context,
             spawn,
             cost,
             null,
             energyLedger);
 
-        if (!allocation.Success)
+        if (!charge.Success)
             return;
-
-        ApplyEnergyDraws(context, allocation.Draws, energyLedger);
 
         IReadOnlyList<CreepBodyPartSnapshot>? cleanedBody = null;
         Dictionary<string, int>? storePatch = null;
@@ -257,36 +253,6 @@ internal sealed class SpawnIntentStep(
                 DropRate: 1,
                 Spawn: spawn),
             energyLedger);
-    }
-
-    private static void ApplyEnergyDraws(
-        RoomProcessorContext context,
-        IReadOnlyList<EnergyDraw> draws,
-        Dictionary<string, int> energyLedger)
-    {
-        if (draws.Count == 0)
-            return;
-
-        foreach (var draw in draws)
-        {
-            if (draw.Amount <= 0)
-                continue;
-
-            var current = energyLedger.TryGetValue(draw.Source.Id, out var overrideValue)
-                ? overrideValue
-                : GetEnergy(draw.Source);
-
-            var remaining = Math.Max(current - draw.Amount, 0);
-            energyLedger[draw.Source.Id] = remaining;
-
-            context.MutationWriter.Patch(draw.Source.Id, new RoomObjectPatchPayload
-            {
-                Store = new Dictionary<string, int>(1, StringComparer.Ordinal)
-                {
-                    [RoomDocumentFields.RoomObject.Store.Energy] = remaining
-                }
-            });
-        }
     }
 
     private static bool TryResolveSpawn(RoomProcessorContext context, string objectId, string userId, out RoomObjectSnapshot spawn)
@@ -712,7 +678,4 @@ internal sealed class SpawnIntentStep(
         var costResult = (int)Math.Ceiling(value);
         return Math.Max(costResult, 0);
     }
-
-    private static int GetEnergy(RoomObjectSnapshot obj)
-        => obj.Store.GetValueOrDefault(RoomDocumentFields.RoomObject.Store.Energy, 0);
 }
