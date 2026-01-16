@@ -124,7 +124,7 @@ public sealed class HarvestIntentStepTests
             [IntentKeys.TargetId] = new(IntentFieldValueKind.Text, TextValue: targetId)
         });
 
-        var record = new IntentRecord(IntentKeys.Harvest, new[] { argument });
+        var record = new IntentRecord(IntentKeys.Harvest, [argument]);
         var objectIntents = new Dictionary<string, IReadOnlyList<IntentRecord>>(StringComparer.Ordinal)
         {
             [creepId] = new List<IntentRecord> { record }
