@@ -80,6 +80,8 @@ internal static class RoomContractMapper
             document.CreepSaying,
             document.ResourceType,
             document.ResourceAmount,
+            document.Progress,
+            document.ProgressTotal,
             actionLog);
     }
 
@@ -307,7 +309,9 @@ internal static class RoomContractMapper
             CreepTicksToLive = snapshot.CreepTicksToLive,
             CreepSaying = snapshot.CreepSaying,
             ResourceType = snapshot.ResourceType,
-            ResourceAmount = snapshot.ResourceAmount
+            ResourceAmount = snapshot.ResourceAmount,
+            Progress = snapshot.Progress,
+            ProgressTotal = snapshot.ProgressTotal
         };
 
         return document;

@@ -46,6 +46,8 @@ public sealed record RoomObjectSnapshot(
     string? CreepSaying = null,
     string? ResourceType = null,
     int? ResourceAmount = null,
+    int? Progress = null,
+    int? ProgressTotal = null,
     RoomObjectActionLogSnapshot? ActionLog = null)
 {
     public int? MoveBodyParts => GetStoreValue(IntentKeys.Move);

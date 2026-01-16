@@ -115,4 +115,27 @@ public sealed class RoomContractMapperTests
         Assert.Equal(7, healed[RoomDocumentFields.RoomObject.ActionLogFields.X].AsInt32);
         Assert.Equal(8, healed[RoomDocumentFields.RoomObject.ActionLogFields.Y].AsInt32);
     }
+
+    [Fact]
+    public void MapRoomObject_MapsConstructionProgress()
+    {
+        var document = new RoomObjectDocument
+        {
+            Id = ObjectId.GenerateNewId(),
+            Type = RoomObjectTypes.ConstructionSite,
+            Room = "W1N1",
+            X = 10,
+            Y = 10,
+            Progress = 150,
+            ProgressTotal = 3000
+        };
+
+        var snapshot = RoomContractMapper.MapRoomObject(document);
+        Assert.Equal(150, snapshot.Progress);
+        Assert.Equal(3000, snapshot.ProgressTotal);
+
+        var roundtrip = RoomContractMapper.MapRoomObjectDocument(snapshot);
+        Assert.Equal(150, roundtrip.Progress);
+        Assert.Equal(3000, roundtrip.ProgressTotal);
+    }
 }
