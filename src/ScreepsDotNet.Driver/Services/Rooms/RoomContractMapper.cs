@@ -36,6 +36,11 @@ internal static class RoomContractMapper
 
         var body = MapBody(document.Body);
 
+        var spawningSnapshot = MapSpawning(document.Spawning);
+        bool? isSpawning = document.Spawning is BsonBoolean boolean
+            ? boolean.Value
+            : null;
+
         return new RoomObjectSnapshot(
             document.Id.ToString(),
             document.Type ?? string.Empty,
@@ -61,8 +66,9 @@ internal static class RoomContractMapper
             MapSign(document.Sign),
             MapStructure(document.Structure),
             MapEffects(document.Effects),
-            MapSpawning(document.Spawning),
+            spawningSnapshot,
             body,
+            isSpawning,
             document.UserSummoned,
             document.StrongholdId,
             document.DeathTime,
@@ -189,7 +195,7 @@ internal static class RoomContractMapper
                 },
             Body = MapBodyDocuments(snapshot.Body),
             Effects = MapEffectsToBson(snapshot.Effects),
-            Spawning = MapSpawning(snapshot.Spawning),
+            Spawning = ResolveSpawningValue(snapshot),
             StrongholdId = snapshot.StrongholdId,
             UserSummoned = snapshot.UserSummoned,
             DeathTime = snapshot.DeathTime,
@@ -244,6 +250,16 @@ internal static class RoomContractMapper
         var directions = ReadDirections(document, RoomDocumentFields.RoomObject.SpawningFields.Directions);
 
         return new RoomSpawnSpawningSnapshot(name, needTime, spawnTime, directions);
+    }
+
+    private static BsonValue? ResolveSpawningValue(RoomObjectSnapshot snapshot)
+    {
+        if (snapshot.Spawning is not null)
+            return MapSpawning(snapshot.Spawning);
+
+        return snapshot.IsSpawning.HasValue
+            ? BsonBoolean.Create(snapshot.IsSpawning.Value)
+            : null;
     }
 
     private static BsonValue? MapSpawning(RoomSpawnSpawningSnapshot? spawning)

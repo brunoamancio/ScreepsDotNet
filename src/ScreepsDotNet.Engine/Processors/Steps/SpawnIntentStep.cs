@@ -16,7 +16,8 @@ internal sealed class SpawnIntentStep(
     ISpawnIntentParser parser,
     ISpawnStateReader stateReader,
     ISpawnEnergyCharger energyCharger,
-    ICreepDeathProcessor deathProcessor) : IRoomProcessorStep
+    ICreepDeathProcessor deathProcessor,
+    ICreepStatsSink statsSink) : IRoomProcessorStep
 {
     public Task ExecuteAsync(RoomProcessorContext context, CancellationToken token = default)
     {
@@ -101,17 +102,92 @@ internal sealed class SpawnIntentStep(
         if (!charge.Success)
             return;
 
-        var spawnTime = context.State.GameTime + intent.Body.SpawnTime;
+        var needTime = CalculateNeedTime(spawn, intent.Body.SpawnTime, context.State.GameTime);
+        var spawnTime = context.State.GameTime + needTime;
         var spawning = new RoomSpawnSpawningSnapshot(
             intent.Name,
-            intent.Body.SpawnTime,
+            needTime,
             spawnTime,
             intent.Directions);
+
+        InsertPlaceholderCreep(context, spawn, intent);
+        IncrementCreepProduced(spawn, intent.Body.BodyParts.Count);
 
         context.MutationWriter.Patch(spawn.Id, new RoomObjectPatchPayload
         {
             Spawning = spawning
         });
+    }
+
+    private static int CalculateNeedTime(RoomObjectSnapshot spawn, int baseNeedTime, int gameTime)
+    {
+        // TODO: apply PWR_OPERATE_SPAWN modifiers once spawn effects are mapped.
+        return baseNeedTime;
+    }
+
+    private static void InsertPlaceholderCreep(
+        RoomProcessorContext context,
+        RoomObjectSnapshot spawn,
+        ParsedCreateCreepIntent intent)
+    {
+        var bodyParts = intent.Body.BodyParts;
+        var body = new CreepBodyPartSnapshot[bodyParts.Count];
+        for (var i = 0; i < bodyParts.Count; i++)
+            body[i] = new CreepBodyPartSnapshot(bodyParts[i], ScreepsGameConstants.BodyPartHitPoints, null);
+
+        var store = new Dictionary<string, int>(1, StringComparer.Ordinal)
+        {
+            [RoomDocumentFields.RoomObject.Store.Energy] = 0
+        };
+
+        var placeholder = new RoomObjectSnapshot(
+            Guid.NewGuid().ToString("N"),
+            RoomObjectTypes.Creep,
+            spawn.RoomName,
+            spawn.Shard,
+            spawn.UserId,
+            spawn.X,
+            spawn.Y,
+            Hits: intent.Body.TotalHits,
+            HitsMax: intent.Body.TotalHits,
+            Fatigue: 0,
+            TicksToLive: null,
+            Name: intent.Name,
+            Level: null,
+            Density: null,
+            MineralType: null,
+            DepositType: null,
+            StructureType: null,
+            Store: store,
+            StoreCapacity: intent.Body.CarryCapacity,
+            StoreCapacityResource: new Dictionary<string, int>(0, StringComparer.Ordinal),
+            Reservation: null,
+            Sign: null,
+            Structure: null,
+            Effects: new Dictionary<string, object?>(0, StringComparer.Ordinal),
+            Spawning: null,
+            Body: body,
+            IsSpawning: true,
+            UserSummoned: null,
+            StrongholdId: null,
+            DeathTime: null,
+            DecayTime: null,
+            CreepId: null,
+            CreepName: null,
+            CreepTicksToLive: null,
+            CreepSaying: null,
+            ResourceType: null,
+            ResourceAmount: null);
+
+        context.MutationWriter.Upsert(placeholder);
+    }
+
+    private void IncrementCreepProduced(RoomObjectSnapshot spawn, int bodyParts)
+    {
+        if (string.IsNullOrWhiteSpace(spawn.UserId))
+            return;
+
+        statsSink.IncrementCreepsProduced(spawn.UserId!, bodyParts);
     }
 
     private static void HandleSetDirections(

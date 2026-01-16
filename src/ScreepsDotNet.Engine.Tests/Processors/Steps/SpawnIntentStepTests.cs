@@ -16,6 +16,7 @@ using ScreepsDotNet.Engine.Processors.Steps;
 public sealed class SpawnIntentStepTests
 {
     private readonly SpawnIntentStep _step;
+    private readonly TestCreepStatsSink _statsSink;
 
     public SpawnIntentStepTests()
     {
@@ -23,10 +24,10 @@ public sealed class SpawnIntentStepTests
         var parser = new SpawnIntentParser(bodyHelper);
         var stateReader = new SpawnStateReader();
         var energyAllocator = new SpawnEnergyAllocator();
-        var statsSink = new NullCreepStatsSink();
-        var energyCharger = new SpawnEnergyCharger(energyAllocator, statsSink);
-        var deathProcessor = new CreepDeathProcessor(statsSink);
-        _step = new SpawnIntentStep(parser, stateReader, energyCharger, deathProcessor);
+        _statsSink = new TestCreepStatsSink();
+        var energyCharger = new SpawnEnergyCharger(energyAllocator, _statsSink);
+        var deathProcessor = new CreepDeathProcessor(_statsSink);
+        _step = new SpawnIntentStep(parser, stateReader, energyCharger, deathProcessor, _statsSink);
     }
 
     [Fact]
@@ -55,6 +56,14 @@ public sealed class SpawnIntentStepTests
 
         var extensionPatch = writer.Patches.Single(p => p.ObjectId == extension.Id);
         Assert.Equal(0, extensionPatch.Payload.Store![RoomDocumentFields.RoomObject.Store.Energy]);
+
+        var placeholder = Assert.Single(writer.Upserts);
+        Assert.Equal(RoomObjectTypes.Creep, placeholder.Type);
+        Assert.Equal("Worker1", placeholder.Name);
+        Assert.True(placeholder.IsSpawning);
+        Assert.Equal(0, placeholder.Store.GetValueOrDefault(RoomDocumentFields.RoomObject.Store.Energy));
+        Assert.Equal(2 * ScreepsGameConstants.BodyPartHitPoints, placeholder.Hits);
+        Assert.Equal(2, _statsSink.CreepsProduced);
     }
 
     [Fact]
@@ -367,6 +376,22 @@ public sealed class SpawnIntentStepTests
             result[i] = new CreepBodyPartSnapshot(parts[i], ScreepsGameConstants.BodyPartHitPoints, null);
 
         return result;
+    }
+
+    private sealed class TestCreepStatsSink : ICreepStatsSink
+    {
+        public int EnergyCreeps { get; private set; }
+        public int CreepsLost { get; private set; }
+        public int CreepsProduced { get; private set; }
+
+        public void IncrementEnergyCreeps(string userId, int amount)
+            => EnergyCreeps += amount;
+
+        public void IncrementCreepsLost(string userId, int bodyParts)
+            => CreepsLost += bodyParts;
+
+        public void IncrementCreepsProduced(string userId, int bodyParts)
+            => CreepsProduced += bodyParts;
     }
 
     private sealed class FakeMutationWriter : IRoomMutationWriter

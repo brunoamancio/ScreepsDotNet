@@ -42,4 +42,25 @@ public sealed class RoomContractMapperTests
         Assert.Equal("builder1", roundtrip.Spawning!["name"].AsString);
         Assert.Equal(9, roundtrip.Spawning!["needTime"].AsInt32);
     }
+
+    [Fact]
+    public void MapRoomObject_MapsIsSpawningFlagForCreep()
+    {
+        var document = new RoomObjectDocument
+        {
+            Id = ObjectId.GenerateNewId(),
+            Type = RoomObjectTypes.Creep,
+            Room = "W1N1",
+            X = 5,
+            Y = 5,
+            Name = "creep1",
+            Spawning = BsonBoolean.True
+        };
+
+        var snapshot = RoomContractMapper.MapRoomObject(document);
+        Assert.True(snapshot.IsSpawning);
+
+        var roundtrip = RoomContractMapper.MapRoomObjectDocument(snapshot);
+        Assert.True(roundtrip.Spawning is BsonBoolean flag && flag.Value);
+    }
 }

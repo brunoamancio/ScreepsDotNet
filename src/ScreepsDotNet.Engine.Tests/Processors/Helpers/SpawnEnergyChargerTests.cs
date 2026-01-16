@@ -185,5 +185,7 @@ public sealed class SpawnEnergyChargerTests
             => LastEnergyIncrement += amount;
 
         public void IncrementCreepsLost(string userId, int bodyParts) { }
+
+        public void IncrementCreepsProduced(string userId, int bodyParts) { }
     }
 }

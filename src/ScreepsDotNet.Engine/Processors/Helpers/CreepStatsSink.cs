@@ -7,10 +7,12 @@ internal interface ICreepStatsSink
 {
     void IncrementEnergyCreeps(string userId, int amount);
     void IncrementCreepsLost(string userId, int bodyParts);
+    void IncrementCreepsProduced(string userId, int bodyParts);
 }
 
 internal sealed class NullCreepStatsSink : ICreepStatsSink
 {
     public void IncrementEnergyCreeps(string userId, int amount) { }
     public void IncrementCreepsLost(string userId, int bodyParts) { }
+    public void IncrementCreepsProduced(string userId, int bodyParts) { }
 }

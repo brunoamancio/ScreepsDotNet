@@ -35,6 +35,7 @@ public sealed record RoomObjectSnapshot(
     IReadOnlyDictionary<string, object?> Effects,
     RoomSpawnSpawningSnapshot? Spawning,
     IReadOnlyList<CreepBodyPartSnapshot> Body,
+    bool? IsSpawning = null,
     bool? UserSummoned = null,
     string? StrongholdId = null,
     int? DeathTime = null,
