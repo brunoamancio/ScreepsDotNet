@@ -1,8 +1,7 @@
 namespace ScreepsDotNet.Engine.Processors.Steps;
 
 using System.Collections.Generic;
-using System.Text.Json;
-using ScreepsDotNet.Common;
+using ScreepsDotNet.Driver.Contracts;
 using ScreepsDotNet.Engine.Processors;
 
 /// <summary>
@@ -10,8 +9,6 @@ using ScreepsDotNet.Engine.Processors;
 /// </summary>
 internal sealed class CombatResolutionStep : IRoomProcessorStep
 {
-    private readonly JsonSerializerOptions _jsonOptions = new(JsonSerializerDefaults.Web);
-
     public Task ExecuteAsync(RoomProcessorContext context, CancellationToken token = default)
     {
         var intents = context.State.Intents;
@@ -23,17 +20,13 @@ internal sealed class CombatResolutionStep : IRoomProcessorStep
 
         foreach (var envelope in intents.Users.Values)
         {
-            if (envelope?.ObjectsManualJson is null)
+            if (envelope?.CreepIntents is null || envelope.CreepIntents.Count == 0)
                 continue;
 
-            foreach (var payloadJson in envelope.ObjectsManualJson.Values)
+            foreach (var (objectId, creepIntent) in envelope.CreepIntents)
             {
-                if (string.IsNullOrWhiteSpace(payloadJson))
-                    continue;
-
-                using var doc = JsonDocument.Parse(payloadJson);
-                ApplyAttack(doc.RootElement, IntentActionType.Attack.ToKey(), hitsUpdates, removals);
-                ApplyAttack(doc.RootElement, IntentActionType.RangedAttack.ToKey(), hitsUpdates, removals);
+                ApplyAttack(creepIntent?.Attack, hitsUpdates, removals);
+                ApplyAttack(creepIntent?.RangedAttack, hitsUpdates, removals);
             }
         }
 
@@ -49,11 +42,10 @@ internal sealed class CombatResolutionStep : IRoomProcessorStep
                 continue;
             }
 
-            var json = JsonSerializer.Serialize(new Dictionary<string, object?>
+            context.MutationWriter.Patch(objectId, new RoomObjectPatchPayload
             {
-                ["hits"] = remaining
-            }, _jsonOptions);
-            context.MutationWriter.PatchJson(objectId, json);
+                Hits = remaining
+            });
         }
 
         foreach (var id in removals)
@@ -62,19 +54,12 @@ internal sealed class CombatResolutionStep : IRoomProcessorStep
         return Task.CompletedTask;
     }
 
-    private static void ApplyAttack(JsonElement root, string key, IDictionary<string, int> hitsUpdates, ISet<string> removals)
+    private static void ApplyAttack(AttackIntent? intent, IDictionary<string, int> hitsUpdates, ISet<string> removals)
     {
-        if (!root.TryGetProperty(key, out var attackElement))
+        if (intent is null || string.IsNullOrWhiteSpace(intent.TargetId))
             return;
 
-        if (!attackElement.TryGetProperty("targetId", out var targetElement))
-            return;
-
-        var targetId = targetElement.GetString();
-        if (string.IsNullOrWhiteSpace(targetId))
-            return;
-
-        var damage = attackElement.TryGetProperty("damage", out var dmgElement) ? dmgElement.GetInt32() : 30;
-        hitsUpdates[targetId!] = hitsUpdates.TryGetValue(targetId!, out var existing) ? existing + damage : damage;
+        var damage = intent.Damage ?? 30;
+        hitsUpdates[intent.TargetId!] = hitsUpdates.TryGetValue(intent.TargetId!, out var existing) ? existing + damage : damage;
     }
 }

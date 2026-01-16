@@ -15,5 +15,4 @@ public sealed record RoomInfoSnapshot(
     int? EnergyAvailable,
     long? NextNpcMarketOrder,
     long? PowerBankTime,
-    int? InvaderGoal,
-    string RawJson);
+    int? InvaderGoal);

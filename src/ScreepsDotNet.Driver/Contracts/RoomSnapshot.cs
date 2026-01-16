@@ -9,9 +9,8 @@ public sealed record RoomSnapshot(
     string RoomName,
     int GameTime,
     RoomInfoSnapshot? Info,
-    IReadOnlyDictionary<string, RoomObjectState> Objects,
+    IReadOnlyDictionary<string, RoomObjectSnapshot> Objects,
     IReadOnlyDictionary<string, UserState> Users,
     RoomIntentSnapshot? Intents,
     IReadOnlyDictionary<string, RoomTerrainSnapshot> Terrain,
-    IReadOnlyList<RoomFlagSnapshot> Flags,
-    string RawRoomDocumentJson);
+    IReadOnlyList<RoomFlagSnapshot> Flags);

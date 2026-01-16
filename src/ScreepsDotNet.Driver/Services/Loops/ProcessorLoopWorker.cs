@@ -1,7 +1,6 @@
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using MongoDB.Bson;
-using MongoDB.Bson.Serialization;
 using ScreepsDotNet.Common;
 using ScreepsDotNet.Common.Constants;
 using ScreepsDotNet.Driver.Abstractions;
@@ -12,6 +11,7 @@ using ScreepsDotNet.Driver.Abstractions.Notifications;
 using ScreepsDotNet.Driver.Abstractions.Rooms;
 using ScreepsDotNet.Driver.Constants;
 using ScreepsDotNet.Driver.Contracts;
+using ScreepsDotNet.Driver.Services.Rooms;
 using ScreepsDotNet.Storage.MongoRedis.Repositories.Documents;
 
 namespace ScreepsDotNet.Driver.Services.Loops;
@@ -35,7 +35,7 @@ internal sealed class ProcessorLoopWorker(
         var gameTime = await environmentService.GetGameTimeAsync(token).ConfigureAwait(false);
         var snapshot = await snapshotProvider.GetSnapshotAsync(roomName, gameTime, token).ConfigureAwait(false);
         var roomObjects = RehydrateObjects(snapshot.Objects);
-        var users = RehydrateUsers(snapshot.Users);
+        var users = snapshot.Users;
 
         if (snapshot.Intents is not null)
             await ApplyRoomIntentsAsync(snapshot, roomObjects, token).ConfigureAwait(false);
@@ -43,13 +43,7 @@ internal sealed class ProcessorLoopWorker(
         await roomDataService.ClearRoomIntentsAsync(roomName, token).ConfigureAwait(false);
         snapshotProvider.Invalidate(roomName);
 
-        var historyPayload = JsonSerializer.Serialize(new
-        {
-            room = roomName,
-            objects = roomObjects,
-            users
-        }, JsonOptions);
-
+        var historyPayload = new RoomHistoryTickPayload(roomName, snapshot.Objects, users);
         await loopHooks.SaveRoomHistoryAsync(roomName, gameTime, historyPayload, token).ConfigureAwait(false);
 
         var chunkSize = Math.Max(config.HistoryChunkSize, 1);
@@ -84,23 +78,23 @@ internal sealed class ProcessorLoopWorker(
 
         var patches = new Dictionary<string, BsonDocument>(StringComparer.Ordinal);
         var removals = new List<string>();
-        var events = new List<RoomIntentEvent>();
+        var events = new List<DriverIntentEvent>();
         var notificationCounts = new Dictionary<string, int>(StringComparer.Ordinal);
         var timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 
         foreach (var (userIdKey, intentPayload) in snapshot.Intents.Users)
         {
-            if (intentPayload?.ObjectsManualJson is not { Count: > 0 })
+            if (intentPayload?.ObjectIntents is not { Count: > 0 })
                 continue;
 
             var userId = (userIdKey ?? string.Empty).Trim();
 
-            foreach (var (objectId, payloadJson) in intentPayload.ObjectsManualJson)
+            foreach (var (objectId, intentRecords) in intentPayload.ObjectIntents)
             {
-                if (string.IsNullOrWhiteSpace(objectId))
+                if (string.IsNullOrWhiteSpace(objectId) || intentRecords.Count == 0)
                     continue;
 
-                var payload = TryParseDocument(payloadJson);
+                var payload = IntentDocumentMapper.ToBsonDocument(intentRecords);
 
                 var metadata = new BsonDocument
                 {
@@ -108,19 +102,16 @@ internal sealed class ProcessorLoopWorker(
                     [IntentMetadataKeys.LastIntentTime] = timestamp
                 };
 
-                if (payload is not null && payload.ElementCount > 0)
+                if (payload.ElementCount > 0)
                     metadata[IntentMetadataKeys.LastIntent] = payload.DeepClone();
 
                 StagePatch(patches, objectId, metadata);
 
-                if (payload is not null)
-                {
-                    objects.TryGetValue(objectId, out var actor);
-                    ApplyTypedIntents(patches, removals, objectId, actor, objects, payload);
-                    ApplyMutations(patches, removals, objectId, objects, payload);
-                }
+                objects.TryGetValue(objectId, out var actor);
+                ApplyTypedIntents(patches, removals, objectId, actor, objects, payload);
+                ApplyMutations(patches, removals, objectId, objects, payload);
 
-                events.Add(new RoomIntentEvent(
+                events.Add(new DriverIntentEvent(
                     userId,
                     objectId,
                     ConvertPayload(payload)));
@@ -130,8 +121,12 @@ internal sealed class ProcessorLoopWorker(
             }
         }
 
-        var eventLogJson = events.Count > 0 ? JsonSerializer.Serialize(events, JsonOptions) : null;
-        var mapViewPayload = events.Count > 0 ? JsonSerializer.Serialize(new RoomIntentMapView(snapshot.RoomName, timestamp, events), JsonOptions) : null;
+        IRoomEventLogPayload? eventLogPayload = events.Count > 0
+            ? new DriverRoomIntentEventCollection(events)
+            : null;
+        IRoomMapViewPayload? mapViewPayload = events.Count > 0
+            ? new DriverRoomIntentMapView(snapshot.RoomName, timestamp, events)
+            : null;
 
         if (events.Count > 0)
             _logger?.LogDebug("Applied {Count} intents for room {Room}.", events.Count, snapshot.RoomName);
@@ -142,11 +137,13 @@ internal sealed class ProcessorLoopWorker(
                 continue;
 
             var message = $"Processed {count} intents in {snapshot.RoomName}.";
-            await loopHooks.SendNotificationAsync(userId, message, new NotificationOptions(5, "intent"), token).ConfigureAwait(false);
+            await loopHooks.SendNotificationAsync(userId, message, new NotificationOptions(5, NotificationTypes.Intent), token).ConfigureAwait(false);
         }
 
-        var patchList = patches.Select(pair => new RoomObjectPatch(pair.Key, pair.Value.ToJson())).ToArray();
-        if (patchList.Length == 0 && removals.Count == 0 && string.IsNullOrWhiteSpace(eventLogJson) && string.IsNullOrWhiteSpace(mapViewPayload))
+        var patchList = patches
+            .Select(pair => new RoomObjectPatch(pair.Key, new BsonRoomObjectPatchPayload(pair.Value)))
+            .ToArray();
+        if (patchList.Length == 0 && removals.Count == 0 && eventLogPayload is null && mapViewPayload is null)
             return;
 
         var batch = new RoomMutationBatch(
@@ -156,7 +153,7 @@ internal sealed class ProcessorLoopWorker(
             removals,
             null,
             mapViewPayload,
-            eventLogJson);
+            eventLogPayload);
 
         await mutationDispatcher.ApplyAsync(batch, token).ConfigureAwait(false);
     }
@@ -218,11 +215,11 @@ internal sealed class ProcessorLoopWorker(
         if (target is null)
             return;
 
-        var sourceEnergy = Math.Max(0, GetStoreValue(actor, "energy") - amount);
-        StagePatch(patches, actorId, new BsonDocument("store", new BsonDocument("energy", sourceEnergy)));
+        var sourceEnergy = Math.Max(0, GetStoreValue(actor, RoomDocumentFields.RoomObject.Store.Energy) - amount);
+        StagePatch(patches, actorId, new BsonDocument(RoomDocumentFields.RoomObject.Store.Root, new BsonDocument(RoomDocumentFields.RoomObject.Store.Energy, sourceEnergy)));
 
-        var targetEnergy = GetStoreValue(target, "energy") + amount;
-        StagePatch(patches, targetId, new BsonDocument("store", new BsonDocument("energy", targetEnergy)));
+        var targetEnergy = GetStoreValue(target, RoomDocumentFields.RoomObject.Store.Energy) + amount;
+        StagePatch(patches, targetId, new BsonDocument(RoomDocumentFields.RoomObject.Store.Root, new BsonDocument(RoomDocumentFields.RoomObject.Store.Energy, targetEnergy)));
     }
 
     private static void ApplyLabIntents(
@@ -243,11 +240,11 @@ internal sealed class ProcessorLoopWorker(
 
         var store = new BsonDocument
         {
-            ["energy"] = Math.Max(0, GetStoreValue(actor, "energy") - 2),
+            [RoomDocumentFields.RoomObject.Store.Energy] = Math.Max(0, GetStoreValue(actor, RoomDocumentFields.RoomObject.Store.Energy) - 2),
             [resourceType] = GetStoreValue(actor, resourceType) + 1
         };
 
-        StagePatch(patches, actorId, new BsonDocument("store", store));
+        StagePatch(patches, actorId, new BsonDocument(RoomDocumentFields.RoomObject.Store.Root, store));
     }
 
     private static void ApplyDamageIntent(
@@ -270,7 +267,7 @@ internal sealed class ProcessorLoopWorker(
         if (hits == 0)
             removals.Add(targetId);
         else
-            StagePatch(patches, targetId, new BsonDocument("hits", hits));
+            StagePatch(patches, targetId, new BsonDocument(RoomDocumentFields.RoomObject.Hits, hits));
     }
 
     private static void ApplyHealIntent(
@@ -290,7 +287,7 @@ internal sealed class ProcessorLoopWorker(
         var maxHits = target.HitsMax ?? int.MaxValue;
         var hits = Math.Min(maxHits, target.Hits.Value + amount);
         target.Hits = hits;
-        StagePatch(patches, targetId, new BsonDocument("hits", hits));
+        StagePatch(patches, targetId, new BsonDocument(RoomDocumentFields.RoomObject.Hits, hits));
     }
 
     private static void ApplyMutations(
@@ -315,7 +312,7 @@ internal sealed class ProcessorLoopWorker(
             if (damage > 0 && target.Hits.HasValue)
             {
                 var newHits = Math.Max(0, target.Hits!.Value - damage);
-                updateDocument["hits"] = newHits;
+                updateDocument[RoomDocumentFields.RoomObject.Hits] = newHits;
                 target.Hits = newHits;
                 if (newHits == 0)
                 {
@@ -387,39 +384,18 @@ internal sealed class ProcessorLoopWorker(
     private static int GetStoreValue(RoomObjectDocument document, string resource)
         => document.Store?.GetValueOrDefault(resource, 0) ?? 0;
 
-    private static IReadOnlyDictionary<string, RoomObjectDocument> RehydrateObjects(IReadOnlyDictionary<string, RoomObjectState> states)
+    private static IReadOnlyDictionary<string, RoomObjectDocument> RehydrateObjects(IReadOnlyDictionary<string, RoomObjectSnapshot> states)
     {
         var result = new Dictionary<string, RoomObjectDocument>(states.Count, StringComparer.Ordinal);
         foreach (var (id, state) in states)
         {
-            if (string.IsNullOrWhiteSpace(id) || string.IsNullOrWhiteSpace(state.RawJson))
+            if (string.IsNullOrWhiteSpace(id))
                 continue;
 
-            result[id] = BsonSerializer.Deserialize<RoomObjectDocument>(state.RawJson);
+            result[id] = RoomContractMapper.MapRoomObjectDocument(state);
         }
 
         return result;
-    }
-
-    private static IReadOnlyDictionary<string, UserDocument> RehydrateUsers(IReadOnlyDictionary<string, UserState> states)
-    {
-        var result = new Dictionary<string, UserDocument>(states.Count, StringComparer.Ordinal);
-        foreach (var (id, state) in states)
-        {
-            if (string.IsNullOrWhiteSpace(id) || string.IsNullOrWhiteSpace(state.RawJson))
-                continue;
-
-            result[id] = BsonSerializer.Deserialize<UserDocument>(state.RawJson);
-        }
-        return result;
-    }
-
-    private static BsonDocument? TryParseDocument(string? json)
-    {
-        if (string.IsNullOrWhiteSpace(json))
-            return null;
-
-        return BsonDocument.Parse(json);
     }
 
     private static void StagePatch(IDictionary<string, BsonDocument> patches, string objectId, BsonDocument delta)
@@ -459,7 +435,9 @@ internal sealed class ProcessorLoopWorker(
         public const string LastIntent = "lastIntent";
     }
 
-    private sealed record RoomIntentEvent(string UserId, string ObjectId, object? Payload);
+    private sealed record DriverIntentEvent(string UserId, string ObjectId, object? Payload);
 
-    private sealed record RoomIntentMapView(string Room, long Timestamp, IReadOnlyList<RoomIntentEvent> Intents);
+    private sealed class DriverRoomIntentEventCollection(IEnumerable<DriverIntentEvent> events) : List<DriverIntentEvent>(events), IRoomEventLogPayload;
+
+    private sealed record DriverRoomIntentMapView(string Room, long Timestamp, IReadOnlyList<DriverIntentEvent> Intents) : IRoomMapViewPayload;
 }

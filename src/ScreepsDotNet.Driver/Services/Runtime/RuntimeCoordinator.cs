@@ -59,7 +59,7 @@ internal sealed class RuntimeCoordinator(
         }
 
         var modules = RuntimeModuleBuilder.NormalizeModules(codeDocument.Modules);
-        if (modules.Count == 0 || !modules.ContainsKey("main"))
+        if (modules.Count == 0 || !modules.ContainsKey(RuntimeModuleNames.Main))
         {
             logger?.LogDebug("User {UserId} does not have a valid 'main' module.", userId);
             return;
@@ -83,10 +83,10 @@ internal sealed class RuntimeCoordinator(
             await LoadInterShardSegmentAsync(userId).ConfigureAwait(false),
             new Dictionary<string, object?>(StringComparer.Ordinal)
             {
-                ["script"] = bundle.Script,
-                ["modules"] = bundle.Modules,
-                ["userCodeTimestamp"] = codeDocument.Timestamp,
-                ["branch"] = codeDocument.Branch
+                [RuntimeContextKeys.Script] = bundle.Script,
+                [RuntimeContextKeys.Modules] = bundle.Modules,
+                [RuntimeContextKeys.UserCodeTimestamp] = codeDocument.Timestamp,
+                [RuntimeContextKeys.Branch] = codeDocument.Branch
             },
             forceColdSandbox);
 

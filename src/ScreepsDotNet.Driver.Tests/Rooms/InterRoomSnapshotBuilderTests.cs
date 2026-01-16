@@ -56,7 +56,11 @@ public sealed class InterRoomSnapshotBuilderTests
 
         var intent = Assert.Single(snapshot.Market.UserIntents);
         Assert.Equal("userA", intent.UserId);
-        Assert.Contains("attack", intent.IntentsJson);
+        var intentRecord = Assert.Single(intent.Intents);
+        Assert.Equal("attack", intentRecord.Name);
+        var argument = Assert.Single(intentRecord.Arguments);
+        Assert.True(argument.Fields.TryGetValue("room", out var roomField));
+        Assert.Equal("W0N0", roomField.TextValue);
     }
 
     private sealed class StubRoomDataService : RoomDataServiceDouble

@@ -1,4 +1,3 @@
-using System.Text.Json;
 using System.Text.Json.Nodes;
 using Microsoft.Extensions.Logging;
 using ScreepsDotNet.Driver.Abstractions.Config;
@@ -37,16 +36,16 @@ internal sealed class RoomHistoryPipeline : IDisposable
 
     private Task PublishArtifactsAsync(RoomHistorySavedEventArgs args)
     {
-        var mapViewPayload = JsonSerializer.Serialize(new RoomHistoryMapViewSnapshot(
+        var mapViewPayload = new RoomHistoryMapViewSnapshot(
             args.RoomName,
             args.BaseGameTime,
             args.Chunk.Timestamp.UtcDateTime,
-            args.Chunk.Ticks.Count));
-        var eventLogPayload = JsonSerializer.Serialize(new RoomHistoryEventLog(
+            args.Chunk.Ticks.Count);
+        var eventLogPayload = new RoomHistoryEventLog(
             args.RoomName,
             args.BaseGameTime,
             args.Chunk.Timestamp.UtcDateTime,
-            args.Chunk.Ticks));
+            args.Chunk.Ticks);
 
         var batch = new RoomMutationBatch(
             args.RoomName,
@@ -68,6 +67,6 @@ internal sealed class RoomHistoryPipeline : IDisposable
         _disposed = true;
     }
 
-    private sealed record RoomHistoryMapViewSnapshot(string Room, int BaseTick, DateTime TimestampUtc, int TickCount);
-    private sealed record RoomHistoryEventLog(string Room, int BaseTick, DateTime TimestampUtc, IReadOnlyDictionary<int, JsonNode?> Ticks);
+    private sealed record RoomHistoryMapViewSnapshot(string Room, int BaseTick, DateTime TimestampUtc, int TickCount) : IRoomMapViewPayload;
+    private sealed record RoomHistoryEventLog(string Room, int BaseTick, DateTime TimestampUtc, IReadOnlyDictionary<int, JsonNode?> Ticks) : IRoomEventLogPayload;
 }

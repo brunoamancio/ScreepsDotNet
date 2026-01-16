@@ -2,8 +2,7 @@ using ScreepsDotNet.Common.Constants;
 
 namespace ScreepsDotNet.Engine.Processors.Steps;
 
-using System.Collections.Generic;
-using System.Text.Json;
+using ScreepsDotNet.Driver.Contracts;
 using ScreepsDotNet.Engine.Processors;
 
 /// <summary>
@@ -11,8 +10,6 @@ using ScreepsDotNet.Engine.Processors;
 /// </summary>
 internal sealed class StructureDecayStep : IRoomProcessorStep
 {
-    private readonly JsonSerializerOptions _jsonOptions = new(JsonSerializerDefaults.Web);
-
     public Task ExecuteAsync(RoomProcessorContext context, CancellationToken token = default)
     {
         foreach (var structure in context.State.Objects.Values)
@@ -34,12 +31,12 @@ internal sealed class StructureDecayStep : IRoomProcessorStep
             if (nextHits == structure.Hits)
                 continue;
 
-            var payload = JsonSerializer.Serialize(new Dictionary<string, object?>
+            var patch = new RoomObjectPatchPayload
             {
-                ["hits"] = nextHits
-            }, _jsonOptions);
+                Hits = nextHits
+            };
 
-            context.MutationWriter.PatchJson(structure.Id, payload);
+            context.MutationWriter.Patch(structure.Id, patch);
         }
 
         return Task.CompletedTask;

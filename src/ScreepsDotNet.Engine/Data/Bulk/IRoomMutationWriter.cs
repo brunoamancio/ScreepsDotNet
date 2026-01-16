@@ -1,16 +1,15 @@
 namespace ScreepsDotNet.Engine.Data.Bulk;
 
+using ScreepsDotNet.Driver.Contracts;
+
 public interface IRoomMutationWriter
 {
-    void Upsert(object document);
-    void UpsertJson(string documentJson);
-    void Patch(string objectId, object updateDocument);
-    void PatchJson(string objectId, string updateJson);
+    void Upsert(RoomObjectSnapshot document);
+    void Patch(string objectId, RoomObjectPatchPayload patch);
     void Remove(string objectId);
-    void SetRoomInfoPatch(object updateDocument);
-    void SetRoomInfoPatchJson(string updateJson);
-    void SetEventLog(string? eventLogJson);
-    void SetMapView(string? mapViewJson);
+    void SetRoomInfoPatch(RoomInfoPatchPayload patch);
+    void SetEventLog(IRoomEventLogPayload? eventLog);
+    void SetMapView(IRoomMapViewPayload? mapView);
     Task FlushAsync(CancellationToken token = default);
     void Reset();
 }

@@ -1,9 +1,9 @@
 namespace ScreepsDotNet.Driver.Services.Rooms;
 
-using MongoDB.Bson;
+using System;
+using System.Collections.Generic;
 using ScreepsDotNet.Driver.Abstractions.Rooms;
 using ScreepsDotNet.Driver.Contracts;
-using ScreepsDotNet.Driver.Extensions;
 using ScreepsDotNet.Storage.MongoRedis.Repositories.Documents;
 
 internal sealed class InterRoomSnapshotBuilder(IRoomDataService roomDataService) : IInterRoomSnapshotBuilder
@@ -20,12 +20,12 @@ internal sealed class InterRoomSnapshotBuilder(IRoomDataService roomDataService)
         return new GlobalSnapshot(snapshot.GameTime, movingCreeps, accessibleRooms, specialObjects, market);
     }
 
-    private static IReadOnlyList<RoomObjectState> MapObjects(IReadOnlyList<RoomObjectDocument> documents)
+    private static IReadOnlyList<RoomObjectSnapshot> MapObjects(IReadOnlyList<RoomObjectDocument> documents)
     {
         if (documents.Count == 0)
             return [];
 
-        var result = new RoomObjectState[documents.Count];
+        var result = new RoomObjectSnapshot[documents.Count];
         for (var i = 0; i < documents.Count; i++)
         {
             var document = documents[i];
@@ -82,8 +82,7 @@ internal sealed class InterRoomSnapshotBuilder(IRoomDataService roomDataService)
                 doc.TotalAmount,
                 doc.CreatedTick,
                 doc.CreatedTimestamp,
-                doc.Active,
-                doc.ToStableJson());
+                doc.Active);
         }
 
         return result;
@@ -127,8 +126,7 @@ internal sealed class InterRoomSnapshotBuilder(IRoomDataService roomDataService)
                 doc.SpawnCooldownTime,
                 doc.DeleteTime,
                 doc.Shard,
-                MapPowers(doc.Powers),
-                doc.ToStableJson());
+                MapPowers(doc.Powers));
         }
 
         return result;
@@ -156,6 +154,7 @@ internal sealed class InterRoomSnapshotBuilder(IRoomDataService roomDataService)
         return result;
     }
 
+
     private static IReadOnlyList<GlobalUserIntentSnapshot> MapUserIntents(IReadOnlyList<UserIntentDocument> documents)
     {
         if (documents.Count == 0)
@@ -168,7 +167,7 @@ internal sealed class InterRoomSnapshotBuilder(IRoomDataService roomDataService)
             result[i] = new GlobalUserIntentSnapshot(
                 doc.Id.ToString(),
                 doc.UserId,
-                doc.Intents?.ToJson() ?? string.Empty);
+                IntentDocumentMapper.MapIntentRecords(doc.Intents));
         }
 
         return result;

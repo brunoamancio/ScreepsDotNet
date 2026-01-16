@@ -3,8 +3,7 @@ using ScreepsDotNet.Common.Constants;
 namespace ScreepsDotNet.Engine.Processors.Steps;
 
 using System;
-using System.Collections.Generic;
-using System.Text.Json;
+using ScreepsDotNet.Driver.Contracts;
 using ScreepsDotNet.Engine.Processors;
 
 /// <summary>
@@ -12,8 +11,6 @@ using ScreepsDotNet.Engine.Processors;
 /// </summary>
 internal sealed class ControllerDowngradeStep : IRoomProcessorStep
 {
-    private readonly JsonSerializerOptions _jsonOptions = new(JsonSerializerDefaults.Web);
-
     public Task ExecuteAsync(RoomProcessorContext context, CancellationToken token = default)
     {
         foreach (var controller in context.State.Objects.Values)
@@ -21,17 +18,18 @@ internal sealed class ControllerDowngradeStep : IRoomProcessorStep
             if (controller.Type != RoomObjectTypes.Controller)
                 continue;
 
-            var patches = new Dictionary<string, object?>(StringComparer.Ordinal);
-            if (!controller.Store.TryGetValue("downgradeTimer", out var timer))
+            var timer = controller.ControllerDowngradeTimer;
+            if (!timer.HasValue)
                 continue;
 
-            var next = Math.Max(timer - 1, 0);
-            patches["downgradeTimer"] = next;
-            if (next == 0)
-                patches["upgradeBlocked"] = true;
+            var next = Math.Max(timer.Value - 1, 0);
+            var patch = new RoomObjectPatchPayload
+            {
+                DowngradeTimer = next,
+                UpgradeBlocked = next == 0 ? true : null
+            };
 
-            var json = JsonSerializer.Serialize(patches, _jsonOptions);
-            context.MutationWriter.PatchJson(controller.Id, json);
+            context.MutationWriter.Patch(controller.Id, patch);
         }
 
         return Task.CompletedTask;

@@ -1,15 +1,12 @@
 namespace ScreepsDotNet.Engine.Data.Bulk;
 
-using System.Text.Json;
 using ScreepsDotNet.Driver.Abstractions.Rooms;
 
-internal sealed class RoomMutationWriterFactory(
-    IRoomMutationDispatcher dispatcher,
-    JsonSerializerOptions? serializerOptions = null) : IRoomMutationWriterFactory
+internal sealed class RoomMutationWriterFactory(IRoomMutationDispatcher dispatcher) : IRoomMutationWriterFactory
 {
     public IRoomMutationWriter Create(string roomName)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(roomName);
-        return new RoomMutationWriter(roomName, dispatcher, serializerOptions);
+        return new RoomMutationWriter(roomName, dispatcher);
     }
 }

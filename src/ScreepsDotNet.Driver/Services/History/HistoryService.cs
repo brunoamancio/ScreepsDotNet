@@ -6,6 +6,7 @@ using ScreepsDotNet.Driver.Abstractions.Config;
 using ScreepsDotNet.Driver.Abstractions.Eventing;
 using ScreepsDotNet.Driver.Abstractions.History;
 using ScreepsDotNet.Driver.Constants;
+using ScreepsDotNet.Driver.Contracts;
 using ScreepsDotNet.Storage.MongoRedis.Providers;
 using ScreepsDotNet.Storage.MongoRedis.Repositories.Documents;
 using StackExchange.Redis;
@@ -18,15 +19,17 @@ internal sealed class HistoryService(
     IMongoDatabaseProvider databaseProvider,
     ILogger<HistoryService>? logger = null) : IHistoryService
 {
+    private static readonly JsonSerializerOptions HistorySerializerOptions = new(JsonSerializerDefaults.Web);
     private readonly IDatabase _redis = redisProvider.GetConnection().GetDatabase();
     private readonly IMongoCollection<RoomHistoryChunkDocument> _historyChunks =
         databaseProvider.GetCollection<RoomHistoryChunkDocument>(databaseProvider.Settings.RoomHistoryCollection);
 
-    public Task SaveRoomHistoryAsync(string roomName, int gameTime, string serializedObjects, CancellationToken token = default)
+    public Task SaveRoomHistoryAsync(string roomName, int gameTime, RoomHistoryTickPayload payload, CancellationToken token = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(roomName);
-        ArgumentException.ThrowIfNullOrWhiteSpace(serializedObjects);
+        ArgumentNullException.ThrowIfNull(payload);
 
+        var serializedObjects = JsonSerializer.Serialize(payload, HistorySerializerOptions);
         var key = $"{RedisKeys.RoomHistory}{roomName}";
         var entry = new HashEntry(gameTime.ToString(), serializedObjects);
         return _redis.HashSetAsync(key, [entry]);

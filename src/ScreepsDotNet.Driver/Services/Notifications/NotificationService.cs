@@ -12,7 +12,6 @@ namespace ScreepsDotNet.Driver.Services.Notifications;
 internal sealed class NotificationService(IMongoDatabaseProvider databaseProvider, IRedisConnectionProvider redisProvider, ILogger<NotificationService>? logger = null) : INotificationService
 {
     private const int DefaultErrorIntervalMinutes = 30;
-    private const string ErrorNotificationType = "error";
 
     private readonly IMongoCollection<UserNotificationDocument> _notifications = databaseProvider.GetCollection<UserNotificationDocument>(databaseProvider.Settings.UserNotificationsCollection);
     private readonly ISubscriber _subscriber = redisProvider.GetConnection().GetSubscriber();
@@ -46,7 +45,7 @@ internal sealed class NotificationService(IMongoDatabaseProvider databaseProvide
             return;
         }
 
-        await UpsertNotificationAsync(userId, normalized, new NotificationOptions(DefaultErrorIntervalMinutes, ErrorNotificationType), token).ConfigureAwait(false);
+        await UpsertNotificationAsync(userId, normalized, new NotificationOptions(DefaultErrorIntervalMinutes, NotificationTypes.Error), token).ConfigureAwait(false);
         await _subscriber.PublishAsync(RedisChannel.Literal($"user:{userId}/console"), JsonSerializer.Serialize(new { userId, error = normalized })).ConfigureAwait(false);
     }
 

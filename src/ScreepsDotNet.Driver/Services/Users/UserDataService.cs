@@ -103,7 +103,7 @@ internal sealed class UserDataService(IMongoDatabaseProvider databaseProvider, I
         ArgumentException.ThrowIfNullOrWhiteSpace(roomName);
 
         var writer = bulkWriterFactory.CreateUsersWriter();
-        writer.AddToSet(userId, "rooms", roomName);
+        writer.AddToSet(userId, UserDocumentFields.Rooms, roomName);
         await writer.ExecuteAsync(token).ConfigureAwait(false);
     }
 
@@ -113,7 +113,7 @@ internal sealed class UserDataService(IMongoDatabaseProvider databaseProvider, I
         ArgumentException.ThrowIfNullOrWhiteSpace(roomName);
 
         var writer = bulkWriterFactory.CreateUsersWriter();
-        writer.Pull(userId, "rooms", roomName);
+        writer.Pull(userId, UserDocumentFields.Rooms, roomName);
         await writer.ExecuteAsync(token).ConfigureAwait(false);
     }
 
@@ -127,8 +127,9 @@ internal sealed class UserDataService(IMongoDatabaseProvider databaseProvider, I
                 continue;
 
             var bsonPayload = NormalizeIntentPayload(intentPayload);
+            var updatePath = $"{RoomIntentDocumentFields.UsersRoot}.{userId}.{RoomIntentDocumentFields.ObjectsManual}";
             var update = Builders<RoomIntentDocument>.Update
-                                                     .Set($"users.{userId}.objectsManual", bsonPayload);
+                                                     .Set(updatePath, bsonPayload);
 
             await _roomIntents.UpdateOneAsync(document => document.Room == roomName,
                                               update,

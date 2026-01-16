@@ -1,11 +1,13 @@
 namespace ScreepsDotNet.Driver.Contracts;
 
 using System.Collections.Generic;
+using ScreepsDotNet.Common;
+using ScreepsDotNet.Driver.Constants;
 
 /// <summary>
 /// Canonical representation of a room object used by the engine/processor.
 /// </summary>
-public sealed record RoomObjectState(
+public sealed record RoomObjectSnapshot(
     string Id,
     string Type,
     string RoomName,
@@ -29,8 +31,21 @@ public sealed record RoomObjectState(
     RoomReservationSnapshot? Reservation,
     RoomSignSnapshot? Sign,
     RoomObjectStructureSnapshot? Structure,
-    IReadOnlyDictionary<string, object?> Effects,
-    string RawJson);
+    IReadOnlyDictionary<string, object?> Effects)
+{
+    public int? MoveBodyParts => GetStoreValue(IntentKeys.Move);
+    public int? ControllerDowngradeTimer => GetStoreValue(StoreKeys.DowngradeTimer);
+    public int? SpawnCooldownTime => GetStoreValue(StoreKeys.SpawnCooldownTime);
+
+    private int? GetStoreValue(string key)
+        => Store.TryGetValue(key, out var value) ? value : null;
+
+    private static class StoreKeys
+    {
+        public const string DowngradeTimer = RoomDocumentFields.RoomObject.DowngradeTimer;
+        public const string SpawnCooldownTime = RoomDocumentFields.RoomObject.SpawnCooldownTime;
+    }
+}
 
 public sealed record RoomReservationSnapshot(string? UserId, int? EndTime);
 

@@ -1,7 +1,6 @@
 using MongoDB.Bson;
 using ScreepsDotNet.Driver.Abstractions.Rooms;
 using ScreepsDotNet.Driver.Contracts;
-using ScreepsDotNet.Driver.Extensions;
 using ScreepsDotNet.Storage.MongoRedis.Repositories.Documents;
 
 namespace ScreepsDotNet.Driver.Services.Rooms;
@@ -35,8 +34,7 @@ internal sealed class RoomSnapshotBuilder(IRoomDataService roomDataService) : IR
             RoomContractMapper.MapUsers(objectsPayload.Users),
             MapRoomIntents(intents),
             MapTerrain(terrain),
-            MapFlags(flags),
-            roomInfo.ToStableJson());
+            MapFlags(flags));
     }
 
     private static IReadOnlyDictionary<string, RoomTerrainSnapshot> MapTerrain(IReadOnlyDictionary<string, RoomTerrainDocument> documents)
@@ -83,20 +81,74 @@ internal sealed class RoomSnapshotBuilder(IRoomDataService roomDataService) : IR
         return new RoomIntentSnapshot(
             document.Room ?? string.Empty,
             document.Shard,
-            users,
-            document.ToStableJson());
+            users);
     }
 
     private static IntentEnvelope MapIntentEnvelope(string userId, RoomIntentUserDocument? document)
     {
-        var manual = document?.ObjectsManual is null
-            ? new Dictionary<string, string>(StringComparer.Ordinal)
-            : document.ObjectsManual.ToDictionary(
-                kvp => kvp.Key,
-                kvp => kvp.Value?.ToJson() ?? string.Empty,
-                StringComparer.Ordinal);
+        var objectIntents = MapObjectIntents(document?.ObjectsManual);
 
-        return new IntentEnvelope(userId, manual, document.ToStableJson());
+        var spawnIntents = MapSpawnIntents(document?.ObjectsManual);
+        var creepIntents = MapCreepIntents(document?.ObjectsManual);
+
+        return new IntentEnvelope(userId, objectIntents, spawnIntents, creepIntents);
+    }
+
+    private static IReadOnlyDictionary<string, SpawnIntentEnvelope> MapSpawnIntents(Dictionary<string, BsonDocument>? objectsManual)
+    {
+        var result = new Dictionary<string, SpawnIntentEnvelope>(StringComparer.Ordinal);
+        if (objectsManual is null)
+            return result;
+
+        foreach (var (objectId, payload) in objectsManual)
+        {
+            if (string.IsNullOrWhiteSpace(objectId))
+                continue;
+
+            if (!SpawnIntentMapper.TryMap(payload, out var envelope))
+                continue;
+
+            result[objectId] = envelope;
+        }
+
+        return result;
+    }
+
+    private static IReadOnlyDictionary<string, CreepIntentEnvelope> MapCreepIntents(Dictionary<string, BsonDocument>? objectsManual)
+    {
+        var result = new Dictionary<string, CreepIntentEnvelope>(StringComparer.Ordinal);
+        if (objectsManual is null)
+            return result;
+
+        foreach (var (objectId, payload) in objectsManual)
+        {
+            if (string.IsNullOrWhiteSpace(objectId))
+                continue;
+
+            if (!CreepIntentMapper.TryMap(payload, out var envelope))
+                continue;
+
+            result[objectId] = envelope;
+        }
+
+        return result;
+    }
+
+    private static IReadOnlyDictionary<string, IReadOnlyList<IntentRecord>> MapObjectIntents(Dictionary<string, BsonDocument>? objectsManual)
+    {
+        if (objectsManual is null || objectsManual.Count == 0)
+            return new Dictionary<string, IReadOnlyList<IntentRecord>>(StringComparer.Ordinal);
+
+        var result = new Dictionary<string, IReadOnlyList<IntentRecord>>(objectsManual.Count, StringComparer.Ordinal);
+        foreach (var (objectId, payload) in objectsManual)
+        {
+            if (string.IsNullOrWhiteSpace(objectId))
+                continue;
+
+            result[objectId] = IntentDocumentMapper.MapIntentRecords(payload);
+        }
+
+        return result;
     }
 
 }

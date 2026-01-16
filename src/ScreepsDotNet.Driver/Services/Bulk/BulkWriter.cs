@@ -3,6 +3,7 @@ using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using MongoDB.Driver;
 using ScreepsDotNet.Driver.Abstractions.Bulk;
+using ScreepsDotNet.Driver.Constants;
 
 namespace ScreepsDotNet.Driver.Services.Bulk;
 
@@ -162,18 +163,18 @@ internal sealed class BulkWriter<TDocument>(
         if (!string.IsNullOrWhiteSpace(explicitId))
         {
             var normalized = NormalizeId(explicitId);
-            document["_id"] = idAccessor.CreateBsonValue(normalized);
+            document[MongoDocumentFields.Id] = idAccessor.CreateBsonValue(normalized);
             idAccessor.AssignId?.Invoke(entity, normalized);
             return normalized;
         }
 
         if (idAccessor.GetId?.Invoke(entity) is { Length: > 0 } existingId)
         {
-            document["_id"] = idAccessor.CreateBsonValue(existingId);
+            document[MongoDocumentFields.Id] = idAccessor.CreateBsonValue(existingId);
             return existingId;
         }
 
-        if (document.TryGetValue("_id", out var value))
+        if (document.TryGetValue(MongoDocumentFields.Id, out var value))
         {
             var fromDocument = DocumentUtilities.ExtractStringId(value);
             if (!string.IsNullOrWhiteSpace(fromDocument))
@@ -183,7 +184,7 @@ internal sealed class BulkWriter<TDocument>(
         if (idAccessor.GenerateId is { } generator)
         {
             var generated = generator();
-            document["_id"] = idAccessor.CreateBsonValue(generated);
+            document[MongoDocumentFields.Id] = idAccessor.CreateBsonValue(generated);
             idAccessor.AssignId?.Invoke(entity, generated);
             return generated;
         }

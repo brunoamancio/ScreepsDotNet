@@ -10,12 +10,11 @@ public sealed record RoomState(
     string RoomName,
     int GameTime,
     RoomInfoSnapshot? Info,
-    IReadOnlyDictionary<string, RoomObjectState> Objects,
+    IReadOnlyDictionary<string, RoomObjectSnapshot> Objects,
     IReadOnlyDictionary<string, UserState> Users,
     RoomIntentSnapshot? Intents,
     IReadOnlyDictionary<string, RoomTerrainSnapshot> Terrain,
-    IReadOnlyList<RoomFlagSnapshot> Flags,
-    string RawRoomDocumentJson)
+    IReadOnlyList<RoomFlagSnapshot> Flags)
 {
     public static RoomState FromSnapshot(RoomSnapshot snapshot)
         => new(
@@ -26,6 +25,5 @@ public sealed record RoomState(
             snapshot.Users,
             snapshot.Intents,
             snapshot.Terrain,
-            snapshot.Flags,
-            snapshot.RawRoomDocumentJson);
+            snapshot.Flags);
 }

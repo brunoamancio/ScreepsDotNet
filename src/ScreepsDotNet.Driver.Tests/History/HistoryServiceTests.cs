@@ -1,5 +1,6 @@
 using MongoDB.Driver;
 using ScreepsDotNet.Driver.Abstractions.Eventing;
+using ScreepsDotNet.Driver.Contracts;
 using ScreepsDotNet.Driver.Services;
 using ScreepsDotNet.Driver.Services.History;
 using ScreepsDotNet.Driver.Tests.TestSupport;
@@ -18,8 +19,8 @@ public sealed class HistoryServiceTests(MongoRedisFixture fixture) : IClassFixtu
         var token = TestContext.Current.CancellationToken;
         config.RoomHistorySaved += (_, args) => received.TrySetResult(args);
 
-        await service.SaveRoomHistoryAsync("W1N1", 100, """{"hits":100}""", token);
-        await service.SaveRoomHistoryAsync("W1N1", 101, """{"hits":80}""", token);
+        await service.SaveRoomHistoryAsync("W1N1", 100, CreateEmptyPayload("W1N1"), token);
+        await service.SaveRoomHistoryAsync("W1N1", 101, CreateEmptyPayload("W1N1"), token);
 
         await service.UploadRoomHistoryChunkAsync("W1N1", 100, token);
 
@@ -37,8 +38,8 @@ public sealed class HistoryServiceTests(MongoRedisFixture fixture) : IClassFixtu
         var service = new HistoryService(config, fixture.RedisProvider, fixture.MongoProvider);
         var token = TestContext.Current.CancellationToken;
 
-        await service.SaveRoomHistoryAsync("W2N3", 200, """{"energy":300}""", token);
-        await service.SaveRoomHistoryAsync("W2N3", 201, """{"energy":250}""", token);
+        await service.SaveRoomHistoryAsync("W2N3", 200, CreateEmptyPayload("W2N3"), token);
+        await service.SaveRoomHistoryAsync("W2N3", 201, CreateEmptyPayload("W2N3"), token);
         await service.UploadRoomHistoryChunkAsync("W2N3", 200, token);
 
         var collection = fixture.GetCollection<RoomHistoryChunkDocument>(fixture.Options.RoomHistoryCollection);
@@ -49,4 +50,8 @@ public sealed class HistoryServiceTests(MongoRedisFixture fixture) : IClassFixtu
         Assert.True(document.Ticks.ContainsKey("200"));
         Assert.True(document.Ticks.ContainsKey("201"));
     }
+    private static RoomHistoryTickPayload CreateEmptyPayload(string room)
+        => new(room,
+            new Dictionary<string, RoomObjectSnapshot>(),
+            new Dictionary<string, UserState>());
 }

@@ -9,5 +9,4 @@ public sealed record UserState(
     double Cpu,
     double Power,
     double Money,
-    bool Active,
-    string RawJson);
+    bool Active);

@@ -3,6 +3,7 @@ using ScreepsDotNet.Driver.Abstractions.History;
 using ScreepsDotNet.Driver.Abstractions.Loops;
 using ScreepsDotNet.Driver.Abstractions.Notifications;
 using ScreepsDotNet.Driver.Abstractions.Runtime;
+using ScreepsDotNet.Driver.Contracts;
 using ScreepsDotNet.Driver.Services.Runtime;
 
 namespace ScreepsDotNet.Driver.Services.Loops;
@@ -14,8 +15,8 @@ internal sealed class DriverLoopHooks(IHistoryService historyService, INotificat
     private readonly ILogger<DriverLoopHooks>? _logger = logger;
     private readonly IRuntimeTelemetrySink _telemetrySink = telemetrySink ?? NullRuntimeTelemetrySink.Instance;
 
-    public Task SaveRoomHistoryAsync(string roomName, int gameTime, string serializedObjects, CancellationToken token = default)
-        => historyService.SaveRoomHistoryAsync(roomName, gameTime, serializedObjects, token);
+    public Task SaveRoomHistoryAsync(string roomName, int gameTime, RoomHistoryTickPayload payload, CancellationToken token = default)
+        => historyService.SaveRoomHistoryAsync(roomName, gameTime, payload, token);
 
     public Task UploadRoomHistoryChunkAsync(string roomName, int baseGameTime, CancellationToken token = default)
         => historyService.UploadRoomHistoryChunkAsync(roomName, baseGameTime, token);

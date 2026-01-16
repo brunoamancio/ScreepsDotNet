@@ -27,7 +27,7 @@ To decouple the engine from storage documents, the driver will expose trimmed, i
 | `RoomSnapshot` | Aggregated per-room state (objects, users, intents, terrain, flags, metadata, power creeps) ready for simulation. | Built inside the driver using `IRoomDataService` + `IUserDataService` + `IPowerCreepService`. |
 | `GlobalSnapshot` | Cross-room data (inter-room creeps, market state, shard info) consumed by global processors. | Built from `IRoomDataService.GetInterRoomSnapshotAsync`. |
 | `UserState` | Minimal per-user info (CPU, bucket, GCL, money, active flag) needed for intents, notifications, bucket accounting. | Derived from `UserDocument`. |
-| `RoomObjectState` | Flattened object representation with typed helpers (store, body, controller info, action logs). | Derived from `RoomObjectDocument` + computed fields (e.g., `_actionLog`). |
+| `RoomObjectSnapshot` | Flattened object representation with typed helpers (store, body, controller info, action logs). | Derived from `RoomObjectDocument` + computed fields (e.g., `_actionLog`). |
 | `IntentEnvelope` | Normalized intent payload grouped by user/object/intent type. | Built from `RoomIntentDocument` + runner-generated intents. |
 
 These DTOs live in the driver assembly so both the engine and driver loops share the same shapes. The driver remains responsible for translating to/from Mongo/Redis.

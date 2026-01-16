@@ -1,5 +1,6 @@
 using MongoDB.Bson;
 using MongoDB.Driver;
+using ScreepsDotNet.Driver.Constants;
 
 namespace ScreepsDotNet.Driver.Services.Bulk;
 
@@ -31,7 +32,7 @@ internal static class BulkWriterIdAccessors
                 ? null
                 : (entity, value) => setter(entity, ObjectId.Parse(value)),
             GenerateId = () => ObjectId.GenerateNewId().ToString(),
-            CreateFilter = id => Builders<TDocument>.Filter.Eq("_id", ObjectId.Parse(id)),
+            CreateFilter = id => Builders<TDocument>.Filter.Eq(MongoDocumentFields.Id, ObjectId.Parse(id)),
             CreateBsonValue = id => new BsonObjectId(ObjectId.Parse(id))
         };
     }
@@ -47,7 +48,7 @@ internal static class BulkWriterIdAccessors
             GetId = getter,
             AssignId = setter,
             GenerateId = allowGeneratedIds ? GuidGenerator : null,
-            CreateFilter = id => Builders<TDocument>.Filter.Eq("_id", id),
+            CreateFilter = id => Builders<TDocument>.Filter.Eq(MongoDocumentFields.Id, id),
             CreateBsonValue = id => new BsonString(id)
         };
 
@@ -61,7 +62,7 @@ internal static class BulkWriterIdAccessors
         {
             GetId = document =>
             {
-                if (!document.TryGetValue("_id", out var value))
+                if (!document.TryGetValue(MongoDocumentFields.Id, out var value))
                     return null;
                 return value switch
                 {
@@ -70,9 +71,9 @@ internal static class BulkWriterIdAccessors
                     _ => value.ToString()
                 };
             },
-            AssignId = (document, value) => document["_id"] = CreateBsonValue(value),
+            AssignId = (document, value) => document[MongoDocumentFields.Id] = CreateBsonValue(value),
             GenerateId = () => ObjectId.GenerateNewId().ToString(),
-            CreateFilter = id => Builders<BsonDocument>.Filter.Eq("_id", CreateBsonValue(id)),
+            CreateFilter = id => Builders<BsonDocument>.Filter.Eq(MongoDocumentFields.Id, CreateBsonValue(id)),
             CreateBsonValue = CreateBsonValue
         };
 

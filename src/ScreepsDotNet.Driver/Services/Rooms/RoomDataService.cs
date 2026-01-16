@@ -151,7 +151,7 @@ internal sealed class RoomDataService(
     public async Task UpdateAccessibleRoomsListAsync(CancellationToken token = default)
     {
         var now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-        var rooms = await _rooms.Find(room => room.Status == "normal")
+        var rooms = await _rooms.Find(room => room.Status == RoomDocumentFields.RoomStatusValues.Normal)
                                 .ToListAsync(token)
                                 .ConfigureAwait(false);
         var accessible = rooms.Where(room => !room.OpenTime.HasValue || room.OpenTime <= now)
@@ -167,10 +167,10 @@ internal sealed class RoomDataService(
     {
         var now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
         var filter = Builders<BsonDocument>.Filter.Or(
-            Builders<BsonDocument>.Filter.Gt("novice", now),
-            Builders<BsonDocument>.Filter.Gt("respawnArea", now),
-            Builders<BsonDocument>.Filter.Gt("openTime", now),
-            Builders<BsonDocument>.Filter.Eq("status", "out of borders")
+            Builders<BsonDocument>.Filter.Gt(RoomDocumentFields.Info.Novice, now),
+            Builders<BsonDocument>.Filter.Gt(RoomDocumentFields.Info.RespawnArea, now),
+            Builders<BsonDocument>.Filter.Gt(RoomDocumentFields.Info.OpenTime, now),
+            Builders<BsonDocument>.Filter.Eq(RoomDocumentFields.Info.Status, RoomDocumentFields.RoomStatusValues.OutOfBorders)
         );
 
         var rooms = await _roomsRaw.Find(filter)
@@ -180,15 +180,15 @@ internal sealed class RoomDataService(
         var statusData = new RoomStatusData();
         foreach (var room in rooms)
         {
-            var id = room.GetValue("_id", BsonNull.Value).ToString();
+            var id = room.GetValue(RoomDocumentFields.RoomObject.Id, BsonNull.Value).ToString();
             if (string.IsNullOrWhiteSpace(id))
                 continue;
 
-            if (TryGetLong(room, "novice", out var novice) && novice > now)
+            if (TryGetLong(room, RoomDocumentFields.Info.Novice, out var novice) && novice > now)
                 statusData.Novice[id] = novice;
-            else if (TryGetLong(room, "respawnArea", out var respawn) && respawn > now)
+            else if (TryGetLong(room, RoomDocumentFields.Info.RespawnArea, out var respawn) && respawn > now)
                 statusData.Respawn[id] = respawn;
-            else if (TryGetLong(room, "openTime", out var openTime) && openTime > now)
+            else if (TryGetLong(room, RoomDocumentFields.Info.OpenTime, out var openTime) && openTime > now)
                 statusData.Closed[id] = openTime;
             else
                 statusData.Closed[id] = long.MaxValue;
@@ -202,10 +202,10 @@ internal sealed class RoomDataService(
     {
         var movingCreepsTask = _roomObjects.Find(Builders<RoomObjectDocument>.Filter.And(
                                                 Builders<RoomObjectDocument>.Filter.In(document => document.Type, MovingCreepTypes),
-                                                new BsonDocument("interRoom", new BsonDocument("$ne", BsonNull.Value))))
+                                                new BsonDocument(RoomDocumentFields.RoomObject.InterRoom, new BsonDocument("$ne", BsonNull.Value))))
                                            .ToListAsync(token);
 
-        var accessibleRoomsTask = _rooms.Find(room => room.Status == "normal")
+        var accessibleRoomsTask = _rooms.Find(room => room.Status == RoomDocumentFields.RoomStatusValues.Normal)
                                         .ToListAsync(token);
 
         var specialObjectsTask = _roomObjects.Find(Builders<RoomObjectDocument>.Filter.In(document => document.Type, SpecialObjectTypes))

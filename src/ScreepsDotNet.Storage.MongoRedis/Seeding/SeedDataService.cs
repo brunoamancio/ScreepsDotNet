@@ -1,6 +1,4 @@
-﻿using ScreepsDotNet.Common.Constants;
-
-namespace ScreepsDotNet.Storage.MongoRedis.Seeding;
+﻿namespace ScreepsDotNet.Storage.MongoRedis.Seeding;
 
 using System;
 using System.Collections.Generic;

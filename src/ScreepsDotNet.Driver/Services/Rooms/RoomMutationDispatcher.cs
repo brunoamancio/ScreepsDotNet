@@ -1,5 +1,5 @@
+using System.Text.Json;
 using MongoDB.Bson;
-using MongoDB.Bson.Serialization;
 using ScreepsDotNet.Driver.Abstractions.Bulk;
 using ScreepsDotNet.Driver.Abstractions.Rooms;
 using ScreepsDotNet.Driver.Contracts;
@@ -11,6 +11,8 @@ internal sealed class RoomMutationDispatcher(
     IBulkWriterFactory bulkWriterFactory,
     IRoomDataService roomDataService) : IRoomMutationDispatcher
 {
+    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
+
     public async Task ApplyAsync(RoomMutationBatch batch, CancellationToken token = default)
     {
         ArgumentNullException.ThrowIfNull(batch);
@@ -28,11 +30,17 @@ internal sealed class RoomMutationDispatcher(
         if (batch.RoomInfoPatch is not null)
             await ApplyRoomInfoPatchAsync(batch.RoomName, batch.RoomInfoPatch, token).ConfigureAwait(false);
 
-        if (!string.IsNullOrWhiteSpace(batch.EventLogJson))
-            await roomDataService.SaveRoomEventLogAsync(batch.RoomName, batch.EventLogJson!, token).ConfigureAwait(false);
+        if (batch.EventLog is not null)
+        {
+            var payload = JsonSerializer.Serialize(batch.EventLog, batch.EventLog.GetType(), JsonOptions);
+            await roomDataService.SaveRoomEventLogAsync(batch.RoomName, payload, token).ConfigureAwait(false);
+        }
 
-        if (!string.IsNullOrWhiteSpace(batch.MapViewJson))
-            await roomDataService.SaveMapViewAsync(batch.RoomName, batch.MapViewJson!, token).ConfigureAwait(false);
+        if (batch.MapView is not null)
+        {
+            var payload = JsonSerializer.Serialize(batch.MapView, batch.MapView.GetType(), JsonOptions);
+            await roomDataService.SaveMapViewAsync(batch.RoomName, payload, token).ConfigureAwait(false);
+        }
     }
 
     private static void ApplyUpserts(IBulkWriter<RoomObjectDocument> writer, IReadOnlyList<RoomObjectUpsert> upserts)
@@ -40,11 +48,7 @@ internal sealed class RoomMutationDispatcher(
         if (upserts.Count == 0) return;
         foreach (var upsert in upserts)
         {
-            if (string.IsNullOrWhiteSpace(upsert.DocumentJson))
-                continue;
-
-            var document = ParseDocument(upsert.DocumentJson);
-            var entity = BsonSerializer.Deserialize<RoomObjectDocument>(document);
+            var entity = RoomContractMapper.MapRoomObjectDocument(upsert.Document);
             writer.Insert(entity);
         }
     }
@@ -54,10 +58,13 @@ internal sealed class RoomMutationDispatcher(
         if (patches.Count == 0) return;
         foreach (var patch in patches)
         {
-            if (string.IsNullOrWhiteSpace(patch.ObjectId) || string.IsNullOrWhiteSpace(patch.UpdateJson))
+            if (string.IsNullOrWhiteSpace(patch.ObjectId))
                 continue;
 
-            var delta = ParseDocument(patch.UpdateJson);
+            var delta = BuildPatchDocument(patch.Payload);
+            if (delta is null || delta.ElementCount == 0)
+                continue;
+
             writer.Update(patch.ObjectId, delta);
         }
     }
@@ -73,23 +80,26 @@ internal sealed class RoomMutationDispatcher(
         }
     }
 
-    private async Task ApplyRoomInfoPatchAsync(string roomName, RoomInfoPatch patch, CancellationToken token)
+    private async Task ApplyRoomInfoPatchAsync(string roomName, RoomInfoPatchPayload patch, CancellationToken token)
     {
-        if (string.IsNullOrWhiteSpace(patch.UpdateJson))
+        if (!patch.HasChanges)
             return;
 
-        var delta = ParseDocument(patch.UpdateJson);
+        var delta = RoomContractMapper.CreateRoomInfoPatchDocument(patch);
+        if (delta.ElementCount == 0)
+            return;
+
         var roomsWriter = bulkWriterFactory.CreateRoomsWriter();
         roomsWriter.Update(roomName, delta);
         if (roomsWriter.HasPendingOperations)
             await roomsWriter.ExecuteAsync(token).ConfigureAwait(false);
     }
 
-    private static BsonDocument ParseDocument(string json)
-    {
-        if (string.IsNullOrWhiteSpace(json))
-            return [];
-
-        return BsonDocument.Parse(json);
-    }
+    private static BsonDocument? BuildPatchDocument(IRoomObjectPatchPayload payload)
+        => payload switch
+        {
+            RoomObjectPatchPayload typed => RoomContractMapper.CreateRoomObjectPatchDocument(typed),
+            BsonRoomObjectPatchPayload legacy => legacy.Document.DeepClone().AsBsonDocument,
+            _ => null
+        };
 }

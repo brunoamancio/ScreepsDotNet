@@ -1,15 +1,16 @@
 namespace ScreepsDotNet.Driver.Contracts;
 
 using System.Collections.Generic;
+using ScreepsDotNet.Common.Types;
 
 /// <summary>
 /// Aggregated cross-room data consumed by the global processor/engine.
 /// </summary>
 public sealed record GlobalSnapshot(
     int GameTime,
-    IReadOnlyList<RoomObjectState> MovingCreeps,
+    IReadOnlyList<RoomObjectSnapshot> MovingCreeps,
     IReadOnlyDictionary<string, RoomInfoSnapshot> AccessibleRooms,
-    IReadOnlyList<RoomObjectState> SpecialRoomObjects,
+    IReadOnlyList<RoomObjectSnapshot> SpecialRoomObjects,
     GlobalMarketSnapshot Market);
 
 /// <summary>
@@ -34,8 +35,7 @@ public sealed record MarketOrderSnapshot(
     int TotalAmount,
     int? CreatedTick,
     long? CreatedTimestamp,
-    bool Active,
-    string RawJson);
+    bool Active);
 
 public sealed record PowerCreepSnapshot(
     string Id,
@@ -49,12 +49,37 @@ public sealed record PowerCreepSnapshot(
     long? SpawnCooldownTime,
     long? DeleteTime,
     string? Shard,
-    IReadOnlyDictionary<string, PowerCreepPowerSnapshot> Powers,
-    string RawJson);
+    IReadOnlyDictionary<string, PowerCreepPowerSnapshot> Powers);
 
 public sealed record PowerCreepPowerSnapshot(int Level);
 
 public sealed record GlobalUserIntentSnapshot(
     string Id,
     string? UserId,
-    string IntentsJson);
+    IReadOnlyList<IntentRecord> Intents);
+
+public sealed record IntentRecord(
+    string Name,
+    IReadOnlyList<IntentArgument> Arguments);
+
+public sealed record IntentArgument(
+    IReadOnlyDictionary<string, IntentFieldValue> Fields);
+
+public enum IntentFieldValueKind
+{
+    Text,
+    Number,
+    Boolean,
+    TextArray,
+    NumberArray,
+    BodyPartArray
+}
+
+public sealed record IntentFieldValue(
+    IntentFieldValueKind Kind,
+    string? TextValue = null,
+    int? NumberValue = null,
+    bool? BooleanValue = null,
+    IReadOnlyList<string>? TextValues = null,
+    IReadOnlyList<int>? NumberValues = null,
+    IReadOnlyList<BodyPartType>? BodyParts = null);

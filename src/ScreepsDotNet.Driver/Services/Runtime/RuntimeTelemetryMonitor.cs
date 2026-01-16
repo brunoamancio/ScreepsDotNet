@@ -5,6 +5,7 @@ using ScreepsDotNet.Driver.Abstractions.Eventing;
 using ScreepsDotNet.Driver.Abstractions.Loops;
 using ScreepsDotNet.Driver.Abstractions.Runtime;
 using ScreepsDotNet.Driver.Abstractions.Notifications;
+using ScreepsDotNet.Driver.Constants;
 
 namespace ScreepsDotNet.Driver.Services.Runtime;
 
@@ -88,7 +89,7 @@ internal sealed class RuntimeTelemetryMonitor : IRuntimeWatchdog, IDisposable
 
         state.LastNotification = now;
         var message = $"Watchdog: runtime for {payload.UserId} failed {consecutive} consecutive ticks (timedOut={payload.TimedOut}, scriptError={payload.ScriptError}) at tick {payload.GameTime}.";
-        await _notifications.SendNotificationAsync(payload.UserId, message, new NotificationOptions(15, "watchdog")).ConfigureAwait(false);
+        await _notifications.SendNotificationAsync(payload.UserId, message, new NotificationOptions(15, NotificationTypes.Watchdog)).ConfigureAwait(false);
     }
 
     public bool TryConsumeColdStartRequest(string userId)

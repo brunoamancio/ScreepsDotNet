@@ -2,8 +2,7 @@ using ScreepsDotNet.Common.Constants;
 
 namespace ScreepsDotNet.Engine.Processors.Steps;
 
-using System.Collections.Generic;
-using System.Text.Json;
+using ScreepsDotNet.Driver.Contracts;
 using ScreepsDotNet.Engine.Processors;
 
 /// <summary>
@@ -12,8 +11,6 @@ using ScreepsDotNet.Engine.Processors;
 /// </summary>
 internal sealed class CreepLifecycleStep : IRoomProcessorStep
 {
-    private readonly JsonSerializerOptions _jsonOptions = new(JsonSerializerDefaults.Web);
-
     public Task ExecuteAsync(RoomProcessorContext context, CancellationToken token = default)
     {
         foreach (var obj in context.State.Objects.Values)
@@ -21,30 +18,35 @@ internal sealed class CreepLifecycleStep : IRoomProcessorStep
             if (obj.Type is not (RoomObjectTypes.Creep or RoomObjectTypes.PowerCreep))
                 continue;
 
-            var patches = new Dictionary<string, object?>(StringComparer.Ordinal);
-
+            int? ticksToLivePatch = null;
+            RoomObjectActionLogPatch? actionLogPatch = null;
             if (obj.TicksToLive is > 0)
             {
                 var next = obj.TicksToLive.Value - 1;
-                patches["ticksToLive"] = next;
+                ticksToLivePatch = next;
 
                 if (next == 0)
                 {
-                    patches["_actionLog"] = new
-                    {
-                        die = new { time = context.State.GameTime }
-                    };
+                    actionLogPatch = new RoomObjectActionLogPatch(
+                        new RoomObjectActionLogDie(context.State.GameTime));
                 }
             }
 
-            if (obj.Fatigue is > 0 && obj.Store.TryGetValue("move", out var moveParts) && moveParts == 0)
-                patches["fatigue"] = 0;
+            int? fatiguePatch = null;
+            if (obj.Fatigue is > 0 && (obj.MoveBodyParts ?? 0) == 0)
+                fatiguePatch = 0;
 
-            if (patches.Count == 0)
+            if (ticksToLivePatch is null && actionLogPatch is null && fatiguePatch is null)
                 continue;
 
-            var json = JsonSerializer.Serialize(patches, _jsonOptions);
-            context.MutationWriter.PatchJson(obj.Id, json);
+            var patch = new RoomObjectPatchPayload
+            {
+                TicksToLive = ticksToLivePatch,
+                ActionLog = actionLogPatch,
+                Fatigue = fatiguePatch
+            };
+
+            context.MutationWriter.Patch(obj.Id, patch);
         }
 
         return Task.CompletedTask;

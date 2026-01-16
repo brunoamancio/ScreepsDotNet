@@ -1,4 +1,5 @@
-﻿using ScreepsDotNet.Common.Constants;
+﻿using ScreepsDotNet.Common.Extensions;
+using ScreepsDotNet.Common.Types;
 
 namespace ScreepsDotNet.Backend.Http.Tests.Integration;
 

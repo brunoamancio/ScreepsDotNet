@@ -1,3 +1,5 @@
+using ScreepsDotNet.Driver.Constants;
+
 namespace ScreepsDotNet.Driver.Abstractions.Notifications;
 
 public interface INotificationService
@@ -10,4 +12,4 @@ public interface INotificationService
 
 public sealed record ConsoleMessagesPayload(IReadOnlyList<string> Log, IReadOnlyList<string> Results);
 
-public sealed record NotificationOptions(int GroupIntervalMinutes = 0, string Type = "msg");
+public sealed record NotificationOptions(int GroupIntervalMinutes = 0, string Type = NotificationTypes.Default);

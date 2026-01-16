@@ -54,10 +54,9 @@ public sealed class RoomSnapshotProviderTests
             room,
             gameTime,
             null,
-            new Dictionary<string, RoomObjectState>(),
+            new Dictionary<string, RoomObjectSnapshot>(),
             new Dictionary<string, UserState>(),
             null,
             new Dictionary<string, RoomTerrainSnapshot>(),
-            [],
-            string.Empty);
+            []);
 }

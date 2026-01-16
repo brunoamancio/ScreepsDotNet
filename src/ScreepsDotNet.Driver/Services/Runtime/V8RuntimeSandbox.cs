@@ -7,6 +7,7 @@ using Microsoft.Extensions.Logging;
 using ScreepsDotNet.Common;
 using ScreepsDotNet.Driver.Abstractions.Runtime;
 using ScreepsDotNet.Driver.Abstractions.Users;
+using ScreepsDotNet.Driver.Constants;
 
 namespace ScreepsDotNet.Driver.Services.Runtime;
 
@@ -123,7 +124,7 @@ internal sealed class V8RuntimeSandbox(RuntimeSandboxOptions options, ILogger<V8
 
     private static IReadOnlyDictionary<string, string>? ExtractModules(RuntimeExecutionContext context)
     {
-        if (!context.RuntimeData.TryGetValue("modules", out var value) || value is null)
+        if (!context.RuntimeData.TryGetValue(RuntimeContextKeys.Modules, out var value) || value is null)
             return null;
 
         static IReadOnlyDictionary<string, string>? FromEnumerable(IEnumerable<KeyValuePair<string, string>> source)
@@ -162,7 +163,7 @@ internal sealed class V8RuntimeSandbox(RuntimeSandboxOptions options, ILogger<V8
 
     private static string ExtractScript(RuntimeExecutionContext context)
     {
-        if (context.RuntimeData.TryGetValue("script", out var scriptValue) && scriptValue is string script && !string.IsNullOrWhiteSpace(script))
+        if (context.RuntimeData.TryGetValue(RuntimeContextKeys.Script, out var scriptValue) && scriptValue is string script && !string.IsNullOrWhiteSpace(script))
             return script;
 
         throw new InvalidOperationException("RuntimeData.script is required to execute user code.");

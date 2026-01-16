@@ -1,3 +1,4 @@
+using System.Text.Json;
 using MongoDB.Bson;
 using ScreepsDotNet.Driver.Abstractions.Bulk;
 using ScreepsDotNet.Driver.Contracts;
@@ -21,11 +22,11 @@ public sealed class RoomMutationDispatcherTests
         var batch = new RoomMutationBatch(
             RoomName: "W0N0",
             ObjectUpserts: [],
-            ObjectPatches: [new RoomObjectPatch("obj1", """{ "hits": 100 }""")],
+            ObjectPatches: [new RoomObjectPatch("obj1", new RoomObjectPatchPayload { Hits = 100 })],
             ObjectDeletes: ["obj2"],
             RoomInfoPatch: null,
-            MapViewJson: """{ "view": true }""",
-            EventLogJson: """{ "events": [] }""");
+            MapView: new RoomIntentMapView("W0N0", 1, Array.Empty<RoomIntentEvent>()),
+            EventLog: new RoomIntentEventLog("W0N0", 123, Array.Empty<RoomIntentEvent>()));
 
         await dispatcher.ApplyAsync(batch, CancellationToken.None);
 
@@ -38,8 +39,22 @@ public sealed class RoomMutationDispatcherTests
                 Assert.Equal(100, doc["hits"].AsInt32);
             });
         Assert.Contains("obj2", objectsWriter.Removals);
-        Assert.Equal("W0N0:{ \"events\": [] }", roomService.EventLog);
-        Assert.Equal("W0N0:{ \"view\": true }", roomService.MapView);
+        Assert.NotNull(roomService.EventLog);
+        Assert.NotNull(roomService.MapView);
+
+        var eventLogJson = roomService.EventLog!.Split(':', 2)[1];
+        using (var document = JsonDocument.Parse(eventLogJson))
+        {
+            Assert.Equal("W0N0", document.RootElement.GetProperty("room").GetString());
+            Assert.Equal(123, document.RootElement.GetProperty("tick").GetInt32());
+        }
+
+        var mapViewJson = roomService.MapView!.Split(':', 2)[1];
+        using (var document = JsonDocument.Parse(mapViewJson))
+        {
+            Assert.Equal("W0N0", document.RootElement.GetProperty("room").GetString());
+            Assert.Equal(1, document.RootElement.GetProperty("timestamp").GetInt64());
+        }
         Assert.False(roomsWriter.ExecuteCalled);
     }
 
@@ -57,9 +72,9 @@ public sealed class RoomMutationDispatcherTests
             ObjectUpserts: [],
             ObjectPatches: [],
             ObjectDeletes: [],
-            RoomInfoPatch: new RoomInfoPatch("""{ "status": "normal" }"""),
-            MapViewJson: null,
-            EventLogJson: null);
+            RoomInfoPatch: new RoomInfoPatchPayload { Status = "normal" },
+            MapView: null,
+            EventLog: null);
 
         await dispatcher.ApplyAsync(batch, CancellationToken.None);
 

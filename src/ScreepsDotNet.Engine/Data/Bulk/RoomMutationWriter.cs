@@ -1,40 +1,34 @@
 namespace ScreepsDotNet.Engine.Data.Bulk;
 
-using System.Text.Json;
 using ScreepsDotNet.Driver.Abstractions.Rooms;
 using ScreepsDotNet.Driver.Contracts;
 
 internal sealed class RoomMutationWriter(
     string roomName,
-    IRoomMutationDispatcher dispatcher,
-    JsonSerializerOptions? serializerOptions = null) : IRoomMutationWriter
+    IRoomMutationDispatcher dispatcher) : IRoomMutationWriter
 {
     private readonly List<RoomObjectUpsert> _upserts = [];
     private readonly List<RoomObjectPatch> _patches = [];
     private readonly List<string> _removals = [];
-    private readonly JsonSerializerOptions _serializerOptions = serializerOptions ?? new(JsonSerializerDefaults.Web);
 
-    private RoomInfoPatch? _roomInfoPatch;
-    private string? _eventLogJson;
-    private string? _mapViewJson;
+    private RoomInfoPatchPayload? _roomInfoPatch;
+    private IRoomEventLogPayload? _eventLog;
+    private IRoomMapViewPayload? _mapView;
 
-    public void Upsert(object document)
-        => UpsertJson(Serialize(document));
-
-    public void UpsertJson(string documentJson)
+    public void Upsert(RoomObjectSnapshot document)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(documentJson);
-        _upserts.Add(new RoomObjectUpsert(documentJson));
+        ArgumentNullException.ThrowIfNull(document);
+        _upserts.Add(new RoomObjectUpsert(document));
     }
 
-    public void Patch(string objectId, object updateDocument)
-        => PatchJson(objectId, Serialize(updateDocument));
-
-    public void PatchJson(string objectId, string updateJson)
+    public void Patch(string objectId, RoomObjectPatchPayload patch)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(objectId);
-        ArgumentException.ThrowIfNullOrWhiteSpace(updateJson);
-        _patches.Add(new RoomObjectPatch(objectId, updateJson));
+        ArgumentNullException.ThrowIfNull(patch);
+        if (!patch.HasChanges)
+            return;
+
+        _patches.Add(new RoomObjectPatch(objectId, patch));
     }
 
     public void Remove(string objectId)
@@ -45,22 +39,20 @@ internal sealed class RoomMutationWriter(
         _removals.Add(objectId);
     }
 
-    public void SetRoomInfoPatch(object updateDocument)
-        => SetRoomInfoPatchJson(Serialize(updateDocument));
-
-    public void SetRoomInfoPatchJson(string updateJson)
+    public void SetRoomInfoPatch(RoomInfoPatchPayload patch)
     {
-        if (string.IsNullOrWhiteSpace(updateJson))
+        ArgumentNullException.ThrowIfNull(patch);
+        if (!patch.HasChanges)
             return;
 
-        _roomInfoPatch = new RoomInfoPatch(updateJson);
+        _roomInfoPatch = patch;
     }
 
-    public void SetEventLog(string? eventLogJson)
-        => _eventLogJson = string.IsNullOrWhiteSpace(eventLogJson) ? null : eventLogJson;
+    public void SetEventLog(IRoomEventLogPayload? eventLog)
+        => _eventLog = eventLog;
 
-    public void SetMapView(string? mapViewJson)
-        => _mapViewJson = string.IsNullOrWhiteSpace(mapViewJson) ? null : mapViewJson;
+    public void SetMapView(IRoomMapViewPayload? mapView)
+        => _mapView = mapView;
 
     public async Task FlushAsync(CancellationToken token = default)
     {
@@ -68,8 +60,8 @@ internal sealed class RoomMutationWriter(
             _patches.Count == 0 &&
             _removals.Count == 0 &&
             _roomInfoPatch is null &&
-            string.IsNullOrWhiteSpace(_eventLogJson) &&
-            string.IsNullOrWhiteSpace(_mapViewJson))
+            _eventLog is null &&
+            _mapView is null)
             return;
 
         var batch = new RoomMutationBatch(
@@ -78,8 +70,8 @@ internal sealed class RoomMutationWriter(
             _patches.ToArray(),
             _removals.ToArray(),
             _roomInfoPatch,
-            _mapViewJson,
-            _eventLogJson);
+            _mapView,
+            _eventLog);
 
         await dispatcher.ApplyAsync(batch, token).ConfigureAwait(false);
         Reset();
@@ -91,15 +83,7 @@ internal sealed class RoomMutationWriter(
         _patches.Clear();
         _removals.Clear();
         _roomInfoPatch = null;
-        _eventLogJson = null;
-        _mapViewJson = null;
+        _eventLog = null;
+        _mapView = null;
     }
-
-    private string Serialize(object document)
-        => document switch
-        {
-            null => string.Empty,
-            string json => json,
-            _ => JsonSerializer.Serialize(document, _serializerOptions)
-        };
 }

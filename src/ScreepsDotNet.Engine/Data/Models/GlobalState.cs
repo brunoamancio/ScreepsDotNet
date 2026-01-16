@@ -7,9 +7,9 @@ using ScreepsDotNet.Driver.Contracts;
 /// </summary>
 public sealed record GlobalState(
     int GameTime,
-    IReadOnlyList<RoomObjectState> MovingCreeps,
+    IReadOnlyList<RoomObjectSnapshot> MovingCreeps,
     IReadOnlyDictionary<string, RoomInfoSnapshot> AccessibleRooms,
-    IReadOnlyList<RoomObjectState> SpecialRoomObjects,
+    IReadOnlyList<RoomObjectSnapshot> SpecialRoomObjects,
     GlobalMarketSnapshot Market)
 {
     public static GlobalState FromSnapshot(GlobalSnapshot snapshot)
