@@ -1,5 +1,6 @@
 ﻿namespace ScreepsDotNet.Storage.MongoRedis.Services;
 
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -12,11 +13,18 @@ using ScreepsDotNet.Backend.Core.Models.Bots;
 using ScreepsDotNet.Backend.Core.Repositories;
 using ScreepsDotNet.Backend.Core.Services;
 using ScreepsDotNet.Common.Constants;
+using ScreepsDotNet.Common.Structures;
 using ScreepsDotNet.Storage.MongoRedis.Providers;
 using ScreepsDotNet.Storage.MongoRedis.Repositories.Documents;
 
-public sealed class MongoBotControlService(IMongoDatabaseProvider databaseProvider, IBotDefinitionProvider botDefinitionProvider, IUserMemoryRepository userMemoryRepository,
-                                           IUserRespawnService userRespawnService, IWorldMetadataRepository worldMetadata, ILogger<MongoBotControlService> logger)
+public sealed class MongoBotControlService(
+    IMongoDatabaseProvider databaseProvider,
+    IBotDefinitionProvider botDefinitionProvider,
+    IUserMemoryRepository userMemoryRepository,
+    IUserRespawnService userRespawnService,
+    IWorldMetadataRepository worldMetadata,
+    IStructureBlueprintProvider blueprintProvider,
+    ILogger<MongoBotControlService> logger)
     : IBotControlService
 {
     private const int DefaultCpuLimit = 100;
@@ -29,6 +37,7 @@ public sealed class MongoBotControlService(IMongoDatabaseProvider databaseProvid
     private readonly IMongoCollection<RoomDocument> _roomsCollection = databaseProvider.GetCollection<RoomDocument>(databaseProvider.Settings.RoomsCollection);
     private readonly IMongoCollection<RoomObjectDocument> _roomObjectsCollection = databaseProvider.GetCollection<RoomObjectDocument>(databaseProvider.Settings.RoomObjectsCollection);
     private readonly IMongoCollection<RoomTerrainDocument> _roomTerrainCollection = databaseProvider.GetCollection<RoomTerrainDocument>(databaseProvider.Settings.RoomTerrainCollection);
+    private readonly IStructureBlueprintProvider _blueprintProvider = blueprintProvider;
     private readonly Random _random = new();
 
     public async Task<BotSpawnResult> SpawnAsync(string botName, string roomName, string? shardName, BotSpawnOptions options, CancellationToken cancellationToken = default)
@@ -278,6 +287,10 @@ public sealed class MongoBotControlService(IMongoDatabaseProvider databaseProvid
 
     private async Task InsertSpawnAsync(string roomName, string? shardName, string userId, int x, int y, CancellationToken cancellationToken)
     {
+        var blueprint = _blueprintProvider.GetRequired(RoomObjectTypes.Spawn);
+        var store = CloneStoreWithEnergy(blueprint, ScreepsGameConstants.SpawnInitialEnergy);
+        var storeCapacity = CloneStoreCapacity(blueprint);
+
         var spawnDoc = new RoomObjectDocument
         {
             Id = ObjectId.GenerateNewId(),
@@ -288,12 +301,12 @@ public sealed class MongoBotControlService(IMongoDatabaseProvider databaseProvid
             Y = y,
             Name = "Spawn1",
             UserId = userId,
-            Store = new Dictionary<string, int> { [RoomDocumentFields.RoomObject.Store.Energy] = ScreepsGameConstants.SpawnInitialEnergy },
-            StoreCapacityResource = new Dictionary<string, int> { [RoomDocumentFields.RoomObject.Store.Energy] = ScreepsGameConstants.SpawnEnergyCapacity },
-            Hits = ScreepsGameConstants.SpawnHits,
-            HitsMax = ScreepsGameConstants.SpawnHits,
+            Store = store,
+            StoreCapacityResource = storeCapacity,
+            Hits = blueprint.Hits.Hits,
+            HitsMax = blueprint.Hits.HitsMax,
             Spawning = BsonNull.Value,
-            NotifyWhenAttacked = false
+            NotifyWhenAttacked = blueprint.Ownership.NotifyWhenAttacked
         };
 
         await _roomObjectsCollection.InsertOneAsync(spawnDoc, cancellationToken: cancellationToken).ConfigureAwait(false);
@@ -367,4 +380,16 @@ public sealed class MongoBotControlService(IMongoDatabaseProvider databaseProvid
         "Alpha", "Bravo", "Charlie", "Delta", "Echo", "Foxtrot", "Nova", "Orion", "Vega", "Atlas",
         "Comet", "Lumen", "Titan", "Helix", "Aria", "Nimbus", "Quark", "Zephyr", "Lynx", "Phoenix"
     ];
+
+    private static Dictionary<string, int> CloneStoreWithEnergy(StructureBlueprint blueprint, int energyOverride)
+    {
+        var store = new Dictionary<string, int>(blueprint.Store.InitialStore, StringComparer.Ordinal)
+        {
+            [RoomDocumentFields.RoomObject.Store.Energy] = energyOverride
+        };
+        return store;
+    }
+
+    private static Dictionary<string, int> CloneStoreCapacity(StructureBlueprint blueprint)
+        => new(blueprint.Store.StoreCapacityResource, StringComparer.Ordinal);
 }

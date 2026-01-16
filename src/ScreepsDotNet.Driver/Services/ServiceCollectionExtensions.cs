@@ -12,6 +12,7 @@ using ScreepsDotNet.Driver.Abstractions.Queues;
 using ScreepsDotNet.Driver.Abstractions.Rooms;
 using ScreepsDotNet.Driver.Abstractions.Runtime;
 using ScreepsDotNet.Driver.Abstractions.Users;
+using ScreepsDotNet.Common.Structures;
 using ScreepsDotNet.Driver.Services.Bulk;
 using ScreepsDotNet.Driver.Services.History;
 using ScreepsDotNet.Driver.Services.Loops;
@@ -74,6 +75,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IRunnerLoop, RunnerLoop>();
         services.AddSingleton<IProcessorLoop, ProcessorLoop>();
         services.AddSingleton<IDriverHost, DriverHost>();
+        services.AddSingleton<IStructureBlueprintProvider, StructureBlueprintProvider>();
         return services;
     }
 }

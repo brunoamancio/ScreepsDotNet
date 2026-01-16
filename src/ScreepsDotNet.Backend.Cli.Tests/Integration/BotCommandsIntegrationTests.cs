@@ -8,6 +8,7 @@ using ScreepsDotNet.Backend.Cli.Commands.Map;
 using ScreepsDotNet.Backend.Core.Constants;
 using ScreepsDotNet.Backend.Core.Models.Bots;
 using ScreepsDotNet.Backend.Core.Services;
+using ScreepsDotNet.Common.Structures;
 using ScreepsDotNet.Storage.MongoRedis.Repositories;
 using ScreepsDotNet.Storage.MongoRedis.Repositories.Documents;
 using ScreepsDotNet.Storage.MongoRedis.Services;
@@ -135,11 +136,13 @@ public sealed class BotCommandsIntegrationTests(MongoMapIntegrationFixture fixtu
         var userWorldRepository = new MongoUserWorldRepository(databaseProvider);
         var respawnService = new MongoUserRespawnService(databaseProvider, userWorldRepository);
         var worldMetadataRepository = new MongoWorldMetadataRepository(databaseProvider);
+        var blueprintProvider = new StructureBlueprintProvider();
         return new MongoBotControlService(databaseProvider,
                                           provider,
                                           memoryRepository,
                                           respawnService,
                                           worldMetadataRepository,
+                                          blueprintProvider,
                                           NullLogger<MongoBotControlService>.Instance);
     }
 

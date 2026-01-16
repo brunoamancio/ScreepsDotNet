@@ -8,6 +8,7 @@ using ScreepsDotNet.Backend.Http.Authentication;
 using ScreepsDotNet.Backend.Http.Endpoints;
 using ScreepsDotNet.Backend.Http.Health;
 using ScreepsDotNet.Backend.Http.Rendering;
+using ScreepsDotNet.Common.Structures;
 using ScreepsDotNet.Storage.MongoRedis.Adapters;
 using ScreepsDotNet.Storage.MongoRedis.Options;
 using ScreepsDotNet.Storage.MongoRedis.Providers;
@@ -67,6 +68,7 @@ builder.Services.AddSingleton<IBadgeSvgGenerator, BadgeSvgGenerator>();
 builder.Services.AddSingleton<IVersionInfoProvider, VersionInfoProvider>();
 builder.Services.AddSingleton<ITokenService, RedisTokenService>();
 builder.Services.AddSingleton<ISeedDataService, SeedDataService>();
+builder.Services.AddSingleton<IStructureBlueprintProvider, StructureBlueprintProvider>();
 builder.Services.AddScoped<ICurrentUserAccessor, CurrentUserAccessor>();
 builder.Services.AddHealthChecks().AddCheck<StorageHealthCheck>(StorageHealthCheck.HealthCheckName);
 

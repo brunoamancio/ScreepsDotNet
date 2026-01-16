@@ -12,10 +12,16 @@ using ScreepsDotNet.Backend.Core.Models;
 using ScreepsDotNet.Backend.Core.Repositories;
 using ScreepsDotNet.Backend.Core.Services;
 using ScreepsDotNet.Common.Constants;
+using ScreepsDotNet.Common.Structures;
 using ScreepsDotNet.Storage.MongoRedis.Providers;
 using ScreepsDotNet.Storage.MongoRedis.Repositories.Documents;
 
-public sealed class MongoPlayerSpawnService(IMongoDatabaseProvider databaseProvider, IUserRepository userRepository, IWorldMetadataRepository worldMetadata, ILogger<MongoPlayerSpawnService> logger)
+public sealed class MongoPlayerSpawnService(
+    IMongoDatabaseProvider databaseProvider,
+    IUserRepository userRepository,
+    IWorldMetadataRepository worldMetadata,
+    IStructureBlueprintProvider blueprintProvider,
+    ILogger<MongoPlayerSpawnService> logger)
     : IPlayerSpawnService
 {
     private const int DefaultSafeModeDuration = 20_000;
@@ -31,6 +37,7 @@ public sealed class MongoPlayerSpawnService(IMongoDatabaseProvider databaseProvi
     private readonly IMongoCollection<BsonDocument> _roomsCollection = databaseProvider.GetCollection<BsonDocument>(databaseProvider.Settings.RoomsCollection);
     private readonly IMongoCollection<BsonDocument> _roomObjectsCollection = databaseProvider.GetCollection<BsonDocument>(databaseProvider.Settings.RoomObjectsCollection);
     private readonly IMongoCollection<RoomTerrainDocument> _roomTerrainCollection = databaseProvider.GetCollection<RoomTerrainDocument>(databaseProvider.Settings.RoomTerrainCollection);
+    private readonly IStructureBlueprintProvider _blueprintProvider = blueprintProvider;
 
     public async Task<PlaceSpawnResult> PlaceSpawnAsync(string userId, PlaceSpawnRequest request, CancellationToken cancellationToken = default)
     {
@@ -206,6 +213,10 @@ public sealed class MongoPlayerSpawnService(IMongoDatabaseProvider databaseProvi
 
     private async Task InsertSpawnAsync(PlaceSpawnRequest request, string room, string? shard, string userId, CancellationToken cancellationToken)
     {
+        var blueprint = _blueprintProvider.GetRequired(RoomObjectTypes.Spawn);
+        var store = CloneStoreWithEnergy(blueprint, ScreepsGameConstants.SpawnInitialEnergy);
+        var storeCapacity = CloneStoreCapacity(blueprint);
+
         var spawnDoc = new BsonDocument
         {
             [RoomDocumentFields.RoomObject.Id] = ObjectId.GenerateNewId(),
@@ -215,17 +226,37 @@ public sealed class MongoPlayerSpawnService(IMongoDatabaseProvider databaseProvi
             [RoomDocumentFields.RoomObject.Y] = request.Y,
             [RoomDocumentFields.RoomObject.Name] = request.Name ?? "Spawn1",
             [RoomDocumentFields.RoomObject.User] = userId,
-            [RoomDocumentFields.RoomObject.Store.Root] = new BsonDocument(RoomDocumentFields.RoomObject.Store.Energy, ScreepsGameConstants.SpawnInitialEnergy),
-            [RoomDocumentFields.RoomObject.Store.CapacityResource] = new BsonDocument(RoomDocumentFields.RoomObject.Store.Energy, ScreepsGameConstants.SpawnEnergyCapacity),
-            [RoomDocumentFields.RoomObject.Hits] = ScreepsGameConstants.SpawnHits,
-            [RoomDocumentFields.RoomObject.HitsMax] = ScreepsGameConstants.SpawnHits,
+            [RoomDocumentFields.RoomObject.Store.Root] = ToBsonDocument(store),
+            [RoomDocumentFields.RoomObject.Store.CapacityResource] = ToBsonDocument(storeCapacity),
+            [RoomDocumentFields.RoomObject.Hits] = blueprint.Hits.Hits,
+            [RoomDocumentFields.RoomObject.HitsMax] = blueprint.Hits.HitsMax,
             [RoomDocumentFields.RoomObject.Spawning] = BsonNull.Value,
-            [RoomDocumentFields.RoomObject.NotifyWhenAttacked] = true
+            [RoomDocumentFields.RoomObject.NotifyWhenAttacked] = blueprint.Ownership.NotifyWhenAttacked
         };
         if (!string.IsNullOrWhiteSpace(shard))
             spawnDoc[RoomDocumentFields.RoomObject.Shard] = shard;
 
         await _roomObjectsCollection.InsertOneAsync(spawnDoc, cancellationToken: cancellationToken).ConfigureAwait(false);
+    }
+
+    private static Dictionary<string, int> CloneStoreWithEnergy(StructureBlueprint blueprint, int energyOverride)
+    {
+        var store = new Dictionary<string, int>(blueprint.Store.InitialStore, StringComparer.Ordinal)
+        {
+            [RoomDocumentFields.RoomObject.Store.Energy] = energyOverride
+        };
+        return store;
+    }
+
+    private static Dictionary<string, int> CloneStoreCapacity(StructureBlueprint blueprint)
+        => new(blueprint.Store.StoreCapacityResource, StringComparer.Ordinal);
+
+    private static BsonDocument ToBsonDocument(IReadOnlyDictionary<string, int> values)
+    {
+        var document = new BsonDocument();
+        foreach (var (key, value) in values)
+            document[key] = value;
+        return document;
     }
 
     private static FilterDefinition<RoomTerrainDocument> BuildTerrainFilter(string room, string? shard)
