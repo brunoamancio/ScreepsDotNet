@@ -97,7 +97,7 @@ public sealed class InterRoomSnapshotBuilderTests
             {
                 Id = ObjectId.Parse("64c19d382c00000000000001"),
                 UserId = "userA",
-                Type = "sell",
+                Type = MarketOrderTypes.Sell,
                 ResourceType = "energy",
                 Price = 1000,
                 Amount = 100,

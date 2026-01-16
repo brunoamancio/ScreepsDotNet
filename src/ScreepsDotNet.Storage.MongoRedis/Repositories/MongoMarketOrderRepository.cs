@@ -5,6 +5,7 @@ using System.Linq;
 using MongoDB.Driver;
 using ScreepsDotNet.Backend.Core.Models;
 using ScreepsDotNet.Backend.Core.Repositories;
+using ScreepsDotNet.Common.Constants;
 using ScreepsDotNet.Storage.MongoRedis.Providers;
 using ScreepsDotNet.Storage.MongoRedis.Repositories.Documents;
 
@@ -25,8 +26,8 @@ public sealed class MongoMarketOrderRepository(IMongoDatabaseProvider databasePr
         return documents.Where(doc => !string.IsNullOrWhiteSpace(doc.ResourceType))
                         .GroupBy(doc => doc.ResourceType!, StringComparer.OrdinalIgnoreCase)
                         .Select(group => {
-                            var buying = group.Count(doc => string.Equals(doc.Type, "buy", StringComparison.OrdinalIgnoreCase));
-                            var selling = group.Count(doc => string.Equals(doc.Type, "sell", StringComparison.OrdinalIgnoreCase));
+                            var buying = group.Count(doc => string.Equals(doc.Type, MarketOrderTypes.Buy, StringComparison.OrdinalIgnoreCase));
+                            var selling = group.Count(doc => string.Equals(doc.Type, MarketOrderTypes.Sell, StringComparison.OrdinalIgnoreCase));
                             return new MarketOrderSummary(group.Key, group.Count(), buying, selling);
                         })
                         .OrderBy(summary => summary.ResourceType, StringComparer.OrdinalIgnoreCase)

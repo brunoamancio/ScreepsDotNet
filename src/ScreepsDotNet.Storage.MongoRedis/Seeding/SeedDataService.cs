@@ -8,6 +8,7 @@ using MongoDB.Driver;
 using ScreepsDotNet.Backend.Core.Constants;
 using ScreepsDotNet.Backend.Core.Seeding;
 using ScreepsDotNet.Common;
+using ScreepsDotNet.Common.Constants;
 using ScreepsDotNet.Storage.MongoRedis.Repositories.Documents;
 
 public sealed class SeedDataService : ISeedDataService
@@ -316,7 +317,7 @@ public sealed class SeedDataService : ISeedDataService
         var startRoom = new RoomDocument
         {
             Id = SeedDataDefaults.World.StartRoom,
-            Status = "normal",
+            Status = RoomDocumentFields.RoomStatusValues.Normal,
             Novice = false,
             RespawnArea = false,
             Owner = SeedDataDefaults.User.Username,
@@ -330,7 +331,7 @@ public sealed class SeedDataService : ISeedDataService
         var secondaryRoom = new RoomDocument
         {
             Id = SeedDataDefaults.World.SecondaryRoom,
-            Status = "out of borders",
+            Status = RoomDocumentFields.RoomStatusValues.OutOfBorders,
             Novice = false,
             RespawnArea = false,
             Owner = null,
@@ -345,7 +346,7 @@ public sealed class SeedDataService : ISeedDataService
         {
             Id = SeedDataDefaults.World.SecondaryShardRoom,
             Shard = SeedDataDefaults.World.SecondaryShardName,
-            Status = "normal",
+            Status = RoomDocumentFields.RoomStatusValues.Normal,
             Novice = false,
             RespawnArea = false,
             Owner = null,
@@ -360,7 +361,7 @@ public sealed class SeedDataService : ISeedDataService
         {
             Id = SeedDataDefaults.Bots.SecondaryShardRoom,
             Shard = SeedDataDefaults.World.SecondaryShardName,
-            Status = "normal",
+            Status = RoomDocumentFields.RoomStatusValues.Normal,
             Novice = false,
             RespawnArea = false,
             Controller = new RoomControllerDocument { Level = 0 },
@@ -371,7 +372,7 @@ public sealed class SeedDataService : ISeedDataService
         {
             Id = SeedDataDefaults.Strongholds.SecondaryShardRoom,
             Shard = SeedDataDefaults.World.SecondaryShardName,
-            Status = "normal",
+            Status = RoomDocumentFields.RoomStatusValues.Normal,
             Novice = false,
             RespawnArea = false,
             Controller = new RoomControllerDocument { Level = 0 },
@@ -382,7 +383,7 @@ public sealed class SeedDataService : ISeedDataService
         {
             Id = SeedDataDefaults.Intents.SecondaryShardRoom,
             Shard = SeedDataDefaults.World.SecondaryShardName,
-            Status = "normal",
+            Status = RoomDocumentFields.RoomStatusValues.Normal,
             Novice = false,
             RespawnArea = false,
             Controller = new RoomControllerDocument { Level = 0 },
@@ -572,7 +573,7 @@ public sealed class SeedDataService : ISeedDataService
             {
                 new BsonDocument
                 {
-                    ["message"] = "Seed message",
+                    [UserDocumentFields.NotificationFields.Message] = "Seed message",
                     ["groupInterval"] = 5
                 }
             })
@@ -591,7 +592,7 @@ public sealed class SeedDataService : ISeedDataService
             UserId = SeedDataDefaults.Messaging.RespondentId,
             RespondentId = SeedDataDefaults.User.Id,
             Date = now,
-            Type = "out",
+            Type = UserMessagingConstants.MessageTypes.Outgoing,
             Text = SeedDataDefaults.Messaging.SampleText,
             Unread = false
         };
@@ -602,7 +603,7 @@ public sealed class SeedDataService : ISeedDataService
             UserId = SeedDataDefaults.User.Id,
             RespondentId = SeedDataDefaults.Messaging.RespondentId,
             Date = now,
-            Type = "in",
+            Type = UserMessagingConstants.MessageTypes.Incoming,
             Text = SeedDataDefaults.Messaging.SampleText,
             Unread = true,
             OutMessageId = outbound.Id
@@ -633,7 +634,7 @@ public sealed class SeedDataService : ISeedDataService
                 Id = ObjectId.GenerateNewId(),
                 Active = true,
                 UserId = SeedDataDefaults.User.Id,
-                Type = "sell",
+                Type = MarketOrderTypes.Sell,
                 RoomName = SeedDataDefaults.World.StartRoom,
                 ResourceType = "energy",
                 Price = 5000,
@@ -648,7 +649,7 @@ public sealed class SeedDataService : ISeedDataService
                 Id = ObjectId.GenerateNewId(),
                 Active = true,
                 UserId = null,
-                Type = "buy",
+                Type = MarketOrderTypes.Buy,
                 RoomName = "W2N2",
                 ResourceType = "energy",
                 Price = 4500,

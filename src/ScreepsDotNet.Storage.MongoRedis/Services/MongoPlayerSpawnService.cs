@@ -11,15 +11,13 @@ using ScreepsDotNet.Backend.Core.Constants;
 using ScreepsDotNet.Backend.Core.Models;
 using ScreepsDotNet.Backend.Core.Repositories;
 using ScreepsDotNet.Backend.Core.Services;
+using ScreepsDotNet.Common.Constants;
 using ScreepsDotNet.Storage.MongoRedis.Providers;
 using ScreepsDotNet.Storage.MongoRedis.Repositories.Documents;
 
 public sealed class MongoPlayerSpawnService(IMongoDatabaseProvider databaseProvider, IUserRepository userRepository, IWorldMetadataRepository worldMetadata, ILogger<MongoPlayerSpawnService> logger)
     : IPlayerSpawnService
 {
-    private const int SpawnEnergyCapacity = 300;
-    private const int SpawnEnergyStart = 300;
-    private const int SpawnHits = 5000;
     private const int DefaultSafeModeDuration = 20_000;
     private const int DefaultInvaderGoal = 1_000_000;
 
@@ -64,20 +62,20 @@ public sealed class MongoPlayerSpawnService(IMongoDatabaseProvider databaseProvi
 
         // Check if already playing
         var objectsCount = await _roomObjectsCollection.CountDocumentsAsync(
-            Builders<BsonDocument>.Filter.Eq("user", userId),
+            Builders<BsonDocument>.Filter.Eq(RoomDocumentFields.RoomObject.User, userId),
             cancellationToken: cancellationToken).ConfigureAwait(false);
         if (objectsCount > 0)
             return new PlaceSpawnResult(PlaceSpawnResultStatus.AlreadyPlaying);
 
         // Validate room and controller
         var controllerFilter = ShardFilterBuilder.ForRoom(bsonFilterBuilder, roomName, shardName) &
-                               bsonFilterBuilder.Eq("type", StructureType.Controller.ToDocumentValue());
+                               bsonFilterBuilder.Eq(RoomDocumentFields.RoomObject.Type, StructureType.Controller.ToDocumentValue());
         var controller = await _roomObjectsCollection.Find(controllerFilter).FirstOrDefaultAsync(cancellationToken).ConfigureAwait(false);
 
         if (controller == null)
             return new PlaceSpawnResult(PlaceSpawnResultStatus.InvalidRoom, "Room has no controller");
 
-        if (controller.Contains("user") && !controller["user"].IsBsonNull)
+        if (controller.Contains(RoomDocumentFields.RoomObject.User) && !controller[RoomDocumentFields.RoomObject.User].IsBsonNull)
             return new PlaceSpawnResult(PlaceSpawnResultStatus.InvalidRoom, "Room is already owned");
 
         // Validate position
@@ -92,8 +90,8 @@ public sealed class MongoPlayerSpawnService(IMongoDatabaseProvider databaseProvi
             return new PlaceSpawnResult(PlaceSpawnResultStatus.InvalidPosition, "Cannot place on wall");
 
         var positionFilter = ShardFilterBuilder.ForRoom(bsonFilterBuilder, roomName, shardName) &
-                             bsonFilterBuilder.Eq("x", request.X) &
-                             bsonFilterBuilder.Eq("y", request.Y);
+                             bsonFilterBuilder.Eq(RoomDocumentFields.RoomObject.X, request.X) &
+                             bsonFilterBuilder.Eq(RoomDocumentFields.RoomObject.Y, request.Y);
         var objectsAtPos = await _roomObjectsCollection.Find(positionFilter)
                                                        .AnyAsync(cancellationToken)
                                                        .ConfigureAwait(false);
@@ -108,19 +106,19 @@ public sealed class MongoPlayerSpawnService(IMongoDatabaseProvider databaseProvi
         // Update controller
         var safeModeExpiry = gameTime + DefaultSafeModeDuration;
         var controllerUpdate = Builders<BsonDocument>.Update
-            .Set("user", userId)
-            .Set("level", 1)
-            .Set("progress", 0)
-            .Set("downgradeTime", (long?)null)
-            .Set("safeMode", safeModeExpiry);
+            .Set(RoomDocumentFields.RoomObject.User, userId)
+            .Set(RoomDocumentFields.Controller.Level, 1)
+            .Set(RoomDocumentFields.Controller.Progress, 0)
+            .Set(RoomDocumentFields.Controller.DowngradeTime, (long?)null)
+            .Set(RoomDocumentFields.Controller.SafeMode, safeModeExpiry);
         await _roomObjectsCollection.UpdateOneAsync(controllerFilter, controllerUpdate, cancellationToken: cancellationToken).ConfigureAwait(false);
 
         // Reset sources
         var sourcesFilter = ShardFilterBuilder.ForRoom(bsonFilterBuilder, roomName, shardName) &
-                            bsonFilterBuilder.Eq("type", StructureType.Source.ToDocumentValue());
+                            bsonFilterBuilder.Eq(RoomDocumentFields.RoomObject.Type, StructureType.Source.ToDocumentValue());
         await _roomObjectsCollection.UpdateManyAsync(
             sourcesFilter,
-            Builders<BsonDocument>.Update.Set("invaderHarvested", 0),
+            Builders<BsonDocument>.Update.Set(RoomDocumentFields.RoomObject.InvaderHarvested, 0),
             cancellationToken: cancellationToken).ConfigureAwait(false);
 
         // Insert spawn
@@ -129,10 +127,10 @@ public sealed class MongoPlayerSpawnService(IMongoDatabaseProvider databaseProvi
         // Update room
         var roomFilter = ShardFilterBuilder.ForRoomId(bsonFilterBuilder, roomName, shardName);
         var roomUpdate = Builders<BsonDocument>.Update
-                                               .Set("status", "normal")
-                                               .Set("invaderGoal", DefaultInvaderGoal);
+                                               .Set(RoomDocumentFields.Info.Status, RoomDocumentFields.RoomStatusValues.Normal)
+                                               .Set(RoomDocumentFields.Info.InvaderGoal, DefaultInvaderGoal);
         if (!string.IsNullOrWhiteSpace(shardName))
-            roomUpdate = roomUpdate.Set("shard", shardName);
+            roomUpdate = roomUpdate.Set(RoomDocumentFields.Info.Shard, shardName);
 
         await _roomsCollection.UpdateOneAsync(
             roomFilter,
@@ -158,44 +156,44 @@ public sealed class MongoPlayerSpawnService(IMongoDatabaseProvider databaseProvi
         var roomFilter = ShardFilterBuilder.ForRoom(filterBuilder, room, shard);
 
         var cleanupFilter = roomFilter &
-                            filterBuilder.Ne("user", BsonNull.Value) &
-                            filterBuilder.In("type", CleanupObjectTypes);
+                            filterBuilder.Ne(RoomDocumentFields.RoomObject.User, BsonNull.Value) &
+                            filterBuilder.In(RoomDocumentFields.RoomObject.Type, CleanupObjectTypes);
 
         await _roomObjectsCollection.DeleteManyAsync(cleanupFilter, cancellationToken).ConfigureAwait(false);
 
         var structuresFilter = roomFilter &
-                               filterBuilder.Ne("user", BsonNull.Value) &
-                               filterBuilder.Exists("hitsMax");
+                               filterBuilder.Ne(RoomDocumentFields.RoomObject.User, BsonNull.Value) &
+                               filterBuilder.Exists(RoomDocumentFields.RoomObject.HitsMax);
 
         var structures = await _roomObjectsCollection.Find(structuresFilter)
                                                      .ToListAsync(cancellationToken)
                                                      .ConfigureAwait(false);
         var ruins = new List<BsonDocument>();
         foreach (var s in structures) {
-            if (s["type"].AsString == StructureType.Controller.ToDocumentValue()) continue;
+            if (s[RoomDocumentFields.RoomObject.Type].AsString == StructureType.Controller.ToDocumentValue()) continue;
 
             var ruin = new BsonDocument
             {
-                ["_id"] = ObjectId.GenerateNewId(),
-                ["type"] = StructureType.Ruin.ToDocumentValue(),
-                ["user"] = s["user"],
-                ["room"] = s["room"],
-                ["x"] = s["x"],
-                ["y"] = s["y"],
-                ["structure"] = new BsonDocument
+                [RoomDocumentFields.RoomObject.Id] = ObjectId.GenerateNewId(),
+                [RoomDocumentFields.RoomObject.Type] = StructureType.Ruin.ToDocumentValue(),
+                [RoomDocumentFields.RoomObject.User] = s[RoomDocumentFields.RoomObject.User],
+                [RoomDocumentFields.RoomObject.Room] = s[RoomDocumentFields.RoomObject.Room],
+                [RoomDocumentFields.RoomObject.X] = s[RoomDocumentFields.RoomObject.X],
+                [RoomDocumentFields.RoomObject.Y] = s[RoomDocumentFields.RoomObject.Y],
+                [RoomDocumentFields.RoomObject.StructureFields.Root] = new BsonDocument
                 {
-                    ["id"] = s["_id"].ToString(),
-                    ["type"] = s["type"],
-                    ["hits"] = 0,
-                    ["hitsMax"] = s["hitsMax"],
-                    ["user"] = s["user"]
+                    [RoomDocumentFields.RoomObject.StructureFields.Id] = s[RoomDocumentFields.RoomObject.Id].ToString(),
+                    [RoomDocumentFields.RoomObject.StructureFields.Type] = s[RoomDocumentFields.RoomObject.Type],
+                    [RoomDocumentFields.RoomObject.StructureFields.Hits] = 0,
+                    [RoomDocumentFields.RoomObject.StructureFields.HitsMax] = s[RoomDocumentFields.RoomObject.HitsMax],
+                    [RoomDocumentFields.RoomObject.StructureFields.User] = s[RoomDocumentFields.RoomObject.User]
                 },
-                ["store"] = s.GetValue("store", new BsonDocument()),
-                ["destroyTime"] = gameTime,
-                ["decayTime"] = gameTime + 100_000
+                [RoomDocumentFields.RoomObject.Store.Root] = s.GetValue(RoomDocumentFields.RoomObject.Store.Root, new BsonDocument()),
+                [RoomDocumentFields.Ruin.DestroyTime] = gameTime,
+                [RoomDocumentFields.Ruin.DecayTime] = gameTime + 100_000
             };
             if (!string.IsNullOrWhiteSpace(shard))
-                ruin["shard"] = shard;
+                ruin[RoomDocumentFields.RoomObject.Shard] = shard;
 
             ruins.Add(ruin);
         }
@@ -210,22 +208,22 @@ public sealed class MongoPlayerSpawnService(IMongoDatabaseProvider databaseProvi
     {
         var spawnDoc = new BsonDocument
         {
-            ["_id"] = ObjectId.GenerateNewId(),
-            ["type"] = StructureType.Spawn.ToDocumentValue(),
-            ["room"] = room,
-            ["x"] = request.X,
-            ["y"] = request.Y,
-            ["name"] = request.Name ?? "Spawn1",
-            ["user"] = userId,
-            ["store"] = new BsonDocument("energy", SpawnEnergyStart),
-            ["storeCapacityResource"] = new BsonDocument("energy", SpawnEnergyCapacity),
-            ["hits"] = SpawnHits,
-            ["hitsMax"] = SpawnHits,
-            ["spawning"] = BsonNull.Value,
-            ["notifyWhenAttacked"] = true
+            [RoomDocumentFields.RoomObject.Id] = ObjectId.GenerateNewId(),
+            [RoomDocumentFields.RoomObject.Type] = StructureType.Spawn.ToDocumentValue(),
+            [RoomDocumentFields.RoomObject.Room] = room,
+            [RoomDocumentFields.RoomObject.X] = request.X,
+            [RoomDocumentFields.RoomObject.Y] = request.Y,
+            [RoomDocumentFields.RoomObject.Name] = request.Name ?? "Spawn1",
+            [RoomDocumentFields.RoomObject.User] = userId,
+            [RoomDocumentFields.RoomObject.Store.Root] = new BsonDocument(RoomDocumentFields.RoomObject.Store.Energy, ScreepsGameConstants.SpawnInitialEnergy),
+            [RoomDocumentFields.RoomObject.Store.CapacityResource] = new BsonDocument(RoomDocumentFields.RoomObject.Store.Energy, ScreepsGameConstants.SpawnEnergyCapacity),
+            [RoomDocumentFields.RoomObject.Hits] = ScreepsGameConstants.SpawnHits,
+            [RoomDocumentFields.RoomObject.HitsMax] = ScreepsGameConstants.SpawnHits,
+            [RoomDocumentFields.RoomObject.Spawning] = BsonNull.Value,
+            [RoomDocumentFields.RoomObject.NotifyWhenAttacked] = true
         };
         if (!string.IsNullOrWhiteSpace(shard))
-            spawnDoc["shard"] = shard;
+            spawnDoc[RoomDocumentFields.RoomObject.Shard] = shard;
 
         await _roomObjectsCollection.InsertOneAsync(spawnDoc, cancellationToken: cancellationToken).ConfigureAwait(false);
     }

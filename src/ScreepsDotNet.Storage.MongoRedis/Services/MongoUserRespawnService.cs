@@ -5,14 +5,11 @@ using MongoDB.Driver;
 using ScreepsDotNet.Backend.Core.Models;
 using ScreepsDotNet.Backend.Core.Repositories;
 using ScreepsDotNet.Backend.Core.Services;
+using ScreepsDotNet.Common.Constants;
 using ScreepsDotNet.Storage.MongoRedis.Providers;
 
 public sealed class MongoUserRespawnService(IMongoDatabaseProvider databaseProvider, IUserWorldRepository userWorldRepository) : IUserRespawnService
 {
-    private const string UserField = "user";
-    private const string IdField = "_id";
-    private const string LastRespawnField = "lastRespawnDate";
-
     private readonly IMongoCollection<BsonDocument> _roomsObjectsCollection = databaseProvider.GetCollection<BsonDocument>(databaseProvider.Settings.RoomObjectsCollection);
     private readonly IMongoCollection<BsonDocument> _usersCollection = databaseProvider.GetCollection<BsonDocument>(databaseProvider.Settings.UsersCollection);
 
@@ -22,7 +19,7 @@ public sealed class MongoUserRespawnService(IMongoDatabaseProvider databaseProvi
         if (status is not UserWorldStatus.Normal and not UserWorldStatus.Lost)
             return UserRespawnResult.InvalidStatus;
 
-        var userFilter = Builders<BsonDocument>.Filter.Eq(IdField, userId);
+        var userFilter = Builders<BsonDocument>.Filter.Eq(UserDocumentFields.Id, userId);
         var userExists = await _usersCollection.Find(userFilter)
                                                .AnyAsync(cancellationToken)
                                                .ConfigureAwait(false);
@@ -30,10 +27,10 @@ public sealed class MongoUserRespawnService(IMongoDatabaseProvider databaseProvi
         if (!userExists)
             return UserRespawnResult.UserNotFound;
 
-        var roomFilter = Builders<BsonDocument>.Filter.Eq(UserField, userId);
+        var roomFilter = Builders<BsonDocument>.Filter.Eq(RoomDocumentFields.RoomObject.User, userId);
         await _roomsObjectsCollection.DeleteManyAsync(roomFilter, cancellationToken).ConfigureAwait(false);
 
-        var update = Builders<BsonDocument>.Update.Set(LastRespawnField, DateTime.UtcNow);
+        var update = Builders<BsonDocument>.Update.Set(UserDocumentFields.LastRespawnDate, DateTime.UtcNow);
         await _usersCollection.UpdateOneAsync(userFilter, update, cancellationToken: cancellationToken).ConfigureAwait(false);
 
         return UserRespawnResult.Success;

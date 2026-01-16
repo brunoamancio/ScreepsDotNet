@@ -8,6 +8,7 @@ using MongoDB.Driver;
 using ScreepsDotNet.Backend.Core.Seeding;
 using ScreepsDotNet.Backend.Http.Routing;
 using ScreepsDotNet.Backend.Http.Tests.TestSupport;
+using ScreepsDotNet.Common.Constants;
 
 [Collection(IntegrationTestSuiteDefinition.Name)]
 public sealed class IntentEndpointsIntegrationTests(IntegrationTestHarness harness) : IAsyncLifetime
@@ -156,7 +157,7 @@ public sealed class IntentEndpointsIntegrationTests(IntegrationTestHarness harne
         Assert.NotNull(document);
         var intents = document["intents"].AsBsonDocument;
         var notify = intents["notify"].AsBsonArray.Single().AsBsonDocument;
-        Assert.Equal("Tick complete", notify["message"].AsString);
+        Assert.Equal("Tick complete", notify[UserDocumentFields.NotificationFields.Message].AsString);
         Assert.Equal(10, notify["groupInterval"].AsInt32);
     }
 

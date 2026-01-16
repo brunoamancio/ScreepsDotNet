@@ -12,6 +12,7 @@ using MongoDB.Driver;
 using ScreepsDotNet.Backend.Core.Intents;
 using ScreepsDotNet.Backend.Core.Repositories;
 using ScreepsDotNet.Backend.Core.Services;
+using ScreepsDotNet.Common.Constants;
 using ScreepsDotNet.Storage.MongoRedis.Providers;
 using ScreepsDotNet.Storage.MongoRedis.Repositories.Documents;
 
@@ -139,7 +140,7 @@ public sealed class MongoIntentService : IIntentService
         var room = await _roomsCollection.Find(filter)
                                          .FirstOrDefaultAsync(cancellationToken)
                                          .ConfigureAwait(false) ?? throw new IntentValidationException("invalid room");
-        var isOutOfBorders = string.Equals(room.Status, "out of borders", StringComparison.OrdinalIgnoreCase);
+        var isOutOfBorders = string.Equals(room.Status, RoomDocumentFields.RoomStatusValues.OutOfBorders, StringComparison.OrdinalIgnoreCase);
         var stillClosed = room.OpenTime.HasValue && room.OpenTime.Value > DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 
         if (isOutOfBorders || stillClosed)

@@ -1,5 +1,6 @@
 using MongoDB.Driver;
 using ScreepsDotNet.Driver.Abstractions.Notifications;
+using ScreepsDotNet.Driver.Constants;
 using ScreepsDotNet.Driver.Services.Notifications;
 using ScreepsDotNet.Driver.Tests.TestSupport;
 using ScreepsDotNet.Storage.MongoRedis.Repositories.Documents;
@@ -23,8 +24,8 @@ public sealed class NotificationServiceTests(MongoRedisFixture fixture) : IClass
         var token = TestContext.Current.CancellationToken;
         await NotificationCollection.DeleteManyAsync(FilterDefinition<UserNotificationDocument>.Empty, cancellationToken: token);
 
-        await service.SendNotificationAsync("user1", "hello world", new NotificationOptions(5, "msg"), token);
-        await service.SendNotificationAsync("user1", "hello world", new NotificationOptions(5, "msg"), token);
+        await service.SendNotificationAsync("user1", "hello world", new NotificationOptions(5, NotificationTypes.Default), token);
+        await service.SendNotificationAsync("user1", "hello world", new NotificationOptions(5, NotificationTypes.Default), token);
 
         var doc = await NotificationCollection.Find(document => document.UserId == "user1").FirstOrDefaultAsync(token);
 
@@ -67,7 +68,7 @@ public sealed class NotificationServiceTests(MongoRedisFixture fixture) : IClass
         var payload = await tcs.Task.WaitAsync(TimeSpan.FromSeconds(5), token);
         Assert.Contains("stack trace", payload);
 
-        var doc = await NotificationCollection.Find(d => d.UserId == "err" && d.Type == "error").FirstOrDefaultAsync(token);
+        var doc = await NotificationCollection.Find(d => d.UserId == "err" && d.Type == NotificationTypes.Error).FirstOrDefaultAsync(token);
         Assert.NotNull(doc);
         Assert.Equal(1, doc!.Count);
 

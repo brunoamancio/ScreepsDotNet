@@ -11,4 +11,10 @@ public static class UserMessagingConstants
     public const int ThreadFetchLimit = 100;
 
     public const int NotificationOfflineWindowMinutes = 10;
+
+    public static class MessageTypes
+    {
+        public const string Incoming = "in";
+        public const string Outgoing = "out";
+    }
 }

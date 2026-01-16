@@ -4,6 +4,8 @@ using MongoDB.Driver;
 using ScreepsDotNet.Driver.Abstractions.Bulk;
 using ScreepsDotNet.Driver.Abstractions.Users;
 using ScreepsDotNet.Driver.Constants;
+using ScreepsDotNet.Common.Constants;
+using ScreepsDotNet.Backend.Core.Constants;
 using ScreepsDotNet.Storage.MongoRedis.Providers;
 using ScreepsDotNet.Storage.MongoRedis.Repositories.Documents;
 using StackExchange.Redis;
@@ -161,14 +163,14 @@ internal sealed class UserDataService(IMongoDatabaseProvider databaseProvider, I
             var filter = Builders<UserNotificationDocument>.Filter.And(
                 Builders<UserNotificationDocument>.Filter.Eq(document => document.UserId, userId),
                 Builders<UserNotificationDocument>.Filter.Eq(document => document.Message, message),
-                Builders<UserNotificationDocument>.Filter.Eq(document => document.Type, "msg"),
+                Builders<UserNotificationDocument>.Filter.Eq(document => document.Type, UserMessagingConstants.NotificationTypeMessage),
                 Builders<UserNotificationDocument>.Filter.Eq(document => document.Date, bucketTime)
             );
 
             var update = Builders<UserNotificationDocument>.Update
                 .Set(document => document.UserId, userId)
                 .Set(document => document.Message, message)
-                .Set(document => document.Type, "msg")
+                .Set(document => document.Type, UserMessagingConstants.NotificationTypeMessage)
                 .Set(document => document.Date, bucketTime)
                 .Inc(document => document.Count, 1);
 

@@ -8,6 +8,7 @@ using MongoDB.Driver;
 using ScreepsDotNet.Backend.Core.Constants;
 using ScreepsDotNet.Backend.Core.Models.Map;
 using ScreepsDotNet.Backend.Core.Services;
+using ScreepsDotNet.Common.Constants;
 using ScreepsDotNet.Storage.MongoRedis.Providers;
 using ScreepsDotNet.Storage.MongoRedis.Repositories.Documents;
 
@@ -44,7 +45,7 @@ public sealed partial class MongoMapControlService(IMongoDatabaseProvider databa
         {
             Id = options.RoomName,
             Shard = normalizedShard,
-            Status = "normal",
+            Status = RoomDocumentFields.RoomStatusValues.Normal,
             Novice = false,
             RespawnArea = false,
             OpenTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
@@ -75,10 +76,10 @@ public sealed partial class MongoMapControlService(IMongoDatabaseProvider databa
     }
 
     public Task OpenRoomAsync(string roomName, string? shardName, CancellationToken cancellationToken = default)
-        => SetRoomStatusAsync(roomName, shardName, "normal", cancellationToken);
+        => SetRoomStatusAsync(roomName, shardName, RoomDocumentFields.RoomStatusValues.Normal, cancellationToken);
 
     public Task CloseRoomAsync(string roomName, string? shardName, CancellationToken cancellationToken = default)
-        => SetRoomStatusAsync(roomName, shardName, "closed", cancellationToken);
+        => SetRoomStatusAsync(roomName, shardName, RoomDocumentFields.RoomStatusValues.Closed, cancellationToken);
 
     public async Task RemoveRoomAsync(string roomName, string? shardName, bool purgeObjects, CancellationToken cancellationToken = default)
     {

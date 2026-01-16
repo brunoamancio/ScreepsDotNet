@@ -6,6 +6,7 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using MongoDB.Driver;
+using ScreepsDotNet.Backend.Core.Constants;
 using ScreepsDotNet.Backend.Core.Seeding;
 using ScreepsDotNet.Backend.Http.Routing;
 using ScreepsDotNet.Backend.Http.Tests.TestSupport;
@@ -185,7 +186,7 @@ public sealed class UserEndpointsIntegrationTests(IntegrationTestHarness harness
         Assert.Single(messages);
         var inbound = messages[0];
         Assert.Equal(SeedDataDefaults.Messaging.SampleText, inbound.GetProperty("text").GetString());
-        Assert.Equal("in", inbound.GetProperty("type").GetString());
+        Assert.Equal(UserMessagingConstants.MessageTypes.Incoming, inbound.GetProperty("type").GetString());
         Assert.True(inbound.GetProperty("unread").GetBoolean());
     }
 
@@ -234,16 +235,16 @@ public sealed class UserEndpointsIntegrationTests(IntegrationTestHarness harness
                                                 .ToListAsync(TestContext.Current.CancellationToken);
         Assert.Equal(2, documents.Count);
         var outbound = Assert.Single(documents, doc => doc.UserId == SeedDataDefaults.User.Id);
-        Assert.Equal("out", outbound.Type);
+        Assert.Equal(UserMessagingConstants.MessageTypes.Outgoing, outbound.Type);
         var inbound = Assert.Single(documents, doc => doc.UserId == SeedDataDefaults.Messaging.RespondentId);
-        Assert.Equal("in", inbound.Type);
+        Assert.Equal(UserMessagingConstants.MessageTypes.Incoming, inbound.Type);
         Assert.Equal(outbound.Id, inbound.OutMessageId);
 
         var notifications = harness.Database.GetCollection<UserNotificationDocument>(UserNotificationsCollectionName);
         var notification = await notifications.Find(doc => doc.UserId == SeedDataDefaults.Messaging.RespondentId)
                                               .FirstOrDefaultAsync(TestContext.Current.CancellationToken);
         Assert.NotNull(notification);
-        Assert.Equal("msg", notification!.Type);
+        Assert.Equal(UserMessagingConstants.NotificationTypeMessage, notification!.Type);
         Assert.True(notification.Count >= 1);
     }
 
@@ -252,7 +253,7 @@ public sealed class UserEndpointsIntegrationTests(IntegrationTestHarness harness
     {
         await harness.ResetStateAsync();
         var messagesCollection = harness.Database.GetCollection<UserMessageDocument>(UserMessagesCollectionName);
-        var inbound = await messagesCollection.Find(doc => doc.UserId == SeedDataDefaults.User.Id && doc.Type == "in")
+        var inbound = await messagesCollection.Find(doc => doc.UserId == SeedDataDefaults.User.Id && doc.Type == UserMessagingConstants.MessageTypes.Incoming)
                                               .FirstOrDefaultAsync(TestContext.Current.CancellationToken);
         Assert.NotNull(inbound);
         Assert.True(inbound!.Unread);

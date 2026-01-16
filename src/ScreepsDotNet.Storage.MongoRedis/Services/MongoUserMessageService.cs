@@ -74,8 +74,8 @@ public sealed class MongoUserMessageService(
                          ?? throw new ArgumentException("invalid respondent", nameof(respondentId));
 
         var now = DateTime.UtcNow;
-        var outgoing = CreateMessageDocument(senderId, respondentId, now, "out", text, unread: true);
-        var incoming = CreateMessageDocument(respondentId, senderId, now, "in", text, unread: true);
+        var outgoing = CreateMessageDocument(senderId, respondentId, now, UserMessagingConstants.MessageTypes.Outgoing, text, unread: true);
+        var incoming = CreateMessageDocument(respondentId, senderId, now, UserMessagingConstants.MessageTypes.Incoming, text, unread: true);
         incoming.OutMessageId = outgoing.Id;
 
         await _messagesCollection.InsertManyAsync([outgoing, incoming], cancellationToken: cancellationToken).ConfigureAwait(false);
@@ -93,7 +93,7 @@ public sealed class MongoUserMessageService(
         var filter = Builders<UserMessageDocument>.Filter.And(
             Builders<UserMessageDocument>.Filter.Eq(message => message.Id, parsedId),
             Builders<UserMessageDocument>.Filter.Eq(message => message.UserId, userId),
-            Builders<UserMessageDocument>.Filter.Eq(message => message.Type, "in"));
+            Builders<UserMessageDocument>.Filter.Eq(message => message.Type, UserMessagingConstants.MessageTypes.Incoming));
 
         var message = await _messagesCollection.Find(filter)
                                                .FirstOrDefaultAsync(cancellationToken)
@@ -121,7 +121,7 @@ public sealed class MongoUserMessageService(
     {
         var filter = Builders<UserMessageDocument>.Filter.And(
             Builders<UserMessageDocument>.Filter.Eq(message => message.UserId, userId),
-            Builders<UserMessageDocument>.Filter.Eq(message => message.Type, "in"),
+            Builders<UserMessageDocument>.Filter.Eq(message => message.Type, UserMessagingConstants.MessageTypes.Incoming),
             Builders<UserMessageDocument>.Filter.Eq(message => message.Unread, true));
 
         var count = await _messagesCollection.CountDocumentsAsync(filter, cancellationToken: cancellationToken).ConfigureAwait(false);

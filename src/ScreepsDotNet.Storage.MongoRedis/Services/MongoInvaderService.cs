@@ -1,4 +1,5 @@
 ﻿using ScreepsDotNet.Backend.Core.Constants;
+using ScreepsDotNet.Common.Constants;
 
 namespace ScreepsDotNet.Storage.MongoRedis.Services;
 
@@ -106,12 +107,16 @@ public sealed class MongoInvaderService(IMongoDatabaseProvider databaseProvider,
             return new CreateInvaderResult(CreateInvaderResultStatus.InvalidParams, ErrorMessage: "Invalid invader type or size");
 
         var body = bodyParts.Select(part => {
-            var partDoc = new BsonDocument { ["type"] = part.ToDocumentValue(), ["hits"] = 100 };
+            var partDoc = new BsonDocument
+            {
+                [RoomDocumentFields.RoomObject.BodyPart.Type] = part.ToDocumentValue(),
+                [RoomDocumentFields.RoomObject.BodyPart.Hits] = ScreepsGameConstants.BodyPartHitPoints
+            };
             if (request.Boosted) {
-                if (part == BodyPartType.Heal) partDoc["boost"] = ResourceBoost.LO.ToDocumentValue();
-                else if (part == BodyPartType.RangedAttack) partDoc["boost"] = ResourceBoost.KO.ToDocumentValue();
-                else if (part == BodyPartType.Work) partDoc["boost"] = ResourceBoost.ZH.ToDocumentValue();
-                else if (part == BodyPartType.Attack) partDoc["boost"] = ResourceBoost.UH.ToDocumentValue();
+                if (part == BodyPartType.Heal) partDoc[RoomDocumentFields.RoomObject.BodyPart.Boost] = ResourceBoost.LO.ToDocumentValue();
+                else if (part == BodyPartType.RangedAttack) partDoc[RoomDocumentFields.RoomObject.BodyPart.Boost] = ResourceBoost.KO.ToDocumentValue();
+                else if (part == BodyPartType.Work) partDoc[RoomDocumentFields.RoomObject.BodyPart.Boost] = ResourceBoost.ZH.ToDocumentValue();
+                else if (part == BodyPartType.Attack) partDoc[RoomDocumentFields.RoomObject.BodyPart.Boost] = ResourceBoost.UH.ToDocumentValue();
             }
             return partDoc;
         }).ToArray();
@@ -119,24 +124,24 @@ public sealed class MongoInvaderService(IMongoDatabaseProvider databaseProvider,
         var invaderId = ObjectId.GenerateNewId();
         var invader = new BsonDocument
         {
-            ["_id"] = invaderId,
-            ["type"] = StructureType.Creep.ToDocumentValue(),
-            ["user"] = SeedDataDefaults.World.InvaderUser,
-            ["body"] = new BsonArray(body),
-            ["hits"] = bodyParts.Length * 100,
-            ["hitsMax"] = bodyParts.Length * 100,
-            ["ticksToLive"] = 1500,
-            ["x"] = request.X,
-            ["y"] = request.Y,
-            ["room"] = roomName,
-            ["fatigue"] = 0,
-            ["store"] = new BsonDocument(),
-            ["storeCapacity"] = 0,
-            ["name"] = $"invader_{roomName}_{_random.Next(1000)}",
-            ["userSummoned"] = userId
+            [RoomDocumentFields.RoomObject.Id] = invaderId,
+            [RoomDocumentFields.RoomObject.Type] = StructureType.Creep.ToDocumentValue(),
+            [RoomDocumentFields.RoomObject.User] = SeedDataDefaults.World.InvaderUser,
+            [RoomDocumentFields.RoomObject.Body] = new BsonArray(body),
+            [RoomDocumentFields.RoomObject.Hits] = bodyParts.Length * ScreepsGameConstants.BodyPartHitPoints,
+            [RoomDocumentFields.RoomObject.HitsMax] = bodyParts.Length * ScreepsGameConstants.BodyPartHitPoints,
+            [RoomDocumentFields.RoomObject.TicksToLive] = ScreepsGameConstants.CreepLifeTime,
+            [RoomDocumentFields.RoomObject.X] = request.X,
+            [RoomDocumentFields.RoomObject.Y] = request.Y,
+            [RoomDocumentFields.RoomObject.Room] = roomName,
+            [RoomDocumentFields.RoomObject.Fatigue] = 0,
+            [RoomDocumentFields.RoomObject.Store.Root] = new BsonDocument(),
+            [RoomDocumentFields.RoomObject.Store.Capacity] = 0,
+            [RoomDocumentFields.RoomObject.Name] = $"invader_{roomName}_{_random.Next(1000)}",
+            [RoomDocumentFields.RoomObject.UserSummoned] = userId
         };
         if (!string.IsNullOrWhiteSpace(shardName))
-            invader["shard"] = shardName;
+            invader[RoomDocumentFields.RoomObject.Shard] = shardName;
 
         await databaseProvider.GetCollection<BsonDocument>(databaseProvider.Settings.RoomObjectsCollection)
                               .InsertOneAsync(invader, cancellationToken: cancellationToken)
@@ -153,13 +158,13 @@ public sealed class MongoInvaderService(IMongoDatabaseProvider databaseProvider,
         if (!ObjectId.TryParse(request.Id, out var objectId))
             return new RemoveInvaderResult(RemoveInvaderResultStatus.InvalidObject);
 
-        var filter = Builders<BsonDocument>.Filter.Eq("_id", objectId);
+        var filter = Builders<BsonDocument>.Filter.Eq(RoomDocumentFields.RoomObject.Id, objectId);
         var invader = await databaseProvider.GetCollection<BsonDocument>(databaseProvider.Settings.RoomObjectsCollection)
                                             .Find(filter)
                                             .FirstOrDefaultAsync(cancellationToken)
                                             .ConfigureAwait(false);
 
-        if (invader == null || invader.GetValue("userSummoned", BsonNull.Value).ToString() != userId)
+        if (invader == null || invader.GetValue(RoomDocumentFields.RoomObject.UserSummoned, BsonNull.Value).ToString() != userId)
             return new RemoveInvaderResult(RemoveInvaderResultStatus.InvalidObject);
 
         await databaseProvider.GetCollection<BsonDocument>(databaseProvider.Settings.RoomObjectsCollection)
@@ -179,8 +184,8 @@ public sealed class MongoInvaderService(IMongoDatabaseProvider databaseProvider,
 
         var nullShardFilter = builder.Or(
             builder.Eq(doc => doc.Shard, null),
-            builder.Eq("shard", BsonNull.Value),
-            builder.Exists("shard", false));
+            builder.Eq(RoomDocumentFields.RoomObject.Shard, BsonNull.Value),
+            builder.Exists(RoomDocumentFields.RoomObject.Shard, false));
 
         return filter & nullShardFilter;
     }

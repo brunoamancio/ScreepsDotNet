@@ -9,6 +9,7 @@ using ScreepsDotNet.Backend.Core.Constants;
 using ScreepsDotNet.Backend.Core.Models.Strongholds;
 using ScreepsDotNet.Backend.Core.Repositories;
 using ScreepsDotNet.Backend.Core.Services;
+using ScreepsDotNet.Common.Constants;
 using ScreepsDotNet.Storage.MongoRedis.Providers;
 using ScreepsDotNet.Storage.MongoRedis.Repositories.Documents;
 
@@ -230,10 +231,10 @@ public sealed class MongoStrongholdControlService(IMongoDatabaseProvider databas
         => new([
             new BsonDocument
             {
-                ["effect"] = InvulnerabilityEffectId,
-                ["power"] = InvulnerabilityEffectId,
-                ["endTime"] = deployTime,
-                ["duration"] = StrongholdDeployDuration
+                [RoomDocumentFields.RoomObject.EffectFields.Effect] = InvulnerabilityEffectId,
+                [RoomDocumentFields.RoomObject.EffectFields.Power] = InvulnerabilityEffectId,
+                [RoomDocumentFields.RoomObject.EffectFields.EndTime] = deployTime,
+                [RoomDocumentFields.RoomObject.EffectFields.Duration] = StrongholdDeployDuration
             }
         ]);
 

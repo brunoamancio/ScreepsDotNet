@@ -2,7 +2,7 @@ namespace ScreepsDotNet.Driver.Contracts;
 
 using System.Collections.Generic;
 using ScreepsDotNet.Common;
-using ScreepsDotNet.Driver.Constants;
+using ScreepsDotNet.Common.Constants;
 
 /// <summary>
 /// Canonical representation of a room object used by the engine/processor.

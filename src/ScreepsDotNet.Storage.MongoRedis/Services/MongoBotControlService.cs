@@ -11,6 +11,7 @@ using ScreepsDotNet.Backend.Core.Constants;
 using ScreepsDotNet.Backend.Core.Models.Bots;
 using ScreepsDotNet.Backend.Core.Repositories;
 using ScreepsDotNet.Backend.Core.Services;
+using ScreepsDotNet.Common.Constants;
 using ScreepsDotNet.Storage.MongoRedis.Providers;
 using ScreepsDotNet.Storage.MongoRedis.Repositories.Documents;
 
@@ -21,9 +22,6 @@ public sealed class MongoBotControlService(IMongoDatabaseProvider databaseProvid
     private const int DefaultCpuLimit = 100;
     private const int DefaultSafeModeDuration = 20_000;
     private const int DefaultInvaderGoal = 1_000_000;
-    private const int SpawnEnergyCapacity = 300;
-    private const int SpawnEnergyStart = 300;
-    private const int SpawnHits = 5_000;
 
     private readonly IMongoCollection<UserDocument> _usersCollection = databaseProvider.GetCollection<UserDocument>(databaseProvider.Settings.UsersCollection);
     private readonly IMongoCollection<UserCodeDocument> _userCodeCollection = databaseProvider.GetCollection<UserCodeDocument>(databaseProvider.Settings.UserCodeCollection);
@@ -73,9 +71,9 @@ public sealed class MongoBotControlService(IMongoDatabaseProvider databaseProvid
             LastRespawnDate = DateTime.UtcNow,
             Gcl = new Dictionary<string, object?>(StringComparer.Ordinal)
             {
-                ["level"] = options.GlobalControlLevel ?? 1,
-                ["progress"] = 0,
-                ["progressTotal"] = 0
+                [UserDocumentFields.GclFields.Level] = options.GlobalControlLevel ?? 1,
+                [UserDocumentFields.GclFields.Progress] = 0,
+                [UserDocumentFields.GclFields.ProgressTotal] = 0
             }
         };
 
@@ -237,12 +235,12 @@ public sealed class MongoBotControlService(IMongoDatabaseProvider databaseProvid
 
         return new Dictionary<string, object?>(StringComparer.Ordinal)
         {
-            ["type"] = 1,
-            ["color1"] = RandomColor(Random.Shared),
-            ["color2"] = RandomColor(Random.Shared),
-            ["color3"] = RandomColor(Random.Shared),
-            ["flip"] = Random.Shared.NextDouble() >= 0.5,
-            ["param"] = Random.Shared.Next(-100, 101)
+            [UserDocumentFields.BadgeFields.Type] = 1,
+            [UserDocumentFields.BadgeFields.Color1] = RandomColor(Random.Shared),
+            [UserDocumentFields.BadgeFields.Color2] = RandomColor(Random.Shared),
+            [UserDocumentFields.BadgeFields.Color3] = RandomColor(Random.Shared),
+            [UserDocumentFields.BadgeFields.Flip] = Random.Shared.NextDouble() >= 0.5,
+            [UserDocumentFields.BadgeFields.Param] = Random.Shared.Next(-100, 101)
         };
     }
 
@@ -290,10 +288,10 @@ public sealed class MongoBotControlService(IMongoDatabaseProvider databaseProvid
             Y = y,
             Name = "Spawn1",
             UserId = userId,
-            Store = new Dictionary<string, int> { ["energy"] = SpawnEnergyStart },
-            StoreCapacityResource = new Dictionary<string, int> { ["energy"] = SpawnEnergyCapacity },
-            Hits = SpawnHits,
-            HitsMax = SpawnHits,
+            Store = new Dictionary<string, int> { [RoomDocumentFields.RoomObject.Store.Energy] = ScreepsGameConstants.SpawnInitialEnergy },
+            StoreCapacityResource = new Dictionary<string, int> { [RoomDocumentFields.RoomObject.Store.Energy] = ScreepsGameConstants.SpawnEnergyCapacity },
+            Hits = ScreepsGameConstants.SpawnHits,
+            HitsMax = ScreepsGameConstants.SpawnHits,
             Spawning = BsonNull.Value,
             NotifyWhenAttacked = false
         };

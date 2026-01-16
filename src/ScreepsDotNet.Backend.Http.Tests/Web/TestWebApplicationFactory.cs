@@ -10,6 +10,7 @@ using ScreepsDotNet.Backend.Core.Repositories;
 using ScreepsDotNet.Backend.Core.Services;
 using ScreepsDotNet.Backend.Core.Storage;
 using ScreepsDotNet.Backend.Http.Routing;
+using ScreepsDotNet.Common.Constants;
 
 namespace ScreepsDotNet.Backend.Http.Tests.Web;
 
@@ -594,8 +595,8 @@ sealed file class FakeMarketOrderRepository : IMarketOrderRepository
 
     private static readonly IReadOnlyList<MarketOrder> Orders =
     [
-        new("order-1", AuthTestValues.UserId, "energy", "sell", "W1N1", 5.0m, 1000, 750, 1000, 1000, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()),
-        new("order-2", null, "energy", "buy", "W2N2", 4.5m, 500, 500, 500, 1001, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds())
+        new("order-1", AuthTestValues.UserId, "energy", MarketOrderTypes.Sell, "W1N1", 5.0m, 1000, 750, 1000, 1000, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()),
+        new("order-2", null, "energy", MarketOrderTypes.Buy, "W2N2", 4.5m, 500, 500, 500, 1001, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds())
     ];
 
     public Task<IReadOnlyList<MarketOrderSummary>> GetActiveOrderIndexAsync(CancellationToken cancellationToken = default)

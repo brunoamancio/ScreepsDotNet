@@ -9,6 +9,7 @@ using MongoDB.Driver;
 using ScreepsDotNet.Backend.Core.Constants;
 using ScreepsDotNet.Backend.Core.Models;
 using ScreepsDotNet.Backend.Core.Services;
+using ScreepsDotNet.Common.Constants;
 using ScreepsDotNet.Storage.MongoRedis.Providers;
 using ScreepsDotNet.Storage.MongoRedis.Repositories.Documents;
 
@@ -54,8 +55,8 @@ public sealed class MongoConstructionService(IMongoDatabaseProvider databaseProv
         // check MAX_CONSTRUCTION_SITES
         var userSitesCount = await _roomObjectsCollection.CountDocumentsAsync(
             Builders<BsonDocument>.Filter.And(
-                Builders<BsonDocument>.Filter.Eq("type", StructureType.ConstructionSite.ToDocumentValue()),
-                Builders<BsonDocument>.Filter.Eq("user", userId)
+                Builders<BsonDocument>.Filter.Eq(RoomDocumentFields.RoomObject.Type, StructureType.ConstructionSite.ToDocumentValue()),
+                Builders<BsonDocument>.Filter.Eq(RoomDocumentFields.RoomObject.User, userId)
             ), cancellationToken: cancellationToken).ConfigureAwait(false);
 
         if (userSitesCount >= GameConstants.MaxConstructionSites)
@@ -79,19 +80,19 @@ public sealed class MongoConstructionService(IMongoDatabaseProvider databaseProv
         var siteId = ObjectId.GenerateNewId();
         var siteDoc = new BsonDocument
         {
-            ["_id"] = siteId,
-            ["type"] = StructureType.ConstructionSite.ToDocumentValue(),
-            ["room"] = roomName,
-            ["x"] = request.X,
-            ["y"] = request.Y,
-            ["structureType"] = request.StructureType.ToDocumentValue(),
-            ["name"] = (BsonValue?)request.Name ?? BsonNull.Value,
-            ["user"] = userId,
-            ["progress"] = 0,
-            ["progressTotal"] = progressTotal
+            [RoomDocumentFields.RoomObject.Id] = siteId,
+            [RoomDocumentFields.RoomObject.Type] = StructureType.ConstructionSite.ToDocumentValue(),
+            [RoomDocumentFields.RoomObject.Room] = roomName,
+            [RoomDocumentFields.RoomObject.X] = request.X,
+            [RoomDocumentFields.RoomObject.Y] = request.Y,
+            [RoomDocumentFields.RoomObject.StructureType] = request.StructureType.ToDocumentValue(),
+            [RoomDocumentFields.RoomObject.Name] = (BsonValue?)request.Name ?? BsonNull.Value,
+            [RoomDocumentFields.RoomObject.User] = userId,
+            [RoomDocumentFields.RoomObject.Progress] = 0,
+            [RoomDocumentFields.RoomObject.ProgressTotal] = progressTotal
         };
         if (!string.IsNullOrWhiteSpace(shardName))
-            siteDoc["shard"] = shardName;
+            siteDoc[RoomDocumentFields.RoomObject.Shard] = shardName;
 
         await _roomObjectsCollection.InsertOneAsync(siteDoc, cancellationToken: cancellationToken).ConfigureAwait(false);
 
@@ -116,9 +117,9 @@ public sealed class MongoConstructionService(IMongoDatabaseProvider databaseProv
 
         if (structureType == StructureType.Extractor) {
             var mineralFilter = baseRoomFilter &
-                                builder.Eq("x", x) &
-                                builder.Eq("y", y) &
-                                builder.Eq("type", StructureType.Mineral.ToDocumentValue());
+                                builder.Eq(RoomDocumentFields.RoomObject.X, x) &
+                                builder.Eq(RoomDocumentFields.RoomObject.Y, y) &
+                                builder.Eq(RoomDocumentFields.RoomObject.Type, StructureType.Mineral.ToDocumentValue());
             var mineral = await _roomObjectsCollection.Find(mineralFilter).AnyAsync(cancellationToken).ConfigureAwait(false);
             if (!mineral)
                 return new PlaceConstructionResult(PlaceConstructionResultStatus.InvalidLocation, ErrorMessage: "Extractor must be on mineral");
@@ -126,11 +127,14 @@ public sealed class MongoConstructionService(IMongoDatabaseProvider databaseProv
 
         // Check existing same structure or site
         var existingFilter = baseRoomFilter &
-                             builder.Eq("x", x) &
-                             builder.Eq("y", y) &
+                             builder.Eq(RoomDocumentFields.RoomObject.X, x) &
+                             builder.Eq(RoomDocumentFields.RoomObject.Y, y) &
                              builder.Or(
-                                 builder.Eq("type", structureType.ToDocumentValue()),
-                                 builder.Eq("type", StructureType.ConstructionSite.ToDocumentValue())
+                                 builder.Eq(RoomDocumentFields.RoomObject.Type, structureType.ToDocumentValue()),
+                                 builder.And(
+                                     builder.Eq(RoomDocumentFields.RoomObject.Type, StructureType.ConstructionSite.ToDocumentValue()),
+                                     builder.Eq(RoomDocumentFields.RoomObject.StructureType, structureType.ToDocumentValue())
+                                 )
                              );
         var existing = await _roomObjectsCollection.Find(existingFilter).AnyAsync(cancellationToken).ConfigureAwait(false);
         if (existing)
@@ -139,9 +143,9 @@ public sealed class MongoConstructionService(IMongoDatabaseProvider databaseProv
         // Check blockers
         if (structureType != StructureType.Rampart) {
             var blockerFilter = baseRoomFilter &
-                                builder.Eq("x", x) &
-                                builder.Eq("y", y) &
-                                builder.In("type", GameConstants.BlockerStructureTypes.Select(t => t.ToDocumentValue()));
+                                builder.Eq(RoomDocumentFields.RoomObject.X, x) &
+                                builder.Eq(RoomDocumentFields.RoomObject.Y, y) &
+                                builder.In(RoomDocumentFields.RoomObject.Type, GameConstants.BlockerStructureTypes.Select(t => t.ToDocumentValue()));
             var blocker = await _roomObjectsCollection.Find(blockerFilter).AnyAsync(cancellationToken).ConfigureAwait(false);
             if (blocker)
                 return new PlaceConstructionResult(PlaceConstructionResultStatus.InvalidLocation, ErrorMessage: "Position blocked");
@@ -155,11 +159,11 @@ public sealed class MongoConstructionService(IMongoDatabaseProvider databaseProv
 
         // Check near exit
         var nearExitFilter = baseRoomFilter &
-                             builder.Gt("x", x - 2) &
-                             builder.Lt("x", x + 2) &
-                             builder.Gt("y", y - 2) &
-                             builder.Lt("y", y + 2) &
-                             builder.Eq("type", StructureType.Exit.ToDocumentValue());
+                             builder.Gt(RoomDocumentFields.RoomObject.X, x - 2) &
+                             builder.Lt(RoomDocumentFields.RoomObject.X, x + 2) &
+                             builder.Gt(RoomDocumentFields.RoomObject.Y, y - 2) &
+                             builder.Lt(RoomDocumentFields.RoomObject.Y, y + 2) &
+                             builder.Eq(RoomDocumentFields.RoomObject.Type, StructureType.Exit.ToDocumentValue());
         var nearExit = await _roomObjectsCollection.Find(nearExitFilter).AnyAsync(cancellationToken).ConfigureAwait(false);
         if (nearExit)
             return new PlaceConstructionResult(PlaceConstructionResultStatus.InvalidLocation, ErrorMessage: "Too near exit");
@@ -185,7 +189,7 @@ public sealed class MongoConstructionService(IMongoDatabaseProvider databaseProv
     {
         var builder = Builders<BsonDocument>.Filter;
         var controllerFilter = ShardFilterBuilder.ForRoom(builder, room, shard) &
-                               builder.Eq("type", StructureType.Controller.ToDocumentValue());
+                               builder.Eq(RoomDocumentFields.RoomObject.Type, StructureType.Controller.ToDocumentValue());
         var controller = await _roomObjectsCollection.Find(controllerFilter)
                                                      .FirstOrDefaultAsync(cancellationToken)
                                                      .ConfigureAwait(false);
@@ -196,26 +200,26 @@ public sealed class MongoConstructionService(IMongoDatabaseProvider databaseProv
         if (structureType == StructureType.Spawn && controller == null)
             return new PlaceConstructionResult(PlaceConstructionResultStatus.InvalidRoom, ErrorMessage: "Spawn requires controller");
 
-        var owner = controller.Contains("user") && !controller["user"].IsBsonNull ? controller["user"].AsString : null;
-        var reservation = controller.GetValue("reservation", BsonNull.Value);
-        var reservationUser = reservation.IsBsonDocument && reservation.AsBsonDocument.Contains("user") && !reservation.AsBsonDocument["user"].IsBsonNull
-            ? reservation.AsBsonDocument["user"].AsString
+        var owner = controller.Contains(RoomDocumentFields.RoomObject.User) && !controller[RoomDocumentFields.RoomObject.User].IsBsonNull ? controller[RoomDocumentFields.RoomObject.User].AsString : null;
+        var reservation = controller.GetValue(RoomDocumentFields.RoomObject.Reservation, BsonNull.Value);
+        var reservationUser = reservation.IsBsonDocument && reservation.AsBsonDocument.Contains(RoomDocumentFields.RoomObject.ReservationFields.User) && !reservation.AsBsonDocument[RoomDocumentFields.RoomObject.ReservationFields.User].IsBsonNull
+            ? reservation.AsBsonDocument[RoomDocumentFields.RoomObject.ReservationFields.User].AsString
             : null;
 
         if (owner != userId && reservationUser != userId)
             return new PlaceConstructionResult(PlaceConstructionResultStatus.NotControllerOwner);
 
         // Check RCL limits
-        var rcl = controller.GetValue("level", 0).AsInt32;
+        var rcl = controller.GetValue(RoomDocumentFields.Controller.Level, 0).AsInt32;
         if (!GameConstants.ControllerStructures.TryGetValue(structureType, out var limits))
             return new PlaceConstructionResult(PlaceConstructionResultStatus.Success);
 
         var countFilter = ShardFilterBuilder.ForRoom(builder, room, shard) &
                           builder.Or(
-                              builder.Eq("type", structureType.ToDocumentValue()),
+                              builder.Eq(RoomDocumentFields.RoomObject.Type, structureType.ToDocumentValue()),
                               builder.And(
-                                  builder.Eq("type", StructureType.ConstructionSite.ToDocumentValue()),
-                                  builder.Eq("structureType", structureType.ToDocumentValue())
+                                  builder.Eq(RoomDocumentFields.RoomObject.Type, StructureType.ConstructionSite.ToDocumentValue()),
+                                  builder.Eq(RoomDocumentFields.RoomObject.StructureType, structureType.ToDocumentValue())
                               )
                           );
 
