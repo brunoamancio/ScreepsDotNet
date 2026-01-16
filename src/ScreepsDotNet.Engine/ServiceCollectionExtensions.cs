@@ -1,6 +1,7 @@
 namespace ScreepsDotNet.Engine;
 
 using Microsoft.Extensions.DependencyInjection;
+using ScreepsDotNet.Common.Structures;
 using ScreepsDotNet.Engine.Data.Bulk;
 using ScreepsDotNet.Engine.Data.GlobalState;
 using ScreepsDotNet.Engine.Data.Memory;
@@ -32,6 +33,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<ISpawnEnergyCharger, SpawnEnergyCharger>();
         services.AddSingleton<ISpawnIntentParser, SpawnIntentParser>();
         services.AddSingleton<ICreepDeathProcessor, CreepDeathProcessor>();
+        services.AddSingleton<IStructureBlueprintProvider, StructureBlueprintProvider>();
         services.AddSingleton<IRoomProcessor, RoomProcessor>();
         return services;
     }

@@ -118,6 +118,73 @@ public static class ScreepsGameConstants
         ResourceTypes.Essence
     ];
 
+    public static IReadOnlyDictionary<int, int> ExtensionEnergyCapacityByControllerLevel { get; } =
+        new Dictionary<int, int>
+        {
+            [0] = 50,
+            [1] = 50,
+            [2] = 50,
+            [3] = 50,
+            [4] = 50,
+            [5] = 50,
+            [6] = 50,
+            [7] = 100,
+            [8] = 200
+        };
+
+    public const int TowerHits = 3000;
+    public const int TowerCapacity = 1000;
+    public const int ObserverHits = 500;
+    public const int PowerSpawnHits = 5000;
+    public const int PowerSpawnEnergyCapacity = 5000;
+    public const int PowerSpawnPowerCapacity = 100;
+    public const int ExtractorHits = 500;
+    public const int ExtractorCooldown = 5;
+    public const int LabHits = 500;
+    public const int LabEnergyCapacity = 2000;
+    public const int LabMineralCapacity = 3000;
+    public const int LinkHits = 1000;
+    public const int LinkHitsMax = 1000;
+    public const int LinkCapacity = 800;
+    public const int LinkCooldown = 1;
+    public const int StorageHits = 10000;
+    public const int StorageCapacity = 1_000_000;
+    public const int TerminalHits = 3000;
+    public const int TerminalCapacity = 300_000;
+    public const int TerminalCooldown = 10;
+    public const int ContainerHits = 250_000;
+    public const int ContainerCapacity = 2_000;
+    public const int ContainerDecayAmount = 5_000;
+    public const int ContainerDecayInterval = 100;
+    public const int ContainerDecayOwnedInterval = 500;
+    public const int RoadHits = 5_000;
+    public const int RoadDecayAmount = 100;
+    public const int RoadDecayInterval = 1_000;
+    public const int RoadSwampMultiplier = 5;
+    public const int RoadWallMultiplier = 150;
+    public const int RampartHits = 1;
+    public const int RampartDecayAmount = 300;
+    public const int RampartDecayInterval = 100;
+    public static IReadOnlyDictionary<int, int> RampartHitsMaxByControllerLevel { get; } =
+        new Dictionary<int, int>
+        {
+            [2] = 300_000,
+            [3] = 1_000_000,
+            [4] = 3_000_000,
+            [5] = 10_000_000,
+            [6] = 30_000_000,
+            [7] = 100_000_000,
+            [8] = 300_000_000
+        };
+    public const int WallHits = 1;
+    public const int WallHitsMax = 300_000_000;
+    public const int NukerHits = 1000;
+    public const int NukerEnergyCapacity = 300_000;
+    public const int NukerGhodiumCapacity = 5_000;
+    public const int NukerCooldown = 100_000;
+    public const int FactoryHits = 1000;
+    public const int FactoryCapacity = 50_000;
+
     public static IReadOnlyDictionary<BodyPartType, int> BodyPartEnergyCost { get; } = new Dictionary<BodyPartType, int>
     {
         [BodyPartType.Move] = 50,
