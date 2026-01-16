@@ -1,14 +1,15 @@
 namespace ScreepsDotNet.Engine.Tests.Processors.Helpers;
 
+using System;
 using System.Linq;
+using ScreepsDotNet.Common.Constants;
 using ScreepsDotNet.Common.Types;
 using ScreepsDotNet.Engine.Processors.Helpers;
 
 public sealed class BodyAnalysisHelperTests
 {
     private readonly IBodyAnalysisHelper _helper = new BodyAnalysisHelper();
-    private static readonly string[] ValidBody = ["move", "work", "carry"];
-    private static readonly string[] InvalidBody = ["move", "laser"];
+    private static readonly BodyPartType[] ValidBody = [BodyPartType.Move, BodyPartType.Work, BodyPartType.Carry];
 
     [Fact]
     public void Analyze_ReturnsMetrics_ForValidBody()
@@ -24,18 +25,18 @@ public sealed class BodyAnalysisHelperTests
     }
 
     [Fact]
-    public void Analyze_Fails_ForInvalidPart()
+    public void Analyze_Fails_WhenBodyEmpty()
     {
-        var result = _helper.Analyze(InvalidBody);
+        var result = _helper.Analyze(Array.Empty<BodyPartType>());
 
         Assert.False(result.Success);
-        Assert.Contains("Invalid body part", result.Error);
+        Assert.Contains("required", result.Error);
     }
 
     [Fact]
     public void Analyze_Fails_WhenBodyTooLarge()
     {
-        var parts = Enumerable.Repeat("move", ScreepsDotNet.Common.Constants.ScreepsGameConstants.MaxCreepBodyParts + 1).ToArray();
+        var parts = Enumerable.Repeat(BodyPartType.Move, ScreepsGameConstants.MaxCreepBodyParts + 1).ToArray();
 
         var result = _helper.Analyze(parts);
 

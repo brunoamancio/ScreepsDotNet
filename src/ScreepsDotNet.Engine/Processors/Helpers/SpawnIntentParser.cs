@@ -3,6 +3,7 @@ namespace ScreepsDotNet.Engine.Processors.Helpers;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using ScreepsDotNet.Common.Types;
 using ScreepsDotNet.Driver.Contracts;
 
 internal interface ISpawnIntentParser
@@ -84,12 +85,12 @@ internal sealed class SpawnIntentParser(IBodyAnalysisHelper bodyAnalysisHelper) 
         return CreateValidationResult.CreateSuccess(createIntent);
     }
 
-    private static IReadOnlyList<int> SanitizeDirections(IReadOnlyList<int>? directions)
+    private static IReadOnlyList<Direction> SanitizeDirections(IReadOnlyList<Direction>? directions)
     {
         if (directions is null || directions.Count == 0)
             return [];
 
-        var filtered = directions.Where(direction => direction is >= 1 and <= 8).Distinct().ToArray();
+        var filtered = directions.Distinct().ToArray();
         return filtered.Length == 0 ? [] : filtered;
     }
 
@@ -144,11 +145,11 @@ internal sealed record SpawnIntentParseResult(
 internal sealed record ParsedCreateCreepIntent(
     string Name,
     BodyAnalysisResult Body,
-    IReadOnlyList<int> Directions,
+    IReadOnlyList<Direction> Directions,
     IReadOnlyList<string> EnergyStructureIds);
 
 internal sealed record ParsedRenewIntent(string TargetId);
 
 internal sealed record ParsedRecycleIntent(string TargetId);
 
-internal sealed record ParsedSetDirectionsIntent(IReadOnlyList<int> Directions);
+internal sealed record ParsedSetDirectionsIntent(IReadOnlyList<Direction> Directions);

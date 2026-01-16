@@ -1,41 +1,37 @@
 namespace ScreepsDotNet.Engine.Processors.Helpers;
 
-using System;
 using System.Collections.Generic;
 using ScreepsDotNet.Common.Constants;
-using ScreepsDotNet.Common.Extensions;
 using ScreepsDotNet.Common.Types;
 
 internal interface IBodyAnalysisHelper
 {
-    BodyAnalysisResult Analyze(IReadOnlyList<string> rawBodyParts);
+    BodyAnalysisResult Analyze(IReadOnlyList<BodyPartType> bodyParts);
 }
 
 internal sealed class BodyAnalysisHelper : IBodyAnalysisHelper
 {
-    public BodyAnalysisResult Analyze(IReadOnlyList<string> rawBodyParts)
+    public BodyAnalysisResult Analyze(IReadOnlyList<BodyPartType> bodyParts)
     {
-        if (rawBodyParts.Count == 0)
+        if (bodyParts.Count == 0)
             return BodyAnalysisResult.Failure("Body parts are required.");
 
-        if (rawBodyParts.Count > ScreepsGameConstants.MaxCreepBodyParts)
+        if (bodyParts.Count > ScreepsGameConstants.MaxCreepBodyParts)
             return BodyAnalysisResult.Failure($"Body size exceeds {ScreepsGameConstants.MaxCreepBodyParts} parts.");
 
-        var parsed = new BodyPartType[rawBodyParts.Count];
+        var normalized = new BodyPartType[bodyParts.Count];
         var counts = new Dictionary<BodyPartType, int>();
         var totalCost = 0;
         var carryCapacity = 0;
 
-        for (var i = 0; i < rawBodyParts.Count; i++)
+        for (var i = 0; i < bodyParts.Count; i++)
         {
-            var value = rawBodyParts[i];
-            if (string.IsNullOrWhiteSpace(value) || !value.TryParseBodyPartType(out var partType))
-                return BodyAnalysisResult.Failure($"Invalid body part '{value}'.");
+            var partType = bodyParts[i];
+            normalized[i] = partType;
 
             if (!ScreepsGameConstants.TryGetBodyPartEnergyCost(partType, out var cost))
-                return BodyAnalysisResult.Failure($"Unknown body part cost for '{value}'.");
+                return BodyAnalysisResult.Failure($"Unknown body part cost for '{partType}'.");
 
-            parsed[i] = partType;
             totalCost += cost;
             counts[partType] = counts.TryGetValue(partType, out var existing) ? existing + 1 : 1;
 
@@ -43,10 +39,10 @@ internal sealed class BodyAnalysisHelper : IBodyAnalysisHelper
                 carryCapacity += ScreepsGameConstants.CarryCapacity;
         }
 
-        var spawnTime = rawBodyParts.Count * ScreepsGameConstants.CreepSpawnTime;
-        var totalHits = rawBodyParts.Count * ScreepsGameConstants.BodyPartHitPoints;
+        var spawnTime = bodyParts.Count * ScreepsGameConstants.CreepSpawnTime;
+        var totalHits = bodyParts.Count * ScreepsGameConstants.BodyPartHitPoints;
 
-        return BodyAnalysisResult.CreateSuccess(parsed, counts, totalCost, totalHits, carryCapacity, spawnTime);
+        return BodyAnalysisResult.CreateSuccess(normalized, counts, totalCost, totalHits, carryCapacity, spawnTime);
     }
 }
 
@@ -61,7 +57,7 @@ internal sealed record BodyAnalysisResult(
     int SpawnTime)
 {
     public static BodyAnalysisResult Failure(string error)
-        => new(false, error, Array.Empty<BodyPartType>(), new Dictionary<BodyPartType, int>(), 0, 0, 0, 0);
+        => new(false, error, [], new Dictionary<BodyPartType, int>(), 0, 0, 0, 0);
 
     public static BodyAnalysisResult CreateSuccess(
         IReadOnlyList<BodyPartType> bodyParts,

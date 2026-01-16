@@ -1,5 +1,7 @@
 namespace ScreepsDotNet.Engine.Tests.Processors.Helpers;
 
+using System;
+using ScreepsDotNet.Common.Types;
 using ScreepsDotNet.Engine.Processors.Helpers;
 using ScreepsDotNet.Driver.Contracts;
 
@@ -7,13 +9,13 @@ public sealed class SpawnIntentParserTests
 {
     private readonly IBodyAnalysisHelper _bodyHelper = new BodyAnalysisHelper();
     private readonly ISpawnIntentParser _parser;
-    private static readonly string[] ValidBody = ["move", "work"];
-    private static readonly int[] CreateDirections = [1, 9];
+    private static readonly BodyPartType[] ValidBody = [BodyPartType.Move, BodyPartType.Work];
+    private static readonly Direction[] CreateDirections = [Direction.Top, Direction.TopLeft];
     private static readonly string[] EnergyStructureIds = ["spawn1", "spawn1", "ext1"];
-    private static readonly string[] InvalidBody = ["laser"];
-    private static readonly int[] MixedDirections = [1, 2, 2, 9];
-    private static readonly int[] ExpectedDirections = [1, 2];
-    private static readonly int[] SingleDirection = [1];
+    private static readonly IReadOnlyList<BodyPartType> EmptyBody = Array.Empty<BodyPartType>();
+    private static readonly Direction[] MixedDirections = [Direction.Top, Direction.TopRight, Direction.TopRight, Direction.TopLeft];
+    private static readonly Direction[] ExpectedDirections = [Direction.Top, Direction.TopRight, Direction.TopLeft];
+    private static readonly Direction[] ExpectedCreateDirections = [Direction.Top, Direction.TopLeft];
     private static readonly string[] ExpectedEnergyStructureResult = ["spawn1", "ext1"];
 
     public SpawnIntentParserTests()
@@ -35,15 +37,15 @@ public sealed class SpawnIntentParserTests
         Assert.NotNull(result.CreateIntent);
         Assert.Equal("Worker1", result.CreateIntent!.Name);
         Assert.Equal(2, result.CreateIntent.Body.BodyParts.Count);
-        Assert.Equal(SingleDirection, result.CreateIntent.Directions);
+        Assert.Equal(ExpectedCreateDirections, result.CreateIntent.Directions);
         Assert.Equal(ExpectedEnergyStructureResult, result.CreateIntent.EnergyStructureIds);
     }
 
     [Fact]
-    public void Parse_Fails_WhenBodyInvalid()
+    public void Parse_Fails_WhenBodyMissing()
     {
         var envelope = new SpawnIntentEnvelope(
-            new CreateCreepIntent("bad", InvalidBody, null, null),
+            new CreateCreepIntent("bad", EmptyBody, null, null),
             null,
             null,
             null,
@@ -52,7 +54,7 @@ public sealed class SpawnIntentParserTests
         var result = _parser.Parse(envelope);
 
         Assert.False(result.Success);
-        Assert.Contains("Invalid body part", result.Error);
+        Assert.Contains("required", result.Error);
     }
 
     [Fact]

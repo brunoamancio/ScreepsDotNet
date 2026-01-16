@@ -3,6 +3,7 @@ namespace ScreepsDotNet.Engine.Tests.Processors.Helpers;
 using System;
 using System.Collections.Generic;
 using ScreepsDotNet.Common.Constants;
+using ScreepsDotNet.Common.Types;
 using ScreepsDotNet.Driver.Contracts;
 using ScreepsDotNet.Engine.Data.Models;
 using ScreepsDotNet.Engine.Processors.Helpers;
@@ -28,7 +29,7 @@ public sealed class SpawnStateReaderTests
     [Fact]
     public void GetState_FindsPendingCreepAndRemainingTime()
     {
-        int[] directions = [1, 2];
+        Direction[] directions = [Direction.Top, Direction.TopRight];
         var spawningSnapshot = new RoomSpawnSpawningSnapshot("worker1", 9, 105, directions);
         var spawn = CreateSpawn(userId: "user1", spawnSnapshot: spawningSnapshot, x: 12, y: 18);
         var pendingCreep = CreateCreep("worker1", "user1", 12, 18);

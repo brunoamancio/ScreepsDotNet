@@ -1,5 +1,6 @@
 using MongoDB.Bson;
 using ScreepsDotNet.Common.Constants;
+using ScreepsDotNet.Common.Types;
 using ScreepsDotNet.Driver.Services.Rooms;
 using ScreepsDotNet.Storage.MongoRedis.Repositories.Documents;
 
@@ -10,7 +11,7 @@ public sealed class RoomContractMapperTests
     [Fact]
     public void MapRoomObject_MapsSpawningPayload()
     {
-        int[] directions = [1, 3, 5];
+        Direction[] directions = [Direction.Top, Direction.Right, Direction.Bottom];
 
         var document = new RoomObjectDocument
         {
@@ -24,7 +25,7 @@ public sealed class RoomContractMapperTests
                 [RoomDocumentFields.RoomObject.SpawningFields.Name] = "builder1",
                 [RoomDocumentFields.RoomObject.SpawningFields.NeedTime] = 9,
                 [RoomDocumentFields.RoomObject.SpawningFields.SpawnTime] = 12345,
-                [RoomDocumentFields.RoomObject.SpawningFields.Directions] = new BsonArray(directions)
+                [RoomDocumentFields.RoomObject.SpawningFields.Directions] = new BsonArray(directions.Select(direction => (int)direction))
             }
         };
 

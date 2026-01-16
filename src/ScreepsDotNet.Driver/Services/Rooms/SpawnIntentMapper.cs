@@ -1,5 +1,7 @@
 using MongoDB.Bson;
 using ScreepsDotNet.Common;
+using ScreepsDotNet.Common.Extensions;
+using ScreepsDotNet.Common.Types;
 using ScreepsDotNet.Driver.Constants;
 using ScreepsDotNet.Driver.Contracts;
 
@@ -36,11 +38,11 @@ internal static class SpawnIntentMapper
         if (!document.TryGetValue(IntentDocumentFields.Spawn.Body, out var bodyValue) || bodyValue is not BsonArray bodyArray)
             return null;
 
-        var bodyParts = ExtractStringArray(bodyArray);
+        var bodyParts = ExtractBodyPartArray(bodyArray);
         if (bodyParts.Count == 0)
             return null;
 
-        IReadOnlyList<int>? directions = null;
+        IReadOnlyList<Direction>? directions = null;
         if (document.TryGetValue(IntentDocumentFields.Spawn.Directions, out var directionsValue) && directionsValue is BsonArray directionsArray)
         {
             var parsedDirections = ExtractDirectionArray(directionsArray);
@@ -97,16 +99,37 @@ internal static class SpawnIntentMapper
         return result;
     }
 
-    private static List<int> ExtractDirectionArray(BsonArray array)
+    private static IReadOnlyList<BodyPartType> ExtractBodyPartArray(BsonArray array)
     {
-        var result = new List<int>(array.Count);
-        var seen = new HashSet<int>();
+        if (array.Count == 0)
+            return [];
+
+        var result = new List<BodyPartType>(array.Count);
+        for (var i = 0; i < array.Count; i++)
+        {
+            if (array[i] is not BsonString bsonString)
+                return [];
+
+            var value = bsonString.Value;
+            if (string.IsNullOrWhiteSpace(value) || !value.TryParseBodyPartType(out var partType))
+                return [];
+
+            result.Add(partType);
+        }
+
+        return result;
+    }
+
+    private static List<Direction> ExtractDirectionArray(BsonArray array)
+    {
+        var result = new List<Direction>(array.Count);
+        var seen = new HashSet<Direction>();
         foreach (var value in array)
         {
             if (!value.IsInt32)
                 continue;
-            var direction = value.AsInt32;
-            if (direction is < 1 or > 8)
+            var raw = value.AsInt32;
+            if (!DirectionExtensions.TryParseDirection(raw, out var direction))
                 continue;
             if (seen.Add(direction))
                 result.Add(direction);

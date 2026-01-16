@@ -3,6 +3,7 @@ namespace ScreepsDotNet.Engine.Processors.Helpers;
 using System;
 using System.Collections.Generic;
 using ScreepsDotNet.Common.Constants;
+using ScreepsDotNet.Common.Types;
 using ScreepsDotNet.Driver.Contracts;
 using ScreepsDotNet.Engine.Data.Models;
 
@@ -62,6 +63,6 @@ internal sealed class SpawnStateReader : ISpawnStateReader
 internal sealed record SpawnRuntimeState(RoomObjectSnapshot Spawn, RoomSpawnSpawningSnapshot? Spawning, RoomObjectSnapshot? PendingCreep, int? RemainingTime)
 {
     public bool IsSpawning => Spawning is not null;
-    public IReadOnlyList<int>? Directions => Spawning?.Directions;
+    public IReadOnlyList<Direction>? Directions => Spawning?.Directions;
     public string? PendingCreepName => Spawning?.Name ?? PendingCreep?.Name;
 }

@@ -1,6 +1,7 @@
 namespace ScreepsDotNet.Driver.Contracts;
 
 using System.Collections.Generic;
+using ScreepsDotNet.Common.Types;
 
 public sealed record RoomIntentSnapshot(
     string RoomName,
@@ -22,15 +23,15 @@ public sealed record SpawnIntentEnvelope(
 
 public sealed record CreateCreepIntent(
     string Name,
-    IReadOnlyList<string> BodyParts,
-    IReadOnlyList<int>? Directions,
+    IReadOnlyList<BodyPartType> BodyParts,
+    IReadOnlyList<Direction>? Directions,
     IReadOnlyList<string>? EnergyStructureIds);
 
 public sealed record RenewCreepIntent(string TargetId);
 
 public sealed record RecycleCreepIntent(string TargetId);
 
-public sealed record SetSpawnDirectionsIntent(IReadOnlyList<int> Directions);
+public sealed record SetSpawnDirectionsIntent(IReadOnlyList<Direction> Directions);
 
 public sealed record CreepIntentEnvelope(
     MoveIntent? Move,

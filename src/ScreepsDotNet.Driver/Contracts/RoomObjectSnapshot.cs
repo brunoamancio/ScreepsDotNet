@@ -3,6 +3,7 @@ namespace ScreepsDotNet.Driver.Contracts;
 using System.Collections.Generic;
 using ScreepsDotNet.Common;
 using ScreepsDotNet.Common.Constants;
+using ScreepsDotNet.Common.Types;
 
 /// <summary>
 /// Canonical representation of a room object used by the engine/processor.
@@ -58,4 +59,4 @@ public sealed record RoomSpawnSpawningSnapshot(
     string Name,
     int? NeedTime,
     int? SpawnTime,
-    IReadOnlyList<int> Directions);
+    IReadOnlyList<Direction> Directions);

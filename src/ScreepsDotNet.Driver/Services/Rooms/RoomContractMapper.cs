@@ -2,8 +2,11 @@ namespace ScreepsDotNet.Driver.Services.Rooms;
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using MongoDB.Bson;
 using ScreepsDotNet.Common.Constants;
+using ScreepsDotNet.Common.Extensions;
+using ScreepsDotNet.Common.Types;
 using ScreepsDotNet.Driver.Contracts;
 using ScreepsDotNet.Storage.MongoRedis.Repositories.Documents;
 
@@ -236,7 +239,10 @@ internal static class RoomContractMapper
             document[RoomDocumentFields.RoomObject.SpawningFields.SpawnTime] = spawning.SpawnTime.Value;
 
         if (spawning.Directions is { Count: > 0 })
-            document[RoomDocumentFields.RoomObject.SpawningFields.Directions] = new BsonArray(spawning.Directions);
+        {
+            var array = new BsonArray(spawning.Directions.Select(direction => direction.ToInt()));
+            document[RoomDocumentFields.RoomObject.SpawningFields.Directions] = array;
+        }
 
         return document;
     }
@@ -257,15 +263,16 @@ internal static class RoomContractMapper
         };
     }
 
-    private static IReadOnlyList<int> ReadDirections(BsonDocument document, string field)
+    private static IReadOnlyList<Direction> ReadDirections(BsonDocument document, string field)
     {
         if (!document.TryGetValue(field, out var value) || value is not BsonArray array || array.Count == 0)
-            return Array.Empty<int>();
+            return Array.Empty<Direction>();
 
-        var result = new List<int>(array.Count);
+        var result = new List<Direction>(array.Count);
+        var seen = new HashSet<Direction>();
         foreach (var element in array)
         {
-            int? direction = element switch
+            int? raw = element switch
             {
                 { IsInt32: true } => element.AsInt32,
                 { IsInt64: true } => (int)element.AsInt64,
@@ -275,11 +282,14 @@ internal static class RoomContractMapper
                 _ => null
             };
 
-            if (direction.HasValue)
-                result.Add(direction.Value);
+            if (!raw.HasValue || !DirectionExtensions.TryParseDirection(raw.Value, out var direction))
+                continue;
+
+            if (seen.Add(direction))
+                result.Add(direction);
         }
 
-        return result.Count == 0 ? Array.Empty<int>() : result;
+        return result.Count == 0 ? Array.Empty<Direction>() : result;
     }
 
     public static BsonDocument CreateRoomObjectPatchDocument(RoomObjectPatchPayload patch)
