@@ -1,210 +1,305 @@
 db = db.getSiblingDB('screeps');
 
-db.users.updateOne(
-    { _id: 'test-user' },
+const Collections = {
+    Users: 'users',
+    RoomsObjects: 'rooms.objects',
+    UserPowerCreeps: 'users.power_creeps',
+    UserMoney: 'users.money',
+    UserMessages: 'users.messages',
+    UserNotifications: 'users.notifications'
+};
+
+const UserFields = {
+    Id: '_id',
+    Username: 'username',
+    UsernameLower: 'usernameLower',
+    Email: 'email',
+    EmailDirty: 'emailDirty',
+    Active: 'active',
+    Cpu: 'cpu',
+    Bot: 'bot',
+    Password: 'password',
+    Money: 'money',
+    Badge: 'badge',
+    CustomBadge: 'customBadge',
+    NotifyPrefs: 'notifyPrefs',
+    Gcl: 'gcl',
+    LastRespawnDate: 'lastRespawnDate',
+    LastChargeTime: 'lastChargeTime',
+    Blocked: 'blocked',
+    Power: 'power',
+    PowerExperimentations: 'powerExperimentations',
+    PowerExperimentationTime: 'powerExperimentationTime',
+    Steam: 'steam'
+};
+
+const RoomObjectFields = {
+    Id: '_id',
+    Type: 'type',
+    Room: 'room',
+    User: 'user',
+    Name: 'name',
+    X: 'x',
+    Y: 'y',
+    Hits: 'hits',
+    HitsMax: 'hitsMax',
+    TicksToLive: 'ticksToLive',
+    Store: 'store',
+    StoreCapacity: 'storeCapacity',
+    Fatigue: 'fatigue',
+    Level: 'level'
+};
+
+const MessageFields = {
+    Id: '_id',
+    User: 'user',
+    Respondent: 'respondent',
+    Date: 'date',
+    Type: 'type',
+    Text: 'text',
+    Unread: 'unread',
+    OutMessageId: 'outMessage'
+};
+
+const MoneyEntryFields = {
+    User: 'user',
+    Type: 'type',
+    Change: 'change',
+    Balance: 'balance',
+    Description: 'description',
+    Date: 'date'
+};
+
+const PowerCreepFields = {
+    Id: '_id',
+    User: 'user',
+    Name: 'name',
+    ClassName: 'className',
+    Level: 'level',
+    HitsMax: 'hitsMax',
+    Store: 'store',
+    StoreCapacity: 'storeCapacity',
+    SpawnCooldownTime: 'spawnCooldownTime',
+    Powers: 'powers'
+};
+
+const NotificationFields = {
+    User: 'user',
+    Message: 'message',
+    Date: 'date',
+    Type: 'type',
+    Count: 'count'
+};
+
+const NotificationTypeValues = {
+    Message: 'msg'
+};
+
+function upsertUserDocument(userId, values) {
+    db[Collections.Users].updateOne(
+        { [UserFields.Id]: userId },
+        { $set: values },
+        { upsert: true }
+    );
+}
+
+function upsertRoomObject(filter, values) {
+    db[Collections.RoomsObjects].updateOne(filter, { $set: values }, { upsert: true });
+}
+
+upsertUserDocument('test-user', {
+    [UserFields.Username]: 'TestUser',
+    [UserFields.UsernameLower]: 'testuser',
+    [UserFields.Email]: 'test@screeps.local',
+    [UserFields.EmailDirty]: false,
+    [UserFields.Active]: 1,
+    [UserFields.Cpu]: 100,
+    [UserFields.Bot]: null,
+    [UserFields.Password]: 'hashed-password',
+    [UserFields.Money]: 100000,
+    [UserFields.Badge]: null,
+    [UserFields.CustomBadge]: null,
+    [UserFields.NotifyPrefs]: {},
+    [UserFields.Gcl]: { level: 1, progress: 0, progressTotal: 1 },
+    [UserFields.LastRespawnDate]: new Date(),
+    [UserFields.LastChargeTime]: new Date(),
+    [UserFields.Blocked]: false,
+    [UserFields.Power]: 1000000,
+    [UserFields.PowerExperimentations]: 2,
+    [UserFields.PowerExperimentationTime]: 0,
+    [UserFields.Steam]: {
+        id: '90071992547409920',
+        displayName: 'Test Player',
+        ownership: null,
+        steamProfileLinkHidden: false
+    }
+});
+
+upsertRoomObject(
     {
-        $set: {
-            username: 'TestUser',
-            usernameLower: 'testuser',
-            email: 'test@screeps.local',
-            emailDirty: false,
-            active: 1,
-            cpu: 100,
-            bot: null,
-            password: 'hashed-password',
-            money: 100000,
-            badge: null,
-            customBadge: null,
-            notifyPrefs: {},
-            gcl: { level: 1, progress: 0, progressTotal: 1 },
-            lastRespawnDate: new Date(),
-            lastChargeTime: new Date(),
-            blocked: false,
-            power: 1000000,
-            powerExperimentations: 2,
-            powerExperimentationTime: 0,
-            steam: {
-                id: '90071992547409920',
-                displayName: 'Test Player',
-                ownership: null,
-                steamProfileLinkHidden: false
-            }
-        }
+        [RoomObjectFields.User]: 'test-user',
+        [RoomObjectFields.Type]: 'controller',
+        [RoomObjectFields.Room]: 'W1N1'
     },
-    { upsert: true }
+    {
+        [RoomObjectFields.Level]: 3,
+        [RoomObjectFields.User]: 'test-user',
+        [RoomObjectFields.Type]: 'controller',
+        [RoomObjectFields.Room]: 'W1N1'
+    }
 );
 
-db['rooms.objects'].updateOne(
-    { user: 'test-user', type: 'controller', room: 'W1N1' },
+upsertRoomObject(
     {
-        $set: {
-            level: 3,
-            user: 'test-user',
-            type: 'controller',
-            room: 'W1N1'
-        }
+        [RoomObjectFields.User]: 'test-user',
+        [RoomObjectFields.Type]: 'controller',
+        [RoomObjectFields.Room]: 'W2N2'
     },
-    { upsert: true }
+    {
+        [RoomObjectFields.Level]: 5,
+        [RoomObjectFields.User]: 'test-user',
+        [RoomObjectFields.Type]: 'controller',
+        [RoomObjectFields.Room]: 'W2N2'
+    }
 );
 
-db['rooms.objects'].updateOne(
-    { user: 'test-user', type: 'controller', room: 'W2N2' },
+upsertRoomObject(
     {
-        $set: {
-            level: 5,
-            user: 'test-user',
-            type: 'controller',
-            room: 'W2N2'
-        }
+        [RoomObjectFields.User]: 'test-user',
+        [RoomObjectFields.Type]: 'spawn',
+        [RoomObjectFields.Room]: 'W1N1'
     },
-    { upsert: true }
+    {
+        [RoomObjectFields.Name]: 'Spawn1',
+        [RoomObjectFields.User]: 'test-user',
+        [RoomObjectFields.Type]: 'spawn',
+        [RoomObjectFields.Room]: 'W1N1'
+    }
 );
 
-db['rooms.objects'].updateOne(
-    { user: 'test-user', type: 'spawn', room: 'W1N1' },
-    {
-        $set: {
-            name: 'Spawn1',
-            user: 'test-user',
-            type: 'spawn',
-            room: 'W1N1'
-        }
-    },
-    { upsert: true }
-);
-
-db.users.updateOne(
-    { _id: 'ally-user' },
-    {
-        $set: {
-            username: 'AllyUser',
-            usernameLower: 'allyuser',
-            email: 'ally@screeps.local',
-            emailDirty: false,
-            active: 1,
-            cpu: 100,
-            bot: null,
-            password: 'hashed-password',
-            notifyPrefs: {},
-            gcl: { level: 1, progress: 0, progressTotal: 1 },
-            lastRespawnDate: new Date(),
-            lastChargeTime: new Date(),
-            blocked: false,
-            power: 100000,
-            badge: null,
-            customBadge: null
-        }
-    },
-    { upsert: true }
-);
+upsertUserDocument('ally-user', {
+    [UserFields.Username]: 'AllyUser',
+    [UserFields.UsernameLower]: 'allyuser',
+    [UserFields.Email]: 'ally@screeps.local',
+    [UserFields.EmailDirty]: false,
+    [UserFields.Active]: 1,
+    [UserFields.Cpu]: 100,
+    [UserFields.Bot]: null,
+    [UserFields.Password]: 'hashed-password',
+    [UserFields.NotifyPrefs]: {},
+    [UserFields.Gcl]: { level: 1, progress: 0, progressTotal: 1 },
+    [UserFields.LastRespawnDate]: new Date(),
+    [UserFields.LastChargeTime]: new Date(),
+    [UserFields.Blocked]: false,
+    [UserFields.Power]: 100000,
+    [UserFields.Badge]: null,
+    [UserFields.CustomBadge]: null
+});
 
 const powerCreepActiveId = ObjectId('64d000000000000000000001');
 const powerCreepDormantId = ObjectId('64d000000000000000000002');
 
-db['rooms.objects'].updateOne(
-    { _id: powerCreepActiveId },
+upsertRoomObject(
+    { [RoomObjectFields.Id]: powerCreepActiveId },
     {
-        $set: {
-            _id: powerCreepActiveId,
-            user: 'test-user',
-            type: 'powerCreep',
-            room: 'W1N1',
-            x: 20,
-            y: 20,
-            hits: 2800,
-            hitsMax: 3000,
-            ticksToLive: 4500,
-            store: { ops: 120 },
-            storeCapacity: 400,
-            fatigue: 0
-        }
-    },
-    { upsert: true }
+        [RoomObjectFields.Id]: powerCreepActiveId,
+        [RoomObjectFields.User]: 'test-user',
+        [RoomObjectFields.Type]: 'powerCreep',
+        [RoomObjectFields.Room]: 'W1N1',
+        [RoomObjectFields.X]: 20,
+        [RoomObjectFields.Y]: 20,
+        [RoomObjectFields.Hits]: 2800,
+        [RoomObjectFields.HitsMax]: 3000,
+        [RoomObjectFields.TicksToLive]: 4500,
+        [RoomObjectFields.Store]: { ops: 120 },
+        [RoomObjectFields.StoreCapacity]: 400,
+        [RoomObjectFields.Fatigue]: 0
+    }
 );
 
-db['users.power_creeps'].deleteMany({ user: 'test-user' });
-db['users.power_creeps'].insertMany([
+db[Collections.UserPowerCreeps].deleteMany({ [PowerCreepFields.User]: 'test-user' });
+db[Collections.UserPowerCreeps].insertMany([
     {
-        _id: powerCreepActiveId,
-        user: 'test-user',
-        name: 'IntegrationOperator',
-        className: 'operator',
-        level: 3,
-        hitsMax: 3000,
-        store: { ops: 120 },
-        storeCapacity: 400,
-        spawnCooldownTime: null,
-        powers: {
+        [PowerCreepFields.Id]: powerCreepActiveId,
+        [PowerCreepFields.User]: 'test-user',
+        [PowerCreepFields.Name]: 'IntegrationOperator',
+        [PowerCreepFields.ClassName]: 'operator',
+        [PowerCreepFields.Level]: 3,
+        [PowerCreepFields.HitsMax]: 3000,
+        [PowerCreepFields.Store]: { ops: 120 },
+        [PowerCreepFields.StoreCapacity]: 400,
+        [PowerCreepFields.SpawnCooldownTime]: null,
+        [PowerCreepFields.Powers]: {
             '1': { level: 2 },
             '2': { level: 1 }
         }
     },
     {
-        _id: powerCreepDormantId,
-        user: 'test-user',
-        name: 'BenchOperator',
-        className: 'operator',
-        level: 1,
-        hitsMax: 2000,
-        store: {},
-        storeCapacity: 200,
-        spawnCooldownTime: 0,
-        powers: {
+        [PowerCreepFields.Id]: powerCreepDormantId,
+        [PowerCreepFields.User]: 'test-user',
+        [PowerCreepFields.Name]: 'BenchOperator',
+        [PowerCreepFields.ClassName]: 'operator',
+        [PowerCreepFields.Level]: 1,
+        [PowerCreepFields.HitsMax]: 2000,
+        [PowerCreepFields.Store]: {},
+        [PowerCreepFields.StoreCapacity]: 200,
+        [PowerCreepFields.SpawnCooldownTime]: 0,
+        [PowerCreepFields.Powers]: {
             '1': { level: 1 }
         }
     }
 ]);
 
-db['users.money'].deleteMany({ user: 'test-user' });
-db['users.money'].insertMany([
+db[Collections.UserMoney].deleteMany({ [MoneyEntryFields.User]: 'test-user' });
+db[Collections.UserMoney].insertMany([
     {
-        user: 'test-user',
-        type: 'market.sell',
-        change: 5000,
-        balance: 15000,
-        description: 'Sold energy on the market',
-        date: new Date()
+        [MoneyEntryFields.User]: 'test-user',
+        [MoneyEntryFields.Type]: 'market.sell',
+        [MoneyEntryFields.Change]: 5000,
+        [MoneyEntryFields.Balance]: 15000,
+        [MoneyEntryFields.Description]: 'Sold energy on the market',
+        [MoneyEntryFields.Date]: new Date()
     },
     {
-        user: 'test-user',
-        type: 'market.buy',
-        change: -2000,
-        balance: 10000,
-        description: 'Purchased minerals',
-        date: new Date(Date.now() - 3600 * 1000)
+        [MoneyEntryFields.User]: 'test-user',
+        [MoneyEntryFields.Type]: 'market.buy',
+        [MoneyEntryFields.Change]: -2000,
+        [MoneyEntryFields.Balance]: 10000,
+        [MoneyEntryFields.Description]: 'Purchased minerals',
+        [MoneyEntryFields.Date]: new Date(Date.now() - 3600 * 1000)
     }
 ]);
 
 const messageOutId = new ObjectId();
 const now = new Date();
 
-db['users.messages'].deleteMany({});
-db['users.messages'].insertMany([
+db[Collections.UserMessages].deleteMany({});
+db[Collections.UserMessages].insertMany([
     {
-        _id: messageOutId,
-        user: 'ally-user',
-        respondent: 'test-user',
-        date: now,
-        type: 'out',
-        text: 'Welcome to the Screeps.NET rewrite!',
-        unread: false
+        [MessageFields.Id]: messageOutId,
+        [MessageFields.User]: 'ally-user',
+        [MessageFields.Respondent]: 'test-user',
+        [MessageFields.Date]: now,
+        [MessageFields.Type]: 'out',
+        [MessageFields.Text]: 'Welcome to the Screeps.NET rewrite!',
+        [MessageFields.Unread]: false
     },
     {
-        user: 'test-user',
-        respondent: 'ally-user',
-        date: now,
-        type: 'in',
-        text: 'Welcome to the Screeps.NET rewrite!',
-        unread: true,
-        outMessage: messageOutId
+        [MessageFields.User]: 'test-user',
+        [MessageFields.Respondent]: 'ally-user',
+        [MessageFields.Date]: now,
+        [MessageFields.Type]: 'in',
+        [MessageFields.Text]: 'Welcome to the Screeps.NET rewrite!',
+        [MessageFields.Unread]: true,
+        [MessageFields.OutMessageId]: messageOutId
     }
 ]);
 
-db['users.notifications'].deleteMany({});
-db['users.notifications'].insertOne({
-    user: 'test-user',
-    message: 'New message from AllyUser',
-    date: Date.now(),
-    type: 'msg',
-    count: 1
+db[Collections.UserNotifications].deleteMany({});
+db[Collections.UserNotifications].insertOne({
+    [NotificationFields.User]: 'test-user',
+    [NotificationFields.Message]: 'New message from AllyUser',
+    [NotificationFields.Date]: Date.now(),
+    [NotificationFields.Type]: NotificationTypeValues.Message,
+    [NotificationFields.Count]: 1
 });
