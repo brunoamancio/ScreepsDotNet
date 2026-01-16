@@ -26,6 +26,7 @@ public sealed record RoomObjectPatchPayload : IRoomObjectPatchPayload
     public bool? UpgradeBlocked { get; init; }
     public int? SpawnCooldownTime { get; init; }
     public int? StructureHits { get; init; }
+    public int? DecayTime { get; init; }
     public int? TicksToLive { get; init; }
     public int? Progress { get; init; }
     public RoomObjectActionLogPatch? ActionLog { get; init; }
@@ -34,6 +35,12 @@ public sealed record RoomObjectPatchPayload : IRoomObjectPatchPayload
     public RoomSpawnSpawningSnapshot? Spawning { get; init; }
     public bool ClearSpawning { get; init; }
     public IReadOnlyList<CreepBodyPartSnapshot>? Body { get; init; }
+    public int? Energy { get; init; }
+    public int? MineralAmount { get; init; }
+    public int? InvaderHarvested { get; init; }
+    public int? Harvested { get; init; }
+    public int? Cooldown { get; init; }
+    public int? CooldownTime { get; init; }
 
     public bool HasChanges =>
         Hits.HasValue ||
@@ -43,12 +50,19 @@ public sealed record RoomObjectPatchPayload : IRoomObjectPatchPayload
         UpgradeBlocked.HasValue ||
         SpawnCooldownTime.HasValue ||
         StructureHits.HasValue ||
+        DecayTime.HasValue ||
         TicksToLive.HasValue ||
         Progress.HasValue ||
         (ActionLog?.HasEntries ?? false) ||
         (Store is { Count: > 0 }) ||
         StoreCapacity.HasValue ||
         (Body is { Count: > 0 }) ||
+        Energy.HasValue ||
+        MineralAmount.HasValue ||
+        InvaderHarvested.HasValue ||
+        Harvested.HasValue ||
+        Cooldown.HasValue ||
+        CooldownTime.HasValue ||
         Spawning is not null ||
         ClearSpawning;
 }
@@ -62,9 +76,10 @@ public sealed record RoomObjectActionLogPatch(
     RoomObjectActionLogDie? Die = null,
     RoomObjectActionLogHealed? Healed = null,
     RoomObjectActionLogRepair? Repair = null,
-    RoomObjectActionLogBuild? Build = null)
+    RoomObjectActionLogBuild? Build = null,
+    RoomObjectActionLogHarvest? Harvest = null)
 {
-    public bool HasEntries => Die is not null || Healed is not null || Repair is not null || Build is not null;
+    public bool HasEntries => Die is not null || Healed is not null || Repair is not null || Build is not null || Harvest is not null;
 }
 
 public sealed record RoomObjectActionLogDie(int Time);
@@ -75,13 +90,16 @@ public sealed record RoomObjectActionLogRepair(int X, int Y);
 
 public sealed record RoomObjectActionLogBuild(int X, int Y);
 
+public sealed record RoomObjectActionLogHarvest(int X, int Y);
+
 public sealed record RoomObjectActionLogSnapshot(
     RoomObjectActionLogDie? Die = null,
     RoomObjectActionLogHealed? Healed = null,
     RoomObjectActionLogRepair? Repair = null,
-    RoomObjectActionLogBuild? Build = null)
+    RoomObjectActionLogBuild? Build = null,
+    RoomObjectActionLogHarvest? Harvest = null)
 {
-    public bool HasEntries => Die is not null || Healed is not null || Repair is not null || Build is not null;
+    public bool HasEntries => Die is not null || Healed is not null || Repair is not null || Build is not null || Harvest is not null;
 }
 
 public sealed record RoomInfoPatchPayload

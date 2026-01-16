@@ -82,7 +82,13 @@ internal static class RoomContractMapper
             document.ResourceAmount,
             document.Progress,
             document.ProgressTotal,
-            actionLog);
+            actionLog,
+            document.Energy,
+            document.MineralAmount,
+            document.InvaderHarvested,
+            document.Harvested,
+            document.Cooldown,
+            document.CooldownTime);
     }
 
     public static IReadOnlyDictionary<string, UserState> MapUsers(IReadOnlyDictionary<string, UserDocument> users)
@@ -187,6 +193,15 @@ internal static class RoomContractMapper
             };
         }
 
+        if (snapshot.Harvest is { } harvest)
+        {
+            document[RoomDocumentFields.RoomObject.ActionLogFields.Harvest] = new BsonDocument
+            {
+                [RoomDocumentFields.RoomObject.ActionLogFields.X] = harvest.X,
+                [RoomDocumentFields.RoomObject.ActionLogFields.Y] = harvest.Y
+            };
+        }
+
         return document.ElementCount == 0 ? null : document;
     }
 
@@ -229,10 +244,39 @@ internal static class RoomContractMapper
             TryGetInt32(buildY, out var buildYInt))
             build = new RoomObjectActionLogBuild(buildXInt, buildYInt);
 
-        if (die is null && healed is null && repair is null && build is null)
+        RoomObjectActionLogHarvest? harvest = null;
+        if (actionLog.GetValue(RoomDocumentFields.RoomObject.ActionLogFields.Harvest, null) is BsonDocument harvestDoc &&
+            harvestDoc.TryGetValue(RoomDocumentFields.RoomObject.ActionLogFields.X, out var harvestX) &&
+            harvestDoc.TryGetValue(RoomDocumentFields.RoomObject.ActionLogFields.Y, out var harvestY) &&
+            TryGetInt32(harvestX, out var harvestXInt) &&
+            TryGetInt32(harvestY, out var harvestYInt))
+            harvest = new RoomObjectActionLogHarvest(harvestXInt, harvestYInt);
+        else
+        {
+            foreach (var element in actionLog.Elements)
+            {
+                if (!string.Equals(element.Name, RoomDocumentFields.RoomObject.ActionLogFields.Harvest, StringComparison.Ordinal))
+                    continue;
+
+                if (element.Value is not BsonDocument doc)
+                    break;
+
+                if (!doc.TryGetValue(RoomDocumentFields.RoomObject.ActionLogFields.X, out var altX) ||
+                    !doc.TryGetValue(RoomDocumentFields.RoomObject.ActionLogFields.Y, out var altY))
+                    break;
+
+                if (!TryGetInt32(altX, out var altXInt) || !TryGetInt32(altY, out var altYInt))
+                    break;
+
+                harvest = new RoomObjectActionLogHarvest(altXInt, altYInt);
+                break;
+            }
+        }
+
+        if (die is null && healed is null && repair is null && build is null && harvest is null)
             return null;
 
-        return new RoomObjectActionLogSnapshot(die, healed, repair, build);
+        return new RoomObjectActionLogSnapshot(die, healed, repair, build, harvest);
     }
 
     private static bool TryGetInt32(BsonValue value, out int result)
@@ -302,11 +346,13 @@ internal static class RoomContractMapper
             Level = snapshot.Level,
             Density = snapshot.Density,
             MineralType = snapshot.MineralType,
+            MineralAmount = snapshot.MineralAmount,
             DepositType = snapshot.DepositType,
             StructureType = snapshot.StructureType,
             Store = snapshot.Store.Count == 0 ? null : new Dictionary<string, int>(snapshot.Store, StringComparer.Ordinal),
             StoreCapacity = snapshot.StoreCapacity,
             StoreCapacityResource = new Dictionary<string, int>(snapshot.StoreCapacityResource, StringComparer.Ordinal),
+            Energy = snapshot.Energy,
             Reservation = snapshot.Reservation is null
                 ? null
                 : new RoomReservationDocument
@@ -346,8 +392,12 @@ internal static class RoomContractMapper
             CreepSaying = snapshot.CreepSaying,
             ResourceType = snapshot.ResourceType,
             ResourceAmount = snapshot.ResourceAmount,
+            InvaderHarvested = snapshot.InvaderHarvested,
             Progress = snapshot.Progress,
-            ProgressTotal = snapshot.ProgressTotal
+            ProgressTotal = snapshot.ProgressTotal,
+            Harvested = snapshot.Harvested,
+            Cooldown = snapshot.Cooldown,
+            CooldownTime = snapshot.CooldownTime
         };
 
         return document;
@@ -505,11 +555,32 @@ internal static class RoomContractMapper
         if (patch.StructureHits.HasValue)
             document[RoomDocumentFields.RoomObject.StructureHits] = patch.StructureHits.Value;
 
+        if (patch.DecayTime.HasValue)
+            document[RoomDocumentFields.RoomObject.DecayTime] = patch.DecayTime.Value;
+
         if (patch.TicksToLive.HasValue)
             document[RoomDocumentFields.RoomObject.TicksToLive] = patch.TicksToLive.Value;
 
         if (patch.Progress.HasValue)
             document[RoomDocumentFields.RoomObject.Progress] = patch.Progress.Value;
+
+        if (patch.Energy.HasValue)
+            document[RoomDocumentFields.RoomObject.Energy] = patch.Energy.Value;
+
+        if (patch.MineralAmount.HasValue)
+            document[RoomDocumentFields.RoomObject.MineralAmount] = patch.MineralAmount.Value;
+
+        if (patch.InvaderHarvested.HasValue)
+            document[RoomDocumentFields.RoomObject.InvaderHarvested] = patch.InvaderHarvested.Value;
+
+        if (patch.Harvested.HasValue)
+            document[RoomDocumentFields.RoomObject.Harvested] = patch.Harvested.Value;
+
+        if (patch.Cooldown.HasValue)
+            document[RoomDocumentFields.RoomObject.Cooldown] = patch.Cooldown.Value;
+
+        if (patch.CooldownTime.HasValue)
+            document[RoomDocumentFields.RoomObject.CooldownTime] = patch.CooldownTime.Value;
 
         if (patch.ActionLog is { } actionLog && actionLog.HasEntries)
         {
@@ -528,6 +599,15 @@ internal static class RoomContractMapper
                 {
                     [RoomDocumentFields.RoomObject.ActionLogFields.X] = healed.X,
                     [RoomDocumentFields.RoomObject.ActionLogFields.Y] = healed.Y
+                };
+            }
+
+            if (actionLog.Harvest is { } harvest)
+            {
+                logDocument[RoomDocumentFields.RoomObject.ActionLogFields.Harvest] = new BsonDocument
+                {
+                    [RoomDocumentFields.RoomObject.ActionLogFields.X] = harvest.X,
+                    [RoomDocumentFields.RoomObject.ActionLogFields.Y] = harvest.Y
                 };
             }
 

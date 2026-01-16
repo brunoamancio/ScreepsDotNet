@@ -7,7 +7,6 @@ using System.Linq;
 using ScreepsDotNet.Common;
 using ScreepsDotNet.Common.Constants;
 using ScreepsDotNet.Common.Structures;
-using ScreepsDotNet.Common.Types;
 using ScreepsDotNet.Driver.Contracts;
 using ScreepsDotNet.Engine.Processors.Helpers;
 
@@ -74,7 +73,7 @@ internal sealed class CreepBuildRepairStep(IStructureBlueprintProvider blueprint
         if (target.Hits is null || target.HitsMax is null || target.Hits >= target.HitsMax)
             return;
 
-        if (!HasWorkingParts(creep, out var workParts))
+        if (!WorkPartHelper.TryGetActiveWorkParts(creep, out var workParts))
             return;
 
         var availableEnergy = GetAvailableEnergy(creep, energyLedger);
@@ -98,7 +97,7 @@ internal sealed class CreepBuildRepairStep(IStructureBlueprintProvider blueprint
         if (repairEffect <= 0)
             return;
 
-        var boostedEffect = ApplyWorkBoosts(workParts, repairEffect, BoostEffect.Repair, ScreepsGameConstants.RepairPower);
+        var boostedEffect = WorkPartHelper.ApplyWorkBoosts(workParts, repairEffect, WorkBoostEffect.Repair, ScreepsGameConstants.RepairPower);
         var totalEffect = (int)Math.Min(repairHitsRemaining, boostedEffect);
         if (totalEffect <= 0)
             return;
@@ -139,7 +138,7 @@ internal sealed class CreepBuildRepairStep(IStructureBlueprintProvider blueprint
         if (target.Progress >= target.ProgressTotal)
             return;
 
-        if (!HasWorkingParts(creep, out var workParts))
+        if (!WorkPartHelper.TryGetActiveWorkParts(creep, out var workParts))
             return;
 
         var availableEnergy = GetAvailableEnergy(creep, energyLedger);
@@ -158,7 +157,7 @@ internal sealed class CreepBuildRepairStep(IStructureBlueprintProvider blueprint
         if (buildEffect <= 0)
             return;
 
-        var boostedEffect = ApplyWorkBoosts(workParts, buildEffect, BoostEffect.Build, ScreepsGameConstants.BuildPower);
+        var boostedEffect = WorkPartHelper.ApplyWorkBoosts(workParts, buildEffect, WorkBoostEffect.Build, ScreepsGameConstants.BuildPower);
         var totalProgress = (int)Math.Min(buildRemaining, boostedEffect);
         if (totalProgress <= 0)
             return;
@@ -256,18 +255,6 @@ internal sealed class CreepBuildRepairStep(IStructureBlueprintProvider blueprint
         return !string.IsNullOrWhiteSpace(targetId);
     }
 
-    private static bool HasWorkingParts(RoomObjectSnapshot creep, out List<CreepBodyPartSnapshot> parts)
-    {
-        parts = new List<CreepBodyPartSnapshot>();
-        foreach (var part in creep.Body)
-        {
-            if (part.Type == BodyPartType.Work && part.Hits > 0)
-                parts.Add(part);
-        }
-
-        return parts.Count > 0;
-    }
-
     private static bool IsInRange(RoomObjectSnapshot creep, RoomObjectSnapshot target)
         => Math.Max(Math.Abs(creep.X - target.X), Math.Abs(creep.Y - target.Y)) <= 3;
 
@@ -307,37 +294,6 @@ internal sealed class CreepBuildRepairStep(IStructureBlueprintProvider blueprint
             return blueprint;
 
         return null;
-    }
-
-    private static double ApplyWorkBoosts(
-        List<CreepBodyPartSnapshot> parts,
-        double baseEffect,
-        BoostEffect effect,
-        int perPartPower)
-    {
-        double additional = 0;
-        foreach (var part in parts)
-        {
-            if (string.IsNullOrWhiteSpace(part.Boost))
-                continue;
-
-            if (!WorkBoostTables.TryGetValue(part.Boost!, out var boost))
-                continue;
-
-            var multiplier = effect switch
-            {
-                BoostEffect.Repair => boost.RepairMultiplier,
-                BoostEffect.Build => boost.BuildMultiplier,
-                _ => 1.0
-            };
-
-            if (multiplier <= 1.0)
-                continue;
-
-            additional += (multiplier - 1.0) * perPartPower;
-        }
-
-        return Math.Floor(baseEffect + additional);
     }
 
     private static TerrainCache BuildTerrainCache(RoomProcessorContext context)
@@ -382,23 +338,7 @@ internal sealed class CreepBuildRepairStep(IStructureBlueprintProvider blueprint
             progress ?? existing?.Progress);
     }
 
-    private enum BoostEffect
-    {
-        Repair,
-        Build
-    }
-
     private sealed record TerrainCache(string? Terrain);
 
-    private sealed record WorkBoostProfile(double BuildMultiplier = 1.0, double RepairMultiplier = 1.0);
-
     private sealed record ObjectStateOverride(int? Hits, int? Progress);
-
-    private static readonly IReadOnlyDictionary<string, WorkBoostProfile> WorkBoostTables =
-        new Dictionary<string, WorkBoostProfile>(StringComparer.Ordinal)
-        {
-            ["LH"] = new(BuildMultiplier: 1.5, RepairMultiplier: 1.5),
-            ["LH2O"] = new(BuildMultiplier: 1.8, RepairMultiplier: 1.8),
-            ["XLH2O"] = new(BuildMultiplier: 2.0, RepairMultiplier: 2.0)
-        };
 }

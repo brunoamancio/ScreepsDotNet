@@ -23,6 +23,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IRoomProcessorStep, SpawnIntentStep>();
         services.AddSingleton<IRoomProcessorStep, TowerIntentStep>();
         services.AddSingleton<IRoomProcessorStep, CreepBuildRepairStep>();
+        services.AddSingleton<IRoomProcessorStep, HarvestIntentStep>();
         services.AddSingleton<IRoomProcessorStep, CombatResolutionStep>();
         services.AddSingleton<IRoomProcessorStep, StructureDecayStep>();
         services.AddSingleton<IRoomProcessorStep, ControllerDowngradeStep>();
@@ -33,6 +34,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<ISpawnEnergyAllocator, SpawnEnergyAllocator>();
         services.AddSingleton<ISpawnEnergyCharger, SpawnEnergyCharger>();
         services.AddSingleton<ISpawnIntentParser, SpawnIntentParser>();
+        services.AddSingleton<IResourceDropHelper, ResourceDropHelper>();
         services.AddSingleton<ICreepDeathProcessor, CreepDeathProcessor>();
         services.AddSingleton<IStructureBlueprintProvider, StructureBlueprintProvider>();
         services.AddSingleton<IStructureSnapshotFactory, StructureSnapshotFactory>();

@@ -41,6 +41,16 @@ Always use these DTOs instead of ad-hoc dictionaries so action-log parity remain
 
 These DTOs live in the driver assembly so both the engine and driver loops share the same shapes. The driver remains responsible for translating to/from Mongo/Redis.
 
+### Harvest Metadata Surfaces
+
+`RoomObjectSnapshot` now exposes the legacy harvest counters directly so the engine never needs to read raw BSON/JToken blobs:
+
+- **Sources:** `Energy` (current capacity) and `InvaderHarvested` (NPC depletion tracker).
+- **Minerals:** `MineralAmount` (remaining yield) alongside the existing `MineralType`.
+- **Deposits:** `Harvested`, `Cooldown`, and `CooldownTime` so the engine can apply exhaustion math and respect active cooldown timers.
+
+Each field can also be patched through `RoomObjectPatchPayload`, and `RoomContractMapper` writes the updates back to Mongo using the shared `RoomDocumentFields` constants. Harvest and extractor handlers must use these typed fields instead of ad-hoc dictionaries to keep the driver/engine boundary storage-agnostic.
+
 ## Implementation Plan
 
 1. **Introduce driver contracts (Step E2.1).** ✅ (handled on driver side; see D10 status)

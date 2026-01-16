@@ -33,6 +33,11 @@ public static class RoomDocumentFields
         public const string CreepSaying = "creepSaying";
         public const string ResourceType = "resourceType";
         public const string Amount = "amount";
+        public const string Energy = "energy";
+        public const string MineralAmount = "mineralAmount";
+        public const string Harvested = "harvested";
+        public const string Cooldown = "cooldown";
+        public const string CooldownTime = "cooldownTime";
         public const string Spawning = "spawning";
         public const string NotifyWhenAttacked = "notifyWhenAttacked";
         public const string InterRoom = "interRoom";
@@ -53,6 +58,7 @@ public static class RoomDocumentFields
             public const string Attack = "attack";
             public const string Repair = "repair";
             public const string Build = "build";
+            public const string Harvest = "harvest";
             public const string Time = "time";
             public const string X = "x";
             public const string Y = "y";

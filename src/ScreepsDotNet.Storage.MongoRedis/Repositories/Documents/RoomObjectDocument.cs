@@ -36,6 +36,9 @@ public sealed class RoomObjectDocument
     [BsonElement("mineralType")]
     public string? MineralType { get; set; }
 
+    [BsonElement("mineralAmount")]
+    public int? MineralAmount { get; set; }
+
     [BsonElement("density")]
     public int? Density { get; set; }
 
@@ -56,6 +59,9 @@ public sealed class RoomObjectDocument
 
     [BsonElement("storeCapacityResource")]
     public Dictionary<string, int>? StoreCapacityResource { get; set; }
+
+    [BsonElement("energy")]
+    public int? Energy { get; set; }
 
     [BsonElement("hits")]
     public int? Hits { get; set; }
@@ -99,6 +105,9 @@ public sealed class RoomObjectDocument
     [BsonElement("amount")]
     public int? ResourceAmount { get; set; }
 
+    [BsonElement("invaderHarvested")]
+    public int? InvaderHarvested { get; set; }
+
     [BsonElement("userSummoned")]
     public bool? UserSummoned { get; set; }
 
@@ -117,8 +126,17 @@ public sealed class RoomObjectDocument
     [BsonElement("depositType")]
     public string? DepositType { get; set; }
 
+    [BsonElement("harvested")]
+    public int? Harvested { get; set; }
+
     [BsonElement("deployTime")]
     public int? DeployTime { get; set; }
+
+    [BsonElement("cooldown")]
+    public int? Cooldown { get; set; }
+
+    [BsonElement("cooldownTime")]
+    public int? CooldownTime { get; set; }
 
     [BsonElement("strongholdBehavior")]
     public string? StrongholdBehavior { get; set; }

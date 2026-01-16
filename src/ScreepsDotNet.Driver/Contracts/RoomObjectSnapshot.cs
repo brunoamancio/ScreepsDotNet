@@ -48,7 +48,13 @@ public sealed record RoomObjectSnapshot(
     int? ResourceAmount = null,
     int? Progress = null,
     int? ProgressTotal = null,
-    RoomObjectActionLogSnapshot? ActionLog = null)
+    RoomObjectActionLogSnapshot? ActionLog = null,
+    int? Energy = null,
+    int? MineralAmount = null,
+    int? InvaderHarvested = null,
+    int? Harvested = null,
+    int? Cooldown = null,
+    int? CooldownTime = null)
 {
     public int? MoveBodyParts => GetStoreValue(IntentKeys.Move);
     public int? ControllerDowngradeTimer => GetStoreValue(StoreKeys.DowngradeTimer);

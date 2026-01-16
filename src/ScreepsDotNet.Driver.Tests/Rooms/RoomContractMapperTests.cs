@@ -174,4 +174,87 @@ public sealed class RoomContractMapperTests
         Assert.Equal(150, roundtrip.Progress);
         Assert.Equal(3000, roundtrip.ProgressTotal);
     }
+
+    [Fact]
+    public void MapRoomObject_MapsSourceAndMineralFields()
+    {
+        var document = new RoomObjectDocument
+        {
+            Id = ObjectId.GenerateNewId(),
+            Type = RoomObjectTypes.Source,
+            Room = "W1N1",
+            X = 4,
+            Y = 6,
+            Energy = 2500,
+            InvaderHarvested = 3,
+            MineralType = ResourceTypes.Hydrogen,
+            MineralAmount = 3000
+        };
+
+        var snapshot = RoomContractMapper.MapRoomObject(document);
+        Assert.Equal(2500, snapshot.Energy);
+        Assert.Equal(3, snapshot.InvaderHarvested);
+        Assert.Equal(3000, snapshot.MineralAmount);
+
+        var roundtrip = RoomContractMapper.MapRoomObjectDocument(snapshot);
+        Assert.Equal(2500, roundtrip.Energy);
+        Assert.Equal(3, roundtrip.InvaderHarvested);
+        Assert.Equal(3000, roundtrip.MineralAmount);
+    }
+
+    [Fact]
+    public void MapRoomObject_MapsDepositFields()
+    {
+        var document = new RoomObjectDocument
+        {
+            Id = ObjectId.GenerateNewId(),
+            Type = RoomObjectTypes.Deposit,
+            Room = "W2N2",
+            X = 12,
+            Y = 17,
+            DepositType = ResourceTypes.Mist,
+            Harvested = 42,
+            Cooldown = 5,
+            CooldownTime = 123456
+        };
+
+        var snapshot = RoomContractMapper.MapRoomObject(document);
+        Assert.Equal(42, snapshot.Harvested);
+        Assert.Equal(5, snapshot.Cooldown);
+        Assert.Equal(123456, snapshot.CooldownTime);
+
+        var roundtrip = RoomContractMapper.MapRoomObjectDocument(snapshot);
+        Assert.Equal(42, roundtrip.Harvested);
+        Assert.Equal(5, roundtrip.Cooldown);
+        Assert.Equal(123456, roundtrip.CooldownTime);
+    }
+
+    [Fact]
+    public void MapRoomObject_MapsActionLogHarvest()
+    {
+        var document = new RoomObjectDocument
+        {
+            Id = ObjectId.GenerateNewId(),
+            Type = RoomObjectTypes.Creep,
+            Room = "W3N3",
+            X = 6,
+            Y = 9,
+            ActionLog = new BsonDocument
+            {
+                [RoomDocumentFields.RoomObject.ActionLogFields.Harvest] = new BsonDocument
+                {
+                    [RoomDocumentFields.RoomObject.ActionLogFields.X] = 11,
+                    [RoomDocumentFields.RoomObject.ActionLogFields.Y] = 13
+                }
+            }
+        };
+
+        var snapshot = RoomContractMapper.MapRoomObject(document);
+        Assert.NotNull(snapshot.ActionLog);
+        Assert.Equal(11, snapshot.ActionLog!.Harvest!.X);
+        Assert.Equal(13, snapshot.ActionLog.Harvest!.Y);
+
+        var roundtrip = RoomContractMapper.MapRoomObjectDocument(snapshot);
+        Assert.True(roundtrip.ActionLog!.Contains(RoomDocumentFields.RoomObject.ActionLogFields.Harvest));
+    }
 }

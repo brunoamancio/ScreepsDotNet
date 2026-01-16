@@ -24,6 +24,12 @@ public static class ScreepsGameConstants
     public const int RepairPower = 100;
     public const int BuildPower = 5;
     public const double RepairEnergyCost = 0.01;
+    public const int HarvestPower = 2;
+    public const int HarvestMineralPower = 1;
+    public const int HarvestDepositPower = 1;
+    public const double DepositExhaustMultiply = 0.001;
+    public const double DepositExhaustPow = 1.2;
+    public const int DepositDecayTime = 50_000;
     public const int TombstoneDecayPerPart = 5;
     public const int TombstoneDecayPowerCreep = 500;
     public const int TowerEnergyCost = 10;
