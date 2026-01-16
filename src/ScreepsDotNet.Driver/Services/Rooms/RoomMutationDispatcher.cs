@@ -1,6 +1,7 @@
 using System.Text.Json;
 using MongoDB.Bson;
 using ScreepsDotNet.Driver.Abstractions.Bulk;
+using ScreepsDotNet.Driver.Abstractions.Environment;
 using ScreepsDotNet.Driver.Abstractions.Rooms;
 using ScreepsDotNet.Driver.Contracts;
 using ScreepsDotNet.Storage.MongoRedis.Repositories.Documents;
@@ -10,6 +11,7 @@ namespace ScreepsDotNet.Driver.Services.Rooms;
 internal sealed class RoomMutationDispatcher(
     IBulkWriterFactory bulkWriterFactory,
     IRoomDataService roomDataService,
+    IEnvironmentService environmentService,
     IRoomObjectBlueprintEnricher blueprintEnricher) : IRoomMutationDispatcher
 {
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
@@ -20,8 +22,11 @@ internal sealed class RoomMutationDispatcher(
         ArgumentException.ThrowIfNullOrWhiteSpace(batch.RoomName);
 
         var objectsWriter = bulkWriterFactory.CreateRoomObjectsWriter();
+        if (batch.ObjectUpserts.Count > 0) {
+            var gameTime = await environmentService.GetGameTimeAsync(token).ConfigureAwait(false);
+            ApplyUpserts(objectsWriter, batch.ObjectUpserts, gameTime);
+        }
 
-        ApplyUpserts(objectsWriter, batch.ObjectUpserts);
         ApplyPatches(objectsWriter, batch.ObjectPatches);
         ApplyRemovals(objectsWriter, batch.ObjectDeletes);
 
@@ -44,12 +49,12 @@ internal sealed class RoomMutationDispatcher(
         }
     }
 
-    private void ApplyUpserts(IBulkWriter<RoomObjectDocument> writer, IReadOnlyList<RoomObjectUpsert> upserts)
+    private void ApplyUpserts(IBulkWriter<RoomObjectDocument> writer, IReadOnlyList<RoomObjectUpsert> upserts, int? gameTime)
     {
         if (upserts.Count == 0) return;
         foreach (var upsert in upserts)
         {
-            var enriched = blueprintEnricher.Enrich(upsert.Document);
+            var enriched = blueprintEnricher.Enrich(upsert.Document, gameTime);
             var entity = RoomContractMapper.MapRoomObjectDocument(enriched);
             writer.Insert(entity);
         }

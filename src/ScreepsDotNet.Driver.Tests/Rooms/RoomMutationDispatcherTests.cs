@@ -3,8 +3,9 @@ using MongoDB.Bson;
 using ScreepsDotNet.Driver.Abstractions.Bulk;
 using ScreepsDotNet.Driver.Contracts;
 using ScreepsDotNet.Driver.Services.Rooms;
-using ScreepsDotNet.Storage.MongoRedis.Repositories.Documents;
 using ScreepsDotNet.Driver.Tests.TestDoubles;
+using ScreepsDotNet.Driver.Tests.TestSupport;
+using ScreepsDotNet.Storage.MongoRedis.Repositories.Documents;
 
 namespace ScreepsDotNet.Driver.Tests.Rooms;
 
@@ -17,7 +18,8 @@ public sealed class RoomMutationDispatcherTests
         var roomsWriter = new FakeBulkWriter<RoomDocument>();
         var factory = new FakeBulkWriterFactory(objectsWriter, roomsWriter);
         var roomService = new StubRoomDataService();
-        var dispatcher = new RoomMutationDispatcher(factory, roomService, new PassThroughBlueprintEnricher());
+        var environment = new FakeEnvironmentService();
+        var dispatcher = new RoomMutationDispatcher(factory, roomService, environment, new PassThroughBlueprintEnricher());
 
         var batch = new RoomMutationBatch(
             RoomName: "W0N0",
@@ -65,7 +67,8 @@ public sealed class RoomMutationDispatcherTests
         var roomsWriter = new FakeBulkWriter<RoomDocument>();
         var factory = new FakeBulkWriterFactory(objectsWriter, roomsWriter);
         var roomService = new StubRoomDataService();
-        var dispatcher = new RoomMutationDispatcher(factory, roomService, new PassThroughBlueprintEnricher());
+        var environment = new FakeEnvironmentService();
+        var dispatcher = new RoomMutationDispatcher(factory, roomService, environment, new PassThroughBlueprintEnricher());
 
         var batch = new RoomMutationBatch(
             RoomName: "W1N1",
@@ -187,6 +190,6 @@ public sealed class RoomMutationDispatcherTests
 
     private sealed class PassThroughBlueprintEnricher : IRoomObjectBlueprintEnricher
     {
-        public RoomObjectSnapshot Enrich(RoomObjectSnapshot snapshot) => snapshot;
+        public RoomObjectSnapshot Enrich(RoomObjectSnapshot snapshot, int? gameTime = null) => snapshot;
     }
 }

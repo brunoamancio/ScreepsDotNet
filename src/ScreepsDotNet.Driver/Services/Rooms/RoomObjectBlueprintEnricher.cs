@@ -2,17 +2,18 @@ namespace ScreepsDotNet.Driver.Services.Rooms;
 
 using System;
 using System.Collections.Generic;
+using ScreepsDotNet.Common.Constants;
 using ScreepsDotNet.Common.Structures;
 using ScreepsDotNet.Driver.Contracts;
 
 internal interface IRoomObjectBlueprintEnricher
 {
-    RoomObjectSnapshot Enrich(RoomObjectSnapshot snapshot);
+    RoomObjectSnapshot Enrich(RoomObjectSnapshot snapshot, int? gameTime = null);
 }
 
 internal sealed class RoomObjectBlueprintEnricher(IStructureBlueprintProvider blueprintProvider) : IRoomObjectBlueprintEnricher
 {
-    public RoomObjectSnapshot Enrich(RoomObjectSnapshot snapshot)
+    public RoomObjectSnapshot Enrich(RoomObjectSnapshot snapshot, int? gameTime = null)
     {
         ArgumentNullException.ThrowIfNull(snapshot);
 
@@ -24,9 +25,12 @@ internal sealed class RoomObjectBlueprintEnricher(IStructureBlueprintProvider bl
         var storeCapacity = snapshot.StoreCapacity ?? blueprint.Store.StoreCapacity;
 
         var updatedStore = EnsureResourceEntries(snapshot.Store, blueprint.Store.InitialStore, out var storeChanged);
-        var updatedCapacity = EnsureResourceEntries(snapshot.StoreCapacityResource, blueprint.Store.StoreCapacityResource, out var capacityChanged);
+        updatedStore = EnsureSpawnCooldownEntry(blueprint, updatedStore, out var cooldownChanged);
 
-        if (!storeChanged && !capacityChanged && hits == snapshot.Hits && hitsMax == snapshot.HitsMax && storeCapacity == snapshot.StoreCapacity)
+        var updatedCapacity = EnsureResourceEntries(snapshot.StoreCapacityResource, blueprint.Store.StoreCapacityResource, out var capacityChanged);
+        var decayTime = snapshot.DecayTime ?? CalculateDecayTime(snapshot, blueprint, gameTime);
+
+        if (!storeChanged && !cooldownChanged && !capacityChanged && hits == snapshot.Hits && hitsMax == snapshot.HitsMax && storeCapacity == snapshot.StoreCapacity && decayTime == snapshot.DecayTime)
             return snapshot;
 
         return snapshot with
@@ -35,7 +39,8 @@ internal sealed class RoomObjectBlueprintEnricher(IStructureBlueprintProvider bl
             HitsMax = hitsMax,
             StoreCapacity = storeCapacity,
             Store = updatedStore,
-            StoreCapacityResource = updatedCapacity
+            StoreCapacityResource = updatedCapacity,
+            DecayTime = decayTime
         };
     }
 
@@ -57,5 +62,43 @@ internal sealed class RoomObjectBlueprintEnricher(IStructureBlueprintProvider bl
         }
 
         return buffer ?? existing;
+    }
+
+    private static IReadOnlyDictionary<string, int> EnsureSpawnCooldownEntry(
+        StructureBlueprint blueprint,
+        IReadOnlyDictionary<string, int> existing,
+        out bool changed)
+    {
+        changed = false;
+        if (!RequiresSpawnCooldownEntry(blueprint.Type) || existing.ContainsKey(RoomDocumentFields.RoomObject.SpawnCooldownTime))
+            return existing;
+
+        var buffer = new Dictionary<string, int>(existing, StringComparer.Ordinal)
+        {
+            [RoomDocumentFields.RoomObject.SpawnCooldownTime] = blueprint.Cooldown?.InitialCooldown ?? 0
+        };
+        changed = true;
+        return buffer;
+    }
+
+    private static bool RequiresSpawnCooldownEntry(string type)
+        => string.Equals(type, RoomObjectTypes.Spawn, StringComparison.Ordinal) ||
+           string.Equals(type, RoomObjectTypes.PowerSpawn, StringComparison.Ordinal);
+
+    private static int? CalculateDecayTime(RoomObjectSnapshot snapshot, StructureBlueprint blueprint, int? gameTime)
+    {
+        if (snapshot.DecayTime.HasValue || !gameTime.HasValue)
+            return snapshot.DecayTime;
+
+        var decay = blueprint.Decay;
+        if (decay is not { HasDecay: true })
+            return null;
+
+        var ownedInterval = !string.IsNullOrWhiteSpace(snapshot.UserId) ? decay.OwnedIntervalTicks : null;
+        var interval = ownedInterval ?? decay.IntervalTicks;
+        if (interval is not > 0)
+            return null;
+
+        return gameTime.Value + interval.Value;
     }
 }
