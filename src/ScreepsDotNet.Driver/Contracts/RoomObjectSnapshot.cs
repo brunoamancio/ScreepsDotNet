@@ -31,7 +31,8 @@ public sealed record RoomObjectSnapshot(
     RoomReservationSnapshot? Reservation,
     RoomSignSnapshot? Sign,
     RoomObjectStructureSnapshot? Structure,
-    IReadOnlyDictionary<string, object?> Effects)
+    IReadOnlyDictionary<string, object?> Effects,
+    RoomSpawnSpawningSnapshot? Spawning)
 {
     public int? MoveBodyParts => GetStoreValue(IntentKeys.Move);
     public int? ControllerDowngradeTimer => GetStoreValue(StoreKeys.DowngradeTimer);
@@ -52,3 +53,9 @@ public sealed record RoomReservationSnapshot(string? UserId, int? EndTime);
 public sealed record RoomSignSnapshot(string? UserId, string? Text, int? Time);
 
 public sealed record RoomObjectStructureSnapshot(string? Id, string? Type, string? UserId, int? Hits, int? HitsMax);
+
+public sealed record RoomSpawnSpawningSnapshot(
+    string Name,
+    int? NeedTime,
+    int? SpawnTime,
+    IReadOnlyList<int> Directions);

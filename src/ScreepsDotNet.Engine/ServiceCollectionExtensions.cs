@@ -6,6 +6,7 @@ using ScreepsDotNet.Engine.Data.GlobalState;
 using ScreepsDotNet.Engine.Data.Memory;
 using ScreepsDotNet.Engine.Data.Rooms;
 using ScreepsDotNet.Engine.Processors;
+using ScreepsDotNet.Engine.Processors.Helpers;
 using ScreepsDotNet.Engine.Processors.Steps;
 
 public static class ServiceCollectionExtensions
@@ -23,6 +24,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IRoomProcessorStep, ControllerDowngradeStep>();
         services.AddSingleton<IRoomProcessorStep, PowerAbilityCooldownStep>();
         services.AddSingleton<IRoomProcessorStep, RoomIntentEventLogStep>();
+        services.AddSingleton<ISpawnStateReader, SpawnStateReader>();
         services.AddSingleton<IRoomProcessor, RoomProcessor>();
         return services;
     }

@@ -1,8 +1,9 @@
 namespace ScreepsDotNet.Driver.Services.Rooms;
 
+using System;
+using System.Collections.Generic;
 using MongoDB.Bson;
 using ScreepsDotNet.Common.Constants;
-using ScreepsDotNet.Driver.Constants;
 using ScreepsDotNet.Driver.Contracts;
 using ScreepsDotNet.Storage.MongoRedis.Repositories.Documents;
 
@@ -54,7 +55,8 @@ internal static class RoomContractMapper
             MapReservation(document.Reservation),
             MapSign(document.Sign),
             MapStructure(document.Structure),
-            MapEffects(document.Effects));
+            MapEffects(document.Effects),
+            MapSpawning(document.Spawning));
     }
 
     public static IReadOnlyDictionary<string, UserState> MapUsers(IReadOnlyDictionary<string, UserDocument> users)
@@ -169,7 +171,8 @@ internal static class RoomContractMapper
                     HitsMax = snapshot.Structure.HitsMax,
                     UserId = snapshot.Structure.UserId
                 },
-            Effects = MapEffectsToBson(snapshot.Effects)
+            Effects = MapEffectsToBson(snapshot.Effects),
+            Spawning = MapSpawning(snapshot.Spawning)
         };
 
         return document;
@@ -195,6 +198,88 @@ internal static class RoomContractMapper
         }
 
         return array.Count == 0 ? null : array;
+    }
+
+    private static RoomSpawnSpawningSnapshot? MapSpawning(BsonValue? spawning)
+    {
+        if (spawning is null || spawning is BsonNull)
+            return null;
+
+        if (spawning is not BsonDocument document)
+            return null;
+
+        var name = document.TryGetValue(RoomDocumentFields.RoomObject.SpawningFields.Name, out var nameValue) && nameValue.IsString
+            ? nameValue.AsString
+            : string.Empty;
+
+        var needTime = TryReadInt(document, RoomDocumentFields.RoomObject.SpawningFields.NeedTime);
+        var spawnTime = TryReadInt(document, RoomDocumentFields.RoomObject.SpawningFields.SpawnTime);
+        var directions = ReadDirections(document, RoomDocumentFields.RoomObject.SpawningFields.Directions);
+
+        return new RoomSpawnSpawningSnapshot(name, needTime, spawnTime, directions);
+    }
+
+    private static BsonValue? MapSpawning(RoomSpawnSpawningSnapshot? spawning)
+    {
+        if (spawning is null)
+            return null;
+
+        var document = new BsonDocument
+        {
+            [RoomDocumentFields.RoomObject.SpawningFields.Name] = spawning.Name ?? string.Empty
+        };
+
+        if (spawning.NeedTime.HasValue)
+            document[RoomDocumentFields.RoomObject.SpawningFields.NeedTime] = spawning.NeedTime.Value;
+
+        if (spawning.SpawnTime.HasValue)
+            document[RoomDocumentFields.RoomObject.SpawningFields.SpawnTime] = spawning.SpawnTime.Value;
+
+        if (spawning.Directions is { Count: > 0 })
+            document[RoomDocumentFields.RoomObject.SpawningFields.Directions] = new BsonArray(spawning.Directions);
+
+        return document;
+    }
+
+    private static int? TryReadInt(BsonDocument document, string field)
+    {
+        if (!document.TryGetValue(field, out var value) || value is null || value.IsBsonNull)
+            return null;
+
+        return value switch
+        {
+            { IsInt32: true } => value.AsInt32,
+            { IsInt64: true } => (int)value.AsInt64,
+            { IsDouble: true } => (int)value.AsDouble,
+            { IsDecimal128: true } => (int)value.AsDecimal128,
+            { IsString: true } when int.TryParse(value.AsString, out var parsed) => parsed,
+            _ => null
+        };
+    }
+
+    private static IReadOnlyList<int> ReadDirections(BsonDocument document, string field)
+    {
+        if (!document.TryGetValue(field, out var value) || value is not BsonArray array || array.Count == 0)
+            return Array.Empty<int>();
+
+        var result = new List<int>(array.Count);
+        foreach (var element in array)
+        {
+            int? direction = element switch
+            {
+                { IsInt32: true } => element.AsInt32,
+                { IsInt64: true } => (int)element.AsInt64,
+                { IsDouble: true } => (int)element.AsDouble,
+                { IsDecimal128: true } => (int)element.AsDecimal128,
+                { IsString: true } when int.TryParse(element.AsString, out var parsed) => parsed,
+                _ => null
+            };
+
+            if (direction.HasValue)
+                result.Add(direction.Value);
+        }
+
+        return result.Count == 0 ? Array.Empty<int>() : result;
     }
 
     public static BsonDocument CreateRoomObjectPatchDocument(RoomObjectPatchPayload patch)

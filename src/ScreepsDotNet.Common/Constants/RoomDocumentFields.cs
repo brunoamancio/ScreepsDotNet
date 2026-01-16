@@ -42,6 +42,14 @@ public static class RoomDocumentFields
             public const string Time = "time";
         }
 
+        public static class SpawningFields
+        {
+            public const string Name = "name";
+            public const string NeedTime = "needTime";
+            public const string SpawnTime = "spawnTime";
+            public const string Directions = "directions";
+        }
+
         public static class Store
         {
             public const string Root = "store";
