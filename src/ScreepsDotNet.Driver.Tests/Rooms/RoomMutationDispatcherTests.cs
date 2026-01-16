@@ -17,7 +17,7 @@ public sealed class RoomMutationDispatcherTests
         var roomsWriter = new FakeBulkWriter<RoomDocument>();
         var factory = new FakeBulkWriterFactory(objectsWriter, roomsWriter);
         var roomService = new StubRoomDataService();
-        var dispatcher = new RoomMutationDispatcher(factory, roomService);
+        var dispatcher = new RoomMutationDispatcher(factory, roomService, new PassThroughBlueprintEnricher());
 
         var batch = new RoomMutationBatch(
             RoomName: "W0N0",
@@ -65,7 +65,7 @@ public sealed class RoomMutationDispatcherTests
         var roomsWriter = new FakeBulkWriter<RoomDocument>();
         var factory = new FakeBulkWriterFactory(objectsWriter, roomsWriter);
         var roomService = new StubRoomDataService();
-        var dispatcher = new RoomMutationDispatcher(factory, roomService);
+        var dispatcher = new RoomMutationDispatcher(factory, roomService, new PassThroughBlueprintEnricher());
 
         var batch = new RoomMutationBatch(
             RoomName: "W1N1",
@@ -183,5 +183,10 @@ public sealed class RoomMutationDispatcherTests
             MapView = $"{roomName}:{mapViewJson}";
             return Task.CompletedTask;
         }
+    }
+
+    private sealed class PassThroughBlueprintEnricher : IRoomObjectBlueprintEnricher
+    {
+        public RoomObjectSnapshot Enrich(RoomObjectSnapshot snapshot) => snapshot;
     }
 }

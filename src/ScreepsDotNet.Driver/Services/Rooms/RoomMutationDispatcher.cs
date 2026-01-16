@@ -9,7 +9,8 @@ namespace ScreepsDotNet.Driver.Services.Rooms;
 
 internal sealed class RoomMutationDispatcher(
     IBulkWriterFactory bulkWriterFactory,
-    IRoomDataService roomDataService) : IRoomMutationDispatcher
+    IRoomDataService roomDataService,
+    IRoomObjectBlueprintEnricher blueprintEnricher) : IRoomMutationDispatcher
 {
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 
@@ -43,12 +44,13 @@ internal sealed class RoomMutationDispatcher(
         }
     }
 
-    private static void ApplyUpserts(IBulkWriter<RoomObjectDocument> writer, IReadOnlyList<RoomObjectUpsert> upserts)
+    private void ApplyUpserts(IBulkWriter<RoomObjectDocument> writer, IReadOnlyList<RoomObjectUpsert> upserts)
     {
         if (upserts.Count == 0) return;
         foreach (var upsert in upserts)
         {
-            var entity = RoomContractMapper.MapRoomObjectDocument(upsert.Document);
+            var enriched = blueprintEnricher.Enrich(upsert.Document);
+            var entity = RoomContractMapper.MapRoomObjectDocument(enriched);
             writer.Insert(entity);
         }
     }

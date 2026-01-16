@@ -27,6 +27,7 @@ public sealed record RoomObjectPatchPayload : IRoomObjectPatchPayload
     public int? SpawnCooldownTime { get; init; }
     public int? StructureHits { get; init; }
     public int? TicksToLive { get; init; }
+    public int? Progress { get; init; }
     public RoomObjectActionLogPatch? ActionLog { get; init; }
     public IReadOnlyDictionary<string, int>? Store { get; init; }
     public int? StoreCapacity { get; init; }
@@ -43,6 +44,7 @@ public sealed record RoomObjectPatchPayload : IRoomObjectPatchPayload
         SpawnCooldownTime.HasValue ||
         StructureHits.HasValue ||
         TicksToLive.HasValue ||
+        Progress.HasValue ||
         (ActionLog?.HasEntries ?? false) ||
         (Store is { Count: > 0 }) ||
         StoreCapacity.HasValue ||
@@ -56,18 +58,30 @@ public sealed record RoomObjectPositionPatch(int? X = null, int? Y = null)
     public bool HasCoordinates => X.HasValue || Y.HasValue;
 }
 
-public sealed record RoomObjectActionLogPatch(RoomObjectActionLogDie? Die = null, RoomObjectActionLogHealed? Healed = null)
+public sealed record RoomObjectActionLogPatch(
+    RoomObjectActionLogDie? Die = null,
+    RoomObjectActionLogHealed? Healed = null,
+    RoomObjectActionLogRepair? Repair = null,
+    RoomObjectActionLogBuild? Build = null)
 {
-    public bool HasEntries => Die is not null || Healed is not null;
+    public bool HasEntries => Die is not null || Healed is not null || Repair is not null || Build is not null;
 }
 
 public sealed record RoomObjectActionLogDie(int Time);
 
 public sealed record RoomObjectActionLogHealed(int X, int Y);
 
-public sealed record RoomObjectActionLogSnapshot(RoomObjectActionLogDie? Die = null, RoomObjectActionLogHealed? Healed = null)
+public sealed record RoomObjectActionLogRepair(int X, int Y);
+
+public sealed record RoomObjectActionLogBuild(int X, int Y);
+
+public sealed record RoomObjectActionLogSnapshot(
+    RoomObjectActionLogDie? Die = null,
+    RoomObjectActionLogHealed? Healed = null,
+    RoomObjectActionLogRepair? Repair = null,
+    RoomObjectActionLogBuild? Build = null)
 {
-    public bool HasEntries => Die is not null || Healed is not null;
+    public bool HasEntries => Die is not null || Healed is not null || Repair is not null || Build is not null;
 }
 
 public sealed record RoomInfoPatchPayload

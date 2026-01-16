@@ -169,6 +169,24 @@ internal static class RoomContractMapper
             };
         }
 
+        if (snapshot.Repair is { } repair)
+        {
+            document[RoomDocumentFields.RoomObject.ActionLogFields.Repair] = new BsonDocument
+            {
+                [RoomDocumentFields.RoomObject.ActionLogFields.X] = repair.X,
+                [RoomDocumentFields.RoomObject.ActionLogFields.Y] = repair.Y
+            };
+        }
+
+        if (snapshot.Build is { } build)
+        {
+            document[RoomDocumentFields.RoomObject.ActionLogFields.Build] = new BsonDocument
+            {
+                [RoomDocumentFields.RoomObject.ActionLogFields.X] = build.X,
+                [RoomDocumentFields.RoomObject.ActionLogFields.Y] = build.Y
+            };
+        }
+
         return document.ElementCount == 0 ? null : document;
     }
 
@@ -193,10 +211,28 @@ internal static class RoomContractMapper
             TryGetInt32(yValue, out var y))
             healed = new RoomObjectActionLogHealed(x, y);
 
-        if (die is null && healed is null)
+        RoomObjectActionLogRepair? repair = null;
+        if (actionLog.TryGetValue(RoomDocumentFields.RoomObject.ActionLogFields.Repair, out var repairValue) &&
+            repairValue is BsonDocument repairDoc &&
+            repairDoc.TryGetValue(RoomDocumentFields.RoomObject.ActionLogFields.X, out var repairX) &&
+            repairDoc.TryGetValue(RoomDocumentFields.RoomObject.ActionLogFields.Y, out var repairY) &&
+            TryGetInt32(repairX, out var repairXInt) &&
+            TryGetInt32(repairY, out var repairYInt))
+            repair = new RoomObjectActionLogRepair(repairXInt, repairYInt);
+
+        RoomObjectActionLogBuild? build = null;
+        if (actionLog.TryGetValue(RoomDocumentFields.RoomObject.ActionLogFields.Build, out var buildValue) &&
+            buildValue is BsonDocument buildDoc &&
+            buildDoc.TryGetValue(RoomDocumentFields.RoomObject.ActionLogFields.X, out var buildX) &&
+            buildDoc.TryGetValue(RoomDocumentFields.RoomObject.ActionLogFields.Y, out var buildY) &&
+            TryGetInt32(buildX, out var buildXInt) &&
+            TryGetInt32(buildY, out var buildYInt))
+            build = new RoomObjectActionLogBuild(buildXInt, buildYInt);
+
+        if (die is null && healed is null && repair is null && build is null)
             return null;
 
-        return new RoomObjectActionLogSnapshot(die, healed);
+        return new RoomObjectActionLogSnapshot(die, healed, repair, build);
     }
 
     private static bool TryGetInt32(BsonValue value, out int result)
@@ -471,6 +507,9 @@ internal static class RoomContractMapper
 
         if (patch.TicksToLive.HasValue)
             document[RoomDocumentFields.RoomObject.TicksToLive] = patch.TicksToLive.Value;
+
+        if (patch.Progress.HasValue)
+            document[RoomDocumentFields.RoomObject.Progress] = patch.Progress.Value;
 
         if (patch.ActionLog is { } actionLog && actionLog.HasEntries)
         {

@@ -117,6 +117,42 @@ public sealed class RoomContractMapperTests
     }
 
     [Fact]
+    public void MapRoomObject_MapsActionLogRepairAndBuild()
+    {
+        var document = new RoomObjectDocument
+        {
+            Id = ObjectId.GenerateNewId(),
+            Type = RoomObjectTypes.Creep,
+            Room = "W1N1",
+            X = 2,
+            Y = 2,
+            ActionLog = new BsonDocument
+            {
+                [RoomDocumentFields.RoomObject.ActionLogFields.Repair] = new BsonDocument
+                {
+                    [RoomDocumentFields.RoomObject.ActionLogFields.X] = 4,
+                    [RoomDocumentFields.RoomObject.ActionLogFields.Y] = 5
+                },
+                [RoomDocumentFields.RoomObject.ActionLogFields.Build] = new BsonDocument
+                {
+                    [RoomDocumentFields.RoomObject.ActionLogFields.X] = 6,
+                    [RoomDocumentFields.RoomObject.ActionLogFields.Y] = 7
+                }
+            }
+        };
+
+        var snapshot = RoomContractMapper.MapRoomObject(document);
+        Assert.Equal(4, snapshot.ActionLog!.Repair!.X);
+        Assert.Equal(5, snapshot.ActionLog!.Repair!.Y);
+        Assert.Equal(6, snapshot.ActionLog.Build!.X);
+        Assert.Equal(7, snapshot.ActionLog.Build!.Y);
+
+        var roundtrip = RoomContractMapper.MapRoomObjectDocument(snapshot);
+        Assert.True(roundtrip.ActionLog!.Contains(RoomDocumentFields.RoomObject.ActionLogFields.Repair));
+        Assert.True(roundtrip.ActionLog!.Contains(RoomDocumentFields.RoomObject.ActionLogFields.Build));
+    }
+
+    [Fact]
     public void MapRoomObject_MapsConstructionProgress()
     {
         var document = new RoomObjectDocument

@@ -21,6 +21,9 @@ public static class ScreepsGameConstants
     public const int ExtensionHits = 1000;
     public const int LabBoostEnergy = 20;
     public const int LabBoostMineral = 30;
+    public const int RepairPower = 100;
+    public const int BuildPower = 5;
+    public const double RepairEnergyCost = 0.01;
     public const int TombstoneDecayPerPart = 5;
     public const int TombstoneDecayPowerCreep = 500;
     public const int TowerEnergyCost = 10;
@@ -184,6 +187,8 @@ public static class ScreepsGameConstants
     public const int NukerCooldown = 100_000;
     public const int FactoryHits = 1000;
     public const int FactoryCapacity = 50_000;
+    public const int TerrainMaskWall = 1;
+    public const int TerrainMaskSwamp = 2;
 
     public static IReadOnlyDictionary<BodyPartType, int> BodyPartEnergyCost { get; } = new Dictionary<BodyPartType, int>
     {
