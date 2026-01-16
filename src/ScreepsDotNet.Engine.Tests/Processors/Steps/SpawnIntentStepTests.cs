@@ -465,7 +465,7 @@ public sealed class SpawnIntentStepTests
         public void IncrementEnergyHarvested(string userId, int amount)
             => EnergyHarvested += amount;
 
-        public Task FlushAsync(CancellationToken token = default) => Task.CompletedTask;
+        public Task FlushAsync(int gameTime, CancellationToken token = default) => Task.CompletedTask;
     }
 
     private sealed class FakeMutationWriter : IRoomMutationWriter

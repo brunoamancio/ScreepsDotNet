@@ -140,14 +140,30 @@ internal sealed class HistoryService(
                 : amount;
         }
 
-        public Task FlushAsync(CancellationToken token = default)
+        public Task FlushAsync(int gameTime, CancellationToken token = default)
         {
             if (_metrics.Count == 0)
                 return Task.CompletedTask;
 
-            config.EmitProcessorLoopStage(LoopStageNames.Processor.RoomStatsUpdated, new { Room = roomName, Metrics = _metrics });
+            var payload = new RoomStatsUpdate(roomName, gameTime, SnapshotMetrics(_metrics));
+            config.EmitProcessorLoopStage(LoopStageNames.Processor.RoomStatsUpdated, payload);
             _metrics.Clear();
             return Task.CompletedTask;
+        }
+
+        private static IReadOnlyDictionary<string, IReadOnlyDictionary<string, int>> SnapshotMetrics(
+            IReadOnlyDictionary<string, Dictionary<string, int>> metrics)
+        {
+            var clone = new Dictionary<string, IReadOnlyDictionary<string, int>>(metrics.Count, StringComparer.Ordinal);
+            foreach (var (userId, values) in metrics)
+            {
+                if (string.IsNullOrWhiteSpace(userId))
+                    continue;
+
+                clone[userId] = new Dictionary<string, int>(values, StringComparer.Ordinal);
+            }
+
+            return clone;
         }
     }
 }

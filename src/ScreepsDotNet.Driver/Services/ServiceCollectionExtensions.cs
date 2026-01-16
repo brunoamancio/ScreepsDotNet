@@ -44,6 +44,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IRoomObjectBlueprintEnricher, RoomObjectBlueprintEnricher>();
         services.AddSingleton<IUserDataService, UserDataService>();
         services.AddSingleton<IHistoryService, HistoryService>();
+        services.AddSingleton<IRoomStatsRepository, MongoRoomStatsRepository>();
         services.AddSingleton<INotificationService, NotificationService>();
         services.AddSingleton<IPathfinderService, PathfinderService>();
         services.AddSingleton<IDriverLoopHooks, DriverLoopHooks>();
@@ -64,6 +65,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IRuntimeTelemetrySink, RuntimeTelemetryPipeline>();
         services.AddSingleton<IRuntimeThrottleRegistry, RuntimeThrottleRegistry>();
         services.AddSingleton<RoomHistoryPipeline>();
+        services.AddSingleton<RoomStatsPipeline>();
         services.AddSingleton<IRoomsDoneBroadcaster, RoomsDoneBroadcaster>();
         services.AddSingleton<IRuntimeService, RuntimeService>();
         services.AddSingleton<IRuntimeCoordinator, RuntimeCoordinator>();

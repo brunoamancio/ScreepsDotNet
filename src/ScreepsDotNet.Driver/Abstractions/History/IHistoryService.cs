@@ -13,5 +13,5 @@ public interface IHistoryService
 public interface IRoomStatsUpdater
 {
     void Increment(string userId, string metric, int amount);
-    Task FlushAsync(CancellationToken token = default);
+    Task FlushAsync(int gameTime, CancellationToken token = default);
 }

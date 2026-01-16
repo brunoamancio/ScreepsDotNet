@@ -16,10 +16,15 @@ using ScreepsDotNet.Driver.Services.Runtime;
 
 namespace ScreepsDotNet.Driver.Services;
 
-internal sealed class DriverHost(IServiceProvider serviceProvider, RuntimeTelemetryMonitor telemetryMonitor, RoomHistoryPipeline historyPipeline) : IDriverHost
+internal sealed class DriverHost(
+    IServiceProvider serviceProvider,
+    RuntimeTelemetryMonitor telemetryMonitor,
+    RoomHistoryPipeline historyPipeline,
+    RoomStatsPipeline statsPipeline) : IDriverHost
 {
     private readonly RuntimeTelemetryMonitor _telemetryMonitor = telemetryMonitor;
     private readonly RoomHistoryPipeline _historyPipeline = historyPipeline;
+    private readonly RoomStatsPipeline _statsPipeline = statsPipeline;
     public IDriverConfig Config => serviceProvider.GetRequiredService<IDriverConfig>();
     public IQueueService Queues => GetRequired<IQueueService>();
     public IBulkWriterFactory BulkWriters => GetRequired<IBulkWriterFactory>();

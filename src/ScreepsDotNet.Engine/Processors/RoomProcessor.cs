@@ -36,7 +36,7 @@ internal sealed class RoomProcessor(
 
             await writer.FlushAsync(token).ConfigureAwait(false);
 
-            await context.Stats.FlushAsync(token).ConfigureAwait(false);
+            await context.Stats.FlushAsync(state.GameTime, token).ConfigureAwait(false);
 
             await context.FlushMemoryAsync(memorySink, token).ConfigureAwait(false);
         }

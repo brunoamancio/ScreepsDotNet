@@ -200,6 +200,6 @@ public sealed class SpawnEnergyChargerTests
 
         public void IncrementEnergyHarvested(string userId, int amount) { }
 
-        public Task FlushAsync(CancellationToken token = default) => Task.CompletedTask;
+        public Task FlushAsync(int gameTime, CancellationToken token = default) => Task.CompletedTask;
     }
 }
