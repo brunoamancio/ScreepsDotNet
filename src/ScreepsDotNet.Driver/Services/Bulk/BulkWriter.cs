@@ -26,7 +26,6 @@ internal sealed class BulkWriter<TDocument>(
             return;
 
         var document = DocumentUtilities.CloneAndClean(delta);
-        EnsureNoNestedDiffsWithoutEntity(document);
         StageUpdate(NormalizeId(id), document);
     }
 
@@ -203,14 +202,6 @@ internal sealed class BulkWriter<TDocument>(
 
     private static string NormalizeId(string value)
         => value.Trim();
-
-    private static void EnsureNoNestedDiffsWithoutEntity(BsonDocument document)
-    {
-        foreach (var element in document) {
-            if (element.Value is BsonDocument or BsonArray)
-                throw new InvalidOperationException($"Cannot update nested field '{element.Name}' without providing the original document.");
-        }
-    }
 
     private static void ExpandNestedDiffs(TDocument entity, BsonDocument delta)
     {

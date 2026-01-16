@@ -34,6 +34,8 @@ internal static class RoomContractMapper
             ? EmptyIntDictionary
             : new Dictionary<string, int>(document.StoreCapacityResource, StringComparer.Ordinal);
 
+        var body = MapBody(document.Body);
+
         return new RoomObjectSnapshot(
             document.Id.ToString(),
             document.Type ?? string.Empty,
@@ -59,7 +61,8 @@ internal static class RoomContractMapper
             MapSign(document.Sign),
             MapStructure(document.Structure),
             MapEffects(document.Effects),
-            MapSpawning(document.Spawning));
+            MapSpawning(document.Spawning),
+            body);
     }
 
     public static IReadOnlyDictionary<string, UserState> MapUsers(IReadOnlyDictionary<string, UserDocument> users)
@@ -174,6 +177,7 @@ internal static class RoomContractMapper
                     HitsMax = snapshot.Structure.HitsMax,
                     UserId = snapshot.Structure.UserId
                 },
+            Body = MapBodyDocuments(snapshot.Body),
             Effects = MapEffectsToBson(snapshot.Effects),
             Spawning = MapSpawning(snapshot.Spawning)
         };
@@ -266,7 +270,7 @@ internal static class RoomContractMapper
     private static IReadOnlyList<Direction> ReadDirections(BsonDocument document, string field)
     {
         if (!document.TryGetValue(field, out var value) || value is not BsonArray array || array.Count == 0)
-            return Array.Empty<Direction>();
+            return [];
 
         var result = new List<Direction>(array.Count);
         var seen = new HashSet<Direction>();
@@ -341,6 +345,33 @@ internal static class RoomContractMapper
                 document[RoomDocumentFields.RoomObject.ActionLog] = logDocument;
         }
 
+        if (patch.Store is { Count: > 0 })
+        {
+            foreach (var (resource, amount) in patch.Store)
+            {
+                if (string.IsNullOrWhiteSpace(resource))
+                    continue;
+
+                var field = $"{RoomDocumentFields.RoomObject.Store.Root}.{resource}";
+                document[field] = amount;
+            }
+        }
+
+        if (patch.Body is { Count: > 0 })
+        {
+            var bodyArray = CreateBodyArray(patch.Body);
+            if (bodyArray is not null)
+                document[RoomDocumentFields.RoomObject.Body] = bodyArray;
+        }
+
+        if (patch.Spawning is not null)
+        {
+            if (MapSpawning(patch.Spawning) is BsonDocument spawningDocument)
+                document[RoomDocumentFields.RoomObject.Spawning] = spawningDocument;
+        }
+        else if (patch.ClearSpawning)
+            document[RoomDocumentFields.RoomObject.Spawning] = BsonNull.Value;
+
         return document;
     }
 
@@ -385,5 +416,68 @@ internal static class RoomContractMapper
             document[RoomDocumentFields.Info.InvaderGoal] = patch.InvaderGoal.Value;
 
         return document;
+    }
+
+    private static IReadOnlyList<CreepBodyPartSnapshot> MapBody(IReadOnlyList<RoomObjectBodyPartDocument>? bodyParts)
+    {
+        if (bodyParts is null || bodyParts.Count == 0)
+            return [];
+
+        var result = new List<CreepBodyPartSnapshot>(bodyParts.Count);
+        foreach (var part in bodyParts)
+        {
+            if (string.IsNullOrWhiteSpace(part.Type))
+                continue;
+
+            if (!part.Type.TryParseBodyPartType(out var type))
+                continue;
+
+            var hits = part.Hits ?? ScreepsGameConstants.BodyPartHitPoints;
+            result.Add(new CreepBodyPartSnapshot(type, hits, string.IsNullOrWhiteSpace(part.Boost) ? null : part.Boost));
+        }
+
+        return result.Count == 0 ? Array.Empty<CreepBodyPartSnapshot>() : result;
+    }
+
+    private static List<RoomObjectBodyPartDocument>? MapBodyDocuments(IReadOnlyList<CreepBodyPartSnapshot> body)
+    {
+        if (body.Count == 0)
+            return null;
+
+        var result = new List<RoomObjectBodyPartDocument>(body.Count);
+        foreach (var part in body)
+        {
+            result.Add(new RoomObjectBodyPartDocument
+            {
+                Type = part.Type.ToDocumentValue(),
+                Hits = part.Hits,
+                Boost = part.Boost
+            });
+        }
+
+        return result;
+    }
+
+    private static BsonArray? CreateBodyArray(IReadOnlyList<CreepBodyPartSnapshot> body)
+    {
+        if (body.Count == 0)
+            return null;
+
+        var array = new BsonArray(body.Count);
+        foreach (var part in body)
+        {
+            var document = new BsonDocument
+            {
+                [RoomDocumentFields.RoomObject.BodyPart.Type] = part.Type.ToDocumentValue(),
+                [RoomDocumentFields.RoomObject.BodyPart.Hits] = part.Hits
+            };
+
+            if (!string.IsNullOrWhiteSpace(part.Boost))
+                document[RoomDocumentFields.RoomObject.BodyPart.Boost] = part.Boost;
+
+            array.Add(document);
+        }
+
+        return array;
     }
 }

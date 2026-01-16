@@ -8,13 +8,15 @@ using ScreepsDotNet.Driver.Contracts;
 internal interface ISpawnEnergyAllocator
 {
     EnergyAllocationResult AllocateEnergy(IReadOnlyDictionary<string, RoomObjectSnapshot> roomObjects, RoomObjectSnapshot spawn,
-                                          int requiredEnergy, IReadOnlyList<string>? preferredStructureIds);
+                                          int requiredEnergy, IReadOnlyList<string>? preferredStructureIds,
+                                          IReadOnlyDictionary<string, int>? energyOverrides = null);
 }
 
 internal sealed class SpawnEnergyAllocator : ISpawnEnergyAllocator
 {
     public EnergyAllocationResult AllocateEnergy(IReadOnlyDictionary<string, RoomObjectSnapshot> roomObjects, RoomObjectSnapshot spawn,
-                                                 int requiredEnergy, IReadOnlyList<string>? preferredStructureIds)
+                                                 int requiredEnergy, IReadOnlyList<string>? preferredStructureIds,
+                                                 IReadOnlyDictionary<string, int>? energyOverrides = null)
     {
         if (requiredEnergy <= 0)
             return EnergyAllocationResult.CreateSuccess([]);
@@ -25,7 +27,7 @@ internal sealed class SpawnEnergyAllocator : ISpawnEnergyAllocator
 
         foreach (var source in candidates)
         {
-            var available = GetEnergy(source);
+            var available = GetEnergy(source, energyOverrides);
             if (available <= 0)
                 continue;
 
@@ -87,8 +89,13 @@ internal sealed class SpawnEnergyAllocator : ISpawnEnergyAllocator
         }
     }
 
-    private static int GetEnergy(RoomObjectSnapshot obj)
-        => obj.Store.GetValueOrDefault(RoomDocumentFields.RoomObject.Store.Energy, 0);
+    private static int GetEnergy(RoomObjectSnapshot obj, IReadOnlyDictionary<string, int>? overrides)
+    {
+        if (overrides is not null && overrides.TryGetValue(obj.Id, out var remaining))
+            return remaining;
+
+        return obj.Store.GetValueOrDefault(RoomDocumentFields.RoomObject.Store.Energy, 0);
+    }
 }
 
 internal sealed record EnergyAllocationResult(bool Success, string? Error, IReadOnlyList<EnergyDraw> Draws)

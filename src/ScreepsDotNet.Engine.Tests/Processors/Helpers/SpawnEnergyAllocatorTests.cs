@@ -3,6 +3,7 @@ namespace ScreepsDotNet.Engine.Tests.Processors.Helpers;
 using System;
 using System.Collections.Generic;
 using ScreepsDotNet.Common.Constants;
+using ScreepsDotNet.Common.Types;
 using ScreepsDotNet.Driver.Contracts;
 using ScreepsDotNet.Engine.Processors.Helpers;
 
@@ -62,6 +63,32 @@ public sealed class SpawnEnergyAllocatorTests
         Assert.Contains("Not enough energy", result.Error);
     }
 
+    [Fact]
+    public void AllocateEnergy_RespectsOverrides()
+    {
+        var spawn = CreateStructure("spawn1", RoomObjectTypes.Spawn, energy: 50);
+        var extension = CreateStructure("ext1", RoomObjectTypes.Extension, energy: 100);
+        var objects = new Dictionary<string, RoomObjectSnapshot>(StringComparer.Ordinal)
+        {
+            [spawn.Id] = spawn,
+            [extension.Id] = extension
+        };
+
+        var overrides = new Dictionary<string, int>(StringComparer.Ordinal)
+        {
+            [extension.Id] = 30
+        };
+
+        var result = _allocator.AllocateEnergy(objects, spawn, 60, [extension.Id], overrides);
+
+        Assert.True(result.Success);
+        Assert.Equal(2, result.Draws.Count);
+        Assert.Equal(extension.Id, result.Draws[0].Source.Id);
+        Assert.Equal(30, result.Draws[0].Amount);
+        Assert.Equal(spawn.Id, result.Draws[1].Source.Id);
+        Assert.Equal(30, result.Draws[1].Amount);
+    }
+
     private static RoomObjectSnapshot CreateStructure(string id, string type, int energy)
         => new(
             id,
@@ -88,5 +115,6 @@ public sealed class SpawnEnergyAllocatorTests
             Sign: null,
             Structure: null,
             Effects: new Dictionary<string, object?>(),
-            Spawning: null);
+            Spawning: null,
+            Body: Array.Empty<CreepBodyPartSnapshot>());
 }

@@ -28,6 +28,10 @@ public sealed record RoomObjectPatchPayload : IRoomObjectPatchPayload
     public int? StructureHits { get; init; }
     public int? TicksToLive { get; init; }
     public RoomObjectActionLogPatch? ActionLog { get; init; }
+    public IReadOnlyDictionary<string, int>? Store { get; init; }
+    public RoomSpawnSpawningSnapshot? Spawning { get; init; }
+    public bool ClearSpawning { get; init; }
+    public IReadOnlyList<CreepBodyPartSnapshot>? Body { get; init; }
 
     public bool HasChanges =>
         Hits.HasValue ||
@@ -38,7 +42,11 @@ public sealed record RoomObjectPatchPayload : IRoomObjectPatchPayload
         SpawnCooldownTime.HasValue ||
         StructureHits.HasValue ||
         TicksToLive.HasValue ||
-        (ActionLog?.HasEntries ?? false);
+        (ActionLog?.HasEntries ?? false) ||
+        (Store is { Count: > 0 }) ||
+        (Body is { Count: > 0 }) ||
+        Spawning is not null ||
+        ClearSpawning;
 }
 
 public sealed record RoomObjectPositionPatch(int? X = null, int? Y = null)

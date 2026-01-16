@@ -1,5 +1,6 @@
 ﻿namespace ScreepsDotNet.Storage.MongoRedis.Repositories.Documents;
 
+using System.Collections.Generic;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 
@@ -101,6 +102,9 @@ public sealed class RoomObjectDocument
     [BsonElement("structureType")]
     public string? StructureType { get; set; }
 
+    [BsonElement("body")]
+    public List<RoomObjectBodyPartDocument>? Body { get; set; }
+
     [BsonElement("downgradeTime")]
     public long? DowngradeTime { get; set; }
 
@@ -163,4 +167,17 @@ public sealed class RoomSignDocument
 
     [BsonElement("time")]
     public int? Time { get; set; }
+}
+
+[BsonIgnoreExtraElements]
+public sealed class RoomObjectBodyPartDocument
+{
+    [BsonElement("type")]
+    public string? Type { get; set; }
+
+    [BsonElement("hits")]
+    public int? Hits { get; set; }
+
+    [BsonElement("boost")]
+    public string? Boost { get; set; }
 }

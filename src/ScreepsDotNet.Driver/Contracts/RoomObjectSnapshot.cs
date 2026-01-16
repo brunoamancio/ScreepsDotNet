@@ -33,7 +33,8 @@ public sealed record RoomObjectSnapshot(
     RoomSignSnapshot? Sign,
     RoomObjectStructureSnapshot? Structure,
     IReadOnlyDictionary<string, object?> Effects,
-    RoomSpawnSpawningSnapshot? Spawning)
+    RoomSpawnSpawningSnapshot? Spawning,
+    IReadOnlyList<CreepBodyPartSnapshot> Body)
 {
     public int? MoveBodyParts => GetStoreValue(IntentKeys.Move);
     public int? ControllerDowngradeTimer => GetStoreValue(StoreKeys.DowngradeTimer);
@@ -60,3 +61,5 @@ public sealed record RoomSpawnSpawningSnapshot(
     int? NeedTime,
     int? SpawnTime,
     IReadOnlyList<Direction> Directions);
+
+public sealed record CreepBodyPartSnapshot(BodyPartType Type, int Hits, string? Boost);
