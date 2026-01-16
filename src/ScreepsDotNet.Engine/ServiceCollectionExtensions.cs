@@ -24,7 +24,10 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IRoomProcessorStep, ControllerDowngradeStep>();
         services.AddSingleton<IRoomProcessorStep, PowerAbilityCooldownStep>();
         services.AddSingleton<IRoomProcessorStep, RoomIntentEventLogStep>();
+        services.AddSingleton<IBodyAnalysisHelper, BodyAnalysisHelper>();
         services.AddSingleton<ISpawnStateReader, SpawnStateReader>();
+        services.AddSingleton<ISpawnEnergyAllocator, SpawnEnergyAllocator>();
+        services.AddSingleton<ISpawnIntentParser, SpawnIntentParser>();
         services.AddSingleton<IRoomProcessor, RoomProcessor>();
         return services;
     }

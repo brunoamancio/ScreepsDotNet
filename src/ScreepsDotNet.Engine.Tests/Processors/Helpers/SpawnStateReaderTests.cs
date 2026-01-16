@@ -61,7 +61,7 @@ public sealed class SpawnStateReaderTests
             new Dictionary<string, UserState>(StringComparer.Ordinal),
             null,
             new Dictionary<string, RoomTerrainSnapshot>(StringComparer.Ordinal),
-            Array.Empty<RoomFlagSnapshot>());
+            []);
     }
 
     private static RoomObjectSnapshot CreateSpawn(
