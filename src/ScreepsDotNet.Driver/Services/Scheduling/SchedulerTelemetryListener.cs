@@ -18,8 +18,7 @@ internal sealed class SchedulerTelemetryListener(
     {
         ArgumentNullException.ThrowIfNull(payload);
 
-        if (!(payload.TimedOut || payload.ScriptError))
-        {
+        if (!(payload.TimedOut || payload.ScriptError)) {
             _states.TryRemove(payload.UserId, out _);
             throttleRegistry.Clear(payload.UserId);
             return Task.CompletedTask;

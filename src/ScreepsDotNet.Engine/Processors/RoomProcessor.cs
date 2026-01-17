@@ -1,12 +1,12 @@
 namespace ScreepsDotNet.Engine.Processors;
 
-using Microsoft.Extensions.Logging;
 using System.Linq;
+using Microsoft.Extensions.Logging;
 using ScreepsDotNet.Driver.Abstractions.History;
 using ScreepsDotNet.Engine.Data.Bulk;
 using ScreepsDotNet.Engine.Data.GlobalState;
-using ScreepsDotNet.Engine.Data.Rooms;
 using ScreepsDotNet.Engine.Data.Memory;
+using ScreepsDotNet.Engine.Data.Rooms;
 using ScreepsDotNet.Engine.Processors.Helpers;
 
 internal sealed class RoomProcessor(
@@ -29,8 +29,7 @@ internal sealed class RoomProcessor(
         globalState.ExitTopology.TryGetValue(roomName, out var exitTopology);
         var context = new RoomProcessorContext(state, writer, statsSink, exitTopology);
 
-        try
-        {
+        try {
             foreach (var step in steps)
                 await step.ExecuteAsync(context, token).ConfigureAwait(false);
 
@@ -44,8 +43,7 @@ internal sealed class RoomProcessor(
 
             await context.FlushMemoryAsync(memorySink, token).ConfigureAwait(false);
         }
-        finally
-        {
+        finally {
             writer.Reset();
             context.ClearPendingMemory();
         }

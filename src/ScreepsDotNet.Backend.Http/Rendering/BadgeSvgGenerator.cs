@@ -37,10 +37,12 @@ internal sealed class BadgeSvgGenerator : IBadgeSvgGenerator
             if (descriptor.Flip && definition.FlipRotationDegrees.HasValue)
                 rotation = definition.FlipRotationDegrees.Value;
         }
-        else if (!string.IsNullOrWhiteSpace(descriptor.CustomPath1))
+        else if (!string.IsNullOrWhiteSpace(descriptor.CustomPath1)) {
             pathResult = new BadgePathResult(descriptor.CustomPath1!, descriptor.CustomPath2);
-        else
+        }
+        else {
             return EmptySvg;
+        }
 
         if (string.IsNullOrWhiteSpace(pathResult.Path1))
             return EmptySvg;
@@ -85,8 +87,9 @@ internal sealed class BadgeSvgGenerator : IBadgeSvgGenerator
         JsonElement root;
 
         try {
-            if (data is JsonElement element)
+            if (data is JsonElement element) {
                 root = element;
+            }
             else {
                 var json = JsonSerializer.Serialize(data);
                 document = JsonDocument.Parse(json);
@@ -95,8 +98,9 @@ internal sealed class BadgeSvgGenerator : IBadgeSvgGenerator
 
             if (!root.TryGetProperty("color1", out var color1Element) ||
                 !root.TryGetProperty("color2", out var color2Element) ||
-                !root.TryGetProperty("color3", out var color3Element))
+                !root.TryGetProperty("color3", out var color3Element)) {
                 return false;
+            }
 
             var color1 = ResolveColorToken(color1Element);
             var color2 = ResolveColorToken(color2Element);
@@ -147,8 +151,9 @@ internal sealed class BadgeSvgGenerator : IBadgeSvgGenerator
             return element.GetString() ?? DefaultColor;
 
         if (element.ValueKind == JsonValueKind.Number && element.TryGetInt32(out var index) &&
-            index >= 0 && index < Palette.Count)
+            index >= 0 && index < Palette.Count) {
             return Palette[index];
+        }
 
         return DefaultColor;
     }
@@ -160,8 +165,9 @@ internal sealed class BadgeSvgGenerator : IBadgeSvgGenerator
         var x = c * (1 - Math.Abs((hPrime % 2) - 1));
 
         double r1, g1, b1;
-        if (double.IsNaN(h) || double.IsInfinity(h))
+        if (double.IsNaN(h) || double.IsInfinity(h)) {
             r1 = g1 = b1 = 0;
+        }
         else if (hPrime is >= 0 and < 1) {
             r1 = c; g1 = x; b1 = 0;
         }

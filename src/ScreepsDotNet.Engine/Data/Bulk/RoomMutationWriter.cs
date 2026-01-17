@@ -61,8 +61,9 @@ internal sealed class RoomMutationWriter(
             _removals.Count == 0 &&
             _roomInfoPatch is null &&
             _eventLog is null &&
-            _mapView is null)
+            _mapView is null) {
             return;
+        }
 
         var batch = new RoomMutationBatch(
             roomName,

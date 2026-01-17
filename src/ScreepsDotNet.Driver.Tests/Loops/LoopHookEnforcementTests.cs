@@ -32,21 +32,18 @@ public sealed class LoopHookEnforcementTests
             $"{nameof(RoomsDoneBroadcaster)}.cs"
         };
 
-        foreach (var file in Directory.GetFiles(loopDirectory, "*.cs", SearchOption.TopDirectoryOnly))
-        {
+        foreach (var file in Directory.GetFiles(loopDirectory, "*.cs", SearchOption.TopDirectoryOnly)) {
             if (exceptions.Contains(Path.GetFileName(file)))
                 continue;
 
             var content = File.ReadAllText(file);
-            foreach (var token in BannedTokens)
-            {
+            foreach (var token in BannedTokens) {
                 if (content.Contains(token, StringComparison.Ordinal))
                     violations.Add($"{Path.GetFileName(file)} references {token}");
             }
         }
 
-        if (violations.Count > 0)
-        {
+        if (violations.Count > 0) {
             var builder = new StringBuilder()
                 .AppendLine("Loop services should rely on IDriverLoopHooks instead of directly injecting history/notification/telemetry services.")
                 .AppendLine("Violations:")
@@ -58,8 +55,7 @@ public sealed class LoopHookEnforcementTests
     private static string GetRepoRoot()
     {
         var dir = AppContext.BaseDirectory;
-        while (!string.IsNullOrEmpty(dir))
-        {
+        while (!string.IsNullOrEmpty(dir)) {
             if (Directory.Exists(Path.Combine(dir, "src")) && File.Exists(Path.Combine(dir, "README.md")))
                 return dir;
             dir = Directory.GetParent(dir)?.FullName ?? string.Empty;

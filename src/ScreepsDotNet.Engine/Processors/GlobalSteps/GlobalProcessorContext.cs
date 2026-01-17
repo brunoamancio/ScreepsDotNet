@@ -45,8 +45,9 @@ public sealed class GlobalProcessorContext(GlobalState state, IGlobalMutationWri
     {
         var dictionary = new Dictionary<string, IReadOnlyList<RoomObjectSnapshot>>(StringComparer.Ordinal);
         foreach (var group in objects.Where(obj => !string.IsNullOrWhiteSpace(obj.Type))
-                                     .GroupBy(obj => obj.Type!, StringComparer.Ordinal))
+                                     .GroupBy(obj => obj.Type!, StringComparer.Ordinal)) {
             dictionary[group.Key] = group.ToArray();
+        }
 
         return dictionary;
     }
@@ -54,8 +55,7 @@ public sealed class GlobalProcessorContext(GlobalState state, IGlobalMutationWri
     private static IDictionary<string, PowerCreepSnapshot> BuildPowerCreepLookup(IEnumerable<PowerCreepSnapshot> creeps)
     {
         var dictionary = new Dictionary<string, PowerCreepSnapshot>(StringComparer.Ordinal);
-        foreach (var creep in creeps)
-        {
+        foreach (var creep in creeps) {
             if (string.IsNullOrWhiteSpace(creep.Id))
                 continue;
             dictionary[creep.Id] = creep;
@@ -67,8 +67,7 @@ public sealed class GlobalProcessorContext(GlobalState state, IGlobalMutationWri
     private static IReadOnlyDictionary<string, GlobalUserIntentSnapshot> BuildUserIntentLookup(IEnumerable<GlobalUserIntentSnapshot> intents)
     {
         var dictionary = new Dictionary<string, GlobalUserIntentSnapshot>(StringComparer.Ordinal);
-        foreach (var intent in intents)
-        {
+        foreach (var intent in intents) {
             if (string.IsNullOrWhiteSpace(intent.UserId))
                 continue;
             dictionary[intent.UserId!] = intent;

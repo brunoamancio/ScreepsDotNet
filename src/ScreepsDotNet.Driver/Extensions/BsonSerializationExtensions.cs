@@ -10,16 +10,13 @@ internal static class BsonSerializationExtensions
         if (document is null)
             return string.Empty;
 
-        try
-        {
+        try {
             return document.ToJson();
         }
-        catch (BsonSerializationException)
-        {
+        catch (BsonSerializationException) {
             return JsonSerializer.Serialize(document);
         }
-        catch (NotSupportedException)
-        {
+        catch (NotSupportedException) {
             return JsonSerializer.Serialize(document);
         }
     }

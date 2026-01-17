@@ -19,26 +19,22 @@ internal sealed class CombatResolutionStep(ICreepDeathProcessor deathProcessor) 
         var hitsUpdates = new Dictionary<string, int>();
         var removals = new HashSet<string>(StringComparer.Ordinal);
 
-        foreach (var envelope in intents.Users.Values)
-        {
+        foreach (var envelope in intents.Users.Values) {
             if (envelope?.CreepIntents is null || envelope.CreepIntents.Count == 0)
                 continue;
 
-            foreach (var (objectId, creepIntent) in envelope.CreepIntents)
-            {
+            foreach (var (objectId, creepIntent) in envelope.CreepIntents) {
                 ApplyAttack(creepIntent?.Attack, hitsUpdates, removals);
                 ApplyAttack(creepIntent?.RangedAttack, hitsUpdates, removals);
             }
         }
 
-        foreach (var (objectId, hits) in hitsUpdates)
-        {
+        foreach (var (objectId, hits) in hitsUpdates) {
             if (!context.State.Objects.TryGetValue(objectId, out var obj))
                 continue;
 
             var remaining = Math.Max((obj.Hits ?? 0) - hits, 0);
-            if (remaining == 0)
-            {
+            if (remaining == 0) {
                 removals.Add(objectId);
                 continue;
             }
@@ -49,27 +45,24 @@ internal sealed class CombatResolutionStep(ICreepDeathProcessor deathProcessor) 
             });
         }
 
-        if (removals.Count > 0)
-        {
+        if (removals.Count > 0) {
             var energyLedger = new Dictionary<string, int>(StringComparer.Ordinal);
-            foreach (var id in removals)
-            {
-                if (!context.State.Objects.TryGetValue(id, out var obj))
-                {
+            foreach (var id in removals) {
+                if (!context.State.Objects.TryGetValue(id, out var obj)) {
                     context.MutationWriter.Remove(id);
                     continue;
                 }
 
-                if (obj.IsCreep())
-                {
+                if (obj.IsCreep()) {
                     deathProcessor.Process(
                         context,
                         obj,
                         new CreepDeathOptions(ViolentDeath: true),
                         energyLedger);
                 }
-                else
+                else {
                     context.MutationWriter.Remove(id);
+                }
             }
         }
 

@@ -24,8 +24,7 @@ internal sealed class BodyAnalysisHelper : IBodyAnalysisHelper
         var totalCost = 0;
         var carryCapacity = 0;
 
-        for (var i = 0; i < bodyParts.Count; i++)
-        {
+        for (var i = 0; i < bodyParts.Count; i++) {
             var partType = bodyParts[i];
             normalized[i] = partType;
 

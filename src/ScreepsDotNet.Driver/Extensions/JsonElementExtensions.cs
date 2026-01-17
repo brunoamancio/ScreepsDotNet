@@ -16,8 +16,7 @@ public static class JsonElementExtensions
 
     private static bool TryGetBooleanCompat(JsonElement element, out bool value)
     {
-        switch (element.ValueKind)
-        {
+        switch (element.ValueKind) {
             case JsonValueKind.True:
                 value = true;
                 return true;
@@ -29,11 +28,20 @@ public static class JsonElementExtensions
                     return true;
                 break;
             case JsonValueKind.Number:
-                if (element.TryGetInt32(out var numeric))
-                {
+                if (element.TryGetInt32(out var numeric)) {
                     value = numeric != 0;
                     return true;
                 }
+                break;
+            case JsonValueKind.Undefined:
+                break;
+            case JsonValueKind.Object:
+                break;
+            case JsonValueKind.Array:
+                break;
+            case JsonValueKind.Null:
+                break;
+            default:
                 break;
         }
 

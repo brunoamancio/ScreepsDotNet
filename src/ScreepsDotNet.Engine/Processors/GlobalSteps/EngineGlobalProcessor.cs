@@ -20,8 +20,7 @@ internal sealed class EngineGlobalProcessor(
         var mutationWriter = mutationWriterFactory.Create();
         var context = new GlobalProcessorContext(state, mutationWriter);
 
-        if (_steps.Count == 0)
-        {
+        if (_steps.Count == 0) {
             logger?.LogDebug("EngineGlobalProcessor tick {Tick}: no global steps registered.", gameTime);
             return;
         }

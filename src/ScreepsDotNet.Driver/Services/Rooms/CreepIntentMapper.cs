@@ -50,8 +50,7 @@ internal static class CreepIntentMapper
     private static IReadOnlyDictionary<string, object?> ExtractResidual(BsonDocument document)
     {
         var result = new Dictionary<string, object?>(StringComparer.Ordinal);
-        foreach (var element in document.Elements)
-        {
+        foreach (var element in document.Elements) {
             if (element.Name is IntentKeys.Move or IntentKeys.Attack or IntentKeys.RangedAttack)
                 continue;
 
@@ -75,6 +74,20 @@ internal static class CreepIntentMapper
             BsonType.String => value.AsString,
             BsonType.Document => ExtractDocument(value.AsBsonDocument),
             BsonType.Array => ExtractArray(value.AsBsonArray),
+            BsonType.EndOfDocument => throw new NotImplementedException(),
+            BsonType.Binary => throw new NotImplementedException(),
+            BsonType.Undefined => throw new NotImplementedException(),
+            BsonType.ObjectId => throw new NotImplementedException(),
+            BsonType.DateTime => throw new NotImplementedException(),
+            BsonType.Null => throw new NotImplementedException(),
+            BsonType.RegularExpression => throw new NotImplementedException(),
+            BsonType.JavaScript => throw new NotImplementedException(),
+            BsonType.Symbol => throw new NotImplementedException(),
+            BsonType.JavaScriptWithScope => throw new NotImplementedException(),
+            BsonType.Timestamp => throw new NotImplementedException(),
+            BsonType.Decimal128 => throw new NotImplementedException(),
+            BsonType.MinKey => throw new NotImplementedException(),
+            BsonType.MaxKey => throw new NotImplementedException(),
             _ => value.ToString()
         };
     }

@@ -20,12 +20,10 @@ internal sealed class RoomStatsTelemetryListener(
         if (!_options.EnableExporter)
             return Task.CompletedTask;
 
-        try
-        {
+        try {
             return _exporter.ExportRoomStatsAsync(update, token);
         }
-        catch (Exception ex)
-        {
+        catch (Exception ex) {
             _logger?.LogError(ex, "Observability exporter failed to handle room stats for room {Room} tick {Tick}.", update.Room, update.GameTime);
             return Task.CompletedTask;
         }

@@ -13,8 +13,7 @@ internal sealed class ControllerDowngradeStep : IRoomProcessorStep
 {
     public Task ExecuteAsync(RoomProcessorContext context, CancellationToken token = default)
     {
-        foreach (var controller in context.State.Objects.Values)
-        {
+        foreach (var controller in context.State.Objects.Values) {
             if (controller.Type != RoomObjectTypes.Controller)
                 continue;
 

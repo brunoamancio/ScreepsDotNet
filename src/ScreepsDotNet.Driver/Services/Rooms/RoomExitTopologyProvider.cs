@@ -32,10 +32,8 @@ internal sealed class RoomExitTopologyProvider(IMongoDatabaseProvider databasePr
 
     private bool TryGetCached(out IReadOnlyDictionary<string, RoomExitTopology> cache)
     {
-        lock (_gate)
-        {
-            if (_cache is not null)
-            {
+        lock (_gate) {
+            if (_cache is not null) {
                 cache = _cache;
                 return true;
             }

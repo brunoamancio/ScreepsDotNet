@@ -12,8 +12,7 @@ internal sealed class StructureDecayStep : IRoomProcessorStep
 {
     public Task ExecuteAsync(RoomProcessorContext context, CancellationToken token = default)
     {
-        foreach (var structure in context.State.Objects.Values)
-        {
+        foreach (var structure in context.State.Objects.Values) {
             if (structure.Type is not (RoomObjectTypes.Wall or RoomObjectTypes.Rampart or RoomObjectTypes.Road))
                 continue;
 

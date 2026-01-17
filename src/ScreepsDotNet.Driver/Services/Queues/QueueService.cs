@@ -11,8 +11,7 @@ internal sealed class QueueService(IRedisConnectionProvider redisProvider) : IQu
     public IWorkQueueChannel GetQueue(string name, QueueMode mode = QueueMode.ReadWrite)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(name);
-        lock (_lock)
-        {
+        lock (_lock) {
             if (_queues.TryGetValue(name, out var queue))
                 return queue;
 
@@ -25,8 +24,7 @@ internal sealed class QueueService(IRedisConnectionProvider redisProvider) : IQu
     public async Task ResetAllAsync(CancellationToken token = default)
     {
         IWorkQueueChannel[] snapshot;
-        lock (_lock)
-        {
+        lock (_lock) {
             snapshot = new IWorkQueueChannel[_queues.Count];
             var index = 0;
             foreach (var queue in _queues.Values)

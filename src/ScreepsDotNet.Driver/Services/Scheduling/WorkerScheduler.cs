@@ -4,8 +4,8 @@ using Microsoft.Extensions.Logging;
 using ScreepsDotNet.Driver.Abstractions;
 using ScreepsDotNet.Driver.Abstractions.Loops;
 using ScreepsDotNet.Driver.Abstractions.Runtime;
-using ScreepsDotNet.Driver.Services.Runtime;
 using ScreepsDotNet.Driver.Constants;
+using ScreepsDotNet.Driver.Services.Runtime;
 
 internal sealed class WorkerScheduler(string name, int concurrency, DriverProcessType? processType = null, IRuntimeTelemetrySink? telemetry = null, ILogger<WorkerScheduler>? logger = null)
 {
@@ -20,22 +20,16 @@ internal sealed class WorkerScheduler(string name, int concurrency, DriverProces
         ArgumentNullException.ThrowIfNull(worker);
 
         var tasks = new Task[_concurrency];
-        for (var i = 0; i < _concurrency; i++)
-        {
-            tasks[i] = Task.Run(async () =>
-            {
-                while (!token.IsCancellationRequested)
-                {
-                    try
-                    {
+        for (var i = 0; i < _concurrency; i++) {
+            tasks[i] = Task.Run(async () => {
+                while (!token.IsCancellationRequested) {
+                    try {
                         await worker(token).ConfigureAwait(false);
                     }
-                    catch (OperationCanceledException) when (token.IsCancellationRequested)
-                    {
+                    catch (OperationCanceledException) when (token.IsCancellationRequested) {
                         break;
                     }
-                    catch (Exception ex)
-                    {
+                    catch (Exception ex) {
                         logger?.LogError(ex, "Worker scheduler '{Name}' worker crashed.", name);
                         await PublishSchedulerFaultAsync(ex, token).ConfigureAwait(false);
                     }

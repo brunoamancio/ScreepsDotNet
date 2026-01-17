@@ -26,8 +26,7 @@ internal sealed class InterRoomSnapshotBuilder(IRoomDataService roomDataService)
             return [];
 
         var result = new RoomObjectSnapshot[documents.Count];
-        for (var i = 0; i < documents.Count; i++)
-        {
+        for (var i = 0; i < documents.Count; i++) {
             var document = documents[i];
             result[i] = RoomContractMapper.MapRoomObject(document);
         }
@@ -40,8 +39,7 @@ internal sealed class InterRoomSnapshotBuilder(IRoomDataService roomDataService)
             return new Dictionary<string, RoomInfoSnapshot>(0, StringComparer.Ordinal);
 
         var result = new Dictionary<string, RoomInfoSnapshot>(documents.Count, StringComparer.Ordinal);
-        foreach (var (id, document) in documents)
-        {
+        foreach (var (id, document) in documents) {
             if (string.IsNullOrWhiteSpace(id))
                 continue;
 
@@ -67,8 +65,7 @@ internal sealed class InterRoomSnapshotBuilder(IRoomDataService roomDataService)
             return [];
 
         var result = new MarketOrderSnapshot[documents.Count];
-        for (var i = 0; i < documents.Count; i++)
-        {
+        for (var i = 0; i < documents.Count; i++) {
             var doc = documents[i];
             result[i] = new MarketOrderSnapshot(
                 doc.Id.ToString(),
@@ -94,8 +91,7 @@ internal sealed class InterRoomSnapshotBuilder(IRoomDataService roomDataService)
             return new Dictionary<string, UserState>(0, StringComparer.Ordinal);
 
         var dictionary = new Dictionary<string, UserDocument>(users.Count, StringComparer.Ordinal);
-        foreach (var document in users)
-        {
+        foreach (var document in users) {
             if (string.IsNullOrWhiteSpace(document.Id))
                 continue;
 
@@ -111,8 +107,7 @@ internal sealed class InterRoomSnapshotBuilder(IRoomDataService roomDataService)
             return [];
 
         var result = new PowerCreepSnapshot[documents.Count];
-        for (var i = 0; i < documents.Count; i++)
-        {
+        for (var i = 0; i < documents.Count; i++) {
             var doc = documents[i];
             result[i] = new PowerCreepSnapshot(
                 doc.Id.ToString(),
@@ -134,7 +129,7 @@ internal sealed class InterRoomSnapshotBuilder(IRoomDataService roomDataService)
 
     private static IReadOnlyDictionary<string, int> CopyDictionary(Dictionary<string, int>? source)
         => source is null or { Count: 0 }
-            ? new Dictionary<string, int>(0)
+            ? []
             : new Dictionary<string, int>(source, StringComparer.Ordinal);
 
     private static IReadOnlyDictionary<string, PowerCreepPowerSnapshot> MapPowers(Dictionary<string, PowerCreepPowerDocument>? powers)
@@ -143,8 +138,7 @@ internal sealed class InterRoomSnapshotBuilder(IRoomDataService roomDataService)
             return new Dictionary<string, PowerCreepPowerSnapshot>(0, StringComparer.Ordinal);
 
         var result = new Dictionary<string, PowerCreepPowerSnapshot>(powers.Count, StringComparer.Ordinal);
-        foreach (var (id, document) in powers)
-        {
+        foreach (var (id, document) in powers) {
             if (string.IsNullOrWhiteSpace(id))
                 continue;
 
@@ -161,8 +155,7 @@ internal sealed class InterRoomSnapshotBuilder(IRoomDataService roomDataService)
             return [];
 
         var result = new GlobalUserIntentSnapshot[documents.Count];
-        for (var i = 0; i < documents.Count; i++)
-        {
+        for (var i = 0; i < documents.Count; i++) {
             var doc = documents[i];
             result[i] = new GlobalUserIntentSnapshot(
                 doc.Id.ToString(),

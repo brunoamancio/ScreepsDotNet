@@ -6,10 +6,10 @@ using global::System.ComponentModel;
 using global::System.Globalization;
 using global::System.Linq;
 using global::System.Text.RegularExpressions;
+using ScreepsDotNet.Backend.Cli.Formatting;
 using ScreepsDotNet.Backend.Core.Models;
 using ScreepsDotNet.Backend.Core.Parsing;
 using ScreepsDotNet.Backend.Core.Repositories;
-using ScreepsDotNet.Backend.Cli.Formatting;
 using Spectre.Console;
 using Spectre.Console.Cli;
 

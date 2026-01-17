@@ -38,8 +38,7 @@ internal sealed class RedisWorkQueue(IRedisConnectionProvider redisProvider, str
             return await PopAsync().ConfigureAwait(false);
 
         var stopwatch = waitTimeout.HasValue ? Stopwatch.StartNew() : null;
-        while (true)
-        {
+        while (true) {
             token.ThrowIfCancellationRequested();
             var value = await PopAsync().ConfigureAwait(false);
             if (value is not null)
@@ -65,8 +64,7 @@ internal sealed class RedisWorkQueue(IRedisConnectionProvider redisProvider, str
 
     public async Task ResetAsync(CancellationToken token = default)
     {
-        while (await Database.ListLengthAsync(ProcessingKey).ConfigureAwait(false) > 0)
-        {
+        while (await Database.ListLengthAsync(ProcessingKey).ConfigureAwait(false) > 0) {
             token.ThrowIfCancellationRequested();
             var moved = await Database.ListRightPopLeftPushAsync(ProcessingKey, PendingKey).ConfigureAwait(false);
             if (moved.IsNull)
@@ -77,8 +75,7 @@ internal sealed class RedisWorkQueue(IRedisConnectionProvider redisProvider, str
     public async Task WaitUntilDrainedAsync(CancellationToken token = default)
     {
         EnsureReadAccess();
-        while (true)
-        {
+        while (true) {
             token.ThrowIfCancellationRequested();
             var pending = await Database.ListLengthAsync(PendingKey).ConfigureAwait(false);
             var processing = await Database.ListLengthAsync(ProcessingKey).ConfigureAwait(false);

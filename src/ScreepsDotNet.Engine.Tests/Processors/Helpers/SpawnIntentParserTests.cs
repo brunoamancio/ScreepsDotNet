@@ -1,8 +1,8 @@
 namespace ScreepsDotNet.Engine.Tests.Processors.Helpers;
 
 using ScreepsDotNet.Common.Types;
-using ScreepsDotNet.Engine.Processors.Helpers;
 using ScreepsDotNet.Driver.Contracts;
+using ScreepsDotNet.Engine.Processors.Helpers;
 
 public sealed class SpawnIntentParserTests
 {

@@ -1,15 +1,14 @@
 ﻿using System.Text.Json;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using ScreepsDotNet.Backend.Http.Health;
-using ScreepsDotNet.Backend.Http.Tests.Web;
 using ScreepsDotNet.Backend.Http.Tests.TestSupport;
+using ScreepsDotNet.Backend.Http.Tests.Web;
 
 namespace ScreepsDotNet.Backend.Http.Tests.Endpoints;
 
 public class HealthEndpointTests(TestWebApplicationFactory factory) : IClassFixture<TestWebApplicationFactory>
 {
     private readonly TestHttpClient _client = new(factory.CreateClient());
-    private static CancellationToken Token => TestContext.Current.CancellationToken;
 
     [Fact]
     public async Task Health_ReturnsHealthyPayload()

@@ -33,14 +33,16 @@ public sealed class FileSystemModManifestProvider(IOptions<BotManifestOptions> o
         var timestamp = File.GetLastWriteTimeUtc(path);
 
         if (string.Equals(_cachedPath, path, StringComparison.OrdinalIgnoreCase) &&
-            timestamp <= _cache.LastModifiedUtc)
+            timestamp <= _cache.LastModifiedUtc) {
             return _cache;
+        }
 
         await _lock.WaitAsync(cancellationToken).ConfigureAwait(false);
         try {
             if (string.Equals(_cachedPath, path, StringComparison.OrdinalIgnoreCase) &&
-                timestamp <= _cache.LastModifiedUtc)
+                timestamp <= _cache.LastModifiedUtc) {
                 return _cache;
+            }
 
             var manifest = await LoadManifestAsync(path, timestamp, cancellationToken).ConfigureAwait(false);
             _cache = manifest;
@@ -65,8 +67,7 @@ public sealed class FileSystemModManifestProvider(IOptions<BotManifestOptions> o
 
             return new ModManifest(path, timestamp, bots, customIntentTypes, customObjectTypes);
         }
-        catch (Exception ex) when (ex is IOException or JsonException or UnauthorizedAccessException)
-        {
+        catch (Exception ex) when (ex is IOException or JsonException or UnauthorizedAccessException) {
             logger.LogError(ex, "Failed to load mods manifest '{Path}'.", path);
             return new ModManifest(path,
                                    timestamp,
@@ -99,8 +100,9 @@ public sealed class FileSystemModManifestProvider(IOptions<BotManifestOptions> o
     private IReadOnlyDictionary<string, IntentDefinition> ParseCustomIntentTypes(JsonElement root)
     {
         if (!root.TryGetProperty("customIntentTypes", out var customElement) ||
-            customElement.ValueKind != JsonValueKind.Object)
+            customElement.ValueKind != JsonValueKind.Object) {
             return new Dictionary<string, IntentDefinition>(StringComparer.Ordinal);
+        }
 
         var result = new Dictionary<string, IntentDefinition>(StringComparer.Ordinal);
         foreach (var intentNode in customElement.EnumerateObject()) {
@@ -140,8 +142,9 @@ public sealed class FileSystemModManifestProvider(IOptions<BotManifestOptions> o
     private static IReadOnlyDictionary<string, object?> ParseCustomObjectTypes(JsonElement root)
     {
         if (!root.TryGetProperty("customObjectTypes", out var objectsElement) ||
-            objectsElement.ValueKind != JsonValueKind.Object)
+            objectsElement.ValueKind != JsonValueKind.Object) {
             return new Dictionary<string, object?>(StringComparer.Ordinal);
+        }
 
         var result = new Dictionary<string, object?>(StringComparer.Ordinal);
         foreach (var entry in objectsElement.EnumerateObject())
@@ -181,8 +184,7 @@ public sealed class FileSystemModManifestProvider(IOptions<BotManifestOptions> o
 
     private static bool TryMapIntentFieldType(string? type, out IntentFieldType mapped)
     {
-        switch (type)
-        {
+        switch (type) {
             case "string":
                 mapped = IntentFieldType.ScalarString;
                 return true;

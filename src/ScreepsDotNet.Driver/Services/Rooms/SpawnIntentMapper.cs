@@ -43,15 +43,13 @@ internal static class SpawnIntentMapper
             return null;
 
         IReadOnlyList<Direction>? directions = null;
-        if (document.TryGetValue(IntentDocumentFields.Spawn.Directions, out var directionsValue) && directionsValue is BsonArray directionsArray)
-        {
+        if (document.TryGetValue(IntentDocumentFields.Spawn.Directions, out var directionsValue) && directionsValue is BsonArray directionsArray) {
             var parsedDirections = ExtractDirectionArray(directionsArray);
             directions = parsedDirections.Count == 0 ? null : parsedDirections;
         }
 
         IReadOnlyList<string>? energyStructures = null;
-        if (document.TryGetValue(IntentDocumentFields.Spawn.EnergyStructures, out var energyValue) && energyValue is BsonArray energyArray)
-        {
+        if (document.TryGetValue(IntentDocumentFields.Spawn.EnergyStructures, out var energyValue) && energyValue is BsonArray energyArray) {
             var parsed = ExtractStringArray(energyArray);
             energyStructures = parsed.Count == 0 ? null : parsed;
         }
@@ -87,8 +85,7 @@ internal static class SpawnIntentMapper
     private static List<string> ExtractStringArray(BsonArray array)
     {
         var result = new List<string>(array.Count);
-        foreach (var value in array)
-        {
+        foreach (var value in array) {
             if (value is not BsonString bsonString)
                 continue;
             var str = bsonString.Value;
@@ -105,8 +102,7 @@ internal static class SpawnIntentMapper
             return [];
 
         var result = new List<BodyPartType>(array.Count);
-        for (var i = 0; i < array.Count; i++)
-        {
+        for (var i = 0; i < array.Count; i++) {
             if (array[i] is not BsonString bsonString)
                 return [];
 
@@ -124,8 +120,7 @@ internal static class SpawnIntentMapper
     {
         var result = new List<Direction>(array.Count);
         var seen = new HashSet<Direction>();
-        foreach (var value in array)
-        {
+        foreach (var value in array) {
             if (!value.IsInt32)
                 continue;
             var raw = value.AsInt32;

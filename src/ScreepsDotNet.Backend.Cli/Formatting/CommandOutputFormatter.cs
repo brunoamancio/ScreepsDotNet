@@ -49,8 +49,7 @@ internal sealed class CommandOutputFormatter : ICommandOutputFormatter
 
     public void WriteTabularData(string? title, IReadOnlyList<string> headers, IEnumerable<IReadOnlyList<string>> rows)
     {
-        switch (_preferredFormat)
-        {
+        switch (_preferredFormat) {
             case OutputFormat.Json:
                 var jsonRows = rows.Select(row => headers.Zip(row, (header, value) => (header, value))
                                                          .ToDictionary(pair => pair.header, pair => pair.value))
@@ -60,6 +59,8 @@ internal sealed class CommandOutputFormatter : ICommandOutputFormatter
             case OutputFormat.Markdown:
                 WriteMarkdownTable(title, headers, rows);
                 return;
+            case OutputFormat.Table:
+                break;
             default:
                 var table = new Table();
                 if (!string.IsNullOrWhiteSpace(title))

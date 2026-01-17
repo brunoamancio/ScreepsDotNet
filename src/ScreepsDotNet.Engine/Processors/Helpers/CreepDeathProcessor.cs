@@ -42,8 +42,7 @@ internal sealed class CreepDeathProcessor : ICreepDeathProcessor
         if (!string.IsNullOrWhiteSpace(creep.UserId))
             context.Stats.IncrementTombstonesCreated(creep.UserId!);
 
-        if (options.Spawn is not null)
-        {
+        if (options.Spawn is not null) {
             var refund = CalculateRecycleRefund(creep);
             if (refund > 0)
                 ApplyEnergyRefund(context, options.Spawn, refund, energyLedger);
@@ -106,7 +105,7 @@ internal sealed class CreepDeathProcessor : ICreepDeathProcessor
             return gameTime + ScreepsGameConstants.TombstoneDecayPowerCreep;
 
         var parts = Math.Max(creep.Body.Count, 1);
-        return gameTime + parts * ScreepsGameConstants.TombstoneDecayPerPart;
+        return gameTime + (parts * ScreepsGameConstants.TombstoneDecayPerPart);
     }
 
     private static Dictionary<string, int> CalculateBodyResources(RoomObjectSnapshot creep, double dropRate)
@@ -127,13 +126,11 @@ internal sealed class CreepDeathProcessor : ICreepDeathProcessor
         double energy = 0;
         var boostResources = new Dictionary<string, double>(Comparer);
 
-        foreach (var part in creep.Body)
-        {
+        foreach (var part in creep.Body) {
             if (ScreepsGameConstants.TryGetBodyPartEnergyCost(part.Type, out var cost))
                 energy += Math.Min(ScreepsGameConstants.CreepPartMaxEnergy, cost * lifeRate);
 
-            if (!string.IsNullOrWhiteSpace(part.Boost))
-            {
+            if (!string.IsNullOrWhiteSpace(part.Boost)) {
                 var boost = part.Boost!;
                 var mineral = ScreepsGameConstants.LabBoostMineral * lifeRate;
                 boostResources[boost] = boostResources.TryGetValue(boost, out var existing)
@@ -147,8 +144,7 @@ internal sealed class CreepDeathProcessor : ICreepDeathProcessor
         if (energy > 0)
             result[RoomDocumentFields.RoomObject.Store.Energy] = (int)Math.Floor(energy);
 
-        foreach (var (resource, amount) in boostResources)
-        {
+        foreach (var (resource, amount) in boostResources) {
             var floored = (int)Math.Floor(amount);
             if (floored > 0)
                 result[resource] = floored;
@@ -166,8 +162,7 @@ internal sealed class CreepDeathProcessor : ICreepDeathProcessor
         IDictionary<string, int> target,
         IReadOnlyDictionary<string, int> source)
     {
-        foreach (var (resource, amount) in source)
-        {
+        foreach (var (resource, amount) in source) {
             if (amount <= 0 || string.IsNullOrWhiteSpace(resource))
                 continue;
 
@@ -181,8 +176,7 @@ internal sealed class CreepDeathProcessor : ICreepDeathProcessor
         IReadOnlyDictionary<string, RoomObjectSnapshot> objects,
         RoomObjectSnapshot creep)
     {
-        foreach (var obj in objects.Values)
-        {
+        foreach (var obj in objects.Values) {
             if (!string.Equals(obj.RoomName, creep.RoomName, StringComparison.Ordinal))
                 continue;
 
@@ -224,8 +218,7 @@ internal sealed class CreepDeathProcessor : ICreepDeathProcessor
 
         var updatedStore = new Dictionary<string, int>(Comparer);
 
-        foreach (var resource in dropResources.Keys.ToList())
-        {
+        foreach (var resource in dropResources.Keys.ToList()) {
             if (remainingCapacity <= 0)
                 break;
 
@@ -265,8 +258,7 @@ internal sealed class CreepDeathProcessor : ICreepDeathProcessor
             return 0;
 
         var totalCost = 0;
-        foreach (var part in creep.Body)
-        {
+        foreach (var part in creep.Body) {
             if (ScreepsGameConstants.TryGetBodyPartEnergyCost(part.Type, out var cost))
                 totalCost += cost;
         }

@@ -169,8 +169,9 @@ public sealed class MongoIntentService : IIntentService
     {
         if (string.IsNullOrWhiteSpace(roomName) ||
             string.IsNullOrWhiteSpace(objectId) ||
-            string.IsNullOrWhiteSpace(intentName))
+            string.IsNullOrWhiteSpace(intentName)) {
             throw new IntentValidationException("invalid params");
+        }
 
         if (payload.ValueKind is JsonValueKind.Undefined or JsonValueKind.Null)
             throw new IntentValidationException("invalid params");

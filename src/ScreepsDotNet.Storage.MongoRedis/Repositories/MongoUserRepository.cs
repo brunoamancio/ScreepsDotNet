@@ -141,8 +141,7 @@ public sealed class MongoUserRepository(IMongoDatabaseProvider databaseProvider)
                                            .Set(u => u.Username, username)
                                            .Set(u => u.UsernameLower, usernameLower);
 
-        if (!string.IsNullOrWhiteSpace(email))
-        {
+        if (!string.IsNullOrWhiteSpace(email)) {
             var normalizedEmail = email.ToLowerInvariant();
             update = update.Set(u => u.Email, normalizedEmail)
                            .Set(u => u.EmailDirty, false);
@@ -184,8 +183,7 @@ public sealed class MongoUserRepository(IMongoDatabaseProvider databaseProvider)
         if (!string.IsNullOrWhiteSpace(userId))
             return Builders<UserDocument>.Filter.Eq(user => user.Id, userId);
 
-        if (!string.IsNullOrWhiteSpace(username))
-        {
+        if (!string.IsNullOrWhiteSpace(username)) {
             var normalized = username.ToLowerInvariant();
             var regex = new BsonRegularExpression($"^{Regex.Escape(username)}$", "i");
             return Builders<UserDocument>.Filter.Or(

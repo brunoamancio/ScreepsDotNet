@@ -49,9 +49,9 @@ public sealed class PowerCreepIntentStepTests
 
         await step.ExecuteAsync(context, CancellationToken.None);
 
-        var patch = Assert.Single(writer.PowerCreepPatches);
-        Assert.Equal(powerCreep.Id, patch.Id);
-        Assert.Equal("NewPowerCreep", patch.Patch.Name);
+        var (Id, Patch) = Assert.Single(writer.PowerCreepPatches);
+        Assert.Equal(powerCreep.Id, Id);
+        Assert.Equal("NewPowerCreep", Patch.Name);
     }
 
     [Fact]
@@ -79,10 +79,10 @@ public sealed class PowerCreepIntentStepTests
 
         await step.ExecuteAsync(context, CancellationToken.None);
 
-        var patch = Assert.Single(writer.PowerCreepPatches);
-        Assert.Equal(powerCreep.Id, patch.Id);
-        Assert.Equal(timestamp + ScreepsGameConstants.PowerCreepDeleteCooldownMilliseconds, patch.Patch.DeleteTime);
-        Assert.False(patch.Patch.ClearDeleteTime);
+        var (Id, Patch) = Assert.Single(writer.PowerCreepPatches);
+        Assert.Equal(powerCreep.Id, Id);
+        Assert.Equal(timestamp + ScreepsGameConstants.PowerCreepDeleteCooldownMilliseconds, Patch.DeleteTime);
+        Assert.False(Patch.ClearDeleteTime);
     }
 
     [Fact]
@@ -110,9 +110,9 @@ public sealed class PowerCreepIntentStepTests
 
         await step.ExecuteAsync(context, CancellationToken.None);
 
-        var patch = Assert.Single(writer.PowerCreepPatches);
-        Assert.True(patch.Patch.ClearDeleteTime);
-        Assert.Null(patch.Patch.DeleteTime);
+        var (Id, Patch) = Assert.Single(writer.PowerCreepPatches);
+        Assert.True(Patch.ClearDeleteTime);
+        Assert.Null(Patch.DeleteTime);
     }
 
     [Fact]

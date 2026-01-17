@@ -47,27 +47,23 @@ internal sealed class V8RuntimeSandbox(RuntimeSandboxOptions options, ILogger<V8
         string? error = null;
         var timedOut = false;
         var scriptError = false;
-        try
-        {
+        try {
             if (modules is { Count: > 0 })
                 ExecuteModuleGraph(engine, modules);
             else if (!string.IsNullOrWhiteSpace(script))
                 engine.Execute(script);
         }
-        catch (ScriptInterruptedException)
-        {
+        catch (ScriptInterruptedException) {
             timedOut = true;
             error = "Script execution timed out.";
             logger?.LogWarning("Runtime interrupted for user {UserId}.", context.UserId);
         }
-        catch (ScriptEngineException ex)
-        {
+        catch (ScriptEngineException ex) {
             scriptError = true;
             error = ex.Message;
             logger?.LogError(ex, "Runtime error for user {UserId}.", context.UserId);
         }
-        catch (Exception ex)
-        {
+        catch (Exception ex) {
             error = ex.Message;
             logger?.LogError(ex, "Unexpected runtime failure for user {UserId}.", context.UserId);
         }
@@ -105,8 +101,7 @@ internal sealed class V8RuntimeSandbox(RuntimeSandboxOptions options, ILogger<V8
     {
         var engine = new V8ScriptEngine(V8ScriptEngineFlags.DisableGlobalMembers, 64);
         var heapSize = options.MaxHeapSizeMegabytes;
-        if (heapSize > 0)
-        {
+        if (heapSize > 0) {
             var bytes = checked((ulong)heapSize * 1024UL * 1024UL);
             engine.MaxRuntimeHeapSize = checked((UIntPtr)bytes);
         }
@@ -130,8 +125,7 @@ internal sealed class V8RuntimeSandbox(RuntimeSandboxOptions options, ILogger<V8
         static IReadOnlyDictionary<string, string>? FromEnumerable(IEnumerable<KeyValuePair<string, string>> source)
         {
             var dict = new Dictionary<string, string>(StringComparer.Ordinal);
-            foreach (var (name, code) in source)
-            {
+            foreach (var (name, code) in source) {
                 if (string.IsNullOrWhiteSpace(name))
                     continue;
                 dict[name] = code;
@@ -316,7 +310,7 @@ const RawMemory = (() => {
             _currentRawMemory = _initialRawMemory;
             _initialSegments = initialSegments is { Count: > 0 }
                 ? new Dictionary<int, string>(initialSegments)
-                : new Dictionary<int, string>();
+                : [];
             _initialInterShardSegment = interShardSegment;
 
         }
@@ -374,8 +368,7 @@ const RawMemory = (() => {
 
             var payload = ParsePayload(payloadJson);
             var roomName = TryExtractRoomName(payload);
-            if (!string.IsNullOrWhiteSpace(roomName))
-            {
+            if (!string.IsNullOrWhiteSpace(roomName)) {
                 var intents = GetOrCreateRoomIntent(roomName);
                 intents[typeText] = payload;
                 return;
@@ -462,10 +455,7 @@ const RawMemory = (() => {
         public void SetInterShardSegment(object? value)
         {
             var text = NormalizeString(value);
-            if (string.Equals(text, _initialInterShardSegment ?? string.Empty, StringComparison.Ordinal))
-                _interShardOverride = null;
-            else
-                _interShardOverride = text;
+            _interShardOverride = string.Equals(text, _initialInterShardSegment ?? string.Empty, StringComparison.Ordinal) ? null : text;
         }
 
         private static object? ParsePayload(object? payloadJson)
@@ -474,15 +464,13 @@ const RawMemory = (() => {
             if (string.IsNullOrWhiteSpace(payloadText))
                 return null;
 
-            try
-            {
+            try {
                 var parsed = JsonSerializer.Deserialize<object>(payloadText, JsonOptions);
                 if (parsed is JsonElement { ValueKind: JsonValueKind.Object })
                     return JsonSerializer.Deserialize<Dictionary<string, object?>>(payloadText, JsonOptions);
                 return parsed;
             }
-            catch
-            {
+            catch {
                 return payloadText;
             }
         }
@@ -513,10 +501,9 @@ const RawMemory = (() => {
             };
         }
 
-    private static bool TryParseSegmentIndex(object? value, out int index)
+        private static bool TryParseSegmentIndex(object? value, out int index)
         {
-            switch (value)
-            {
+            switch (value) {
                 case null:
                     index = 0;
                     return false;

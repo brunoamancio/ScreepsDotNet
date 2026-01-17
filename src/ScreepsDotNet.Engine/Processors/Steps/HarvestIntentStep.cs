@@ -21,13 +21,11 @@ internal sealed class HarvestIntentStep(IResourceDropHelper resourceDropHelper) 
         var dropContext = resourceDropHelper.CreateContext();
         var roomController = ResolveRoomController(context.State.Objects);
 
-        foreach (var envelope in intents.Users.Values)
-        {
+        foreach (var envelope in intents.Users.Values) {
             if (envelope?.ObjectIntents is null || envelope.ObjectIntents.Count == 0)
                 continue;
 
-            foreach (var (objectId, records) in envelope.ObjectIntents)
-            {
+            foreach (var (objectId, records) in envelope.ObjectIntents) {
                 if (string.IsNullOrWhiteSpace(objectId) || records.Count == 0)
                     continue;
 
@@ -43,8 +41,7 @@ internal sealed class HarvestIntentStep(IResourceDropHelper resourceDropHelper) 
                 if (!string.Equals(creep.UserId, envelope.UserId, StringComparison.Ordinal))
                     continue;
 
-                foreach (var record in records)
-                {
+                foreach (var record in records) {
                     if (!string.Equals(record.Name, IntentKeys.Harvest, StringComparison.Ordinal))
                         continue;
 
@@ -73,8 +70,7 @@ internal sealed class HarvestIntentStep(IResourceDropHelper resourceDropHelper) 
         if (!IsAdjacent(creep, target))
             return;
 
-        switch (target.Type)
-        {
+        switch (target.Type) {
             case RoomObjectTypes.Source:
                 HandleSourceHarvest(context, creep, target, storeLedger, dropContext, roomController);
                 break;
@@ -83,6 +79,8 @@ internal sealed class HarvestIntentStep(IResourceDropHelper resourceDropHelper) 
                 break;
             case RoomObjectTypes.Deposit:
                 HandleDepositHarvest(context, creep, target, storeLedger, dropContext);
+                break;
+            default:
                 break;
         }
     }
@@ -95,7 +93,7 @@ internal sealed class HarvestIntentStep(IResourceDropHelper resourceDropHelper) 
         ResourceDropContext dropContext,
         RoomObjectSnapshot? roomController)
     {
-        if (source.Energy is null || source.Energy <= 0)
+        if (source.Energy is null or <= 0)
             return;
 
         if (!CanHarvestSource(roomController, creep.UserId))
@@ -154,7 +152,7 @@ internal sealed class HarvestIntentStep(IResourceDropHelper resourceDropHelper) 
         ResourceDropContext dropContext,
         RoomObjectSnapshot? roomController)
     {
-        if (mineral.MineralAmount is null || mineral.MineralAmount <= 0)
+        if (mineral.MineralAmount is null or <= 0)
             return;
 
         if (string.IsNullOrWhiteSpace(mineral.MineralType))
@@ -165,8 +163,9 @@ internal sealed class HarvestIntentStep(IResourceDropHelper resourceDropHelper) 
             return;
 
         if (!string.IsNullOrWhiteSpace(extractor.UserId) &&
-            !string.Equals(extractor.UserId, creep.UserId, StringComparison.Ordinal))
+            !string.Equals(extractor.UserId, creep.UserId, StringComparison.Ordinal)) {
             return;
+        }
 
         if (!IsStructureControllerAligned(extractor, roomController))
             return;
@@ -285,6 +284,10 @@ internal sealed class HarvestIntentStep(IResourceDropHelper resourceDropHelper) 
         {
             IntentFieldValueKind.Text => value.TextValue ?? string.Empty,
             IntentFieldValueKind.Number => value.NumberValue?.ToString() ?? string.Empty,
+            IntentFieldValueKind.Boolean => throw new NotImplementedException(),
+            IntentFieldValueKind.TextArray => throw new NotImplementedException(),
+            IntentFieldValueKind.NumberArray => throw new NotImplementedException(),
+            IntentFieldValueKind.BodyPartArray => throw new NotImplementedException(),
             _ => string.Empty
         };
 
@@ -331,8 +334,7 @@ internal sealed class HarvestIntentStep(IResourceDropHelper resourceDropHelper) 
 
         var storePatch = new Dictionary<string, int>(Comparer);
         resourceDropHelper.DropOverflowResources(context, creep, store, overflow, storePatch, dropContext);
-        if (storePatch.Count > 0)
-        {
+        if (storePatch.Count > 0) {
             context.MutationWriter.Patch(creep.Id, new RoomObjectPatchPayload
             {
                 Store = storePatch
@@ -342,8 +344,7 @@ internal sealed class HarvestIntentStep(IResourceDropHelper resourceDropHelper) 
 
     private static RoomObjectSnapshot? ResolveRoomController(IReadOnlyDictionary<string, RoomObjectSnapshot> objects)
     {
-        foreach (var obj in objects.Values)
-        {
+        foreach (var obj in objects.Values) {
             if (string.Equals(obj.Type, RoomObjectTypes.Controller, StringComparison.Ordinal))
                 return obj;
         }
@@ -357,13 +358,15 @@ internal sealed class HarvestIntentStep(IResourceDropHelper resourceDropHelper) 
             return true;
 
         if (!string.IsNullOrWhiteSpace(controller.UserId) &&
-            !string.Equals(controller.UserId, creepUserId, StringComparison.Ordinal))
+            !string.Equals(controller.UserId, creepUserId, StringComparison.Ordinal)) {
             return false;
+        }
 
         var reservationUser = controller.Reservation?.UserId;
         if (!string.IsNullOrWhiteSpace(reservationUser) &&
-            !string.Equals(reservationUser, creepUserId, StringComparison.Ordinal))
+            !string.Equals(reservationUser, creepUserId, StringComparison.Ordinal)) {
             return false;
+        }
 
         return true;
     }
@@ -386,8 +389,7 @@ internal sealed class HarvestIntentStep(IResourceDropHelper resourceDropHelper) 
         IReadOnlyDictionary<string, RoomObjectSnapshot> objects,
         RoomObjectSnapshot mineral)
     {
-        foreach (var obj in objects.Values)
-        {
+        foreach (var obj in objects.Values) {
             if (!string.Equals(obj.RoomName, mineral.RoomName, StringComparison.Ordinal))
                 continue;
 
@@ -398,8 +400,9 @@ internal sealed class HarvestIntentStep(IResourceDropHelper resourceDropHelper) 
                 continue;
 
             if (!string.Equals(obj.Type, RoomObjectTypes.Extractor, StringComparison.Ordinal) &&
-                !string.Equals(obj.StructureType, RoomObjectTypes.Extractor, StringComparison.Ordinal))
+                !string.Equals(obj.StructureType, RoomObjectTypes.Extractor, StringComparison.Ordinal)) {
                 continue;
+            }
 
             return obj;
         }

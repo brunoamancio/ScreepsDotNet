@@ -22,8 +22,7 @@ public sealed class StringLiteralGuardTests
                                          && !file.EndsWith(excludedFileName, StringComparison.OrdinalIgnoreCase))
                              .ToArray();
 
-        foreach (var literal in literals)
-        {
+        foreach (var literal in literals) {
             var needle = $"\"{literal}\"";
             Assert.DoesNotContain(files, file => File.ReadAllText(file).Contains(needle, StringComparison.Ordinal));
         }

@@ -53,8 +53,9 @@ internal sealed class SystemResetCommand(ISeedDataService seedDataService,
                                            ],
                                            "System reset");
         await seedDataService.ReseedAsync(options.MongoConnectionString, options.MongoDatabase, cancellationToken).ConfigureAwait(false);
-        if (settings.OutputJson)
+        if (settings.OutputJson) {
             OutputFormatter.WriteJson(new { database = options.MongoDatabase, reset = true });
+        }
         else {
             OutputFormatter.WriteKeyValueTable([
                 ("Database", options.MongoDatabase),

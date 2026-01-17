@@ -18,8 +18,7 @@ internal sealed class RoomIntentEventLogStep : IRoomProcessorStep
 
         var events = new List<RoomIntentEvent>();
 
-        foreach (var (userId, envelope) in intents.Users)
-        {
+        foreach (var (userId, envelope) in intents.Users) {
             AppendSpawnEvents(userId, envelope.SpawnIntents, events);
             AppendCreepEvents(userId, envelope.CreepIntents, events);
         }
@@ -44,8 +43,7 @@ internal sealed class RoomIntentEventLogStep : IRoomProcessorStep
         if (intents is null || intents.Count == 0)
             return;
 
-        foreach (var (objectId, intent) in intents)
-        {
+        foreach (var (objectId, intent) in intents) {
             if (string.IsNullOrWhiteSpace(objectId))
                 continue;
 
@@ -66,8 +64,7 @@ internal sealed class RoomIntentEventLogStep : IRoomProcessorStep
         if (intents is null || intents.Count == 0)
             return;
 
-        foreach (var (objectId, intent) in intents)
-        {
+        foreach (var (objectId, intent) in intents) {
             if (string.IsNullOrWhiteSpace(objectId))
                 continue;
 

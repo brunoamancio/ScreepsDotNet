@@ -73,8 +73,9 @@ internal sealed class GlobalMutationWriter(IGlobalMutationDispatcher dispatcher)
         if (_powerCreepMutations.Count == 0 &&
             _marketOrderMutations.Count == 0 &&
             _userMoneyMutations.Count == 0 &&
-            _userMoneyEntries.Count == 0)
+            _userMoneyEntries.Count == 0) {
             return;
+        }
 
         var batch = new GlobalMutationBatch(
             _powerCreepMutations.ToArray(),

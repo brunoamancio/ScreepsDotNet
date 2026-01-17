@@ -28,9 +28,9 @@ public sealed class HarvestIntentStepTests
 
         await _step.ExecuteAsync(context, TestContext.Current.CancellationToken);
 
-        var sourcePatch = writer.Patches.Single(p => p.ObjectId == source.Id);
-        Assert.Equal(296, sourcePatch.Payload.Energy);
-        Assert.Equal(4, sourcePatch.Payload.InvaderHarvested);
+        var (ObjectId, Payload) = writer.Patches.Single(p => p.ObjectId == source.Id);
+        Assert.Equal(296, Payload.Energy);
+        Assert.Equal(4, Payload.InvaderHarvested);
 
         var creepPatch = writer.Patches.Single(p => p.ObjectId == creep.Id && p.Payload.Store is not null && p.Payload.ActionLog is not null);
         Assert.Equal(4, creepPatch.Payload.Store![ResourceTypes.Energy]);
@@ -55,8 +55,8 @@ public sealed class HarvestIntentStepTests
         Assert.Equal(ResourceTypes.Energy, drop.ResourceType);
         Assert.Equal(1, drop.ResourceAmount);
 
-        var overflowPatch = writer.Patches.Last(p => p.ObjectId == creep.Id && p.Payload.Store is not null);
-        Assert.Equal(1, overflowPatch.Payload.Store![ResourceTypes.Energy]);
+        var (ObjectId, Payload) = writer.Patches.Last(p => p.ObjectId == creep.Id && p.Payload.Store is not null);
+        Assert.Equal(1, Payload.Store![ResourceTypes.Energy]);
     }
 
     [Fact]
@@ -73,8 +73,8 @@ public sealed class HarvestIntentStepTests
 
         await _step.ExecuteAsync(context, TestContext.Current.CancellationToken);
 
-        var mineralPatch = writer.Patches.Single(p => p.ObjectId == mineral.Id);
-        Assert.Equal(8, mineralPatch.Payload.MineralAmount);
+        var (ObjectId, Payload) = writer.Patches.Single(p => p.ObjectId == mineral.Id);
+        Assert.Equal(8, Payload.MineralAmount);
 
         var extractorPatch = writer.Patches.Single(p => p.ObjectId == extractor.Id && p.Payload.Cooldown.HasValue);
         Assert.Equal(ScreepsGameConstants.ExtractorCooldown, extractorPatch.Payload.Cooldown);
@@ -90,10 +90,10 @@ public sealed class HarvestIntentStepTests
 
         await _step.ExecuteAsync(context, TestContext.Current.CancellationToken);
 
-        var depositPatch = writer.Patches.Single(p => p.ObjectId == deposit.Id && p.Payload.Harvested.HasValue);
-        Assert.True(depositPatch.Payload.Harvested > 0);
-        Assert.True(depositPatch.Payload.CooldownTime > context.State.GameTime);
-        Assert.True(depositPatch.Payload.DecayTime > context.State.GameTime);
+        var (ObjectId, Payload) = writer.Patches.Single(p => p.ObjectId == deposit.Id && p.Payload.Harvested.HasValue);
+        Assert.True(Payload.Harvested > 0);
+        Assert.True(Payload.CooldownTime > context.State.GameTime);
+        Assert.True(Payload.DecayTime > context.State.GameTime);
     }
 
     private static RoomProcessorContext CreateContext(
@@ -126,7 +126,7 @@ public sealed class HarvestIntentStepTests
         var record = new IntentRecord(IntentKeys.Harvest, [argument]);
         var objectIntents = new Dictionary<string, IReadOnlyList<IntentRecord>>(StringComparer.Ordinal)
         {
-            [creepId] = new List<IntentRecord> { record }
+            [creepId] = [record]
         };
 
         var envelope = new IntentEnvelope(

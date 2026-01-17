@@ -48,8 +48,7 @@ internal sealed class ProcessorLoopWorker(
         await loopHooks.SaveRoomHistoryAsync(roomName, gameTime, historyPayload, token).ConfigureAwait(false);
 
         var chunkSize = Math.Max(config.HistoryChunkSize, 1);
-        if (gameTime % chunkSize == 0)
-        {
+        if (gameTime % chunkSize == 0) {
             var chunkBase = Math.Max(gameTime - chunkSize + 1, 0);
             await loopHooks.UploadRoomHistoryChunkAsync(roomName, chunkBase, token).ConfigureAwait(false);
         }
@@ -83,15 +82,13 @@ internal sealed class ProcessorLoopWorker(
         var notificationCounts = new Dictionary<string, int>(StringComparer.Ordinal);
         var timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 
-        foreach (var (userIdKey, intentPayload) in snapshot.Intents.Users)
-        {
+        foreach (var (userIdKey, intentPayload) in snapshot.Intents.Users) {
             if (intentPayload?.ObjectIntents is not { Count: > 0 })
                 continue;
 
             var userId = (userIdKey ?? string.Empty).Trim();
 
-            foreach (var (objectId, intentRecords) in intentPayload.ObjectIntents)
-            {
+            foreach (var (objectId, intentRecords) in intentPayload.ObjectIntents) {
                 if (string.IsNullOrWhiteSpace(objectId) || intentRecords.Count == 0)
                     continue;
 
@@ -132,8 +129,7 @@ internal sealed class ProcessorLoopWorker(
         if (events.Count > 0)
             _logger?.LogDebug("Applied {Count} intents for room {Room}.", events.Count, snapshot.RoomName);
 
-        foreach (var (userId, count) in notificationCounts)
-        {
+        foreach (var (userId, count) in notificationCounts) {
             if (string.IsNullOrWhiteSpace(userId))
                 continue;
 
@@ -301,22 +297,18 @@ internal sealed class ProcessorLoopWorker(
         objects.TryGetValue(objectId, out var target);
         var updateDocument = new BsonDocument();
 
-        if (payload.TryGetValue(IntentKeys.Remove, out var removeValue) && IsTruthy(removeValue))
-        {
+        if (payload.TryGetValue(IntentKeys.Remove, out var removeValue) && IsTruthy(removeValue)) {
             removals.Add(objectId);
             return;
         }
 
-        if (payload.TryGetValue(IntentKeys.Damage, out var damageValue) && target is not null)
-        {
+        if (payload.TryGetValue(IntentKeys.Damage, out var damageValue) && target is not null) {
             var damage = damageValue.ToInt32();
-            if (damage > 0 && target.Hits.HasValue)
-            {
+            if (damage > 0 && target.Hits.HasValue) {
                 var newHits = Math.Max(0, target.Hits!.Value - damage);
                 updateDocument[RoomDocumentFields.RoomObject.Hits] = newHits;
                 target.Hits = newHits;
-                if (newHits == 0)
-                {
+                if (newHits == 0) {
                     removals.Add(objectId);
                     return;
                 }
@@ -328,8 +320,7 @@ internal sealed class ProcessorLoopWorker(
 
         if (payload.TryGetValue(IntentKeys.Patch, out var patchValue) && patchValue is BsonDocument patchDoc) MergeDocuments(updateDocument, patchDoc);
 
-        foreach (var element in payload.Elements)
-        {
+        foreach (var element in payload.Elements) {
             if (element.Name is IntentKeys.Damage or IntentKeys.Remove or IntentKeys.Set or IntentKeys.Patch)
                 continue;
             updateDocument[element.Name] = element.Value.DeepClone();
@@ -365,6 +356,19 @@ internal sealed class ProcessorLoopWorker(
                 element => ConvertBsonValue(element.Value),
                 StringComparer.Ordinal),
             BsonType.Array => value.AsBsonArray.Select(ConvertBsonValue).ToArray(),
+            BsonType.EndOfDocument => throw new NotImplementedException(),
+            BsonType.Binary => throw new NotImplementedException(),
+            BsonType.Undefined => throw new NotImplementedException(),
+            BsonType.ObjectId => throw new NotImplementedException(),
+            BsonType.DateTime => throw new NotImplementedException(),
+            BsonType.Null => throw new NotImplementedException(),
+            BsonType.RegularExpression => throw new NotImplementedException(),
+            BsonType.JavaScript => throw new NotImplementedException(),
+            BsonType.Symbol => throw new NotImplementedException(),
+            BsonType.JavaScriptWithScope => throw new NotImplementedException(),
+            BsonType.Timestamp => throw new NotImplementedException(),
+            BsonType.MinKey => throw new NotImplementedException(),
+            BsonType.MaxKey => throw new NotImplementedException(),
             _ => value.ToString()
         };
     }
@@ -378,6 +382,22 @@ internal sealed class ProcessorLoopWorker(
             BsonType.Int64 => value.AsInt64 != 0,
             BsonType.Double => Math.Abs(value.AsDouble) > double.Epsilon,
             BsonType.String => !string.IsNullOrWhiteSpace(value.AsString),
+            BsonType.EndOfDocument => throw new NotImplementedException(),
+            BsonType.Document => throw new NotImplementedException(),
+            BsonType.Array => throw new NotImplementedException(),
+            BsonType.Binary => throw new NotImplementedException(),
+            BsonType.Undefined => throw new NotImplementedException(),
+            BsonType.ObjectId => throw new NotImplementedException(),
+            BsonType.DateTime => throw new NotImplementedException(),
+            BsonType.Null => throw new NotImplementedException(),
+            BsonType.RegularExpression => throw new NotImplementedException(),
+            BsonType.JavaScript => throw new NotImplementedException(),
+            BsonType.Symbol => throw new NotImplementedException(),
+            BsonType.JavaScriptWithScope => throw new NotImplementedException(),
+            BsonType.Timestamp => throw new NotImplementedException(),
+            BsonType.Decimal128 => throw new NotImplementedException(),
+            BsonType.MinKey => throw new NotImplementedException(),
+            BsonType.MaxKey => throw new NotImplementedException(),
             _ => !value.IsBsonNull
         };
     }
@@ -388,8 +408,7 @@ internal sealed class ProcessorLoopWorker(
     private static IReadOnlyDictionary<string, RoomObjectDocument> RehydrateObjects(IReadOnlyDictionary<string, RoomObjectSnapshot> states)
     {
         var result = new Dictionary<string, RoomObjectDocument>(states.Count, StringComparer.Ordinal);
-        foreach (var (id, state) in states)
-        {
+        foreach (var (id, state) in states) {
             if (string.IsNullOrWhiteSpace(id))
                 continue;
 
@@ -404,8 +423,7 @@ internal sealed class ProcessorLoopWorker(
         if (string.IsNullOrWhiteSpace(objectId) || delta.ElementCount == 0)
             return;
 
-        if (patches.TryGetValue(objectId, out var existing))
-        {
+        if (patches.TryGetValue(objectId, out var existing)) {
             MergeDocuments(existing, delta);
             return;
         }
@@ -415,12 +433,10 @@ internal sealed class ProcessorLoopWorker(
 
     private static void MergeDocuments(BsonDocument target, BsonDocument source)
     {
-        foreach (var element in source)
-        {
+        foreach (var element in source) {
             if (element.Value is BsonDocument child &&
                 target.TryGetValue(element.Name, out var existing) &&
-                existing is BsonDocument existingDocument)
-            {
+                existing is BsonDocument existingDocument) {
                 MergeDocuments(existingDocument, child);
                 continue;
             }

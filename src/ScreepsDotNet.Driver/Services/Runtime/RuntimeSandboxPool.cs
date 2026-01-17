@@ -27,14 +27,11 @@ internal sealed class RuntimeSandboxPool(IRuntimeSandboxFactory factory, ILogger
         if (sandbox is null)
             return;
 
-        if (sandbox is IDisposable disposable)
-        {
-            try
-            {
+        if (sandbox is IDisposable disposable) {
+            try {
                 disposable.Dispose();
             }
-            catch (Exception ex)
-            {
+            catch (Exception ex) {
                 logger?.LogWarning(ex, "Failed to dispose sandbox during invalidation.");
             }
         }

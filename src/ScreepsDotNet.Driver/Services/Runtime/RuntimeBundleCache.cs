@@ -13,8 +13,7 @@ internal sealed class RuntimeBundleCache : IRuntimeBundleCache
         ArgumentException.ThrowIfNullOrWhiteSpace(codeHash);
         ArgumentNullException.ThrowIfNull(normalizedModules);
 
-        return _cache.GetOrAdd(codeHash, _ =>
-        {
+        return _cache.GetOrAdd(codeHash, _ => {
             var modulesCopy = new ReadOnlyDictionary<string, string>(
                 new Dictionary<string, string>(normalizedModules, StringComparer.Ordinal));
             var script = RuntimeModuleBuilder.BuildBundle(modulesCopy);

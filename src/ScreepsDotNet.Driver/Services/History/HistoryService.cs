@@ -45,8 +45,7 @@ internal sealed class HistoryService(
             return;
 
         var parsedTicks = new Dictionary<int, JsonNode?>(entries.Length);
-        foreach (var entry in entries)
-        {
+        foreach (var entry in entries) {
             var (tick, payload) = ParseTick(entry);
             if (!tick.HasValue || string.IsNullOrWhiteSpace(payload))
                 continue;
@@ -86,12 +85,10 @@ internal sealed class HistoryService(
 
     private static JsonNode? ParseNode(string payload)
     {
-        try
-        {
+        try {
             return JsonNode.Parse(payload);
         }
-        catch (JsonException)
-        {
+        catch (JsonException) {
             return null;
         }
     }
@@ -129,8 +126,7 @@ internal sealed class HistoryService(
             ArgumentException.ThrowIfNullOrWhiteSpace(userId);
             ArgumentException.ThrowIfNullOrWhiteSpace(metric);
 
-            if (!_metrics.TryGetValue(userId, out var userMetrics))
-            {
+            if (!_metrics.TryGetValue(userId, out var userMetrics)) {
                 userMetrics = new Dictionary<string, int>(StringComparer.Ordinal);
                 _metrics[userId] = userMetrics;
             }
@@ -155,8 +151,7 @@ internal sealed class HistoryService(
             IReadOnlyDictionary<string, Dictionary<string, int>> metrics)
         {
             var clone = new Dictionary<string, IReadOnlyDictionary<string, int>>(metrics.Count, StringComparer.Ordinal);
-            foreach (var (userId, values) in metrics)
-            {
+            foreach (var (userId, values) in metrics) {
                 if (string.IsNullOrWhiteSpace(userId))
                     continue;
 

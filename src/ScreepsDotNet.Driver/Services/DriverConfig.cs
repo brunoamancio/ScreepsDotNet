@@ -99,8 +99,7 @@ internal sealed class DriverConfig : IDriverConfig
     {
         ArgumentNullException.ThrowIfNull(prototype);
 
-        lock (_prototypeLock)
-        {
+        lock (_prototypeLock) {
             _prototypes.Add(prototype);
             _prototypeSnapshot = _prototypes.ToArray();
         }
@@ -110,8 +109,7 @@ internal sealed class DriverConfig : IDriverConfig
     {
         ArgumentNullException.ThrowIfNull(intentDefinition);
 
-        lock (_intentLock)
-        {
+        lock (_intentLock) {
             _intentDefinitions[intentDefinition.Name] = intentDefinition;
             _intentSnapshot = new ReadOnlyDictionary<string, CustomIntentDefinition>(new Dictionary<string, CustomIntentDefinition>(_intentDefinitions, StringComparer.OrdinalIgnoreCase));
         }
@@ -146,10 +144,8 @@ internal sealed class DriverConfig : IDriverConfig
         ArgumentException.ThrowIfNullOrWhiteSpace(eventName);
         ArgumentNullException.ThrowIfNull(handler);
 
-        lock (_eventLock)
-        {
-            if (!_emitHandlers.TryGetValue(eventName, out var handlers))
-            {
+        lock (_eventLock) {
+            if (!_emitHandlers.TryGetValue(eventName, out var handlers)) {
                 handlers = [];
                 _emitHandlers[eventName] = handlers;
             }
@@ -165,8 +161,7 @@ internal sealed class DriverConfig : IDriverConfig
         ArgumentException.ThrowIfNullOrWhiteSpace(eventName);
         ArgumentNullException.ThrowIfNull(handler);
 
-        lock (_eventLock)
-        {
+        lock (_eventLock) {
             if (!_emitHandlers.TryGetValue(eventName, out var handlers))
                 return;
 
@@ -182,21 +177,17 @@ internal sealed class DriverConfig : IDriverConfig
             return;
 
         DriverEventListener[] snapshot;
-        lock (_eventLock)
-        {
+        lock (_eventLock) {
             if (!_emitHandlers.TryGetValue(eventName, out var handlers) || handlers.Count == 0)
                 return;
             snapshot = handlers.ToArray();
         }
 
-        foreach (var handler in snapshot)
-        {
-            try
-            {
+        foreach (var handler in snapshot) {
+            try {
                 handler(args);
             }
-            catch
-            {
+            catch {
                 // Swallow to mirror EventEmitter semantics; errors should not break other subscribers.
             }
         }
@@ -211,26 +202,22 @@ internal sealed class DriverConfig : IDriverConfig
 
     private static int LoadInt(Func<CancellationToken, Task<int?>> loader, int fallback)
     {
-        try
-        {
+        try {
             var value = loader(CancellationToken.None).GetAwaiter().GetResult();
             return value ?? fallback;
         }
-        catch
-        {
+        catch {
             return fallback;
         }
     }
 
     private static bool LoadBool(Func<CancellationToken, Task<bool?>> loader, bool fallback)
     {
-        try
-        {
+        try {
             var value = loader(CancellationToken.None).GetAwaiter().GetResult();
             return value ?? fallback;
         }
-        catch
-        {
+        catch {
             return fallback;
         }
     }

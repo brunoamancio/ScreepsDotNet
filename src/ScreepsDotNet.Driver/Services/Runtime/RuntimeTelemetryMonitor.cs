@@ -3,8 +3,8 @@ using Microsoft.Extensions.Logging;
 using ScreepsDotNet.Driver.Abstractions.Config;
 using ScreepsDotNet.Driver.Abstractions.Eventing;
 using ScreepsDotNet.Driver.Abstractions.Loops;
-using ScreepsDotNet.Driver.Abstractions.Runtime;
 using ScreepsDotNet.Driver.Abstractions.Notifications;
+using ScreepsDotNet.Driver.Abstractions.Runtime;
 using ScreepsDotNet.Driver.Constants;
 
 namespace ScreepsDotNet.Driver.Services.Runtime;
@@ -54,12 +54,10 @@ internal sealed class RuntimeTelemetryMonitor : IRuntimeWatchdog, IDisposable
 
     private async Task ProcessTelemetryAsync(RuntimeTelemetryPayload payload)
     {
-        try
-        {
+        try {
             await ProcessWatchdogAsync(payload).ConfigureAwait(false);
         }
-        catch (Exception ex)
-        {
+        catch (Exception ex) {
             _logger.LogError(ex, "Runtime watchdog processing failed for user {UserId}.", payload.UserId);
         }
     }
@@ -69,8 +67,7 @@ internal sealed class RuntimeTelemetryMonitor : IRuntimeWatchdog, IDisposable
         if (string.IsNullOrWhiteSpace(payload.UserId))
             return;
 
-        if (!(payload.TimedOut || payload.ScriptError))
-        {
+        if (!(payload.TimedOut || payload.ScriptError)) {
             _watchdogStates.TryRemove(payload.UserId, out _);
             return;
         }
@@ -82,8 +79,7 @@ internal sealed class RuntimeTelemetryMonitor : IRuntimeWatchdog, IDisposable
         if (consecutive < FailureThreshold)
             return;
 
-        if (state.RequestColdStart())
-        {
+        if (state.RequestColdStart()) {
             _logger.LogWarning("Runtime watchdog requesting cold sandbox restart for user {UserId} after {Consecutive} consecutive failures.", payload.UserId, consecutive);
             var alert = new RuntimeWatchdogAlert(payload, consecutive, now);
             await _telemetry.PublishWatchdogAlertAsync(alert).ConfigureAwait(false);
@@ -135,8 +131,7 @@ internal sealed class RuntimeTelemetryMonitor : IRuntimeWatchdog, IDisposable
 
         public bool TryConsumeColdStartRequest()
         {
-            while (true)
-            {
+            while (true) {
                 var pending = Volatile.Read(ref _pendingColdStarts);
                 if (pending == 0)
                     return false;

@@ -27,13 +27,11 @@ internal sealed class SpawnIntentStep(
 
         var energyLedger = new Dictionary<string, int>(StringComparer.Ordinal);
 
-        foreach (var (userId, envelope) in intents.Users)
-        {
+        foreach (var (userId, envelope) in intents.Users) {
             if (envelope?.SpawnIntents is null || envelope.SpawnIntents.Count == 0)
                 continue;
 
-            foreach (var (objectId, spawnIntent) in envelope.SpawnIntents)
-            {
+            foreach (var (objectId, spawnIntent) in envelope.SpawnIntents) {
                 if (string.IsNullOrWhiteSpace(objectId))
                     continue;
 
@@ -59,8 +57,7 @@ internal sealed class SpawnIntentStep(
 
         var runtime = stateReader.GetState(context.State, spawn);
 
-        if (parsed.CancelSpawning)
-        {
+        if (parsed.CancelSpawning) {
             HandleCancel(context, spawn, runtime);
             return;
         }
@@ -121,11 +118,9 @@ internal sealed class SpawnIntentStep(
         });
     }
 
-    private static int CalculateNeedTime(RoomObjectSnapshot spawn, int baseNeedTime, int gameTime)
-    {
+    private static int CalculateNeedTime(RoomObjectSnapshot spawn, int baseNeedTime, int gameTime) =>
         // TODO: apply PWR_OPERATE_SPAWN modifiers once spawn effects are mapped.
-        return baseNeedTime;
-    }
+        baseNeedTime;
 
     private static void InsertPlaceholderCreep(
         RoomProcessorContext context,
@@ -266,8 +261,7 @@ internal sealed class SpawnIntentStep(
         Dictionary<string, int>? storePatch = null;
         int? storeCapacityPatch = null;
 
-        if (HasBoosts(target.Body))
-        {
+        if (HasBoosts(target.Body)) {
             cleanedBody = ClearBoosts(target.Body);
             var resultingBody = cleanedBody!;
             var newCapacity = CalculateCarryCapacity(resultingBody);
@@ -279,11 +273,9 @@ internal sealed class SpawnIntentStep(
                 ? null
                 : new Dictionary<string, int>(target.Store, StringComparer.Ordinal);
 
-            if (mutableStore is not null)
-            {
+            if (mutableStore is not null) {
                 var overflow = CalculateOverflow(mutableStore, newCapacity);
-                if (overflow > 0)
-                {
+                if (overflow > 0) {
                     storePatch = new Dictionary<string, int>(StringComparer.Ordinal);
                     var dropContext = resourceDropHelper.CreateContext();
                     resourceDropHelper.DropOverflowResources(
@@ -386,8 +378,7 @@ internal sealed class SpawnIntentStep(
 
     private static bool HasClaimParts(IReadOnlyList<CreepBodyPartSnapshot> body)
     {
-        for (var i = 0; i < body.Count; i++)
-        {
+        for (var i = 0; i < body.Count; i++) {
             if (body[i].Type == BodyPartType.Claim)
                 return true;
         }
@@ -397,8 +388,7 @@ internal sealed class SpawnIntentStep(
 
     private static bool HasBoosts(IReadOnlyList<CreepBodyPartSnapshot> body)
     {
-        for (var i = 0; i < body.Count; i++)
-        {
+        for (var i = 0; i < body.Count; i++) {
             if (!string.IsNullOrWhiteSpace(body[i].Boost))
                 return true;
         }
@@ -412,8 +402,7 @@ internal sealed class SpawnIntentStep(
             return 0;
 
         var capacity = 0;
-        for (var i = 0; i < body.Count; i++)
-        {
+        for (var i = 0; i < body.Count; i++) {
             if (body[i].Type == BodyPartType.Carry && body[i].Hits > 0)
                 capacity += ScreepsGameConstants.CarryCapacity;
         }
@@ -436,8 +425,7 @@ internal sealed class SpawnIntentStep(
             return [];
 
         var result = new CreepBodyPartSnapshot[body.Count];
-        for (var i = 0; i < body.Count; i++)
-        {
+        for (var i = 0; i < body.Count; i++) {
             var part = body[i];
             result[i] = string.IsNullOrWhiteSpace(part.Boost)
                 ? part
@@ -479,8 +467,7 @@ internal sealed class SpawnIntentStep(
             return 0;
 
         var totalCost = 0;
-        for (var i = 0; i < body.Count; i++)
-        {
+        for (var i = 0; i < body.Count; i++) {
             if (!ScreepsGameConstants.TryGetBodyPartEnergyCost(body[i].Type, out var cost))
                 return 0;
 

@@ -63,8 +63,7 @@ public static class StructureBlueprintRegistry
 
     public static bool TryGetBlueprint(string? type, out StructureBlueprint? blueprint)
     {
-        if (string.IsNullOrWhiteSpace(type))
-        {
+        if (string.IsNullOrWhiteSpace(type)) {
             blueprint = null;
             return false;
         }
@@ -287,8 +286,7 @@ public static class StructureBlueprintRegistry
             return new Dictionary<string, int>(0, StringComparer.Ordinal);
 
         var result = new Dictionary<string, int>(entries.Length, StringComparer.Ordinal);
-        foreach (var (resource, amount) in entries)
-        {
+        foreach (var (resource, amount) in entries) {
             if (string.IsNullOrWhiteSpace(resource))
                 continue;
 

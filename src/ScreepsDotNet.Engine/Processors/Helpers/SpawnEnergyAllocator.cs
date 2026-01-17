@@ -25,8 +25,7 @@ internal sealed class SpawnEnergyAllocator : ISpawnEnergyAllocator
         var draws = new List<EnergyDraw>();
         var remaining = requiredEnergy;
 
-        foreach (var source in candidates)
-        {
+        foreach (var source in candidates) {
             var available = GetEnergy(source, energyOverrides);
             if (available <= 0)
                 continue;
@@ -50,10 +49,8 @@ internal sealed class SpawnEnergyAllocator : ISpawnEnergyAllocator
     {
         var emitted = new HashSet<string>(StringComparer.Ordinal);
 
-        if (preferredStructureIds is not null)
-        {
-            foreach (var structureId in preferredStructureIds)
-            {
+        if (preferredStructureIds is not null) {
+            foreach (var structureId in preferredStructureIds) {
                 if (string.IsNullOrWhiteSpace(structureId))
                     continue;
 
@@ -70,8 +67,7 @@ internal sealed class SpawnEnergyAllocator : ISpawnEnergyAllocator
         if (emitted.Add(spawn.Id))
             yield return spawn;
 
-        foreach (var obj in roomObjects.Values)
-        {
+        foreach (var obj in roomObjects.Values) {
             if (emitted.Contains(obj.Id))
                 continue;
 

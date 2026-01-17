@@ -15,11 +15,11 @@ internal static class ServerEndpoints
                    async (IServerDataRepository repository,
                           IModManifestProvider manifestProvider,
                           CancellationToken cancellationToken) => {
-                       var data = await repository.GetServerDataAsync(cancellationToken).ConfigureAwait(false);
-                       var manifest = await manifestProvider.GetManifestAsync(cancellationToken).ConfigureAwait(false);
-                       var merged = data.WithCustomObjectOverrides(manifest.CustomObjectTypes);
-                       return Results.Ok(merged);
-                   })
+                              var data = await repository.GetServerDataAsync(cancellationToken).ConfigureAwait(false);
+                              var manifest = await manifestProvider.GetManifestAsync(cancellationToken).ConfigureAwait(false);
+                              var merged = data.WithCustomObjectOverrides(manifest.CustomObjectTypes);
+                              return Results.Ok(merged);
+                          })
            .WithName(ServerInfoEndpointName);
     }
 }

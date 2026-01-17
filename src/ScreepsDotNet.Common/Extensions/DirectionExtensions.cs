@@ -6,8 +6,7 @@ public static class DirectionExtensions
 {
     public static bool TryParseDirection(int value, out Direction direction)
     {
-        if (value is >= 1 and <= 8)
-        {
+        if (value is >= 1 and <= 8) {
             direction = (Direction)value;
             return true;
         }

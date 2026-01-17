@@ -84,7 +84,7 @@ public sealed class AuthCommandTests
         public string IssueResult { get; init; } = "token-123";
         public string? ResolveResult { get; set; } = "user-1";
         public IReadOnlyList<AuthTokenInfo> ListResult { get; init; } =
-            new List<AuthTokenInfo> { new("token-123", "user-1", TimeSpan.FromMinutes(5)) };
+            [new("token-123", "user-1", TimeSpan.FromMinutes(5))];
         public bool RevokeResult { get; set; } = true;
 
         public Task<string> IssueTokenAsync(string userId, CancellationToken cancellationToken = default)

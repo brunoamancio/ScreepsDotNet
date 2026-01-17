@@ -26,16 +26,13 @@ internal sealed class ProcessorLoop(
     {
         _queue ??= queues.GetQueue(QueueNames.Rooms, QueueMode.Read);
 
-        while (!token.IsCancellationRequested)
-        {
+        while (!token.IsCancellationRequested) {
             string? room = null;
-            try
-            {
+            try {
                 config.EmitProcessorLoopStage(LoopStageNames.Processor.Start);
                 int? queueDepth = await _queue.GetPendingCountAsync(token).ConfigureAwait(false);
                 room = await _queue.FetchAsync(_options.FetchTimeout, token).ConfigureAwait(false);
-                if (string.IsNullOrWhiteSpace(room))
-                {
+                if (string.IsNullOrWhiteSpace(room)) {
                     await PublishLoopTelemetryAsync(LoopStageNames.Processor.TelemetryIdle, QueueNames.Rooms, queueDepth, null, token).ConfigureAwait(false);
                     await Task.Delay(_options.IdleDelay, token).ConfigureAwait(false);
                     continue;
@@ -45,24 +42,18 @@ internal sealed class ProcessorLoop(
                 await PublishLoopTelemetryAsync(LoopStageNames.Processor.TelemetryDequeue, room!, queueDepth, null, token).ConfigureAwait(false);
                 await worker.HandleRoomAsync(room, queueDepth, token).ConfigureAwait(false);
             }
-            catch (OperationCanceledException) when (token.IsCancellationRequested)
-            {
+            catch (OperationCanceledException) when (token.IsCancellationRequested) {
                 break;
             }
-            catch (Exception ex)
-            {
+            catch (Exception ex) {
                 logger?.LogError(ex, "Processor loop failed for room {Room}.", room);
             }
-            finally
-            {
-                if (!string.IsNullOrWhiteSpace(room))
-                {
-                    try
-                    {
+            finally {
+                if (!string.IsNullOrWhiteSpace(room)) {
+                    try {
                         await _queue.MarkDoneAsync(room!, token).ConfigureAwait(false);
                     }
-                    catch (Exception ex)
-                    {
+                    catch (Exception ex) {
                         logger?.LogWarning(ex, "Failed to mark processor queue item {Room} as done.", room);
                     }
                 }

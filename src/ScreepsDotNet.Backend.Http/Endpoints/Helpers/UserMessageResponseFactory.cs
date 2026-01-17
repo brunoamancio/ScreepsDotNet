@@ -18,8 +18,7 @@ internal static class UserMessageResponseFactory
     public static UserMessageIndexResponse CreateIndex(UserMessageIndexResult result)
     {
         var entries = new List<UserMessageIndexEntryResponse>(result.Messages.Count);
-        foreach (var entry in result.Messages)
-        {
+        foreach (var entry in result.Messages) {
             var response = new UserMessageIndexEntryResponse(entry.Id, Create(entry.Message));
             entries.Add(response);
         }

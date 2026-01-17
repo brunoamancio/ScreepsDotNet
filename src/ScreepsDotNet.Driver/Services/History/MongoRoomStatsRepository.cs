@@ -42,8 +42,7 @@ internal sealed class MongoRoomStatsRepository : IRoomStatsRepository
         IReadOnlyDictionary<string, IReadOnlyDictionary<string, int>> metrics)
     {
         var clone = new Dictionary<string, Dictionary<string, int>>(metrics.Count, StringComparer.Ordinal);
-        foreach (var (userId, userMetrics) in metrics)
-        {
+        foreach (var (userId, userMetrics) in metrics) {
             if (string.IsNullOrWhiteSpace(userId))
                 continue;
 

@@ -23,14 +23,14 @@ public sealed class CreepBuildRepairStepTests
     {
         var creep = CreateCreep("creep1", energy: 50);
         var site = CreateConstructionSite("site1", RoomObjectTypes.Extension, progress: 0, progressTotal: 200);
-        var context = CreateContext([creep, site], CreateIntentSnapshot("user1", creep.Id, IntentKeys.Build, site.Id));
+        var (State, MutationWriter) = CreateContext([creep, site], CreateIntentSnapshot("user1", creep.Id, IntentKeys.Build, site.Id));
         var stats = new RecordingStatsSink();
         var step = new CreepBuildRepairStep(_blueprints, _snapshotFactory);
 
-        await step.ExecuteAsync(new RoomProcessorContext(context.State, context.MutationWriter, stats), TestContext.Current.CancellationToken);
+        await step.ExecuteAsync(new RoomProcessorContext(State, MutationWriter, stats), TestContext.Current.CancellationToken);
 
-        Assert.Contains(context.MutationWriter.Patches, patch => patch.ObjectId == site.Id && patch.Payload.Progress == 5);
-        Assert.Contains(context.MutationWriter.Patches, patch => patch.ObjectId == creep.Id && patch.Payload.Store![RoomDocumentFields.RoomObject.Store.Energy] == 45);
+        Assert.Contains(MutationWriter.Patches, patch => patch.ObjectId == site.Id && patch.Payload.Progress == 5);
+        Assert.Contains(MutationWriter.Patches, patch => patch.ObjectId == creep.Id && patch.Payload.Store![RoomDocumentFields.RoomObject.Store.Energy] == 45);
         Assert.Equal(5, stats.EnergyConstruction["user1"]);
     }
 
@@ -39,14 +39,14 @@ public sealed class CreepBuildRepairStepTests
     {
         var creep = CreateCreep("creep1", energy: 10);
         var site = CreateConstructionSite("site1", RoomObjectTypes.Extension, progress: 195, progressTotal: 200);
-        var context = CreateContext([creep, site], CreateIntentSnapshot("user1", creep.Id, IntentKeys.Build, site.Id));
+        var (State, MutationWriter) = CreateContext([creep, site], CreateIntentSnapshot("user1", creep.Id, IntentKeys.Build, site.Id));
         var stats = new RecordingStatsSink();
         var step = new CreepBuildRepairStep(_blueprints, _snapshotFactory);
 
-        await step.ExecuteAsync(new RoomProcessorContext(context.State, context.MutationWriter, stats), TestContext.Current.CancellationToken);
+        await step.ExecuteAsync(new RoomProcessorContext(State, MutationWriter, stats), TestContext.Current.CancellationToken);
 
-        Assert.Contains(context.MutationWriter.Removals, id => id == site.Id);
-        Assert.Contains(context.MutationWriter.Upserts, upsert => upsert.Type == RoomObjectTypes.Extension);
+        Assert.Contains(MutationWriter.Removals, id => id == site.Id);
+        Assert.Contains(MutationWriter.Upserts, upsert => upsert.Type == RoomObjectTypes.Extension);
     }
 
     [Fact]
@@ -54,14 +54,14 @@ public sealed class CreepBuildRepairStepTests
     {
         var creep = CreateCreep("creep1", energy: 20);
         var structure = CreateStructure("wall1", RoomObjectTypes.Wall, hits: 100, hitsMax: 1000);
-        var context = CreateContext([creep, structure], CreateIntentSnapshot("user1", creep.Id, IntentKeys.Repair, structure.Id));
+        var (State, MutationWriter) = CreateContext([creep, structure], CreateIntentSnapshot("user1", creep.Id, IntentKeys.Repair, structure.Id));
         var stats = new RecordingStatsSink();
         var step = new CreepBuildRepairStep(_blueprints, _snapshotFactory);
 
-        await step.ExecuteAsync(new RoomProcessorContext(context.State, context.MutationWriter, stats), TestContext.Current.CancellationToken);
+        await step.ExecuteAsync(new RoomProcessorContext(State, MutationWriter, stats), TestContext.Current.CancellationToken);
 
-        Assert.Contains(context.MutationWriter.Patches, patch => patch.ObjectId == structure.Id && patch.Payload.Hits == 200);
-        Assert.Contains(context.MutationWriter.Patches, patch => patch.ObjectId == creep.Id && patch.Payload.Store![RoomDocumentFields.RoomObject.Store.Energy] == 19);
+        Assert.Contains(MutationWriter.Patches, patch => patch.ObjectId == structure.Id && patch.Payload.Hits == 200);
+        Assert.Contains(MutationWriter.Patches, patch => patch.ObjectId == creep.Id && patch.Payload.Store![RoomDocumentFields.RoomObject.Store.Energy] == 19);
     }
 
     private static (RoomState State, FakeMutationWriter MutationWriter) CreateContext(
@@ -146,10 +146,10 @@ public sealed class CreepBuildRepairStepTests
             Structure: null,
             Effects: new Dictionary<string, object?>(StringComparer.Ordinal),
             Spawning: null,
-            Body: new List<CreepBodyPartSnapshot>
-            {
+            Body:
+            [
                 new(BodyPartType.Work, ScreepsGameConstants.BodyPartHitPoints, null)
-            },
+            ],
             IsSpawning: false);
 
     private static RoomObjectSnapshot CreateConstructionSite(string id, string structureType, int progress, int progressTotal)

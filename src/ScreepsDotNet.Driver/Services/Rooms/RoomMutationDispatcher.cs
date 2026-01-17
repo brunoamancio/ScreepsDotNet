@@ -36,14 +36,12 @@ internal sealed class RoomMutationDispatcher(
         if (batch.RoomInfoPatch is not null)
             await ApplyRoomInfoPatchAsync(batch.RoomName, batch.RoomInfoPatch, token).ConfigureAwait(false);
 
-        if (batch.EventLog is not null)
-        {
+        if (batch.EventLog is not null) {
             var payload = JsonSerializer.Serialize(batch.EventLog, batch.EventLog.GetType(), JsonOptions);
             await roomDataService.SaveRoomEventLogAsync(batch.RoomName, payload, token).ConfigureAwait(false);
         }
 
-        if (batch.MapView is not null)
-        {
+        if (batch.MapView is not null) {
             var payload = JsonSerializer.Serialize(batch.MapView, batch.MapView.GetType(), JsonOptions);
             await roomDataService.SaveMapViewAsync(batch.RoomName, payload, token).ConfigureAwait(false);
         }
@@ -52,8 +50,7 @@ internal sealed class RoomMutationDispatcher(
     private void ApplyUpserts(IBulkWriter<RoomObjectDocument> writer, IReadOnlyList<RoomObjectUpsert> upserts, int? gameTime)
     {
         if (upserts.Count == 0) return;
-        foreach (var upsert in upserts)
-        {
+        foreach (var upsert in upserts) {
             var enriched = blueprintEnricher.Enrich(upsert.Document, gameTime);
             var entity = RoomContractMapper.MapRoomObjectDocument(enriched);
             writer.Insert(entity);
@@ -63,8 +60,7 @@ internal sealed class RoomMutationDispatcher(
     private static void ApplyPatches(IBulkWriter<RoomObjectDocument> writer, IReadOnlyList<RoomObjectPatch> patches)
     {
         if (patches.Count == 0) return;
-        foreach (var patch in patches)
-        {
+        foreach (var patch in patches) {
             if (string.IsNullOrWhiteSpace(patch.ObjectId))
                 continue;
 
@@ -79,8 +75,7 @@ internal sealed class RoomMutationDispatcher(
     private static void ApplyRemovals(IBulkWriter<RoomObjectDocument> writer, IReadOnlyList<string> removals)
     {
         if (removals.Count == 0) return;
-        foreach (var id in removals)
-        {
+        foreach (var id in removals) {
             if (string.IsNullOrWhiteSpace(id))
                 continue;
             writer.Remove(id);

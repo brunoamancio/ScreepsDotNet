@@ -10,9 +10,9 @@ using ScreepsDotNet.Backend.Core.Models.Strongholds;
 using ScreepsDotNet.Backend.Core.Repositories;
 using ScreepsDotNet.Backend.Core.Services;
 using ScreepsDotNet.Common.Constants;
+using ScreepsDotNet.Common.Utilities;
 using ScreepsDotNet.Storage.MongoRedis.Providers;
 using ScreepsDotNet.Storage.MongoRedis.Repositories.Documents;
-using ScreepsDotNet.Common.Utilities;
 
 public sealed class MongoStrongholdControlService(IMongoDatabaseProvider databaseProvider, IStrongholdTemplateProvider templateProvider, IWorldMetadataRepository worldMetadataRepository)
     : IStrongholdControlService
@@ -91,7 +91,9 @@ public sealed class MongoStrongholdControlService(IMongoDatabaseProvider databas
                                                         deployTime,
                                                         strongholdId));
             }
-            else if (blueprint.Type == StructureType.Rampart) structures.Add(BuildRampartDocument(normalizedRoom, normalizedShard, x, y, userId, strongholdId, deployTime));
+            else if (blueprint.Type == StructureType.Rampart) {
+                structures.Add(BuildRampartDocument(normalizedRoom, normalizedShard, x, y, userId, strongholdId, deployTime));
+            }
         }
 
         if (structures.Count == 0)

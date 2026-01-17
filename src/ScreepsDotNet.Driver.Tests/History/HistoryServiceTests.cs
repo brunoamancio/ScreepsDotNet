@@ -1,8 +1,8 @@
 using MongoDB.Driver;
 using ScreepsDotNet.Common.Constants;
 using ScreepsDotNet.Driver.Abstractions.Eventing;
-using ScreepsDotNet.Driver.Contracts;
 using ScreepsDotNet.Driver.Constants;
+using ScreepsDotNet.Driver.Contracts;
 using ScreepsDotNet.Driver.Services;
 using ScreepsDotNet.Driver.Services.History;
 using ScreepsDotNet.Driver.Tests.TestSupport;

@@ -1,15 +1,15 @@
 using Microsoft.Extensions.Logging.Abstractions;
-using ScreepsDotNet.Driver.Abstractions.Eventing;
 using ScreepsDotNet.Driver.Abstractions;
+using ScreepsDotNet.Driver.Abstractions.Eventing;
 using ScreepsDotNet.Driver.Abstractions.Loops;
 using ScreepsDotNet.Driver.Abstractions.Notifications;
 using ScreepsDotNet.Driver.Abstractions.Observability;
 using ScreepsDotNet.Driver.Abstractions.Runtime;
+using ScreepsDotNet.Driver.Contracts;
 using ScreepsDotNet.Driver.Services;
 using ScreepsDotNet.Driver.Services.Observability;
 using ScreepsDotNet.Driver.Services.Runtime;
 using ScreepsDotNet.Driver.Tests.TestSupport;
-using ScreepsDotNet.Driver.Contracts;
 
 namespace ScreepsDotNet.Driver.Tests.Observability;
 

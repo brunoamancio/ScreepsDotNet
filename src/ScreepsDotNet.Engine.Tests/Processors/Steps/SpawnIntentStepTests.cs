@@ -48,9 +48,9 @@ public sealed class SpawnIntentStepTests
 
         await _step.ExecuteAsync(context, TestContext.Current.CancellationToken);
 
-        var spawnSpawningPatch = writer.Patches.First(p => p.ObjectId == spawn.Id && p.Payload.Spawning is not null);
-        Assert.Equal("Worker1", spawnSpawningPatch.Payload.Spawning!.Name);
-        Assert.Equal(106, spawnSpawningPatch.Payload.Spawning.SpawnTime);
+        var (ObjectId, Payload) = writer.Patches.First(p => p.ObjectId == spawn.Id && p.Payload.Spawning is not null);
+        Assert.Equal("Worker1", Payload.Spawning!.Name);
+        Assert.Equal(106, Payload.Spawning.SpawnTime);
 
         var spawnStorePatch = writer.Patches.First(p => p.ObjectId == spawn.Id && p.Payload.Store is not null);
         Assert.Equal(150, spawnStorePatch.Payload.Store![RoomDocumentFields.RoomObject.Store.Energy]);
@@ -85,8 +85,8 @@ public sealed class SpawnIntentStepTests
 
         await _step.ExecuteAsync(context, TestContext.Current.CancellationToken);
 
-        var patch = writer.Patches.Single(p => p.Payload.Spawning is not null);
-        Assert.Equal([Direction.TopLeft, Direction.Left], patch.Payload.Spawning!.Directions);
+        var (ObjectId, Payload) = writer.Patches.Single(p => p.Payload.Spawning is not null);
+        Assert.Equal([Direction.TopLeft, Direction.Left], Payload.Spawning!.Directions);
     }
 
     [Fact]
@@ -107,8 +107,8 @@ public sealed class SpawnIntentStepTests
 
         await _step.ExecuteAsync(context, TestContext.Current.CancellationToken);
 
-        var patch = writer.Patches.Single();
-        Assert.True(patch.Payload.ClearSpawning);
+        var (ObjectId, Payload) = writer.Patches.Single();
+        Assert.True(Payload.ClearSpawning);
         Assert.Contains(placeholder.Id, writer.Removals);
     }
 
@@ -129,11 +129,11 @@ public sealed class SpawnIntentStepTests
 
         await _step.ExecuteAsync(context, TestContext.Current.CancellationToken);
 
-        var creepPatch = writer.Patches.Single(p => p.ObjectId == creep.Id);
-        Assert.Equal(300, creepPatch.Payload.TicksToLive);
-        Assert.NotNull(creepPatch.Payload.ActionLog);
-        Assert.Equal(spawn.X, creepPatch.Payload.ActionLog!.Healed!.X);
-        Assert.Equal(spawn.Y, creepPatch.Payload.ActionLog!.Healed!.Y);
+        var (ObjectId, Payload) = writer.Patches.Single(p => p.ObjectId == creep.Id);
+        Assert.Equal(300, Payload.TicksToLive);
+        Assert.NotNull(Payload.ActionLog);
+        Assert.Equal(spawn.X, Payload.ActionLog!.Healed!.X);
+        Assert.Equal(spawn.Y, Payload.ActionLog!.Healed!.Y);
 
         var spawnPatch = writer.Patches.First(p => p.ObjectId == spawn.Id && p.Payload.Store is not null);
         Assert.Equal(173, spawnPatch.Payload.Store![RoomDocumentFields.RoomObject.Store.Energy]);
@@ -192,13 +192,13 @@ public sealed class SpawnIntentStepTests
 
         await _step.ExecuteAsync(context, TestContext.Current.CancellationToken);
 
-        var creepPatch = writer.Patches.Single(p => p.ObjectId == creep.Id);
-        Assert.NotNull(creepPatch.Payload.Body);
-        Assert.Equal(50, creepPatch.Payload.StoreCapacity);
-        Assert.Equal(50, creepPatch.Payload.Store![RoomDocumentFields.RoomObject.Store.Energy]);
-        Assert.NotNull(creepPatch.Payload.ActionLog);
-        Assert.Equal(spawn.X, creepPatch.Payload.ActionLog!.Healed!.X);
-        Assert.Equal(spawn.Y, creepPatch.Payload.ActionLog!.Healed!.Y);
+        var (ObjectId, Payload) = writer.Patches.Single(p => p.ObjectId == creep.Id);
+        Assert.NotNull(Payload.Body);
+        Assert.Equal(50, Payload.StoreCapacity);
+        Assert.Equal(50, Payload.Store![RoomDocumentFields.RoomObject.Store.Energy]);
+        Assert.NotNull(Payload.ActionLog);
+        Assert.Equal(spawn.X, Payload.ActionLog!.Healed!.X);
+        Assert.Equal(spawn.Y, Payload.ActionLog!.Healed!.Y);
         Assert.Equal(1, _statsSink.SpawnRenewals);
 
         var drop = Assert.Single(writer.Upserts, u => u.Type == RoomObjectTypes.Resource);
@@ -225,8 +225,8 @@ public sealed class SpawnIntentStepTests
 
         Assert.Contains(creep.Id, writer.Removals);
 
-        var actionLogPatch = writer.Patches.Single(p => p.ObjectId == creep.Id && p.Payload.ActionLog is not null);
-        Assert.Equal(100, actionLogPatch.Payload.ActionLog!.Die!.Time);
+        var (ObjectId, Payload) = writer.Patches.Single(p => p.ObjectId == creep.Id && p.Payload.ActionLog is not null);
+        Assert.Equal(100, Payload.ActionLog!.Die!.Time);
 
         var tombstone = Assert.Single(writer.Upserts);
         Assert.Equal(RoomObjectTypes.Tombstone, tombstone.Type);

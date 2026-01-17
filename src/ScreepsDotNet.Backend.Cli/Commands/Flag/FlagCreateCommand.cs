@@ -118,7 +118,7 @@ internal sealed class FlagCreateCommand(IFlagService flagService, IUserRepositor
                 success = true,
                 settings.Name,
                 settings.RoomName,
-                Shard = settings.Shard,
+                settings.Shard,
                 settings.X,
                 settings.Y
             });

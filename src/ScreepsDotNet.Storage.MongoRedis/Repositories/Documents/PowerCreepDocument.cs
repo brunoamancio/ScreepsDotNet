@@ -3,8 +3,8 @@
 using System.Collections.Generic;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
-using ScreepsDotNet.Common.Constants;
 using MongoDB.Bson.Serialization.Options;
+using ScreepsDotNet.Common.Constants;
 
 [BsonIgnoreExtraElements]
 public sealed class PowerCreepDocument

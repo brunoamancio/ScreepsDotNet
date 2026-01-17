@@ -1,7 +1,7 @@
 namespace ScreepsDotNet.Driver.Services.History;
 
-using Microsoft.Extensions.Logging;
 using System.Linq;
+using Microsoft.Extensions.Logging;
 using ScreepsDotNet.Driver.Abstractions.Config;
 using ScreepsDotNet.Driver.Abstractions.Eventing;
 using ScreepsDotNet.Driver.Abstractions.History;
@@ -24,7 +24,7 @@ internal sealed class RoomStatsPipeline : IDisposable
     {
         _config = config;
         _repository = repository;
-        _listeners = (listeners).ToArray();
+        _listeners = listeners.ToArray();
         _logger = logger;
         _config.ProcessorLoopStage += HandleProcessorLoopStage;
     }
@@ -42,13 +42,11 @@ internal sealed class RoomStatsPipeline : IDisposable
 
     private async Task ProcessRoomStatsAsync(RoomStatsUpdate update)
     {
-        try
-        {
+        try {
             await _repository.AppendAsync(update, CancellationToken.None).ConfigureAwait(false);
             await NotifyListenersAsync(update).ConfigureAwait(false);
         }
-        catch (Exception ex)
-        {
+        catch (Exception ex) {
             _logger?.LogError(ex, "Room stats pipeline failed for room {Room} tick {Tick}.", update.Room, update.GameTime);
         }
     }
@@ -58,14 +56,11 @@ internal sealed class RoomStatsPipeline : IDisposable
         if (_listeners.Count == 0)
             return;
 
-        foreach (var listener in _listeners)
-        {
-            try
-            {
+        foreach (var listener in _listeners) {
+            try {
                 await listener.OnRoomStatsAsync(update, CancellationToken.None).ConfigureAwait(false);
             }
-            catch (Exception ex)
-            {
+            catch (Exception ex) {
                 _logger?.LogError(
                     ex,
                     "Room stats listener {Listener} failed for room {Room} tick {Tick}.",

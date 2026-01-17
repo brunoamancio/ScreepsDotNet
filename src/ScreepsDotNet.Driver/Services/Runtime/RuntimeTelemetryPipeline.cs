@@ -23,14 +23,11 @@ internal sealed class RuntimeTelemetryPipeline : IRuntimeTelemetrySink
 
     private async Task DispatchAsync(Func<IRuntimeTelemetryListener, Task> dispatcher)
     {
-        foreach (var listener in _listeners)
-        {
-            try
-            {
+        foreach (var listener in _listeners) {
+            try {
                 await dispatcher(listener).ConfigureAwait(false);
             }
-            catch (Exception ex)
-            {
+            catch (Exception ex) {
                 _logger?.LogError(ex, "Runtime telemetry listener {Listener} failed.", listener.GetType().Name);
             }
         }

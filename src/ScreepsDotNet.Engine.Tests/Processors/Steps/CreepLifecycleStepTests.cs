@@ -20,9 +20,9 @@ public sealed class CreepLifecycleStepTests
         await step.ExecuteAsync(context, TestContext.Current.CancellationToken);
 
         Assert.Single(((RecordingMutationWriter)context.MutationWriter).Patches);
-        var patch = ((RecordingMutationWriter)context.MutationWriter).Patches[0];
-        Assert.Equal("creep1", patch.ObjectId);
-        Assert.Equal(4, patch.Payload.TicksToLive);
+        var (ObjectId, Payload) = ((RecordingMutationWriter)context.MutationWriter).Patches[0];
+        Assert.Equal("creep1", ObjectId);
+        Assert.Equal(4, Payload.TicksToLive);
     }
 
     [Fact]

@@ -3,10 +3,10 @@
 using global::System;
 using global::System.Collections.Generic;
 using global::System.Linq;
+using ScreepsDotNet.Backend.Cli.Formatting;
 using ScreepsDotNet.Backend.Core.Models;
 using ScreepsDotNet.Backend.Core.Parsing;
 using ScreepsDotNet.Backend.Core.Repositories;
-using ScreepsDotNet.Backend.Cli.Formatting;
 using ScreepsDotNet.Common.Utilities;
 using Spectre.Console;
 using Spectre.Console.Cli;

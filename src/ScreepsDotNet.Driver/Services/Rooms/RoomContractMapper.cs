@@ -18,8 +18,7 @@ internal static class RoomContractMapper
     public static IReadOnlyDictionary<string, RoomObjectSnapshot> MapRoomObjects(IReadOnlyDictionary<string, RoomObjectDocument> objects)
     {
         var result = new Dictionary<string, RoomObjectSnapshot>(objects.Count, StringComparer.Ordinal);
-        foreach (var (_, document) in objects)
-        {
+        foreach (var (_, document) in objects) {
             var state = MapRoomObject(document);
             result[state.Id] = state;
         }
@@ -97,8 +96,7 @@ internal static class RoomContractMapper
     public static IReadOnlyDictionary<string, UserState> MapUsers(IReadOnlyDictionary<string, UserDocument> users)
     {
         var result = new Dictionary<string, UserState>(users.Count, StringComparer.Ordinal);
-        foreach (var (id, document) in users)
-        {
+        foreach (var (id, document) in users) {
             if (string.IsNullOrWhiteSpace(id)) continue;
             result[id] = new UserState(
                 id,
@@ -147,8 +145,9 @@ internal static class RoomContractMapper
             return null;
 
         if (!document.TryGetValue(RoomDocumentFields.RoomObject.PortalFields.Room, out var roomValue) ||
-            !roomValue.IsString)
+            !roomValue.IsString) {
             return null;
+        }
 
         var roomName = roomValue.AsString;
         if (string.IsNullOrWhiteSpace(roomName))
@@ -187,8 +186,7 @@ internal static class RoomContractMapper
             return EmptyObjectDictionary;
 
         var result = new Dictionary<string, object?>(effects.Count, StringComparer.Ordinal);
-        for (var i = 0; i < effects.Count; i++)
-        {
+        for (var i = 0; i < effects.Count; i++) {
             var effect = effects[i];
             result[i.ToString()] = effect;
         }
@@ -202,16 +200,14 @@ internal static class RoomContractMapper
             return null;
 
         var document = new BsonDocument();
-        if (snapshot.Die is { } die)
-        {
+        if (snapshot.Die is { } die) {
             document[RoomDocumentFields.RoomObject.ActionLogFields.Die] = new BsonDocument
             {
                 [RoomDocumentFields.RoomObject.ActionLogFields.Time] = die.Time
             };
         }
 
-        if (snapshot.Healed is { } healed)
-        {
+        if (snapshot.Healed is { } healed) {
             document[RoomDocumentFields.RoomObject.ActionLogFields.Healed] = new BsonDocument
             {
                 [RoomDocumentFields.RoomObject.ActionLogFields.X] = healed.X,
@@ -219,8 +215,7 @@ internal static class RoomContractMapper
             };
         }
 
-        if (snapshot.Repair is { } repair)
-        {
+        if (snapshot.Repair is { } repair) {
             document[RoomDocumentFields.RoomObject.ActionLogFields.Repair] = new BsonDocument
             {
                 [RoomDocumentFields.RoomObject.ActionLogFields.X] = repair.X,
@@ -228,8 +223,7 @@ internal static class RoomContractMapper
             };
         }
 
-        if (snapshot.Build is { } build)
-        {
+        if (snapshot.Build is { } build) {
             document[RoomDocumentFields.RoomObject.ActionLogFields.Build] = new BsonDocument
             {
                 [RoomDocumentFields.RoomObject.ActionLogFields.X] = build.X,
@@ -237,8 +231,7 @@ internal static class RoomContractMapper
             };
         }
 
-        if (snapshot.Harvest is { } harvest)
-        {
+        if (snapshot.Harvest is { } harvest) {
             document[RoomDocumentFields.RoomObject.ActionLogFields.Harvest] = new BsonDocument
             {
                 [RoomDocumentFields.RoomObject.ActionLogFields.X] = harvest.X,
@@ -258,8 +251,9 @@ internal static class RoomContractMapper
         if (actionLog.TryGetValue(RoomDocumentFields.RoomObject.ActionLogFields.Die, out var dieValue) &&
             dieValue is BsonDocument dieDoc &&
             dieDoc.TryGetValue(RoomDocumentFields.RoomObject.ActionLogFields.Time, out var timeValue) &&
-            TryGetInt32(timeValue, out var dieTime))
+            TryGetInt32(timeValue, out var dieTime)) {
             die = new RoomObjectActionLogDie(dieTime);
+        }
 
         RoomObjectActionLogHealed? healed = null;
         if (actionLog.TryGetValue(RoomDocumentFields.RoomObject.ActionLogFields.Healed, out var healedValue) &&
@@ -267,8 +261,9 @@ internal static class RoomContractMapper
             healedDoc.TryGetValue(RoomDocumentFields.RoomObject.ActionLogFields.X, out var xValue) &&
             healedDoc.TryGetValue(RoomDocumentFields.RoomObject.ActionLogFields.Y, out var yValue) &&
             TryGetInt32(xValue, out var x) &&
-            TryGetInt32(yValue, out var y))
+            TryGetInt32(yValue, out var y)) {
             healed = new RoomObjectActionLogHealed(x, y);
+        }
 
         RoomObjectActionLogRepair? repair = null;
         if (actionLog.TryGetValue(RoomDocumentFields.RoomObject.ActionLogFields.Repair, out var repairValue) &&
@@ -276,8 +271,9 @@ internal static class RoomContractMapper
             repairDoc.TryGetValue(RoomDocumentFields.RoomObject.ActionLogFields.X, out var repairX) &&
             repairDoc.TryGetValue(RoomDocumentFields.RoomObject.ActionLogFields.Y, out var repairY) &&
             TryGetInt32(repairX, out var repairXInt) &&
-            TryGetInt32(repairY, out var repairYInt))
+            TryGetInt32(repairY, out var repairYInt)) {
             repair = new RoomObjectActionLogRepair(repairXInt, repairYInt);
+        }
 
         RoomObjectActionLogBuild? build = null;
         if (actionLog.TryGetValue(RoomDocumentFields.RoomObject.ActionLogFields.Build, out var buildValue) &&
@@ -285,20 +281,20 @@ internal static class RoomContractMapper
             buildDoc.TryGetValue(RoomDocumentFields.RoomObject.ActionLogFields.X, out var buildX) &&
             buildDoc.TryGetValue(RoomDocumentFields.RoomObject.ActionLogFields.Y, out var buildY) &&
             TryGetInt32(buildX, out var buildXInt) &&
-            TryGetInt32(buildY, out var buildYInt))
+            TryGetInt32(buildY, out var buildYInt)) {
             build = new RoomObjectActionLogBuild(buildXInt, buildYInt);
+        }
 
         RoomObjectActionLogHarvest? harvest = null;
         if (actionLog.GetValue(RoomDocumentFields.RoomObject.ActionLogFields.Harvest, null) is BsonDocument harvestDoc &&
             harvestDoc.TryGetValue(RoomDocumentFields.RoomObject.ActionLogFields.X, out var harvestX) &&
             harvestDoc.TryGetValue(RoomDocumentFields.RoomObject.ActionLogFields.Y, out var harvestY) &&
             TryGetInt32(harvestX, out var harvestXInt) &&
-            TryGetInt32(harvestY, out var harvestYInt))
+            TryGetInt32(harvestY, out var harvestYInt)) {
             harvest = new RoomObjectActionLogHarvest(harvestXInt, harvestYInt);
-        else
-        {
-            foreach (var element in actionLog.Elements)
-            {
+        }
+        else {
+            foreach (var element in actionLog.Elements) {
                 if (!string.Equals(element.Name, RoomDocumentFields.RoomObject.ActionLogFields.Harvest, StringComparison.Ordinal))
                     continue;
 
@@ -306,8 +302,9 @@ internal static class RoomContractMapper
                     break;
 
                 if (!doc.TryGetValue(RoomDocumentFields.RoomObject.ActionLogFields.X, out var altX) ||
-                    !doc.TryGetValue(RoomDocumentFields.RoomObject.ActionLogFields.Y, out var altY))
+                    !doc.TryGetValue(RoomDocumentFields.RoomObject.ActionLogFields.Y, out var altY)) {
                     break;
+                }
 
                 if (!TryGetInt32(altX, out var altXInt) || !TryGetInt32(altY, out var altYInt))
                     break;
@@ -325,44 +322,36 @@ internal static class RoomContractMapper
 
     private static bool TryGetInt32(BsonValue value, out int result)
     {
-        if (value.IsInt32)
-        {
+        if (value.IsInt32) {
             result = value.AsInt32;
             return true;
         }
 
-        if (value.IsInt64)
-        {
+        if (value.IsInt64) {
             var temp = value.AsInt64;
-            if (temp is >= int.MinValue and <= int.MaxValue)
-            {
+            if (temp is >= int.MinValue and <= int.MaxValue) {
                 result = (int)temp;
                 return true;
             }
         }
 
-        if (value.IsDouble)
-        {
+        if (value.IsDouble) {
             var temp = value.AsDouble;
-            if (!double.IsNaN(temp) && temp is >= int.MinValue and <= int.MaxValue)
-            {
+            if (!double.IsNaN(temp) && temp is >= int.MinValue and <= int.MaxValue) {
                 result = (int)temp;
                 return true;
             }
         }
 
-        if (value.IsDecimal128)
-        {
+        if (value.IsDecimal128) {
             var dec = value.AsDecimal128;
-            if (dec >= int.MinValue && dec <= int.MaxValue)
-            {
+            if (dec >= int.MinValue && dec <= int.MaxValue) {
                 result = (int)dec;
                 return true;
             }
         }
 
-        if (value.IsString && int.TryParse(value.AsString, out var parsed))
-        {
+        if (value.IsString && int.TryParse(value.AsString, out var parsed)) {
             result = parsed;
             return true;
         }
@@ -454,13 +443,12 @@ internal static class RoomContractMapper
             return null;
 
         var ordered = effects
-            .Select(kvp => (Key: kvp.Key, Value: kvp.Value))
+            .Select(kvp => (kvp.Key, kvp.Value))
             .OrderBy(pair => int.TryParse(pair.Key, out var index) ? index : int.MaxValue)
             .ToArray();
 
         var array = new BsonArray(ordered.Length);
-        foreach (var (_, value) in ordered)
-        {
+        foreach (var (_, value) in ordered) {
             if (value is BsonValue bsonValue)
                 array.Add(bsonValue);
             else
@@ -472,7 +460,7 @@ internal static class RoomContractMapper
 
     private static RoomSpawnSpawningSnapshot? MapSpawning(BsonValue? spawning)
     {
-        if (spawning is null || spawning is BsonNull)
+        if (spawning is null or BsonNull)
             return null;
 
         if (spawning is not BsonDocument document)
@@ -515,8 +503,7 @@ internal static class RoomContractMapper
         if (spawning.SpawnTime.HasValue)
             document[RoomDocumentFields.RoomObject.SpawningFields.SpawnTime] = spawning.SpawnTime.Value;
 
-        if (spawning.Directions is { Count: > 0 })
-        {
+        if (spawning.Directions is { Count: > 0 }) {
             var array = new BsonArray(spawning.Directions.Select(direction => direction.ToInt()));
             document[RoomDocumentFields.RoomObject.SpawningFields.Directions] = array;
         }
@@ -555,8 +542,7 @@ internal static class RoomContractMapper
 
         var result = new List<Direction>(array.Count);
         var seen = new HashSet<Direction>();
-        foreach (var element in array)
-        {
+        foreach (var element in array) {
             int? raw = element switch
             {
                 { IsInt32: true } => element.AsInt32,
@@ -585,8 +571,7 @@ internal static class RoomContractMapper
         if (patch.Hits.HasValue)
             document[RoomDocumentFields.RoomObject.Hits] = patch.Hits.Value;
 
-        if (patch.Position is { } position)
-        {
+        if (patch.Position is { } position) {
             if (position.X.HasValue)
                 document[RoomDocumentFields.RoomObject.X] = position.X.Value;
             if (position.Y.HasValue)
@@ -635,19 +620,16 @@ internal static class RoomContractMapper
         if (patch.CooldownTime.HasValue)
             document[RoomDocumentFields.RoomObject.CooldownTime] = patch.CooldownTime.Value;
 
-        if (patch.ActionLog is { } actionLog && actionLog.HasEntries)
-        {
+        if (patch.ActionLog is { } actionLog && actionLog.HasEntries) {
             var logDocument = new BsonDocument();
-            if (actionLog.Die is { } die)
-            {
+            if (actionLog.Die is { } die) {
                 logDocument[RoomDocumentFields.RoomObject.ActionLogFields.Die] = new BsonDocument
                 {
                     [RoomDocumentFields.RoomObject.ActionLogFields.Time] = die.Time
                 };
             }
 
-            if (actionLog.Healed is { } healed)
-            {
+            if (actionLog.Healed is { } healed) {
                 logDocument[RoomDocumentFields.RoomObject.ActionLogFields.Healed] = new BsonDocument
                 {
                     [RoomDocumentFields.RoomObject.ActionLogFields.X] = healed.X,
@@ -655,8 +637,7 @@ internal static class RoomContractMapper
                 };
             }
 
-            if (actionLog.Harvest is { } harvest)
-            {
+            if (actionLog.Harvest is { } harvest) {
                 logDocument[RoomDocumentFields.RoomObject.ActionLogFields.Harvest] = new BsonDocument
                 {
                     [RoomDocumentFields.RoomObject.ActionLogFields.X] = harvest.X,
@@ -668,10 +649,8 @@ internal static class RoomContractMapper
                 document[RoomDocumentFields.RoomObject.ActionLog] = logDocument;
         }
 
-        if (patch.Store is { Count: > 0 })
-        {
-            foreach (var (resource, amount) in patch.Store)
-            {
+        if (patch.Store is { Count: > 0 }) {
+            foreach (var (resource, amount) in patch.Store) {
                 if (string.IsNullOrWhiteSpace(resource))
                     continue;
 
@@ -683,15 +662,13 @@ internal static class RoomContractMapper
         if (patch.StoreCapacity.HasValue)
             document[RoomDocumentFields.RoomObject.Store.Capacity] = patch.StoreCapacity.Value;
 
-        if (patch.Body is { Count: > 0 })
-        {
+        if (patch.Body is { Count: > 0 }) {
             var bodyArray = CreateBodyArray(patch.Body);
             if (bodyArray is not null)
                 document[RoomDocumentFields.RoomObject.Body] = bodyArray;
         }
 
-        if (patch.InterRoom is { } interRoom)
-        {
+        if (patch.InterRoom is { } interRoom) {
             var destination = new BsonDocument
             {
                 [RoomDocumentFields.RoomObject.InterRoomFields.Room] = interRoom.RoomName,
@@ -705,13 +682,13 @@ internal static class RoomContractMapper
             document[RoomDocumentFields.RoomObject.InterRoom] = destination;
         }
 
-        if (patch.Spawning is not null)
-        {
+        if (patch.Spawning is not null) {
             if (MapSpawning(patch.Spawning) is BsonDocument spawningDocument)
                 document[RoomDocumentFields.RoomObject.Spawning] = spawningDocument;
         }
-        else if (patch.ClearSpawning)
+        else if (patch.ClearSpawning) {
             document[RoomDocumentFields.RoomObject.Spawning] = BsonNull.Value;
+        }
 
         return document;
     }
@@ -736,8 +713,7 @@ internal static class RoomContractMapper
         if (patch.OwnerUserId is not null)
             document[RoomDocumentFields.Info.Owner] = patch.OwnerUserId;
 
-        if (patch.ControllerLevel.HasValue)
-        {
+        if (patch.ControllerLevel.HasValue) {
             document[RoomDocumentFields.Info.Controller] = new BsonDocument
             {
                 [RoomDocumentFields.Info.ControllerLevel] = patch.ControllerLevel.Value
@@ -765,8 +741,7 @@ internal static class RoomContractMapper
             return [];
 
         var result = new List<CreepBodyPartSnapshot>(bodyParts.Count);
-        foreach (var part in bodyParts)
-        {
+        foreach (var part in bodyParts) {
             if (string.IsNullOrWhiteSpace(part.Type))
                 continue;
 
@@ -786,8 +761,7 @@ internal static class RoomContractMapper
             return null;
 
         var result = new List<RoomObjectBodyPartDocument>(body.Count);
-        foreach (var part in body)
-        {
+        foreach (var part in body) {
             result.Add(new RoomObjectBodyPartDocument
             {
                 Type = part.Type.ToDocumentValue(),
@@ -805,8 +779,7 @@ internal static class RoomContractMapper
             return null;
 
         var array = new BsonArray(body.Count);
-        foreach (var part in body)
-        {
+        foreach (var part in body) {
             var document = new BsonDocument
             {
                 [RoomDocumentFields.RoomObject.BodyPart.Type] = part.Type.ToDocumentValue(),

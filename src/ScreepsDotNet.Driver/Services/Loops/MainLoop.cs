@@ -28,33 +28,25 @@ internal sealed class MainLoop(IDriverConfig config, IQueueService queues, IUser
         _usersQueue ??= queues.GetQueue(QueueNames.Users, QueueMode.Write);
 
         var shouldExit = false;
-        while (!token.IsCancellationRequested && !shouldExit)
-        {
+        while (!token.IsCancellationRequested && !shouldExit) {
             var stopwatch = Stopwatch.StartNew();
-            try
-            {
+            try {
                 await ExecuteOnceAsync(token).ConfigureAwait(false);
             }
-            catch (OperationCanceledException) when (token.IsCancellationRequested)
-            {
+            catch (OperationCanceledException) when (token.IsCancellationRequested) {
                 shouldExit = true;
             }
-            catch (Exception ex)
-            {
+            catch (Exception ex) {
                 logger?.LogError(ex, "Unexpected error inside main loop.");
             }
-            finally
-            {
+            finally {
                 stopwatch.Stop();
                 var remaining = config.MainLoopMinDurationMs - stopwatch.ElapsedMilliseconds;
-                if (remaining > 0)
-                {
-                    try
-                    {
+                if (remaining > 0) {
+                    try {
                         await Task.Delay(TimeSpan.FromMilliseconds(remaining), token).ConfigureAwait(false);
                     }
-                    catch (OperationCanceledException) when (token.IsCancellationRequested)
-                    {
+                    catch (OperationCanceledException) when (token.IsCancellationRequested) {
                         shouldExit = true;
                     }
                 }

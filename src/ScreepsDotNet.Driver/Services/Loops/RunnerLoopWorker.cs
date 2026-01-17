@@ -11,12 +11,10 @@ internal sealed class RunnerLoopWorker(IRuntimeCoordinator coordinator, ILogger<
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(userId);
 
-        try
-        {
+        try {
             await coordinator.ExecuteAsync(userId, queueDepth, token).ConfigureAwait(false);
         }
-        catch (Exception ex)
-        {
+        catch (Exception ex) {
             logger?.LogError(ex, "Runner loop encountered an error while executing user {UserId}.", userId);
         }
     }

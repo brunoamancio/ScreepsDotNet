@@ -23,8 +23,7 @@ internal sealed class GlobalStateProvider(IInterRoomSnapshotProvider snapshotPro
 
     public void Invalidate()
     {
-        lock (_gate)
-        {
+        lock (_gate) {
             _cachedState = null;
             _cachedGameTime = null;
         }
@@ -33,10 +32,8 @@ internal sealed class GlobalStateProvider(IInterRoomSnapshotProvider snapshotPro
 
     private bool TryGetCached(int gameTime, out GlobalState state)
     {
-        lock (_gate)
-        {
-            if (_cachedState is not null && _cachedGameTime == gameTime)
-            {
+        lock (_gate) {
+            if (_cachedState is not null && _cachedGameTime == gameTime) {
                 state = _cachedState;
                 return true;
             }
@@ -48,8 +45,7 @@ internal sealed class GlobalStateProvider(IInterRoomSnapshotProvider snapshotPro
 
     private void Cache(GlobalState state)
     {
-        lock (_gate)
-        {
+        lock (_gate) {
             _cachedState = state;
             _cachedGameTime = state.GameTime;
         }

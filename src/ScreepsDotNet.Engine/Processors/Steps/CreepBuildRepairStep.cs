@@ -6,9 +6,9 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using ScreepsDotNet.Common.Constants;
 using ScreepsDotNet.Common.Structures;
+using ScreepsDotNet.Common.Utilities;
 using ScreepsDotNet.Driver.Contracts;
 using ScreepsDotNet.Engine.Processors.Helpers;
-using ScreepsDotNet.Common.Utilities;
 
 internal sealed class CreepBuildRepairStep(IStructureBlueprintProvider blueprintProvider, IStructureSnapshotFactory structureFactory) : IRoomProcessorStep
 {
@@ -24,13 +24,11 @@ internal sealed class CreepBuildRepairStep(IStructureBlueprintProvider blueprint
         var objectOverrides = new Dictionary<string, ObjectStateOverride>(Comparer);
         var terrainCache = BuildTerrainCache(context);
 
-        foreach (var envelope in intents.Users.Values)
-        {
+        foreach (var envelope in intents.Users.Values) {
             if (envelope?.ObjectIntents is null || envelope.ObjectIntents.Count == 0)
                 continue;
 
-            foreach (var (objectId, records) in envelope.ObjectIntents)
-            {
+            foreach (var (objectId, records) in envelope.ObjectIntents) {
                 if (string.IsNullOrWhiteSpace(objectId) || records.Count == 0)
                     continue;
 
@@ -46,15 +44,15 @@ internal sealed class CreepBuildRepairStep(IStructureBlueprintProvider blueprint
                 if (!string.Equals(creep.UserId, envelope.UserId, StringComparison.Ordinal))
                     continue;
 
-                foreach (var record in records)
-                {
-                    switch (record.Name)
-                    {
+                foreach (var record in records) {
+                    switch (record.Name) {
                         case IntentKeys.Repair:
                             HandleRepair(context, creep, record, energyLedger, objectOverrides);
                             break;
                         case IntentKeys.Build:
                             HandleBuild(context, creep, record, energyLedger, objectOverrides, terrainCache);
+                            break;
+                        default:
                             break;
                     }
                 }
@@ -169,16 +167,14 @@ internal sealed class CreepBuildRepairStep(IStructureBlueprintProvider blueprint
             context.Stats.IncrementEnergyConstruction(creep.UserId!, energySpent);
 
         var updatedProgress = target.Progress.Value + totalProgress;
-        if (updatedProgress < target.ProgressTotal.Value)
-        {
+        if (updatedProgress < target.ProgressTotal.Value) {
             context.MutationWriter.Patch(target.Id, new RoomObjectPatchPayload
             {
                 Progress = updatedProgress
             });
             UpdateObjectOverrides(objectOverrides, target.Id, hits: null, progress: updatedProgress);
         }
-        else
-        {
+        else {
             context.MutationWriter.Remove(target.Id);
             objectOverrides.Remove(target.Id);
             var blueprint = ResolveBlueprint(target.StructureType);
@@ -223,8 +219,7 @@ internal sealed class CreepBuildRepairStep(IStructureBlueprintProvider blueprint
         if (!objects.TryGetValue(targetId, out var current) || current is null)
             return false;
 
-        if (overrides.TryGetValue(targetId, out var state))
-        {
+        if (overrides.TryGetValue(targetId, out var state)) {
             if (state?.Hits.HasValue == true)
                 current = current with { Hits = state.Hits };
             if (state?.Progress.HasValue == true)
@@ -249,6 +244,10 @@ internal sealed class CreepBuildRepairStep(IStructureBlueprintProvider blueprint
         {
             IntentFieldValueKind.Text => value.TextValue ?? string.Empty,
             IntentFieldValueKind.Number => value.NumberValue?.ToString() ?? string.Empty,
+            IntentFieldValueKind.Boolean => throw new NotImplementedException(),
+            IntentFieldValueKind.TextArray => throw new NotImplementedException(),
+            IntentFieldValueKind.NumberArray => throw new NotImplementedException(),
+            IntentFieldValueKind.BodyPartArray => throw new NotImplementedException(),
             _ => string.Empty
         };
 
@@ -263,8 +262,7 @@ internal sealed class CreepBuildRepairStep(IStructureBlueprintProvider blueprint
         if (ledger.TryGetValue(creep.Id, out var cached))
             return cached;
 
-        if (creep.Store.TryGetValue(RoomDocumentFields.RoomObject.Store.Energy, out var energy))
-        {
+        if (creep.Store.TryGetValue(RoomDocumentFields.RoomObject.Store.Energy, out var energy)) {
             ledger[creep.Id] = energy;
             return energy;
         }

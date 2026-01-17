@@ -450,10 +450,12 @@ internal sealed class FakeUserMemoryRepository : IUserMemoryRepository
                 foreach (var property in value.EnumerateObject())
                     _memory[property.Name] = ConvertJson(property.Value);
             }
-            else if (value.ValueKind is JsonValueKind.Null or JsonValueKind.Undefined)
+            else if (value.ValueKind is JsonValueKind.Null or JsonValueKind.Undefined) {
                 _memory.Clear();
-            else
+            }
+            else {
                 _memory["value"] = ConvertJson(value);
+            }
 
             return Task.CompletedTask;
         }
@@ -511,6 +513,8 @@ internal sealed class FakeUserMemoryRepository : IUserMemoryRepository
             JsonValueKind.Number => element.GetDouble(),
             JsonValueKind.True => true,
             JsonValueKind.False => false,
+            JsonValueKind.Undefined => throw new NotImplementedException(),
+            JsonValueKind.Null => throw new NotImplementedException(),
             _ => null
         };
 

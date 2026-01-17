@@ -30,11 +30,11 @@ public sealed class MovementIntentStepTests
 
         await step.ExecuteAsync(new RoomProcessorContext(state, writer, new NullCreepStatsSink()), TestContext.Current.CancellationToken);
 
-        var patch = Assert.Single(writer.Patches);
-        Assert.Equal("creepA", patch.ObjectId);
-        Assert.Equal(11, patch.Payload.Position?.X);
-        Assert.Equal(10, patch.Payload.Position?.Y);
-        Assert.Equal(0, patch.Payload.Fatigue);
+        var (ObjectId, Payload) = Assert.Single(writer.Patches);
+        Assert.Equal("creepA", ObjectId);
+        Assert.Equal(11, Payload.Position?.X);
+        Assert.Equal(10, Payload.Position?.Y);
+        Assert.Equal(0, Payload.Fatigue);
     }
 
     [Fact]
@@ -98,11 +98,11 @@ public sealed class MovementIntentStepTests
 
         Assert.NotEmpty(writer.Patches);
         Assert.Empty(death.Creeps);
-        var transferPatch = writer.Patches.FirstOrDefault(p => p.Payload.InterRoom is not null);
-        Assert.NotNull(transferPatch.Payload.InterRoom);
-        Assert.Equal("W0S0", transferPatch.Payload.InterRoom!.RoomName);
-        Assert.Equal(49, transferPatch.Payload.InterRoom.X);
-        Assert.Equal(0, transferPatch.Payload.InterRoom.Y);
+        var (ObjectId, Payload) = writer.Patches.FirstOrDefault(p => p.Payload.InterRoom is not null);
+        Assert.NotNull(Payload.InterRoom);
+        Assert.Equal("W0S0", Payload.InterRoom!.RoomName);
+        Assert.Equal(49, Payload.InterRoom.X);
+        Assert.Equal(0, Payload.InterRoom.Y);
     }
 
     [Fact]
@@ -141,12 +141,12 @@ public sealed class MovementIntentStepTests
 
         await step.ExecuteAsync(new RoomProcessorContext(state, writer, new NullCreepStatsSink()), TestContext.Current.CancellationToken);
 
-        var transferPatch = writer.Patches.FirstOrDefault(p => p.Payload.InterRoom is not null);
-        Assert.NotNull(transferPatch.Payload.InterRoom);
-        Assert.Equal("W0S0", transferPatch.Payload.InterRoom!.RoomName);
-        Assert.Equal(25, transferPatch.Payload.InterRoom.X);
-        Assert.Equal(0, transferPatch.Payload.InterRoom.Y);
-        Assert.Equal("shard3", transferPatch.Payload.InterRoom.Shard);
+        var (ObjectId, Payload) = writer.Patches.FirstOrDefault(p => p.Payload.InterRoom is not null);
+        Assert.NotNull(Payload.InterRoom);
+        Assert.Equal("W0S0", Payload.InterRoom!.RoomName);
+        Assert.Equal(25, Payload.InterRoom.X);
+        Assert.Equal(0, Payload.InterRoom.Y);
+        Assert.Equal("shard3", Payload.InterRoom.Shard);
     }
 
     [Fact]
@@ -163,12 +163,12 @@ public sealed class MovementIntentStepTests
 
         await step.ExecuteAsync(new RoomProcessorContext(state, writer, new NullCreepStatsSink()), TestContext.Current.CancellationToken);
 
-        var transferPatch = writer.Patches.FirstOrDefault(p => p.Payload.InterRoom is not null);
-        Assert.NotNull(transferPatch.Payload.InterRoom);
-        Assert.Equal("W0S0", transferPatch.Payload.InterRoom!.RoomName);
-        Assert.Equal(20, transferPatch.Payload.InterRoom.X);
-        Assert.Equal(0, transferPatch.Payload.InterRoom.Y);
-        Assert.Null(transferPatch.Payload.InterRoom.Shard);
+        var (ObjectId, Payload) = writer.Patches.FirstOrDefault(p => p.Payload.InterRoom is not null);
+        Assert.NotNull(Payload.InterRoom);
+        Assert.Equal("W0S0", Payload.InterRoom!.RoomName);
+        Assert.Equal(20, Payload.InterRoom.X);
+        Assert.Equal(0, Payload.InterRoom.Y);
+        Assert.Null(Payload.InterRoom.Shard);
     }
 
     [Fact]
@@ -348,11 +348,9 @@ public sealed class MovementIntentStepTests
     {
         var envelopes = new Dictionary<string, IntentEnvelope>(Comparer);
 
-        foreach (var group in creepMoves.GroupBy(move => move.UserId, Comparer))
-        {
+        foreach (var group in creepMoves.GroupBy(move => move.UserId, Comparer)) {
             var creepIntentMap = new Dictionary<string, CreepIntentEnvelope>(Comparer);
-            foreach (var (userId, creepId, move) in group)
-            {
+            foreach (var (userId, creepId, move) in group) {
                 creepIntentMap[creepId] = new CreepIntentEnvelope(
                     move,
                     null,
@@ -433,10 +431,10 @@ public sealed class MovementIntentStepTests
             Structure: null,
             Effects: new Dictionary<string, object?>(Comparer),
             Spawning: null,
-            Body: new List<CreepBodyPartSnapshot>
-            {
+            Body:
+            [
                 new(BodyPartType.Move, ScreepsGameConstants.BodyPartHitPoints, null)
-            });
+            ]);
 
     private static RoomObjectSnapshot CreatePowerCreep(string id, int x, int y, string userId = "user1")
         => new(
@@ -465,10 +463,10 @@ public sealed class MovementIntentStepTests
             Structure: null,
             Effects: new Dictionary<string, object?>(Comparer),
             Spawning: null,
-            Body: new List<CreepBodyPartSnapshot>
-            {
+            Body:
+            [
                 new(BodyPartType.Move, ScreepsGameConstants.BodyPartHitPoints, null)
-            });
+            ]);
 
     private static RoomObjectSnapshot CreateRampart(string id, int x, int y, string owner, bool isPublic)
         => new(

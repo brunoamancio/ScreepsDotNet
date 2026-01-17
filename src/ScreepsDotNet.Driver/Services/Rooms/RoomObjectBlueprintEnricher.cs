@@ -51,8 +51,7 @@ internal sealed class RoomObjectBlueprintEnricher(IStructureBlueprintProvider bl
             return existing;
 
         Dictionary<string, int>? buffer = null;
-        foreach (var (key, value) in defaults)
-        {
+        foreach (var (key, value) in defaults) {
             if (existing.ContainsKey(key))
                 continue;
 

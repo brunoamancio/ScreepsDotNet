@@ -54,8 +54,7 @@ public sealed class MongoObjectNameService(IMongoDatabaseProvider databaseProvid
     private static bool NameExists(IReadOnlyCollection<string?> names, int suffix)
     {
         var candidate = $"{SpawnBaseName}{suffix}";
-        foreach (var name in names)
-        {
+        foreach (var name in names) {
             if (string.Equals(name, candidate, StringComparison.OrdinalIgnoreCase))
                 return true;
         }

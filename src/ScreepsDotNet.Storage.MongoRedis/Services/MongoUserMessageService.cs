@@ -53,8 +53,7 @@ public sealed class MongoUserMessageService(
         var entries = new List<UserMessageIndexEntry>();
         var seenRespondents = new HashSet<string>(StringComparer.Ordinal);
 
-        foreach (var document in documents)
-        {
+        foreach (var document in documents) {
             if (!seenRespondents.Add(document.RespondentId))
                 continue;
 
@@ -101,14 +100,12 @@ public sealed class MongoUserMessageService(
         if (message is null)
             return false;
 
-        if (message.Unread)
-        {
+        if (message.Unread) {
             var update = Builders<UserMessageDocument>.Update.Set(m => m.Unread, false);
             await _messagesCollection.UpdateOneAsync(filter, update, cancellationToken: cancellationToken).ConfigureAwait(false);
         }
 
-        if (message.OutMessageId != ObjectId.Empty)
-        {
+        if (message.OutMessageId != ObjectId.Empty) {
             var counterpartFilter = Builders<UserMessageDocument>.Filter.Eq(m => m.Id, message.OutMessageId);
             var update = Builders<UserMessageDocument>.Update.Set(m => m.Unread, false);
             await _messagesCollection.UpdateOneAsync(counterpartFilter, update, cancellationToken: cancellationToken).ConfigureAwait(false);
@@ -172,8 +169,7 @@ public sealed class MongoUserMessageService(
                                               .ConfigureAwait(false);
 
         var result = new Dictionary<string, UserMessageIndexUser>(StringComparer.Ordinal);
-        foreach (var document in documents)
-        {
+        foreach (var document in documents) {
             if (document.Id is null)
                 continue;
 
@@ -191,13 +187,11 @@ public sealed class MongoUserMessageService(
         if (IsMessageNotificationsDisabled(notifyPrefs))
             return;
 
-        if (!ShouldSendWhenOnline(notifyPrefs))
-        {
+        if (!ShouldSendWhenOnline(notifyPrefs)) {
             var db = _redisConnection.GetDatabase();
             var key = $"{UserMessagingConstants.UserOnlineKeyPrefix}{userId}";
             var value = await db.StringGetAsync(key).ConfigureAwait(false);
-            if (value.HasValue && long.TryParse(value.ToString(), out var lastSeen))
-            {
+            if (value.HasValue && long.TryParse(value.ToString(), out var lastSeen)) {
                 var threshold = DateTimeOffset.UtcNow.AddMinutes(-UserMessagingConstants.NotificationOfflineWindowMinutes).ToUnixTimeMilliseconds();
                 if (lastSeen > threshold)
                     return;
@@ -227,8 +221,9 @@ public sealed class MongoUserMessageService(
 
         if (notifyPrefs.TryGetValue(NotifyPreferenceKeys.DisabledOnMessages, out var disabledValue)
             && disabledValue is bool disabled
-            && disabled)
+            && disabled) {
             return true;
+        }
 
         return false;
     }

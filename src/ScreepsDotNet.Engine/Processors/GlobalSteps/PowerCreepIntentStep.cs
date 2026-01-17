@@ -24,8 +24,7 @@ internal sealed class PowerCreepIntentStep : IGlobalProcessorStep
 
     public Task ExecuteAsync(GlobalProcessorContext context, CancellationToken token = default)
     {
-        foreach (var (userId, intents) in context.UserIntentsByUser)
-        {
+        foreach (var (userId, intents) in context.UserIntentsByUser) {
             if (string.IsNullOrWhiteSpace(userId))
                 continue;
 
@@ -41,13 +40,11 @@ internal sealed class PowerCreepIntentStep : IGlobalProcessorStep
 
     private static void ProcessRenameIntents(GlobalProcessorContext context, string userId, GlobalUserIntentSnapshot snapshot)
     {
-        foreach (var record in snapshot.Intents)
-        {
+        foreach (var record in snapshot.Intents) {
             if (!string.Equals(record.Name, GlobalIntentTypes.RenamePowerCreep, StringComparison.Ordinal))
                 continue;
 
-            foreach (var argument in record.Arguments)
-            {
+            foreach (var argument in record.Arguments) {
                 var requestedId = GetTextArgument(argument, PowerCreepIntentFields.Id);
                 var requestedName = NormalizeName(GetTextArgument(argument, PowerCreepIntentFields.Name));
 
@@ -79,13 +76,11 @@ internal sealed class PowerCreepIntentStep : IGlobalProcessorStep
         UserState user,
         GlobalUserIntentSnapshot snapshot)
     {
-        foreach (var record in snapshot.Intents)
-        {
+        foreach (var record in snapshot.Intents) {
             if (!string.Equals(record.Name, GlobalIntentTypes.DeletePowerCreep, StringComparison.Ordinal))
                 continue;
 
-            foreach (var argument in record.Arguments)
-            {
+            foreach (var argument in record.Arguments) {
                 var creepId = GetTextArgument(argument, PowerCreepIntentFields.Id);
                 if (string.IsNullOrWhiteSpace(creepId))
                     continue;
@@ -100,16 +95,14 @@ internal sealed class PowerCreepIntentStep : IGlobalProcessorStep
                     continue;
 
                 var cancel = GetBooleanArgument(argument, PowerCreepIntentFields.Cancel);
-                if (cancel)
-                {
+                if (cancel) {
                     context.Mutations.PatchPowerCreep(creepId, new PowerCreepMutationPatch(ClearDeleteTime: true));
                     context.UpdatePowerCreep(creep with { DeleteTime = null });
                     continue;
                 }
 
                 var now = _timestampProvider();
-                if (user.PowerExperimentationTime > now)
-                {
+                if (user.PowerExperimentationTime > now) {
                     context.Mutations.RemovePowerCreep(creepId);
                     context.RemovePowerCreep(creepId);
                     continue;
@@ -139,6 +132,10 @@ internal sealed class PowerCreepIntentStep : IGlobalProcessorStep
         {
             IntentFieldValueKind.Text => value.TextValue,
             IntentFieldValueKind.Number => value.NumberValue?.ToString(),
+            IntentFieldValueKind.Boolean => throw new NotImplementedException(),
+            IntentFieldValueKind.TextArray => throw new NotImplementedException(),
+            IntentFieldValueKind.NumberArray => throw new NotImplementedException(),
+            IntentFieldValueKind.BodyPartArray => throw new NotImplementedException(),
             _ => value.TextValue
         };
     }
@@ -153,6 +150,9 @@ internal sealed class PowerCreepIntentStep : IGlobalProcessorStep
             IntentFieldValueKind.Boolean => value.BooleanValue ?? defaultValue,
             IntentFieldValueKind.Number => value.NumberValue is { } number && number != 0,
             IntentFieldValueKind.Text => bool.TryParse(value.TextValue, out var parsed) ? parsed : defaultValue,
+            IntentFieldValueKind.TextArray => throw new NotImplementedException(),
+            IntentFieldValueKind.NumberArray => throw new NotImplementedException(),
+            IntentFieldValueKind.BodyPartArray => throw new NotImplementedException(),
             _ => defaultValue
         };
     }

@@ -79,9 +79,6 @@ internal static class UserEndpoints
     private const string IndexUserMessagesEndpointName = "GetUserMessageIndex";
     private const string MarkUserMessageReadEndpointName = "PostUserMessageMarkRead";
     private const string UnreadMessageCountEndpointName = "GetUserMessageUnreadCount";
-    private const string UsernameQueryName = "username";
-    private const string UserIdQueryName = "id";
-    private const string BorderQueryName = "border";
     private const string DefaultOverviewStatName = "energyHarvested";
     private static readonly int[] AllowedStatsIntervals = [8, 180, 1440];
     private static readonly int[] AllowedNotifyIntervals = [5, 10, 30, 60, 180, 360, 720, 1440, 4320];
@@ -251,8 +248,9 @@ internal static class UserEndpoints
                            CancellationToken cancellationToken) => {
                                var user = UserEndpointGuards.RequireUser(userAccessor, MissingUserContextMessage);
                                if (!UserEndpointGuards.IsValidActiveName(request.ActiveName, UserResponseFields.ActiveWorld, UserResponseFields.ActiveSim) ||
-                                   !UserEndpointGuards.IsValidBranchName(request.Branch, MaxBranchNameLength))
+                                   !UserEndpointGuards.IsValidBranchName(request.Branch, MaxBranchNameLength)) {
                                    return Results.BadRequest(new ErrorResponse(InvalidStatsIntervalMessage));
+                               }
 
                                var success = await repository.SetActiveBranchAsync(user.Id, request.Branch!, request.ActiveName!, cancellationToken).ConfigureAwait(false);
                                if (!success)
@@ -583,8 +581,7 @@ internal static class UserEndpoints
                                try {
                                    await messageService.SendMessageAsync(user.Id, respondentId, text, cancellationToken).ConfigureAwait(false);
                                }
-                               catch (ArgumentException ex) when (string.Equals(ex.ParamName, RespondentParameterName, StringComparison.Ordinal))
-                               {
+                               catch (ArgumentException ex) when (string.Equals(ex.ParamName, RespondentParameterName, StringComparison.Ordinal)) {
                                    return Results.BadRequest(new ErrorResponse(InvalidRespondentMessage));
                                }
 

@@ -15,7 +15,6 @@ internal static class MarketEndpoints
     private const string MyOrdersEndpointName = "GetMarketMyOrders";
     private const string StatsEndpointName = "GetMarketStats";
     private const string InvalidParamsMessage = "invalid params";
-    private const string ResourceTypeQueryName = "resourceType";
     private const string MissingUserContextMessage = "User context is not available.";
 
     public static void Map(WebApplication app)

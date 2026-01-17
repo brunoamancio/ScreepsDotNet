@@ -20,12 +20,10 @@ internal sealed class ObservabilityTelemetryListener(
         if (!_options.EnableExporter)
             return Task.CompletedTask;
 
-        try
-        {
+        try {
             return _exporter.ExportTelemetryAsync(payload, token);
         }
-        catch (Exception ex)
-        {
+        catch (Exception ex) {
             _logger?.LogError(ex, "Observability exporter failed to handle telemetry for loop {Loop}.", payload.Loop);
             return Task.CompletedTask;
         }
@@ -36,12 +34,10 @@ internal sealed class ObservabilityTelemetryListener(
         if (!_options.EnableExporter)
             return Task.CompletedTask;
 
-        try
-        {
+        try {
             return _exporter.ExportWatchdogAlertAsync(alert, token);
         }
-        catch (Exception ex)
-        {
+        catch (Exception ex) {
             _logger?.LogError(ex, "Observability exporter failed to handle watchdog alert for user {UserId}.", alert.Payload.UserId);
             return Task.CompletedTask;
         }

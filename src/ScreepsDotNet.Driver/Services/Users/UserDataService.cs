@@ -1,11 +1,11 @@
 using System.Text;
 using MongoDB.Bson;
 using MongoDB.Driver;
+using ScreepsDotNet.Backend.Core.Constants;
+using ScreepsDotNet.Common.Constants;
 using ScreepsDotNet.Driver.Abstractions.Bulk;
 using ScreepsDotNet.Driver.Abstractions.Users;
 using ScreepsDotNet.Driver.Constants;
-using ScreepsDotNet.Common.Constants;
-using ScreepsDotNet.Backend.Core.Constants;
 using ScreepsDotNet.Storage.MongoRedis.Providers;
 using ScreepsDotNet.Storage.MongoRedis.Repositories.Documents;
 using StackExchange.Redis;
@@ -123,8 +123,7 @@ internal sealed class UserDataService(IMongoDatabaseProvider databaseProvider, I
     {
         var roomNamesToActivate = new HashSet<string>(StringComparer.Ordinal);
 
-        foreach (var (roomName, intentPayload) in rooms)
-        {
+        foreach (var (roomName, intentPayload) in rooms) {
             if (string.IsNullOrWhiteSpace(roomName))
                 continue;
 
@@ -148,8 +147,7 @@ internal sealed class UserDataService(IMongoDatabaseProvider databaseProvider, I
     private async Task SaveNotificationsAsync(string userId, IReadOnlyList<NotifyIntentPayload> notifications, CancellationToken token)
     {
         var now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-        foreach (var notification in notifications.Take(MaxNotificationsPerBatch))
-        {
+        foreach (var notification in notifications.Take(MaxNotificationsPerBatch)) {
             var normalizedInterval = Math.Clamp(notification.GroupIntervalMinutes, 0, 1440);
             var intervalMilliseconds = (long)TimeSpan.FromMinutes(normalizedInterval).TotalMilliseconds;
             var bucketTime = intervalMilliseconds > 0
@@ -195,8 +193,8 @@ internal sealed class UserDataService(IMongoDatabaseProvider databaseProvider, I
         {
             null => [],
             BsonDocument document => document.DeepClone().AsBsonDocument,
-            IReadOnlyDictionary<string, object?> dictionary => new BsonDocument(dictionary.Select(pair => new BsonElement(pair.Key, BsonValue.Create(pair.Value)))),
-            IDictionary<string, object?> dictionary => new BsonDocument(dictionary.Cast<KeyValuePair<string, object?>>().Select(pair => new BsonElement(pair.Key, BsonValue.Create(pair.Value)))),
+            IReadOnlyDictionary<string, object?> dictionary => [.. dictionary.Select(pair => new BsonElement(pair.Key, BsonValue.Create(pair.Value)))],
+            IDictionary<string, object?> dictionary => [.. dictionary.Cast<KeyValuePair<string, object?>>().Select(pair => new BsonElement(pair.Key, BsonValue.Create(pair.Value)))],
             _ => BsonDocument.Create(payload)
         };
     }

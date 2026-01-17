@@ -6,8 +6,8 @@ using MongoDB.Bson;
 using MongoDB.Driver;
 using ScreepsDotNet.Backend.Core.Seeding;
 using ScreepsDotNet.Backend.Http.Routing;
-using ScreepsDotNet.Storage.MongoRedis.Repositories.Documents;
 using ScreepsDotNet.Backend.Http.Tests.TestSupport;
+using ScreepsDotNet.Storage.MongoRedis.Repositories.Documents;
 
 [Collection(IntegrationTestSuiteDefinition.Name)]
 public sealed class StructureEndpointsIntegrationTests(IntegrationTestHarness harness) : IAsyncLifetime

@@ -27,8 +27,7 @@ internal sealed class InterRoomSnapshotProvider(
 
     public void Invalidate()
     {
-        lock (_gate)
-        {
+        lock (_gate) {
             _cachedSnapshot = null;
             _cachedGameTime = null;
         }
@@ -36,10 +35,8 @@ internal sealed class InterRoomSnapshotProvider(
 
     private bool TryGetCached(int gameTime, out GlobalSnapshot snapshot)
     {
-        lock (_gate)
-        {
-            if (_cachedSnapshot is not null && _cachedGameTime == gameTime)
-            {
+        lock (_gate) {
+            if (_cachedSnapshot is not null && _cachedGameTime == gameTime) {
                 snapshot = _cachedSnapshot;
                 return true;
             }
@@ -51,8 +48,7 @@ internal sealed class InterRoomSnapshotProvider(
 
     private void Cache(GlobalSnapshot snapshot)
     {
-        lock (_gate)
-        {
+        lock (_gate) {
             _cachedSnapshot = snapshot;
             _cachedGameTime = snapshot.GameTime;
         }

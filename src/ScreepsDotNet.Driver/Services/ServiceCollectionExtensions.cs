@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using ScreepsDotNet.Common.Structures;
 using ScreepsDotNet.Driver.Abstractions;
 using ScreepsDotNet.Driver.Abstractions.Bulk;
 using ScreepsDotNet.Driver.Abstractions.Config;
@@ -13,7 +14,6 @@ using ScreepsDotNet.Driver.Abstractions.Queues;
 using ScreepsDotNet.Driver.Abstractions.Rooms;
 using ScreepsDotNet.Driver.Abstractions.Runtime;
 using ScreepsDotNet.Driver.Abstractions.Users;
-using ScreepsDotNet.Common.Structures;
 using ScreepsDotNet.Driver.Services.Bulk;
 using ScreepsDotNet.Driver.Services.GlobalProcessing;
 using ScreepsDotNet.Driver.Services.History;
@@ -22,9 +22,9 @@ using ScreepsDotNet.Driver.Services.Notifications;
 using ScreepsDotNet.Driver.Services.Observability;
 using ScreepsDotNet.Driver.Services.Pathfinding;
 using ScreepsDotNet.Driver.Services.Queues;
+using ScreepsDotNet.Driver.Services.Rooms;
 using ScreepsDotNet.Driver.Services.Runtime;
 using ScreepsDotNet.Driver.Services.Scheduling;
-using ScreepsDotNet.Driver.Services.Rooms;
 using ScreepsDotNet.Driver.Services.Users;
 
 namespace ScreepsDotNet.Driver.Services;

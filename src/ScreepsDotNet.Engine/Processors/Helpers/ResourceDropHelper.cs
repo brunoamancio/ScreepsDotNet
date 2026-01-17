@@ -44,8 +44,7 @@ internal sealed class ResourceDropHelper : IResourceDropHelper
         if (overflow <= 0)
             return;
 
-        foreach (var resource in EnumerateStoreResources(mutableStore))
-        {
+        foreach (var resource in EnumerateStoreResources(mutableStore)) {
             if (overflow <= 0)
                 break;
 
@@ -74,8 +73,7 @@ internal sealed class ResourceDropHelper : IResourceDropHelper
 
         var remaining = amount;
         var container = FindContainer(context.State.Objects, origin);
-        if (container is not null)
-        {
+        if (container is not null) {
             var entry = dropContext.GetContainerEntry(container);
             var transferred = TransferToContainer(context, entry, resourceType, remaining);
             remaining -= transferred;
@@ -96,14 +94,12 @@ internal sealed class ResourceDropHelper : IResourceDropHelper
             yield break;
 
         var seen = new HashSet<string>(Comparer);
-        foreach (var resource in ScreepsGameConstants.ResourceOrder)
-        {
+        foreach (var resource in ScreepsGameConstants.ResourceOrder) {
             if (store.ContainsKey(resource) && seen.Add(resource))
                 yield return resource;
         }
 
-        foreach (var resource in store.Keys)
-        {
+        foreach (var resource in store.Keys) {
             if (seen.Add(resource))
                 yield return resource;
         }
@@ -113,8 +109,7 @@ internal sealed class ResourceDropHelper : IResourceDropHelper
         IReadOnlyDictionary<string, RoomObjectSnapshot> objects,
         RoomObjectSnapshot origin)
     {
-        foreach (var obj in objects.Values)
-        {
+        foreach (var obj in objects.Values) {
             if (!string.Equals(obj.RoomName, origin.RoomName, StringComparison.Ordinal))
                 continue;
 
@@ -183,8 +178,7 @@ internal sealed class ResourceDropHelper : IResourceDropHelper
     {
         var key = DropLedgerKey.Create(origin, resourceType);
 
-        if (dropContext.TryGetDrop(key, out var entry) && entry is not null)
-        {
+        if (dropContext.TryGetDrop(key, out var entry) && entry is not null) {
             var updatedAmount = (entry.Snapshot.ResourceAmount ?? 0) + amount;
             var updatedSnapshot = entry.Snapshot with { ResourceAmount = updatedAmount };
             dropContext.RecordDrop(key, updatedSnapshot);
@@ -253,8 +247,7 @@ internal sealed class ResourceDropHelper : IResourceDropHelper
         RoomObjectSnapshot origin,
         string resourceType)
     {
-        foreach (var obj in objects.Values)
-        {
+        foreach (var obj in objects.Values) {
             if (!string.Equals(obj.RoomName, origin.RoomName, StringComparison.Ordinal))
                 continue;
 
@@ -280,7 +273,7 @@ internal sealed class ResourceDropHelper : IResourceDropHelper
 internal sealed class ResourceDropContext
 {
     private readonly Dictionary<string, ContainerLedgerEntry> _containers = new(StringComparer.Ordinal);
-    private readonly Dictionary<DropLedgerKey, DropLedgerEntry> _drops = new();
+    private readonly Dictionary<DropLedgerKey, DropLedgerEntry> _drops = [];
 
     public ContainerLedgerEntry GetContainerEntry(RoomObjectSnapshot container)
     {

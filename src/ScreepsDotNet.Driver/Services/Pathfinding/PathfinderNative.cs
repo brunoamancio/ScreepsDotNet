@@ -32,8 +32,7 @@ internal static class PathfinderNative
         if (_loadAttempted)
             return _available;
 
-        lock (SyncRoot)
-        {
+        lock (SyncRoot) {
             if (_loadAttempted)
                 return _available;
 
@@ -41,10 +40,8 @@ internal static class PathfinderNative
 
             var rid = RuntimeInformation.RuntimeIdentifier ?? string.Empty;
             var fileName = GetLibraryFileName();
-            foreach (var candidate in EnumerateCandidatePaths(fileName, rid))
-            {
-                try
-                {
+            foreach (var candidate in EnumerateCandidatePaths(fileName, rid)) {
+                try {
                     if (!NativeLibrary.TryLoad(candidate, out var handle))
                         continue;
 
@@ -54,8 +51,7 @@ internal static class PathfinderNative
                     _freeResult = GetDelegate<FreeResultDelegate>(handle, "ScreepsPathfinder_FreeResult");
                     _setRoomCallback = GetDelegate<SetRoomCallbackDelegate>(handle, "ScreepsPathfinder_SetRoomCallback");
                     _available = _loadTerrain is not null && _search is not null && _freeResult is not null;
-                    if (_available)
-                    {
+                    if (_available) {
                         _setRoomCallback?.Invoke(RoomCallbackThunk, IntPtr.Zero);
                         logger?.LogInformation("Loaded native pathfinder library from {Path}.", candidate);
                         return true;
@@ -63,8 +59,7 @@ internal static class PathfinderNative
 
                     logger?.LogWarning("Native pathfinder found at {Path}, but exports could not be resolved.", candidate);
                 }
-                catch (Exception ex)
-                {
+                catch (Exception ex) {
                     logger?.LogWarning(ex, "Failed to load native pathfinder from {Path}.", candidate);
                 }
             }
@@ -84,11 +79,9 @@ internal static class PathfinderNative
 
         var handles = new List<GCHandle>();
         var terrainRooms = new ScreepsTerrainRoom[rooms.Count];
-        try
-        {
+        try {
             var index = 0;
-            foreach (var room in rooms)
-            {
+            foreach (var room in rooms) {
                 if (room.TerrainBytes is not { Length: > 0 } bytes)
                     continue;
                 var roomNameBytes = Utf8.GetBytes(room.RoomName + "\0");
@@ -117,10 +110,8 @@ internal static class PathfinderNative
             if (result != 0)
                 throw new InvalidOperationException($"Native terrain load failed with error code {result}.");
         }
-        finally
-        {
-            foreach (var handle in handles)
-            {
+        finally {
+            foreach (var handle in handles) {
                 if (handle.IsAllocated)
                     handle.Free();
             }
@@ -162,13 +153,11 @@ internal static class PathfinderNative
         if (code != 0)
             throw new InvalidOperationException($"Native pathfinder search failed with error code {code}.");
 
-        try
-        {
+        try {
             var path = ConvertPath(nativeResult);
             return new PathfinderResult(path, nativeResult.Operations, nativeResult.Cost, nativeResult.Incomplete);
         }
-        finally
-        {
+        finally {
             _freeResult(ref nativeResult);
         }
     }
@@ -180,9 +169,8 @@ internal static class PathfinderNative
 
         var size = Marshal.SizeOf<ScreepsPathfinderPoint>();
         var path = new RoomPosition[result.PathLength];
-        for (var i = 0; i < result.PathLength; i++)
-        {
-            var ptr = result.Path + i * size;
+        for (var i = 0; i < result.PathLength; i++) {
+            var ptr = result.Path + (i * size);
             var point = Marshal.PtrToStructure<ScreepsPathfinderPoint>(ptr);
             path[i] = new RoomPosition(point.X, point.Y, point.RoomName ?? string.Empty);
         }
@@ -203,8 +191,7 @@ internal static class PathfinderNative
     {
         var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-        foreach (var candidate in Enumerate())
-        {
+        foreach (var candidate in Enumerate()) {
             var full = Path.GetFullPath(candidate);
             if (seen.Add(full))
                 yield return full;
@@ -217,8 +204,7 @@ internal static class PathfinderNative
                 yield return candidate;
 
             var directory = baseDir;
-            for (var i = 0; i < 5; i++)
-            {
+            for (var i = 0; i < 5; i++) {
                 var parent = Directory.GetParent(directory)?.FullName;
                 if (string.IsNullOrEmpty(parent))
                     break;
@@ -234,8 +220,7 @@ internal static class PathfinderNative
             if (!string.IsNullOrWhiteSpace(direct))
                 yield return direct;
 
-            if (!string.IsNullOrWhiteSpace(rid))
-            {
+            if (!string.IsNullOrWhiteSpace(rid)) {
                 yield return Path.Combine(root, "runtimes", rid, "native", fileName);
                 yield return Path.Combine(root, "src", "ScreepsDotNet.Driver", "runtimes", rid, "native", fileName);
                 yield return Path.Combine(root, "ScreepsDotNet.Driver", "runtimes", rid, "native", fileName);
@@ -261,8 +246,7 @@ internal static class PathfinderNative
         IntPtr _)
     {
         var context = RoomCallbackState.Value;
-        if (context?.Callback is null)
-        {
+        if (context?.Callback is null) {
             costMatrix = IntPtr.Zero;
             costMatrixLength = 0;
             blockRoom = false;
@@ -270,29 +254,25 @@ internal static class PathfinderNative
         }
 
         PathfinderRoomCallbackResult? result;
-        try
-        {
+        try {
             var roomName = FormatRoomName(roomX, roomY);
             result = context.Callback(roomName);
         }
-        catch
-        {
+        catch {
             costMatrix = IntPtr.Zero;
             costMatrixLength = 0;
             blockRoom = false;
             return false;
         }
 
-        if (result is null)
-        {
+        if (result is null) {
             costMatrix = IntPtr.Zero;
             costMatrixLength = 0;
             blockRoom = false;
             return true;
         }
 
-        if (result.BlockRoom)
-        {
+        if (result.BlockRoom) {
             costMatrix = IntPtr.Zero;
             costMatrixLength = 0;
             blockRoom = true;
@@ -426,8 +406,7 @@ internal static class PathfinderNative
 
         public void Dispose()
         {
-            foreach (var handle in Handles)
-            {
+            foreach (var handle in Handles) {
                 if (handle.IsAllocated)
                     handle.Free();
             }
@@ -470,8 +449,7 @@ internal static class PathfinderNative
         {
             var nativeGoals = new ScreepsPathfinderGoal[goals.Count];
             var handles = new List<GCHandle>(goals.Count);
-            for (var i = 0; i < goals.Count; i++)
-            {
+            for (var i = 0; i < goals.Count; i++) {
                 var goal = goals[i] ?? throw new ArgumentException("Goal entries cannot be null.", nameof(goals));
                 var roomBytes = Utf8.GetBytes(goal.Target.RoomName + "\0");
                 var handle = GCHandle.Alloc(roomBytes, GCHandleType.Pinned);
@@ -495,8 +473,7 @@ internal static class PathfinderNative
         public void Dispose()
         {
             _pinnedGoals?.Dispose();
-            foreach (var handle in _handles)
-            {
+            foreach (var handle in _handles) {
                 if (handle.IsAllocated)
                     handle.Free();
             }

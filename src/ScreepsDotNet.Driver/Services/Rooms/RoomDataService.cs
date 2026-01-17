@@ -1,9 +1,9 @@
 using System.Text.Json;
 using MongoDB.Bson;
 using MongoDB.Driver;
+using ScreepsDotNet.Common.Constants;
 using ScreepsDotNet.Driver.Abstractions.Bulk;
 using ScreepsDotNet.Driver.Abstractions.Rooms;
-using ScreepsDotNet.Common.Constants;
 using ScreepsDotNet.Driver.Constants;
 using ScreepsDotNet.Storage.MongoRedis.Providers;
 using ScreepsDotNet.Storage.MongoRedis.Repositories.Documents;
@@ -181,8 +181,7 @@ internal sealed class RoomDataService(
                                    .ConfigureAwait(false);
 
         var statusData = new RoomStatusData();
-        foreach (var room in rooms)
-        {
+        foreach (var room in rooms) {
             var id = room.GetValue(RoomDocumentFields.RoomObject.Id, BsonNull.Value).ToString();
             if (string.IsNullOrWhiteSpace(id))
                 continue;
@@ -191,10 +190,7 @@ internal sealed class RoomDataService(
                 statusData.Novice[id] = novice;
             else if (TryGetLong(room, RoomDocumentFields.Info.RespawnArea, out var respawn) && respawn > now)
                 statusData.Respawn[id] = respawn;
-            else if (TryGetLong(room, RoomDocumentFields.Info.OpenTime, out var openTime) && openTime > now)
-                statusData.Closed[id] = openTime;
-            else
-                statusData.Closed[id] = long.MaxValue;
+            else statusData.Closed[id] = TryGetLong(room, RoomDocumentFields.Info.OpenTime, out var openTime) && openTime > now ? openTime : long.MaxValue;
         }
 
         var payload = JsonSerializer.Serialize(statusData);
@@ -259,8 +255,7 @@ internal sealed class RoomDataService(
     private static IReadOnlyDictionary<string, TDocument> MapById<TDocument>(IEnumerable<TDocument> documents, Func<TDocument, string> selector)
     {
         var dictionary = new Dictionary<string, TDocument>(StringComparer.Ordinal);
-        foreach (var document in documents)
-        {
+        foreach (var document in documents) {
             var key = selector(document);
             if (!string.IsNullOrWhiteSpace(key))
                 dictionary[key] = document;
@@ -275,20 +270,17 @@ internal sealed class RoomDataService(
         if (!document.TryGetValue(field, out var bsonValue))
             return false;
 
-        if (bsonValue.IsInt64)
-        {
+        if (bsonValue.IsInt64) {
             value = bsonValue.AsInt64;
             return true;
         }
 
-        if (bsonValue.IsInt32)
-        {
+        if (bsonValue.IsInt32) {
             value = bsonValue.AsInt32;
             return true;
         }
 
-        if (bsonValue.IsDouble)
-        {
+        if (bsonValue.IsDouble) {
             value = (long)bsonValue.AsDouble;
             return true;
         }

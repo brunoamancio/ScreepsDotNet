@@ -18,7 +18,6 @@ public sealed class PathfinderNativeIntegrationTests
     private const string PortalChainCaseName = "portal-chain";
     private const string PortalCallbackCaseName = "portal-callback";
     private const string PowerCreepFleeCaseName = "power-creep-flee";
-    private const string TowerKeeperHybridCaseName = "tower-keeper-hybrid";
     private const string ControllerTightLimitCaseName = "controller-tight-limit";
     private const string RegressionBaselineRelativePath = "Pathfinding/Baselines/legacy-regressions.json";
 
@@ -43,13 +42,11 @@ public sealed class PathfinderNativeIntegrationTests
             new(new RoomPosition(30, 26, "W0N0"))
         ];
 
-        try
-        {
+        try {
             var direct = PathfinderNative.Search(origin, goals, new PathfinderOptions(MaxRooms: 4, MaxOps: 10_000));
             Assert.False(direct.Incomplete);
         }
-        catch (Exception ex)
-        {
+        catch (Exception ex) {
             Assert.Fail($"Native search threw before service fallback: {ex}");
         }
 
@@ -107,21 +104,18 @@ public sealed class PathfinderNativeIntegrationTests
     private static byte[] CreateTowerCostMatrix()
     {
         var matrix = new byte[RoomArea];
-        for (var y = 0; y < 50; y++)
-        {
-            for (var x = 0; x < 50; x++)
-            {
-                var index = y * 50 + x;
+        for (var y = 0; y < 50; y++) {
+            for (var x = 0; x < 50; x++) {
+                var index = (y * 50) + x;
                 var inTowerZone = x is >= 20 and <= 30 && y is >= 20 and <= 30;
                 matrix[index] = (byte)(inTowerZone ? byte.MaxValue : 0);
             }
         }
 
-        for (var i = 0; i <= 10; i++)
-        {
+        for (var i = 0; i <= 10; i++) {
             var x = 20 + i;
             var y = 30 - i;
-            var index = y * 50 + x;
+            var index = (y * 50) + x;
             matrix[index] = 0;
         }
 
@@ -136,79 +130,34 @@ public sealed class PathfinderNativeIntegrationTests
         AddZone(matrix, 20, 32, 29, 41, 200);
 
         foreach (var (x, y) in new (int X, int Y)[] { (18, 25), (32, 24), (27, 34) })
-            matrix[y * 50 + x] = byte.MaxValue;
+            matrix[(y * 50) + x] = byte.MaxValue;
 
-        for (var i = 0; i < 15; i++)
-        {
+        for (var i = 0; i < 15; i++) {
             var x = 5 + i;
             var y = 25 + (int)Math.Round(Math.Sin(i / 2d) * 5);
-            matrix[y * 50 + x] = 1;
+            matrix[(y * 50) + x] = 1;
         }
 
-        for (var i = 0; i < 15; i++)
-        {
+        for (var i = 0; i < 15; i++) {
             var x = 20 + i;
             var y = 20 + i;
-            matrix[y * 50 + x] = 1;
+            matrix[(y * 50) + x] = 1;
         }
 
-        for (var i = 0; i < 10; i++)
-        {
+        for (var i = 0; i < 10; i++) {
             var x = 35 + i;
             var y = 30 - i;
-            matrix[y * 50 + x] = 1;
+            matrix[(y * 50) + x] = 1;
         }
 
         return matrix;
 
         static void AddZone(byte[] buffer, int x1, int y1, int x2, int y2, byte cost)
         {
-            for (var y = y1; y <= y2; y++)
-            {
+            for (var y = y1; y <= y2; y++) {
                 for (var x = x1; x <= x2; x++)
-                    buffer[y * 50 + x] = cost;
+                    buffer[(y * 50) + x] = cost;
             }
-        }
-    }
-
-    private static byte[] CreateTowerKeeperHybridMatrix()
-    {
-        var matrix = CreateTowerPowerCostMatrix();
-        foreach (var (x, y) in new (int X, int Y)[] { (18, 32), (32, 24), (35, 15) })
-        {
-            for (var dy = -4; dy <= 4; dy++)
-            {
-                for (var dx = -4; dx <= 4; dx++)
-                {
-                    var px = x + dx;
-                    var py = y + dy;
-                    if (px < 0 || px >= 50 || py < 0 || py >= 50)
-                        continue;
-
-                    var idx = py * 50 + px;
-                    var dist = Math.Max(Math.Abs(dx), Math.Abs(dy));
-                    var cost = dist <= 2 ? byte.MaxValue : (byte)200;
-                    matrix[idx] = Math.Max(matrix[idx], cost);
-                }
-            }
-        }
-
-        foreach (var (x, y) in SafeCorridor())
-        {
-            var idx = y * 50 + x;
-            matrix[idx] = Math.Min(matrix[idx], (byte)5);
-        }
-
-        return matrix;
-
-        static IEnumerable<(int X, int Y)> SafeCorridor()
-        {
-            for (var i = 0; i < 10; i++)
-                yield return (5 + i, 10 + i);
-            for (var i = 0; i < 15; i++)
-                yield return (15 + i, 20 + i);
-            for (var i = 0; i < 10; i++)
-                yield return (30 + i, 35 - i);
         }
     }
 
@@ -222,14 +171,14 @@ public sealed class PathfinderNativeIntegrationTests
                      (24, 27), (26, 27),
                      (24, 29), (25, 29), (26, 29),
                      (24, 31), (25, 31), (26, 31)
-                 })
-            matrix[y * 50 + x] = byte.MaxValue;
+                 }) {
+            matrix[(y * 50) + x] = byte.MaxValue;
+        }
 
-        for (var x = 5; x <= 45; x++)
-        {
+        for (var x = 5; x <= 45; x++) {
             var offset = x < 25 ? 1 : -1;
             var y = 25 + offset;
-            var index = y * 50 + x;
+            var index = (y * 50) + x;
             if (matrix[index] != byte.MaxValue)
                 matrix[index] = 10;
         }
@@ -243,18 +192,15 @@ public sealed class PathfinderNativeIntegrationTests
             ? new (int X, int Y, int Radius)[] { (20, 20, 5), (35, 15, 4) }
             : new (int X, int Y, int Radius)[] { (10, 30, 4), (25, 25, 5) };
 
-        foreach (var zone in hotZones)
-        {
-            for (var dy = -zone.Radius; dy <= zone.Radius; dy++)
-            {
-                for (var dx = -zone.Radius; dx <= zone.Radius; dx++)
-                {
-                    var x = zone.X + dx;
-                    var y = zone.Y + dy;
+        foreach (var (X, Y, Radius) in hotZones) {
+            for (var dy = -Radius; dy <= Radius; dy++) {
+                for (var dx = -Radius; dx <= Radius; dx++) {
+                    var x = X + dx;
+                    var y = Y + dy;
                     if (x < 0 || x >= 50 || y < 0 || y >= 50)
                         continue;
 
-                    var idx = y * 50 + x;
+                    var idx = (y * 50) + x;
                     var dist = Math.Max(Math.Abs(dx), Math.Abs(dy));
                     matrix[idx] = (byte)(dist <= 2 ? byte.MaxValue : 180);
                 }
@@ -265,9 +211,8 @@ public sealed class PathfinderNativeIntegrationTests
             ? SafePath([(5, 40), (15, 30), (25, 30)])
             : SafePath([(0, 30), (10, 40), (20, 40)]);
 
-        foreach (var (x, y) in corridor)
-        {
-            var idx = y * 50 + x;
+        foreach (var (x, y) in corridor) {
+            var idx = (y * 50) + x;
             matrix[idx] = 1;
         }
 
@@ -275,16 +220,14 @@ public sealed class PathfinderNativeIntegrationTests
 
         static IEnumerable<(int X, int Y)> SafePath((int X, int Y)[] points)
         {
-            for (var i = 0; i < points.Length - 1; i++)
-            {
+            for (var i = 0; i < points.Length - 1; i++) {
                 var (sx, sy) = points[i];
                 var (ex, ey) = points[i + 1];
                 var dx = Math.Sign(ex - sx);
                 var dy = Math.Sign(ey - sy);
                 var x = sx;
                 var y = sy;
-                while (x != ex || y != ey)
-                {
+                while (x != ex || y != ey) {
                     if (x != ex)
                         x += dx;
                     if (y != ey)
@@ -298,18 +241,15 @@ public sealed class PathfinderNativeIntegrationTests
     private static byte[] CreateKeeperLairMatrix()
     {
         var matrix = new byte[RoomArea];
-        foreach (var (x, y) in new (int X, int Y)[] { (15, 35), (25, 20), (35, 30) })
-        {
-            for (var dy = -5; dy <= 5; dy++)
-            {
-                for (var dx = -5; dx <= 5; dx++)
-                {
+        foreach (var (x, y) in new (int X, int Y)[] { (15, 35), (25, 20), (35, 30) }) {
+            for (var dy = -5; dy <= 5; dy++) {
+                for (var dx = -5; dx <= 5; dx++) {
                     var lx = x + dx;
                     var ly = y + dy;
                     if (lx < 0 || lx >= 50 || ly < 0 || ly >= 50)
                         continue;
 
-                    var idx = ly * 50 + lx;
+                    var idx = (ly * 50) + lx;
                     var dist = Math.Max(Math.Abs(dx), Math.Abs(dy));
                     var cost = dist <= 2 ? byte.MaxValue : (byte)180;
                     matrix[idx] = Math.Max(matrix[idx], cost);
@@ -317,9 +257,8 @@ public sealed class PathfinderNativeIntegrationTests
             }
         }
 
-        foreach (var (x, y) in SafeKeeperPath())
-        {
-            var idx = y * 50 + x;
+        foreach (var (x, y) in SafeKeeperPath()) {
+            var idx = (y * 50) + x;
             matrix[idx] = matrix[idx] < 5 ? matrix[idx] : (byte)5;
         }
 
@@ -346,24 +285,20 @@ public sealed class PathfinderNativeIntegrationTests
         void Carve(int x, int y)
         {
             if (x is >= 0 and < 50 && y is >= 0 and < 50)
-                matrix[y * 50 + x] = 0;
+                matrix[(y * 50) + x] = 0;
         }
 
-        switch (roomName)
-        {
-            case "W0N0":
-            {
+        switch (roomName) {
+            case "W0N0": {
                 var x = 10;
                 var y = 10;
-                while (y >= 0)
-                {
+                while (y >= 0) {
                     Carve(x, y);
                     x += 1;
                     y -= 1;
                 }
 
-                while (x <= 30)
-                {
+                while (x <= 30) {
                     Carve(x, 0);
                     x += 1;
                 }
@@ -373,10 +308,9 @@ public sealed class PathfinderNativeIntegrationTests
 
                 break;
             }
-            case "W0N1":
-            {
+            case "W0N1": {
                 for (var cx = 0; cx < 50; cx++)
-                    matrix[49 * 50 + cx] = cx == 30 ? (byte)0 : byte.MaxValue;
+                    matrix[(49 * 50) + cx] = cx == 30 ? (byte)0 : byte.MaxValue;
 
                 for (var cy = 49; cy >= 35; cy--)
                     Carve(30, cy);
@@ -392,13 +326,11 @@ public sealed class PathfinderNativeIntegrationTests
 
                 break;
             }
-            case "W0N2":
-            {
+            case "W0N2": {
                 for (var cy = 49; cy >= 10; cy--)
                     Carve(5, cy);
 
-                for (var step = 0; step <= 40; step++)
-                {
+                for (var step = 0; step <= 40; step++) {
                     var px = 5 + step;
                     var py = 10 + Math.Min(30, (int)Math.Round(step * 0.75));
                     Carve(px, py);
@@ -417,21 +349,16 @@ public sealed class PathfinderNativeIntegrationTests
     private static TerrainRoomData CreateTerrain(string roomName, Func<int, Func<int, bool>> isWall)
     {
         var data = new byte[RoomArea];
-        for (var y = 0; y < 50; y++)
-        {
+        for (var y = 0; y < 50; y++) {
             var predicate = isWall(y);
-            for (var x = 0; x < 50; x++)
-            {
-                var index = y * 50 + x;
+            for (var x = 0; x < 50; x++) {
+                var index = (y * 50) + x;
                 data[index] = predicate(x) ? (byte)'1' : (byte)'0';
             }
         }
 
         return new TerrainRoomData(roomName, data);
     }
-
-    private static string FormatPath(IReadOnlyList<RoomPosition> path)
-        => string.Join(" -> ", path.Select(p => $"{p.RoomName}:{p.X},{p.Y}"));
 
     private static string SerializeRegression(PathfinderResult result)
     {
@@ -1284,22 +1211,22 @@ public sealed class PathfinderNativeIntegrationTests
     private static IReadOnlyDictionary<string, RegressionExpectation> LoadBaselineExpectations()
     {
         var map = new Dictionary<string, RegressionExpectation>(StringComparer.OrdinalIgnoreCase);
-        try
-        {
+        try {
             var baselinePath = Path.Combine(AppContext.BaseDirectory, RegressionBaselineRelativePath);
             if (!File.Exists(baselinePath))
                 return map;
 
             using var document = JsonDocument.Parse(File.ReadAllBytes(baselinePath));
             if (!document.RootElement.TryGetProperty("cases", out var casesElement) ||
-                casesElement.ValueKind != JsonValueKind.Array)
+                casesElement.ValueKind != JsonValueKind.Array) {
                 return map;
+            }
 
-            foreach (var caseElement in casesElement.EnumerateArray())
-            {
+            foreach (var caseElement in casesElement.EnumerateArray()) {
                 if (!caseElement.TryGetProperty("name", out var nameElement) ||
-                    nameElement.ValueKind != JsonValueKind.String)
+                    nameElement.ValueKind != JsonValueKind.String) {
                     continue;
+                }
 
                 var name = nameElement.GetString();
                 if (string.IsNullOrWhiteSpace(name))
@@ -1314,8 +1241,7 @@ public sealed class PathfinderNativeIntegrationTests
 
             return map;
         }
-        catch
-        {
+        catch {
             return map;
         }
     }
@@ -1326,8 +1252,7 @@ public sealed class PathfinderNativeIntegrationTests
             return [];
 
         var positions = new List<RoomPosition>();
-        foreach (var entry in pathElement.EnumerateArray())
-        {
+        foreach (var entry in pathElement.EnumerateArray()) {
             if (entry.ValueKind != JsonValueKind.Array)
                 continue;
 
@@ -1344,8 +1269,9 @@ public sealed class PathfinderNativeIntegrationTests
 
             if (roomElement.ValueKind != JsonValueKind.String ||
                 xElement.ValueKind != JsonValueKind.Number ||
-                yElement.ValueKind != JsonValueKind.Number)
+                yElement.ValueKind != JsonValueKind.Number) {
                 continue;
+            }
 
             var roomName = roomElement.GetString();
             if (string.IsNullOrEmpty(roomName))
@@ -1361,22 +1287,13 @@ public sealed class PathfinderNativeIntegrationTests
     private static byte[] CreatePortalMatrix(int edgeY)
     {
         var matrix = new byte[RoomArea];
-        for (var y = 0; y < 50; y++)
-        {
-            for (var x = 0; x < 50; x++)
-            {
-                var index = y * 50 + x;
+        for (var y = 0; y < 50; y++) {
+            for (var x = 0; x < 50; x++) {
+                var index = (y * 50) + x;
                 matrix[index] = y == edgeY ? (x == 25 ? (byte)0 : (byte)255) : (byte)0;
             }
         }
 
-        return matrix;
-    }
-
-    private static byte[] CreateBlockedMatrix()
-    {
-        var matrix = new byte[RoomArea];
-        Array.Fill(matrix, byte.MaxValue);
         return matrix;
     }
 
@@ -1396,9 +1313,9 @@ public sealed class PathfinderNativeIntegrationTests
         PathfinderOptions Options,
         RegressionExpectation Expected);
 
-public sealed record RegressionExpectation(
-    IReadOnlyList<RoomPosition> Path,
-    int Operations,
-    int Cost,
-    bool Incomplete);
+    public sealed record RegressionExpectation(
+        IReadOnlyList<RoomPosition> Path,
+        int Operations,
+        int Cost,
+        bool Incomplete);
 }

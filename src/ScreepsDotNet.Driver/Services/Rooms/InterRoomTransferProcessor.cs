@@ -36,8 +36,7 @@ internal sealed class InterRoomTransferProcessor(IMongoDatabaseProvider database
         var activatedRooms = new HashSet<string>(StringComparer.Ordinal);
         var processed = 0;
 
-        foreach (var document in pending)
-        {
+        foreach (var document in pending) {
             if (!TryParseDestination(document.InterRoom, out var destination))
                 continue;
 
@@ -70,8 +69,9 @@ internal sealed class InterRoomTransferProcessor(IMongoDatabaseProvider database
             return false;
 
         if (!source.TryGetValue(RoomDocumentFields.RoomObject.InterRoomFields.Room, out var roomValue) ||
-            roomValue.IsString == false)
+!roomValue.IsString) {
             return false;
+        }
 
         var roomName = roomValue.AsString;
         if (string.IsNullOrWhiteSpace(roomName))

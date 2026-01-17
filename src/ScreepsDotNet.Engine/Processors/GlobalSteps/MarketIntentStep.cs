@@ -29,18 +29,15 @@ internal sealed class MarketIntentStep : IGlobalProcessorStep
         var orderMap = BuildOrderMap(context.State.Market.Orders);
         var terminalsByRoom = BuildTerminalMap(context);
 
-        foreach (var (userId, intentSnapshot) in context.UserIntentsByUser)
-        {
+        foreach (var (userId, intentSnapshot) in context.UserIntentsByUser) {
             if (string.IsNullOrWhiteSpace(userId))
                 continue;
 
             if (!context.UsersById.TryGetValue(userId, out var userState))
                 continue;
 
-            foreach (var record in intentSnapshot.Intents)
-            {
-                switch (record.Name)
-                {
+            foreach (var record in intentSnapshot.Intents) {
+                switch (record.Name) {
                     case GlobalIntentTypes.CreateOrder:
                         ProcessCreateOrders(record.Arguments, context, userId, terminalsByRoom, orderMap);
                         break;
@@ -52,6 +49,8 @@ internal sealed class MarketIntentStep : IGlobalProcessorStep
                         break;
                     case GlobalIntentTypes.ExtendOrder:
                         ProcessExtendOrders(record.Arguments, context, userId, orderMap);
+                        break;
+                    default:
                         break;
                 }
             }
@@ -67,8 +66,7 @@ internal sealed class MarketIntentStep : IGlobalProcessorStep
         IReadOnlyDictionary<string, RoomObjectSnapshot> terminalsByRoom,
         Dictionary<string, OrderState> orderMap)
     {
-        foreach (var argument in arguments)
-        {
+        foreach (var argument in arguments) {
             var orderType = GetText(argument, "type");
             if (!IsValidOrderType(orderType))
                 continue;
@@ -133,8 +131,7 @@ internal sealed class MarketIntentStep : IGlobalProcessorStep
         string userId,
         Dictionary<string, OrderState> orderMap)
     {
-        foreach (var argument in arguments)
-        {
+        foreach (var argument in arguments) {
             var orderId = GetText(argument, "orderId");
             if (string.IsNullOrWhiteSpace(orderId))
                 continue;
@@ -156,8 +153,7 @@ internal sealed class MarketIntentStep : IGlobalProcessorStep
         string userId,
         Dictionary<string, OrderState> orderMap)
     {
-        foreach (var argument in arguments)
-        {
+        foreach (var argument in arguments) {
             var orderId = GetText(argument, "orderId");
             if (string.IsNullOrWhiteSpace(orderId))
                 continue;
@@ -173,8 +169,7 @@ internal sealed class MarketIntentStep : IGlobalProcessorStep
 
             var currentOrder = state.Snapshot;
             var priceDelta = newPrice - currentOrder.Price;
-            if (priceDelta > 0)
-            {
+            if (priceDelta > 0) {
                 var fee = Math.Ceiling(priceDelta * currentOrder.RemainingAmount * ScreepsGameConstants.MarketFee);
                 if (!TryDebitUser(context, userId, fee, out var newBalance))
                     continue;
@@ -202,8 +197,7 @@ internal sealed class MarketIntentStep : IGlobalProcessorStep
         string userId,
         Dictionary<string, OrderState> orderMap)
     {
-        foreach (var argument in arguments)
-        {
+        foreach (var argument in arguments) {
             var orderId = GetText(argument, "orderId");
             if (string.IsNullOrWhiteSpace(orderId))
                 continue;
@@ -250,8 +244,7 @@ internal sealed class MarketIntentStep : IGlobalProcessorStep
     private static Dictionary<string, OrderState> BuildOrderMap(IReadOnlyList<MarketOrderSnapshot> orders)
     {
         var map = new Dictionary<string, OrderState>(StringComparer.Ordinal);
-        foreach (var order in orders)
-        {
+        foreach (var order in orders) {
             if (string.IsNullOrWhiteSpace(order.Id))
                 continue;
 
@@ -265,8 +258,7 @@ internal sealed class MarketIntentStep : IGlobalProcessorStep
     {
         var terminals = context.GetObjectsOfType(RoomObjectTypes.Terminal);
         var dictionary = new Dictionary<string, RoomObjectSnapshot>(StringComparer.Ordinal);
-        foreach (var terminal in terminals)
-        {
+        foreach (var terminal in terminals) {
             if (string.IsNullOrWhiteSpace(terminal.RoomName))
                 continue;
             dictionary[terminal.RoomName] = terminal;
@@ -341,6 +333,10 @@ internal sealed class MarketIntentStep : IGlobalProcessorStep
         {
             IntentFieldValueKind.Text => value.TextValue,
             IntentFieldValueKind.Number => value.NumberValue?.ToString(),
+            IntentFieldValueKind.Boolean => throw new NotImplementedException(),
+            IntentFieldValueKind.TextArray => throw new NotImplementedException(),
+            IntentFieldValueKind.NumberArray => throw new NotImplementedException(),
+            IntentFieldValueKind.BodyPartArray => throw new NotImplementedException(),
             _ => value.TextValue
         };
     }
@@ -354,6 +350,11 @@ internal sealed class MarketIntentStep : IGlobalProcessorStep
         return value.Kind switch
         {
             IntentFieldValueKind.Number when value.NumberValue.HasValue => TryConvertInt(value.NumberValue.Value, out result),
+            IntentFieldValueKind.Text => throw new NotImplementedException(),
+            IntentFieldValueKind.Boolean => throw new NotImplementedException(),
+            IntentFieldValueKind.TextArray => throw new NotImplementedException(),
+            IntentFieldValueKind.NumberArray => throw new NotImplementedException(),
+            IntentFieldValueKind.BodyPartArray => throw new NotImplementedException(),
             _ => false
         };
     }
@@ -370,8 +371,7 @@ internal sealed class MarketIntentStep : IGlobalProcessorStep
         if (!argument.Fields.TryGetValue(field, out var value))
             return false;
 
-        if (value.Kind == IntentFieldValueKind.Number && value.NumberValue.HasValue)
-        {
+        if (value.Kind == IntentFieldValueKind.Number && value.NumberValue.HasValue) {
             result = value.NumberValue.Value;
             return true;
         }

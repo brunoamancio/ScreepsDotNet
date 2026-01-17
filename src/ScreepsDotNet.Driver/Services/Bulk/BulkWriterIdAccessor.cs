@@ -23,8 +23,7 @@ internal static class BulkWriterIdAccessors
     {
         return new BulkWriterIdAccessor<TDocument>
         {
-            GetId = entity =>
-            {
+            GetId = entity => {
                 var id = getter(entity);
                 return id == ObjectId.Empty ? null : id.ToString();
             },
@@ -60,8 +59,7 @@ internal static class BulkWriterIdAccessors
     {
         return new BulkWriterIdAccessor<BsonDocument>
         {
-            GetId = document =>
-            {
+            GetId = document => {
                 if (!document.TryGetValue(MongoDocumentFields.Id, out var value))
                     return null;
                 return value switch

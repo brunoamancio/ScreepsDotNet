@@ -52,7 +52,7 @@ internal sealed class MapAssetsUpdateCommand(IMapControlService mapControlServic
         var displayName = string.IsNullOrWhiteSpace(reference.ShardName) ? reference.RoomName : $"{reference.ShardName}/{reference.RoomName}";
 
         if (settings.OutputJson) {
-            OutputFormatter.WriteJson(new { Room = reference.RoomName, reference.ShardName, Full = settings.Full, queued = true });
+            OutputFormatter.WriteJson(new { Room = reference.RoomName, reference.ShardName, settings.Full, queued = true });
             return 0;
         }
 

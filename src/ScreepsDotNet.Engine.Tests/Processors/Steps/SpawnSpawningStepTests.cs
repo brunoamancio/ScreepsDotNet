@@ -155,19 +155,18 @@ public sealed class SpawnSpawningStepTests
             Structure: null,
             Effects: new Dictionary<string, object?>(Comparer),
             Spawning: null,
-            Body: new List<CreepBodyPartSnapshot>
-            {
+            Body:
+            [
                 new(BodyPartType.Move, ScreepsGameConstants.BodyPartHitPoints, null)
-            },
+            ],
             IsSpawning: spawning);
 
     private static IReadOnlyList<RoomObjectSnapshot> CreateRingOfWalls(RoomObjectSnapshot spawn, RoomObjectSnapshot? skip = null)
     {
         var walls = new List<RoomObjectSnapshot>();
-        foreach (var offset in SpawnSpawningStep.DirectionOffsets.Values)
-        {
-            var targetX = spawn.X + offset.X;
-            var targetY = spawn.Y + offset.Y;
+        foreach (var (X, Y) in SpawnSpawningStep.DirectionOffsets.Values) {
+            var targetX = spawn.X + X;
+            var targetY = spawn.Y + Y;
             if (skip is not null && skip.X == targetX && skip.Y == targetY)
                 continue;
 

@@ -34,8 +34,7 @@ public sealed class RoomMutationDispatcherTests
 
         Assert.True(objectsWriter.ExecuteCalled);
         Assert.Collection(objectsWriter.Updates,
-            update =>
-            {
+            update => {
                 Assert.Equal("obj1", update.Id);
                 var doc = BsonDocument.Parse(update.DeltaJson);
                 Assert.Equal(100, doc["hits"].AsInt32);
@@ -45,15 +44,13 @@ public sealed class RoomMutationDispatcherTests
         Assert.NotNull(roomService.MapView);
 
         var eventLogJson = roomService.EventLog!.Split(':', 2)[1];
-        using (var document = JsonDocument.Parse(eventLogJson))
-        {
+        using (var document = JsonDocument.Parse(eventLogJson)) {
             Assert.Equal("W0N0", document.RootElement.GetProperty("room").GetString());
             Assert.Equal(123, document.RootElement.GetProperty("tick").GetInt32());
         }
 
         var mapViewJson = roomService.MapView!.Split(':', 2)[1];
-        using (var document = JsonDocument.Parse(mapViewJson))
-        {
+        using (var document = JsonDocument.Parse(mapViewJson)) {
             Assert.Equal("W0N0", document.RootElement.GetProperty("room").GetString());
             Assert.Equal(1, document.RootElement.GetProperty("timestamp").GetInt64());
         }
@@ -83,8 +80,7 @@ public sealed class RoomMutationDispatcherTests
 
         Assert.True(roomsWriter.ExecuteCalled);
         Assert.Collection(roomsWriter.Updates,
-            update =>
-            {
+            update => {
                 Assert.Equal("W1N1", update.Id);
                 var doc = BsonDocument.Parse(update.DeltaJson);
                 Assert.Equal("normal", doc["status"].AsString);

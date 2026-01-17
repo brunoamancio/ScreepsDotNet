@@ -19,8 +19,7 @@ internal static class RoomExitTopologyBuilder
         var accessible = new HashSet<string>(roomNames, StringComparer.Ordinal);
         var result = new Dictionary<string, RoomExitTopology>(roomNames.Count, StringComparer.Ordinal);
 
-        foreach (var roomName in roomNames)
-        {
+        foreach (var roomName in roomNames) {
             if (!terrainByRoom.TryGetValue(roomName, out var terrain) || string.IsNullOrEmpty(terrain))
                 continue;
 
@@ -69,35 +68,32 @@ internal static class RoomExitTopologyBuilder
     private static int CountEdgeExits(RoomEdge edge, string terrain)
     {
         var count = 0;
-        switch (edge)
-        {
+        switch (edge) {
             case RoomEdge.Top:
-                for (var x = 0; x < RoomSize; x++)
-                {
+                for (var x = 0; x < RoomSize; x++) {
                     if (IsWalkable(terrain, x, 0))
                         count++;
                 }
                 break;
             case RoomEdge.Right:
-                for (var y = 0; y < RoomSize; y++)
-                {
+                for (var y = 0; y < RoomSize; y++) {
                     if (IsWalkable(terrain, RoomSize - 1, y))
                         count++;
                 }
                 break;
             case RoomEdge.Bottom:
-                for (var x = 0; x < RoomSize; x++)
-                {
+                for (var x = 0; x < RoomSize; x++) {
                     if (IsWalkable(terrain, x, RoomSize - 1))
                         count++;
                 }
                 break;
             case RoomEdge.Left:
-                for (var y = 0; y < RoomSize; y++)
-                {
+                for (var y = 0; y < RoomSize; y++) {
                     if (IsWalkable(terrain, 0, y))
                         count++;
                 }
+                break;
+            default:
                 break;
         }
 

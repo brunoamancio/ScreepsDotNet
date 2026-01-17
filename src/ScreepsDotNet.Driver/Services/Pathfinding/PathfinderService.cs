@@ -20,16 +20,14 @@ internal sealed class PathfinderService(ILogger<PathfinderService>? logger = nul
 
         var nativeRooms = new List<TerrainRoomData>();
 
-        foreach (var room in terrainData)
-        {
+        foreach (var room in terrainData) {
             token.ThrowIfCancellationRequested();
 
             if (string.IsNullOrWhiteSpace(room.RoomName) || room.TerrainBytes is not { Length: > 0 })
                 continue;
 
             var packed = TryPackTerrain(room.TerrainBytes);
-            if (packed is null)
-            {
+            if (packed is null) {
                 _logger?.LogWarning("Room {Room} terrain could not be converted for the native pathfinder.", room.RoomName);
                 continue;
             }
@@ -43,14 +41,12 @@ internal sealed class PathfinderService(ILogger<PathfinderService>? logger = nul
         if (!PathfinderNative.TryInitialize(_logger))
             throw new InvalidOperationException("Native pathfinder library not found. Ensure native binaries are downloaded before initialization.");
 
-        try
-        {
+        try {
             PathfinderNative.LoadTerrain(nativeRooms);
             _nativeReady = true;
             _logger?.LogInformation("Native pathfinder initialized with {Count} rooms.", nativeRooms.Count);
         }
-        catch (Exception ex)
-        {
+        catch (Exception ex) {
             throw new InvalidOperationException("Native pathfinder initialization failed.", ex);
         }
 
@@ -88,15 +84,13 @@ internal sealed class PathfinderService(ILogger<PathfinderService>? logger = nul
             return null;
 
         var packed = new byte[PackedTerrainBytes];
-        for (var x = 0; x < RoomSize; x++)
-        {
-            for (var y = 0; y < RoomSize; y++)
-            {
-                var terrainIndex = y * RoomSize + x;
+        for (var x = 0; x < RoomSize; x++) {
+            for (var y = 0; y < RoomSize; y++) {
+                var terrainIndex = (y * RoomSize) + x;
                 var value = (byte)(codes[terrainIndex] & 0x03);
-                var ii = x * RoomSize + y;
+                var ii = (x * RoomSize) + y;
                 var bucket = ii / 4;
-                var shift = (ii % 4) * 2;
+                var shift = ii % 4 * 2;
                 var mask = (byte)(0x03 << shift);
                 packed[bucket] = (byte)((packed[bucket] & ~mask) | (value << shift));
             }
@@ -110,8 +104,7 @@ internal sealed class PathfinderService(ILogger<PathfinderService>? logger = nul
         if (data.Length == PackedTerrainBytes)
             return UnpackPackedTerrain(data);
 
-        if (data.Length == RoomArea)
-        {
+        if (data.Length == RoomArea) {
             var codes = new byte[RoomArea];
             for (var i = 0; i < RoomArea; i++)
                 codes[i] = NormalizeCode(data[i]);
@@ -131,15 +124,13 @@ internal sealed class PathfinderService(ILogger<PathfinderService>? logger = nul
     private static byte[] UnpackPackedTerrain(byte[] packed)
     {
         var codes = new byte[RoomArea];
-        for (var x = 0; x < RoomSize; x++)
-        {
-            for (var y = 0; y < RoomSize; y++)
-            {
-                var ii = x * RoomSize + y;
+        for (var x = 0; x < RoomSize; x++) {
+            for (var y = 0; y < RoomSize; y++) {
+                var ii = (x * RoomSize) + y;
                 var bucket = ii / 4;
-                var shift = (ii % 4) * 2;
+                var shift = ii % 4 * 2;
                 var value = (byte)((packed[bucket] >> shift) & 0x03);
-                var terrainIndex = y * RoomSize + x;
+                var terrainIndex = (y * RoomSize) + x;
                 codes[terrainIndex] = value;
             }
         }

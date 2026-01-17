@@ -9,8 +9,7 @@ internal static class OutputFormatParser
             return false;
         }
 
-        switch (value.Trim().ToLowerInvariant())
-        {
+        switch (value.Trim().ToLowerInvariant()) {
             case "table":
                 format = OutputFormat.Table;
                 return true;

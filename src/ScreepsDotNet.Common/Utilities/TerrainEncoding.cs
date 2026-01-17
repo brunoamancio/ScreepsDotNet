@@ -13,20 +13,17 @@ public static class TerrainEncoding
 
     public static bool TryDecode(char value, out int mask)
     {
-        if (value is >= '0' and <= '9')
-        {
+        if (value is >= '0' and <= '9') {
             mask = value - '0';
             return true;
         }
 
-        if (value is >= 'a' and <= 'z')
-        {
+        if (value is >= 'a' and <= 'z') {
             mask = 10 + (value - 'a');
             return true;
         }
 
-        if (value is >= 'A' and <= 'Z')
-        {
+        if (value is >= 'A' and <= 'Z') {
             mask = 10 + (value - 'A');
             return true;
         }

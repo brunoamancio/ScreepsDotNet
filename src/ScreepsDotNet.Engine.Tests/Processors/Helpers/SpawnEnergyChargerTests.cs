@@ -31,9 +31,9 @@ public sealed class SpawnEnergyChargerTests
 
         Assert.True(result.Success);
         var writer = (FakeMutationWriter)context.MutationWriter;
-        var patch = Assert.Single(writer.Patches);
-        Assert.Equal(spawn.Id, patch.ObjectId);
-        Assert.Equal(50, patch.Payload.Store![RoomDocumentFields.RoomObject.Store.Energy]);
+        var (ObjectId, Payload) = Assert.Single(writer.Patches);
+        Assert.Equal(spawn.Id, ObjectId);
+        Assert.Equal(50, Payload.Store![RoomDocumentFields.RoomObject.Store.Energy]);
         Assert.Equal(50, ledger[spawn.Id]);
         Assert.Equal(150, _stats.LastEnergyIncrement);
     }
@@ -50,8 +50,8 @@ public sealed class SpawnEnergyChargerTests
 
         Assert.True(result.Success);
         var writer = (FakeMutationWriter)context.MutationWriter;
-        var extensionPatch = Assert.Single(writer.Patches, p => p.ObjectId == extension.Id);
-        Assert.Equal(20, extensionPatch.Payload.Store![RoomDocumentFields.RoomObject.Store.Energy]);
+        var (ObjectId, Payload) = Assert.Single(writer.Patches, p => p.ObjectId == extension.Id);
+        Assert.Equal(20, Payload.Store![RoomDocumentFields.RoomObject.Store.Energy]);
         Assert.False(ledger.ContainsKey(spawn.Id));
         Assert.Equal(20, ledger[extension.Id]);
     }

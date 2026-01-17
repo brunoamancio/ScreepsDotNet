@@ -13,14 +13,12 @@ internal sealed class PowerAbilityCooldownStep : IRoomProcessorStep
 {
     public Task ExecuteAsync(RoomProcessorContext context, CancellationToken token = default)
     {
-        foreach (var obj in context.State.Objects.Values)
-        {
+        foreach (var obj in context.State.Objects.Values) {
             if (obj.Type != RoomObjectTypes.PowerCreep)
                 continue;
 
             int? structureHits = null;
-            if (obj.Structure is not null && obj.Structure.Hits is > 0)
-            {
+            if (obj.Structure is not null && obj.Structure.Hits is > 0) {
                 var reduced = Math.Max((obj.Structure.Hits ?? 0) - 10, 0);
                 if (reduced != obj.Structure.Hits)
                     structureHits = reduced;

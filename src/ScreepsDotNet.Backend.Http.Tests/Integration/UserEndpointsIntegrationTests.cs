@@ -276,8 +276,7 @@ public sealed class UserEndpointsIntegrationTests(IntegrationTestHarness harness
         Assert.NotNull(updatedInbound);
         Assert.False(updatedInbound!.Unread);
 
-        if (inbound.OutMessageId != default)
-        {
+        if (inbound.OutMessageId != default) {
             var counterpart = await messagesCollection.Find(doc => doc.Id == inbound.OutMessageId)
                                                       .FirstOrDefaultAsync(TestContext.Current.CancellationToken);
             Assert.NotNull(counterpart);

@@ -19,13 +19,11 @@ internal sealed class TowerIntentStep(ICreepDeathProcessor deathProcessor) : IRo
         var energyLedger = new Dictionary<string, int>(Comparer);
         var deathEnergyLedger = new Dictionary<string, int>(Comparer);
 
-        foreach (var envelope in intents.Users.Values)
-        {
+        foreach (var envelope in intents.Users.Values) {
             if (envelope?.ObjectIntents is null || envelope.ObjectIntents.Count == 0)
                 continue;
 
-            foreach (var (objectId, records) in envelope.ObjectIntents)
-            {
+            foreach (var (objectId, records) in envelope.ObjectIntents) {
                 if (string.IsNullOrWhiteSpace(objectId) || records.Count == 0)
                     continue;
 
@@ -54,8 +52,7 @@ internal sealed class TowerIntentStep(ICreepDeathProcessor deathProcessor) : IRo
         if (!context.State.Objects.TryGetValue(targetId, out var target))
             return;
 
-        switch (record.Name)
-        {
+        switch (record.Name) {
             case "attack":
                 HandleAttack(context, tower, target, energyLedger, deathEnergyLedger);
                 break;
@@ -64,6 +61,8 @@ internal sealed class TowerIntentStep(ICreepDeathProcessor deathProcessor) : IRo
                 break;
             case "repair":
                 HandleRepair(context, tower, target, energyLedger);
+                break;
+            default:
                 break;
         }
     }
@@ -137,8 +136,7 @@ internal sealed class TowerIntentStep(ICreepDeathProcessor deathProcessor) : IRo
 
         var hits = target.Hits ?? 0;
         var remaining = Math.Max(hits - damage, 0);
-        if (remaining > 0)
-        {
+        if (remaining > 0) {
             context.MutationWriter.Patch(target.Id, new RoomObjectPatchPayload
             {
                 Hits = remaining
@@ -155,7 +153,7 @@ internal sealed class TowerIntentStep(ICreepDeathProcessor deathProcessor) : IRo
     private static bool TryConsumeEnergy(RoomProcessorContext context, RoomObjectSnapshot tower, Dictionary<string, int> energyLedger)
     {
         const string key = RoomDocumentFields.RoomObject.Store.Energy;
-        var current = energyLedger.TryGetValue(tower.Id, out var overrideValue) ? overrideValue : (tower.Store.GetValueOrDefault(key, 0));
+        var current = energyLedger.TryGetValue(tower.Id, out var overrideValue) ? overrideValue : tower.Store.GetValueOrDefault(key, 0);
         if (current < ScreepsGameConstants.TowerEnergyCost)
             return false;
 
@@ -184,7 +182,7 @@ internal sealed class TowerIntentStep(ICreepDeathProcessor deathProcessor) : IRo
         var clampedRange = Math.Min(range, falloffRange);
         var numerator = clampedRange - optimalRange;
         var denominator = Math.Max(falloffRange - optimalRange, 1);
-        var amount = basePower - basePower * ScreepsGameConstants.TowerFalloff * numerator / denominator;
+        var amount = basePower - (basePower * ScreepsGameConstants.TowerFalloff * numerator / denominator);
         return (int)Math.Floor(amount);
     }
 
@@ -202,6 +200,10 @@ internal sealed class TowerIntentStep(ICreepDeathProcessor deathProcessor) : IRo
         {
             IntentFieldValueKind.Text => value.TextValue ?? string.Empty,
             IntentFieldValueKind.Number => value.NumberValue?.ToString() ?? string.Empty,
+            IntentFieldValueKind.Boolean => throw new NotImplementedException(),
+            IntentFieldValueKind.TextArray => throw new NotImplementedException(),
+            IntentFieldValueKind.NumberArray => throw new NotImplementedException(),
+            IntentFieldValueKind.BodyPartArray => throw new NotImplementedException(),
             _ => string.Empty
         };
 
@@ -210,13 +212,13 @@ internal sealed class TowerIntentStep(ICreepDeathProcessor deathProcessor) : IRo
 
     private static RoomObjectSnapshot ResolveRampartTarget(RoomProcessorContext context, RoomObjectSnapshot target)
     {
-        foreach (var obj in context.State.Objects.Values)
-        {
+        foreach (var obj in context.State.Objects.Values) {
             if (string.Equals(obj.Type, RoomObjectTypes.Rampart, StringComparison.Ordinal) &&
                 obj.X == target.X &&
                 obj.Y == target.Y &&
-                string.Equals(obj.RoomName, target.RoomName, StringComparison.Ordinal))
+                string.Equals(obj.RoomName, target.RoomName, StringComparison.Ordinal)) {
                 return obj;
+            }
         }
 
         return target;

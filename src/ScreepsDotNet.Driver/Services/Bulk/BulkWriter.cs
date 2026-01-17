@@ -57,8 +57,7 @@ internal sealed class BulkWriter<TDocument>(
             return;
 
         var normalized = NormalizeId(id);
-        if (_inserts.Remove(normalized, out var pendingInsert))
-        {
+        if (_inserts.Remove(normalized, out var pendingInsert)) {
             _insertLookup.Remove(pendingInsert.Source);
             return;
         }
@@ -69,8 +68,7 @@ internal sealed class BulkWriter<TDocument>(
     public void Remove(TDocument entity)
     {
         ArgumentNullException.ThrowIfNull(entity);
-        if (_insertLookup.Remove(entity, out var pendingId))
-        {
+        if (_insertLookup.Remove(entity, out var pendingId)) {
             _inserts.Remove(pendingId);
             return;
         }
@@ -116,14 +114,12 @@ internal sealed class BulkWriter<TDocument>(
         var models = new List<WriteModel<TDocument>>(_operations.Count + _updates.Count + _inserts.Count);
         models.AddRange(_operations);
 
-        foreach (var (id, updateDocument) in _updates)
-        {
+        foreach (var (id, updateDocument) in _updates) {
             var update = new BsonDocument("$set", updateDocument);
             models.Add(new UpdateOneModel<TDocument>(idAccessor.CreateFilter(id), new BsonDocumentUpdateDefinition<TDocument>(update)));
         }
 
-        foreach (var entry in _inserts.Values)
-        {
+        foreach (var entry in _inserts.Values) {
             var entity = BsonSerializer.Deserialize<TDocument>(entry.Document);
             models.Add(new InsertOneModel<TDocument>(entity));
         }
@@ -142,14 +138,12 @@ internal sealed class BulkWriter<TDocument>(
 
     private void StageUpdate(string id, BsonDocument document)
     {
-        if (_inserts.TryGetValue(id, out var entry))
-        {
+        if (_inserts.TryGetValue(id, out var entry)) {
             DocumentUtilities.Merge(entry.Document, document);
             return;
         }
 
-        if (_updates.TryGetValue(id, out var existing))
-        {
+        if (_updates.TryGetValue(id, out var existing)) {
             DocumentUtilities.Merge(existing, document);
             return;
         }
@@ -159,29 +153,25 @@ internal sealed class BulkWriter<TDocument>(
 
     private string EnsureInsertId(TDocument entity, BsonDocument document, string? explicitId)
     {
-        if (!string.IsNullOrWhiteSpace(explicitId))
-        {
+        if (!string.IsNullOrWhiteSpace(explicitId)) {
             var normalized = NormalizeId(explicitId);
             document[MongoDocumentFields.Id] = idAccessor.CreateBsonValue(normalized);
             idAccessor.AssignId?.Invoke(entity, normalized);
             return normalized;
         }
 
-        if (idAccessor.GetId?.Invoke(entity) is { Length: > 0 } existingId)
-        {
+        if (idAccessor.GetId?.Invoke(entity) is { Length: > 0 } existingId) {
             document[MongoDocumentFields.Id] = idAccessor.CreateBsonValue(existingId);
             return existingId;
         }
 
-        if (document.TryGetValue(MongoDocumentFields.Id, out var value))
-        {
+        if (document.TryGetValue(MongoDocumentFields.Id, out var value)) {
             var fromDocument = DocumentUtilities.ExtractStringId(value);
             if (!string.IsNullOrWhiteSpace(fromDocument))
                 return fromDocument;
         }
 
-        if (idAccessor.GenerateId is { } generator)
-        {
+        if (idAccessor.GenerateId is { } generator) {
             var generated = generator();
             document[MongoDocumentFields.Id] = idAccessor.CreateBsonValue(generated);
             idAccessor.AssignId?.Invoke(entity, generated);
@@ -209,8 +199,7 @@ internal sealed class BulkWriter<TDocument>(
         DocumentUtilities.Merge(entityDocument, delta);
         DocumentUtilities.CopyToEntity(entityDocument, entity);
 
-        foreach (var element in delta.ToList())
-        {
+        foreach (var element in delta.ToList()) {
             if (element.Value is not BsonDocument)
                 continue;
 
@@ -248,13 +237,10 @@ internal sealed class BulkWriter<TDocument>(
 
         public static void RemoveHidden(BsonValue value)
         {
-            if (value is BsonDocument document)
-            {
+            if (value is BsonDocument document) {
                 var keys = document.Names.ToList();
-                foreach (var key in keys)
-                {
-                    if (key.Length > 0 && key[0] == '_')
-                    {
+                foreach (var key in keys) {
+                    if (key.Length > 0 && key[0] == '_') {
                         document.Remove(key);
                         continue;
                     }
@@ -267,8 +253,7 @@ internal sealed class BulkWriter<TDocument>(
                 return;
             }
 
-            if (value is BsonArray array)
-            {
+            if (value is BsonArray array) {
                 foreach (var item in array)
                     RemoveHidden(item);
             }
@@ -276,10 +261,8 @@ internal sealed class BulkWriter<TDocument>(
 
         public static void Merge(BsonDocument target, BsonDocument source)
         {
-            foreach (var element in source)
-            {
-                if (element.Value is BsonDocument child && target.TryGetValue(element.Name, out var existing) && existing is BsonDocument existingDocument)
-                {
+            foreach (var element in source) {
+                if (element.Value is BsonDocument child && target.TryGetValue(element.Name, out var existing) && existing is BsonDocument existingDocument) {
                     Merge(existingDocument, child);
                     continue;
                 }
@@ -300,8 +283,7 @@ internal sealed class BulkWriter<TDocument>(
 
         public static void CopyToEntity(BsonDocument document, TDocument entity)
         {
-            if (entity is BsonDocument bsonDocument)
-            {
+            if (entity is BsonDocument bsonDocument) {
                 bsonDocument.Clear();
                 bsonDocument.Merge(document);
                 return;
@@ -319,8 +301,7 @@ internal sealed class BulkWriter<TDocument>(
 
         public static void Copy(T source, T destination)
         {
-            foreach (var memberMap in ClassMap.AllMemberMaps)
-            {
+            foreach (var memberMap in ClassMap.AllMemberMaps) {
                 if (memberMap.Setter is null)
                     continue;
 

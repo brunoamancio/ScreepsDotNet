@@ -20,8 +20,7 @@ internal sealed class MainLoopGlobalProcessor(
 
         var snapshot = await snapshotProvider.GetSnapshotAsync(token).ConfigureAwait(false);
 
-        if (engineHost is not null)
-        {
+        if (engineHost is not null) {
             await engineHost.RunGlobalAsync(snapshot.GameTime, token).ConfigureAwait(false);
             logger?.LogDebug(
                 "Engine global processor ran at tick {GameTime} ({Rooms} accessible rooms, {Creeps} moving creeps).",

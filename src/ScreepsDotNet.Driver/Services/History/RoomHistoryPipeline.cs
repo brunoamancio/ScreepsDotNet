@@ -27,12 +27,10 @@ internal sealed class RoomHistoryPipeline : IDisposable
 
     private async Task PublishArtifactsSafeAsync(RoomHistorySavedEventArgs args)
     {
-        try
-        {
+        try {
             await PublishArtifactsAsync(args).ConfigureAwait(false);
         }
-        catch (Exception ex)
-        {
+        catch (Exception ex) {
             _logger?.LogError(ex, "Room history pipeline failed for {Room} baseTick {BaseTick}.", args.RoomName, args.BaseGameTime);
         }
     }

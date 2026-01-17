@@ -5,10 +5,10 @@ using System.Collections.Generic;
 using System.Linq;
 using ScreepsDotNet.Common.Constants;
 using ScreepsDotNet.Common.Types;
+using ScreepsDotNet.Common.Utilities;
 using ScreepsDotNet.Driver.Contracts;
 using ScreepsDotNet.Engine.Processors;
 using ScreepsDotNet.Engine.Processors.Helpers;
-using ScreepsDotNet.Common.Utilities;
 
 /// <summary>
 /// Handles spawn completion (creep birth) and spawn-stomp logic once the spawn timer elapses.
@@ -63,8 +63,7 @@ internal sealed class SpawnSpawningStep(ISpawnStateReader spawnStateReader, ICre
         var tiles = BuildTileMap(context);
         var energyLedger = new Dictionary<string, int>(Comparer);
 
-        foreach (var obj in context.State.Objects.Values)
-        {
+        foreach (var obj in context.State.Objects.Values) {
             if (!string.Equals(obj.Type, RoomObjectTypes.Spawn, StringComparison.Ordinal))
                 continue;
 
@@ -76,15 +75,13 @@ internal sealed class SpawnSpawningStep(ISpawnStateReader spawnStateReader, ICre
                 continue;
 
             var placeholder = runtime.PendingCreep;
-            if (placeholder is null)
-            {
+            if (placeholder is null) {
                 DelaySpawn(context, obj, runtime.Spawning);
                 continue;
             }
 
             var placement = TryPlaceCreep(context, runtime, placeholder, tiles, terrain, energyLedger);
-            if (placement is null)
-            {
+            if (placement is null) {
                 DelaySpawn(context, obj, runtime.Spawning);
                 continue;
             }
@@ -126,8 +123,7 @@ internal sealed class SpawnSpawningStep(ISpawnStateReader spawnStateReader, ICre
         var hostileCandidate = default(RoomObjectSnapshot);
         var hostileCoord = default(TileCoord?);
 
-        foreach (var direction in preferred)
-        {
+        foreach (var direction in preferred) {
             if (!DirectionOffsets.TryGetValue(direction, out var offset))
                 continue;
 
@@ -139,15 +135,13 @@ internal sealed class SpawnSpawningStep(ISpawnStateReader spawnStateReader, ICre
             if (!occupancy.IsBlocked)
                 return CreatePlacement(placeholder, target);
 
-            if (hostileCandidate is null && occupancy.HostileOccupant is not null)
-            {
+            if (hostileCandidate is null && occupancy.HostileOccupant is not null) {
                 hostileCandidate = occupancy.HostileOccupant;
                 hostileCoord = target;
             }
         }
 
-        if (hostileCandidate is not null && hostileCoord is not null && !HasAlternateOpening(spawn, preferred, tiles, terrain))
-        {
+        if (hostileCandidate is not null && hostileCoord is not null && !HasAlternateOpening(spawn, preferred, tiles, terrain)) {
             deathProcessor.Process(
                 context,
                 hostileCandidate,
@@ -167,8 +161,7 @@ internal sealed class SpawnSpawningStep(ISpawnStateReader spawnStateReader, ICre
         Dictionary<TileCoord, TileInfo> tiles,
         TerrainCache terrain)
     {
-        foreach (var direction in AllDirections)
-        {
+        foreach (var direction in AllDirections) {
             if (preferred.Contains(direction))
                 continue;
 
@@ -228,8 +221,7 @@ internal sealed class SpawnSpawningStep(ISpawnStateReader spawnStateReader, ICre
         TileCoord target,
         string? spawnUserId)
     {
-        if (!tiles.TryGetValue(target, out var tile))
-        {
+        if (!tiles.TryGetValue(target, out var tile)) {
             var isWall = terrain.IsWall(target.X, target.Y);
             return isWall ? TileOccupancy.Blocked : TileOccupancy.Open;
         }
@@ -237,18 +229,15 @@ internal sealed class SpawnSpawningStep(ISpawnStateReader spawnStateReader, ICre
         if (terrain.IsWall(target.X, target.Y) && !tile.HasRoad)
             return TileOccupancy.Blocked;
 
-        foreach (var structure in tile.Structures)
-        {
-            if (string.Equals(structure.Type, RoomObjectTypes.Rampart, StringComparison.Ordinal))
-            {
+        foreach (var structure in tile.Structures) {
+            if (string.Equals(structure.Type, RoomObjectTypes.Rampart, StringComparison.Ordinal)) {
                 if (structure.IsPublic == true || string.Equals(structure.UserId, spawnUserId, StringComparison.Ordinal))
                     continue;
 
                 return TileOccupancy.Blocked;
             }
 
-            if (string.Equals(structure.Type, RoomObjectTypes.ConstructionSite, StringComparison.Ordinal))
-            {
+            if (string.Equals(structure.Type, RoomObjectTypes.ConstructionSite, StringComparison.Ordinal)) {
                 if (!BlockingStructures.Contains(structure.StructureType ?? string.Empty))
                     continue;
 
@@ -273,8 +262,7 @@ internal sealed class SpawnSpawningStep(ISpawnStateReader spawnStateReader, ICre
     private static Dictionary<TileCoord, TileInfo> BuildTileMap(RoomProcessorContext context)
     {
         var tiles = new Dictionary<TileCoord, TileInfo>();
-        foreach (var obj in context.State.Objects.Values)
-        {
+        foreach (var obj in context.State.Objects.Values) {
             var key = new TileCoord(obj.X, obj.Y);
             var tile = GetOrCreateTile(tiles, key);
 
@@ -292,8 +280,7 @@ internal sealed class SpawnSpawningStep(ISpawnStateReader spawnStateReader, ICre
 
     private static TileInfo GetOrCreateTile(Dictionary<TileCoord, TileInfo> tiles, TileCoord key)
     {
-        if (!tiles.TryGetValue(key, out var tile))
-        {
+        if (!tiles.TryGetValue(key, out var tile)) {
             tile = new TileInfo();
             tiles[key] = tile;
         }

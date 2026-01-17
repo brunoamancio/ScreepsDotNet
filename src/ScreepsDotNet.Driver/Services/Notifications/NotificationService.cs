@@ -22,8 +22,7 @@ internal sealed class NotificationService(IMongoDatabaseProvider databaseProvide
         ArgumentException.ThrowIfNullOrWhiteSpace(userId);
         ArgumentNullException.ThrowIfNull(payload);
 
-        if (IsNpcUser(userId))
-        {
+        if (IsNpcUser(userId)) {
             if (payload.Log.Count > 0)
                 logger?.LogInformation("[Console:{User}] {Messages}", GetNpcName(userId), string.Join(", ", payload.Log));
             return Task.CompletedTask;
@@ -40,8 +39,7 @@ internal sealed class NotificationService(IMongoDatabaseProvider databaseProvide
 
         var normalized = errorMessage.Trim();
 
-        if (IsNpcUser(userId))
-        {
+        if (IsNpcUser(userId)) {
             logger?.LogWarning("[Console:{User}] {Error}", GetNpcName(userId), normalized);
             return;
         }

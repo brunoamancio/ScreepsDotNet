@@ -26,8 +26,7 @@ internal sealed class RuntimeThrottleRegistry : IRuntimeThrottleRegistry
             return false;
 
         var remaining = until - DateTimeOffset.UtcNow;
-        if (remaining <= TimeSpan.Zero)
-        {
+        if (remaining <= TimeSpan.Zero) {
             _throttledUntil.TryRemove(userId, out _);
             return false;
         }

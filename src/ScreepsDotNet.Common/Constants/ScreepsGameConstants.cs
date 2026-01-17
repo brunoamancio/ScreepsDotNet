@@ -224,8 +224,7 @@ public static class ScreepsGameConstants
 
     public static bool TryGetBodyPartEnergyCost(string documentValue, out int cost)
     {
-        if (!documentValue.TryParseBodyPartType(out var bodyPartType))
-        {
+        if (!documentValue.TryParseBodyPartType(out var bodyPartType)) {
             cost = default;
             return false;
         }

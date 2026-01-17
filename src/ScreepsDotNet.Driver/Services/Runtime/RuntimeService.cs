@@ -8,8 +8,7 @@ internal sealed class RuntimeService(IRuntimeSandboxPool sandboxPool) : IRuntime
     {
         ArgumentNullException.ThrowIfNull(context);
         var sandbox = sandboxPool.Rent();
-        try
-        {
+        try {
             var result = await sandbox.ExecuteAsync(context, token).ConfigureAwait(false);
             if (context.ForceColdSandbox)
                 sandboxPool.Invalidate(sandbox);
@@ -17,8 +16,7 @@ internal sealed class RuntimeService(IRuntimeSandboxPool sandboxPool) : IRuntime
                 sandboxPool.Return(sandbox);
             return result;
         }
-        catch
-        {
+        catch {
             sandboxPool.Invalidate(sandbox);
             throw;
         }

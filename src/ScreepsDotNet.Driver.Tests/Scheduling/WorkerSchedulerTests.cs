@@ -2,8 +2,8 @@ using Microsoft.Extensions.Logging.Abstractions;
 using ScreepsDotNet.Driver.Abstractions;
 using ScreepsDotNet.Driver.Abstractions.Loops;
 using ScreepsDotNet.Driver.Abstractions.Runtime;
-using ScreepsDotNet.Driver.Services.Scheduling;
 using ScreepsDotNet.Driver.Constants;
+using ScreepsDotNet.Driver.Services.Scheduling;
 
 namespace ScreepsDotNet.Driver.Tests.Scheduling;
 

@@ -28,17 +28,14 @@ internal sealed class RunnerLoop(
     {
         _queue ??= queues.GetQueue(QueueNames.Users, QueueMode.Read);
 
-        while (!token.IsCancellationRequested)
-        {
+        while (!token.IsCancellationRequested) {
             string? userId = null;
             int? queueDepth = null;
-            try
-            {
+            try {
                 config.EmitRunnerLoopStage(LoopStageNames.Runner.Start);
                 queueDepth = await _queue.GetPendingCountAsync(token).ConfigureAwait(false);
                 userId = await _queue.FetchAsync(_options.FetchTimeout, token).ConfigureAwait(false);
-                if (string.IsNullOrWhiteSpace(userId))
-                {
+                if (string.IsNullOrWhiteSpace(userId)) {
                     await PublishLoopTelemetryAsync(LoopStageNames.Runner.TelemetryIdle, QueueNames.Users, queueDepth, null, token).ConfigureAwait(false);
                     await Task.Delay(_options.IdleDelay, token).ConfigureAwait(false);
                     continue;
@@ -47,8 +44,7 @@ internal sealed class RunnerLoop(
                 config.EmitRunnerLoopStage(LoopStageNames.Runner.RunUser, userId);
                 await PublishLoopTelemetryAsync(LoopStageNames.Runner.TelemetryDequeue, userId!, queueDepth, null, token).ConfigureAwait(false);
 
-                if (throttleRegistry.TryGetDelay(userId, out var delay) && delay > TimeSpan.Zero)
-                {
+                if (throttleRegistry.TryGetDelay(userId, out var delay) && delay > TimeSpan.Zero) {
                     logger?.LogWarning("Runner loop delaying user {UserId} for {Delay} due to telemetry throttle.", userId, delay);
                     await PublishLoopTelemetryAsync(LoopStageNames.Runner.TelemetryThrottleDelay, userId!, queueDepth, $"delay={delay.TotalMilliseconds:F0}ms", token).ConfigureAwait(false);
                     await Task.Delay(delay, token).ConfigureAwait(false);
@@ -56,24 +52,18 @@ internal sealed class RunnerLoop(
 
                 await worker.HandleUserAsync(userId, queueDepth, token).ConfigureAwait(false);
             }
-            catch (OperationCanceledException) when (token.IsCancellationRequested)
-            {
+            catch (OperationCanceledException) when (token.IsCancellationRequested) {
                 break;
             }
-            catch (Exception ex)
-            {
+            catch (Exception ex) {
                 logger?.LogError(ex, "Runner loop failed for user {UserId}.", userId);
             }
-            finally
-            {
-                if (!string.IsNullOrWhiteSpace(userId))
-                {
-                    try
-                    {
+            finally {
+                if (!string.IsNullOrWhiteSpace(userId)) {
+                    try {
                         await _queue.MarkDoneAsync(userId!, token).ConfigureAwait(false);
                     }
-                    catch (Exception ex)
-                    {
+                    catch (Exception ex) {
                         logger?.LogWarning(ex, "Failed to mark runner queue item {UserId} as done.", userId);
                     }
                 }

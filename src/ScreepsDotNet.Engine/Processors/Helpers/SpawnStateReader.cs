@@ -33,8 +33,7 @@ internal sealed class SpawnStateReader : ISpawnStateReader
         if (string.IsNullOrWhiteSpace(creepName))
             return null;
 
-        foreach (var obj in objects.Values)
-        {
+        foreach (var obj in objects.Values) {
             if (!obj.IsCreep(includePowerCreep: false))
                 continue;
 

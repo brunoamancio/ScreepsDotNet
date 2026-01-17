@@ -12,14 +12,12 @@ internal sealed class RoomSnapshotProvider(IRoomSnapshotBuilder builder) : IRoom
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(roomName);
 
-        while (true)
-        {
+        while (true) {
             if (_cache.TryGetValue(roomName, out var entry) && entry.GameTime == gameTime) return entry.Value.Value;
 
             var newEntry = new SnapshotCacheEntry(gameTime, new Lazy<Task<RoomSnapshot>>(() => builder.BuildAsync(roomName, gameTime, token), LazyThreadSafetyMode.ExecutionAndPublication));
 
-            if (entry is null)
-            {
+            if (entry is null) {
                 if (_cache.TryAdd(roomName, newEntry))
                     return newEntry.Value.Value;
 

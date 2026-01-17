@@ -2,11 +2,11 @@ namespace ScreepsDotNet.Driver.Services.GlobalProcessing;
 
 using System.Collections.Generic;
 using MongoDB.Bson;
+using ScreepsDotNet.Common.Constants;
 using ScreepsDotNet.Driver.Abstractions.Bulk;
 using ScreepsDotNet.Driver.Abstractions.GlobalProcessing;
 using ScreepsDotNet.Driver.Contracts;
 using ScreepsDotNet.Storage.MongoRedis.Repositories.Documents;
-using ScreepsDotNet.Common.Constants;
 
 internal sealed class GlobalMutationDispatcher(IBulkWriterFactory bulkWriterFactory) : IGlobalMutationDispatcher
 {
@@ -29,8 +29,7 @@ internal sealed class GlobalMutationDispatcher(IBulkWriterFactory bulkWriterFact
 
         if (hasPowerOps)
             await powerWriter.ExecuteAsync(token).ConfigureAwait(false);
-        if (hasMarketOps)
-        {
+        if (hasMarketOps) {
             if (marketWriter.HasPendingOperations)
                 await marketWriter.ExecuteAsync(token).ConfigureAwait(false);
             if (interShardWriter.HasPendingOperations)
@@ -47,13 +46,11 @@ internal sealed class GlobalMutationDispatcher(IBulkWriterFactory bulkWriterFact
         if (mutations.Count == 0)
             return false;
 
-        foreach (var mutation in mutations)
-        {
+        foreach (var mutation in mutations) {
             if (string.IsNullOrWhiteSpace(mutation.Id))
                 continue;
 
-            switch (mutation.Type)
-            {
+            switch (mutation.Type) {
                 case PowerCreepMutationType.Patch:
                     if (mutation.Patch is null)
                         continue;
@@ -72,6 +69,8 @@ internal sealed class GlobalMutationDispatcher(IBulkWriterFactory bulkWriterFact
                         continue;
                     var document = PowerCreepDocumentMapper.ToDocument(mutation.Snapshot);
                     writer.Insert(document, NormalizeId(mutation.Id));
+                    break;
+                default:
                     break;
             }
         }
@@ -98,11 +97,9 @@ internal sealed class GlobalMutationDispatcher(IBulkWriterFactory bulkWriterFact
             document[PowerCreepDocumentFields.DeleteTime] = BsonNull.Value;
         if (!string.IsNullOrWhiteSpace(patch.Shard))
             document[PowerCreepDocumentFields.Shard] = patch.Shard;
-        if (patch.Powers is not null && patch.Powers.Count > 0)
-        {
+        if (patch.Powers is not null && patch.Powers.Count > 0) {
             var powers = new BsonDocument();
-            foreach (var (powerId, powerSnapshot) in patch.Powers)
-            {
+            foreach (var (powerId, powerSnapshot) in patch.Powers) {
                 if (string.IsNullOrWhiteSpace(powerId))
                     continue;
                 powers[powerId] = new BsonDocument(PowerCreepDocumentFields.Level, powerSnapshot.Level);
@@ -122,15 +119,13 @@ internal sealed class GlobalMutationDispatcher(IBulkWriterFactory bulkWriterFact
         if (mutations.Count == 0)
             return false;
 
-        foreach (var mutation in mutations)
-        {
+        foreach (var mutation in mutations) {
             if (string.IsNullOrWhiteSpace(mutation.Id))
                 continue;
 
             var writer = mutation.IsInterShard ? interShardWriter : regularWriter;
 
-            switch (mutation.Type)
-            {
+            switch (mutation.Type) {
                 case MarketOrderMutationType.Upsert:
                     if (mutation.Snapshot is null)
                         continue;
@@ -150,6 +145,8 @@ internal sealed class GlobalMutationDispatcher(IBulkWriterFactory bulkWriterFact
                 case MarketOrderMutationType.Remove:
                     writer.Remove(NormalizeId(mutation.Id));
                     break;
+                default:
+                    break;
             }
         }
 
@@ -161,8 +158,7 @@ internal sealed class GlobalMutationDispatcher(IBulkWriterFactory bulkWriterFact
         if (mutations.Count == 0)
             return false;
 
-        foreach (var mutation in mutations)
-        {
+        foreach (var mutation in mutations) {
             if (string.IsNullOrWhiteSpace(mutation.UserId))
                 continue;
 
@@ -178,8 +174,7 @@ internal sealed class GlobalMutationDispatcher(IBulkWriterFactory bulkWriterFact
         if (entries.Count == 0)
             return false;
 
-        foreach (var entry in entries)
-        {
+        foreach (var entry in entries) {
             var document = UserMoneyEntryDocumentMapper.ToDocument(entry);
             writer.Insert(document);
         }

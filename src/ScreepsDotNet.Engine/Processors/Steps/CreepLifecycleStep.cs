@@ -15,19 +15,16 @@ internal sealed class CreepLifecycleStep(ICreepDeathProcessor deathProcessor) : 
     {
         var energyLedger = new Dictionary<string, int>(StringComparer.Ordinal);
 
-        foreach (var obj in context.State.Objects.Values)
-        {
+        foreach (var obj in context.State.Objects.Values) {
             if (!obj.IsCreep())
                 continue;
 
-            if (obj.Hits is <= 0)
-            {
+            if (obj.Hits is <= 0) {
                 deathProcessor.Process(context, obj, new CreepDeathOptions(ViolentDeath: true), energyLedger);
                 continue;
             }
 
-            if (ShouldDespawnUserSummoned(context, obj))
-            {
+            if (ShouldDespawnUserSummoned(context, obj)) {
                 deathProcessor.Process(context, obj, new CreepDeathOptions(), energyLedger);
                 continue;
             }
@@ -35,13 +32,11 @@ internal sealed class CreepLifecycleStep(ICreepDeathProcessor deathProcessor) : 
             int? ticksToLivePatch = null;
             RoomObjectActionLogPatch? actionLogPatch = null;
 
-            if (obj.TicksToLive is > 0)
-            {
+            if (obj.TicksToLive is > 0) {
                 var next = obj.TicksToLive.Value - 1;
                 ticksToLivePatch = next;
 
-                if (next == 0)
-                {
+                if (next == 0) {
                     actionLogPatch = new RoomObjectActionLogPatch(
                         new RoomObjectActionLogDie(context.State.GameTime));
                 }
@@ -54,8 +49,7 @@ internal sealed class CreepLifecycleStep(ICreepDeathProcessor deathProcessor) : 
             if (ticksToLivePatch is null && actionLogPatch is null && fatiguePatch is null)
                 continue;
 
-            if (ShouldExpire(obj))
-            {
+            if (ShouldExpire(obj)) {
                 deathProcessor.Process(
                     context,
                     obj,
@@ -92,8 +86,7 @@ internal sealed class CreepLifecycleStep(ICreepDeathProcessor deathProcessor) : 
 
         var controllerOwner = FindControllerOwner(context.State.Objects);
 
-        foreach (var other in context.State.Objects.Values)
-        {
+        foreach (var other in context.State.Objects.Values) {
             if (ReferenceEquals(other, creep))
                 continue;
 
@@ -105,8 +98,9 @@ internal sealed class CreepLifecycleStep(ICreepDeathProcessor deathProcessor) : 
                 continue;
 
             if (!string.IsNullOrWhiteSpace(controllerOwner) &&
-                string.Equals(otherUser, controllerOwner, StringComparison.Ordinal))
+                string.Equals(otherUser, controllerOwner, StringComparison.Ordinal)) {
                 continue;
+            }
 
             return true;
         }
@@ -116,11 +110,11 @@ internal sealed class CreepLifecycleStep(ICreepDeathProcessor deathProcessor) : 
 
     private static string? FindControllerOwner(IReadOnlyDictionary<string, RoomObjectSnapshot> objects)
     {
-        foreach (var obj in objects.Values)
-        {
+        foreach (var obj in objects.Values) {
             if (string.Equals(obj.Type, RoomObjectTypes.Controller, StringComparison.Ordinal) &&
-                !string.IsNullOrWhiteSpace(obj.UserId))
+                !string.IsNullOrWhiteSpace(obj.UserId)) {
                 return obj.UserId;
+            }
         }
 
         return null;

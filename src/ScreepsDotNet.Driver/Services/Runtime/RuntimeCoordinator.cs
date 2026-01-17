@@ -45,22 +45,19 @@ internal sealed class RuntimeCoordinator(
         ArgumentException.ThrowIfNullOrWhiteSpace(userId);
 
         var user = await userDataService.GetUserAsync(userId, token).ConfigureAwait(false);
-        if (user is null)
-        {
+        if (user is null) {
             logger?.LogWarning("Skipping runtime execution because user {UserId} was not found.", userId);
             return;
         }
 
         var codeDocument = await LoadActiveCodeAsync(userId, token).ConfigureAwait(false);
-        if (codeDocument?.Modules is not { Count: > 0 })
-        {
+        if (codeDocument?.Modules is not { Count: > 0 }) {
             logger?.LogDebug("User {UserId} has no active code modules.", userId);
             return;
         }
 
         var modules = RuntimeModuleBuilder.NormalizeModules(codeDocument.Modules);
-        if (modules.Count == 0 || !modules.ContainsKey(RuntimeModuleNames.Main))
-        {
+        if (modules.Count == 0 || !modules.ContainsKey(RuntimeModuleNames.Main)) {
             logger?.LogDebug("User {UserId} does not have a valid 'main' module.", userId);
             return;
         }
@@ -91,12 +88,10 @@ internal sealed class RuntimeCoordinator(
             forceColdSandbox);
 
         RuntimeExecutionResult result;
-        try
-        {
+        try {
             result = await runtimeService.ExecuteAsync(context, token).ConfigureAwait(false);
         }
-        catch (Exception ex)
-        {
+        catch (Exception ex) {
             logger?.LogError(ex, "Runtime execution failed for user {UserId}.", userId);
             var message = ex.Message?.Trim();
             if (!string.IsNullOrWhiteSpace(message))
@@ -148,13 +143,11 @@ internal sealed class RuntimeCoordinator(
         if (!value.HasValue)
             return new Dictionary<string, object?>(StringComparer.Ordinal);
 
-        try
-        {
+        try {
             return JsonSerializer.Deserialize<Dictionary<string, object?>>(value.ToString(), MemoryJsonOptions)
                    ?? new Dictionary<string, object?>(StringComparer.Ordinal);
         }
-        catch (JsonException)
-        {
+        catch (JsonException) {
             logger?.LogWarning("User {UserId} memory blob is not valid JSON. Resetting to empty object.", userId);
             return new Dictionary<string, object?>(StringComparer.Ordinal);
         }
@@ -167,8 +160,7 @@ internal sealed class RuntimeCoordinator(
             return new Dictionary<int, string>();
 
         var segments = new Dictionary<int, string>(entries.Length);
-        foreach (var entry in entries)
-        {
+        foreach (var entry in entries) {
             if (!entry.Name.HasValue || !int.TryParse(entry.Name.ToString(), out var index))
                 continue;
             segments[index] = entry.Value.HasValue ? entry.Value.ToString() : string.Empty;
@@ -194,8 +186,7 @@ internal sealed class RuntimeCoordinator(
         if (result.InterShardSegment is not null)
             await userDataService.SaveUserInterShardSegmentAsync(userId, result.InterShardSegment, token).ConfigureAwait(false);
 
-        if (result.RoomIntents.Count > 0 || result.GlobalIntents.Count > 0 || result.Notifications.Count > 0)
-        {
+        if (result.RoomIntents.Count > 0 || result.GlobalIntents.Count > 0 || result.Notifications.Count > 0) {
             var rooms = new Dictionary<string, object?>(StringComparer.Ordinal);
             foreach (var (room, intents) in result.RoomIntents)
                 rooms[room] = new Dictionary<string, object?>(intents, StringComparer.OrdinalIgnoreCase);
@@ -204,8 +195,7 @@ internal sealed class RuntimeCoordinator(
             await userDataService.SaveUserIntentsAsync(userId, payload, token).ConfigureAwait(false);
         }
 
-        if (result.ConsoleLog.Count > 0 || result.ConsoleResults.Count > 0)
-        {
+        if (result.ConsoleLog.Count > 0 || result.ConsoleResults.Count > 0) {
             var payload = new ConsoleMessagesPayload(result.ConsoleLog, result.ConsoleResults);
             await loopHooks.PublishConsoleMessagesAsync(userId, payload, token).ConfigureAwait(false);
         }

@@ -3,8 +3,8 @@
 using global::System.ComponentModel;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using ScreepsDotNet.Backend.Cli.Infrastructure;
 using ScreepsDotNet.Backend.Cli.Formatting;
+using ScreepsDotNet.Backend.Cli.Infrastructure;
 using ScreepsDotNet.Backend.Core.Seeding;
 using ScreepsDotNet.Storage.MongoRedis.Options;
 using ScreepsDotNet.Storage.MongoRedis.Seeding;

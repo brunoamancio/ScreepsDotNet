@@ -33,10 +33,8 @@ public sealed class RoomExitTopologyBuilderTests
     private static string BuildTerrain(Func<int, int, bool> isWall)
     {
         var chars = new char[50 * 50];
-        for (var y = 0; y < 50; y++)
-        {
-            for (var x = 0; x < 50; x++)
-            {
+        for (var y = 0; y < 50; y++) {
+            for (var x = 0; x < 50; x++) {
                 var index = (y * 50) + x;
                 chars[index] = isWall(x, y) ? '1' : '0';
             }

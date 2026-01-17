@@ -9,16 +9,14 @@ public sealed class FormattableCommandSettingsTests
     public void PreferredOutputFormat_UsesEnvironmentVariableWhenOptionMissing()
     {
         var original = Environment.GetEnvironmentVariable(FormattableCommandSettings.FormatEnvironmentVariableName);
-        try
-        {
+        try {
             Environment.SetEnvironmentVariable(FormattableCommandSettings.FormatEnvironmentVariableName, "markdown");
             var settings = new TestSettings();
 
             Assert.Equal(OutputFormat.Markdown, settings.PreferredOutputFormat);
             Assert.True(settings.Validate().Successful);
         }
-        finally
-        {
+        finally {
             Environment.SetEnvironmentVariable(FormattableCommandSettings.FormatEnvironmentVariableName, original);
         }
     }

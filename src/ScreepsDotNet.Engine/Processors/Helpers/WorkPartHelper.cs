@@ -22,8 +22,7 @@ internal static class WorkPartHelper
     public static bool TryGetActiveWorkParts(RoomObjectSnapshot creep, out List<CreepBodyPartSnapshot> parts)
     {
         parts = [];
-        foreach (var part in creep.Body)
-        {
+        foreach (var part in creep.Body) {
             if (part.Type == BodyPartType.Work && part.Hits > 0)
                 parts.Add(part);
         }
@@ -41,8 +40,7 @@ internal static class WorkPartHelper
             return Math.Floor(baseEffect);
 
         double additional = 0;
-        foreach (var part in parts)
-        {
+        foreach (var part in parts) {
             if (part.Type != BodyPartType.Work || part.Hits <= 0)
                 continue;
 

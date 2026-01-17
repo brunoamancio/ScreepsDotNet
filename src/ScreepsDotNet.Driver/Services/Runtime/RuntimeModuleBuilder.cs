@@ -9,8 +9,7 @@ internal static class RuntimeModuleBuilder
     {
         ArgumentNullException.ThrowIfNull(modules);
         var normalized = new Dictionary<string, string>(StringComparer.Ordinal);
-        foreach (var (name, code) in modules)
-        {
+        foreach (var (name, code) in modules) {
             if (string.IsNullOrWhiteSpace(name))
                 continue;
             normalized[name.Trim()] = code;
@@ -26,8 +25,7 @@ internal static class RuntimeModuleBuilder
             return string.Empty;
 
         var builder = new StringBuilder();
-        foreach (var (name, code) in modules.OrderBy(pair => pair.Key, StringComparer.Ordinal))
-        {
+        foreach (var (name, code) in modules.OrderBy(pair => pair.Key, StringComparer.Ordinal)) {
             builder.Append(name);
             builder.Append('\n');
             builder.Append(code);
@@ -53,8 +51,7 @@ internal static class RuntimeModuleBuilder
         var builder = new StringBuilder();
         builder.AppendLine("(function(){");
         builder.AppendLine("const modules = {");
-        for (var i = 0; i < ordered.Length; i++)
-        {
+        for (var i = 0; i < ordered.Length; i++) {
             var (name, code) = ordered[i];
             builder.Append('"');
             builder.Append(EscapeModuleName(name));

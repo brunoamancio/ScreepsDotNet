@@ -40,8 +40,7 @@ internal sealed class RoomSnapshotBuilder(IRoomDataService roomDataService) : IR
     private static IReadOnlyDictionary<string, RoomTerrainSnapshot> MapTerrain(IReadOnlyDictionary<string, RoomTerrainDocument> documents)
     {
         var result = new Dictionary<string, RoomTerrainSnapshot>(documents.Count, StringComparer.Ordinal);
-        foreach (var (id, document) in documents)
-        {
+        foreach (var (id, document) in documents) {
             if (document is null) continue;
             result[id] = new RoomTerrainSnapshot(
                 id,
@@ -58,8 +57,7 @@ internal sealed class RoomSnapshotBuilder(IRoomDataService roomDataService) : IR
     {
         if (documents.Count == 0) return [];
         var result = new RoomFlagSnapshot[documents.Count];
-        for (var i = 0; i < documents.Count; i++)
-        {
+        for (var i = 0; i < documents.Count; i++) {
             var doc = documents[i];
             result[i] = new RoomFlagSnapshot(doc.Id ?? string.Empty, doc.UserId, doc.Room ?? string.Empty, doc.Shard, doc.Data);
         }
@@ -100,8 +98,7 @@ internal sealed class RoomSnapshotBuilder(IRoomDataService roomDataService) : IR
         if (objectsManual is null)
             return result;
 
-        foreach (var (objectId, payload) in objectsManual)
-        {
+        foreach (var (objectId, payload) in objectsManual) {
             if (string.IsNullOrWhiteSpace(objectId))
                 continue;
 
@@ -120,8 +117,7 @@ internal sealed class RoomSnapshotBuilder(IRoomDataService roomDataService) : IR
         if (objectsManual is null)
             return result;
 
-        foreach (var (objectId, payload) in objectsManual)
-        {
+        foreach (var (objectId, payload) in objectsManual) {
             if (string.IsNullOrWhiteSpace(objectId))
                 continue;
 
@@ -140,8 +136,7 @@ internal sealed class RoomSnapshotBuilder(IRoomDataService roomDataService) : IR
             return new Dictionary<string, IReadOnlyList<IntentRecord>>(StringComparer.Ordinal);
 
         var result = new Dictionary<string, IReadOnlyList<IntentRecord>>(objectsManual.Count, StringComparer.Ordinal);
-        foreach (var (objectId, payload) in objectsManual)
-        {
+        foreach (var (objectId, payload) in objectsManual) {
             if (string.IsNullOrWhiteSpace(objectId))
                 continue;
 

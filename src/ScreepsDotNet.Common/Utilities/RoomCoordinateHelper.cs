@@ -53,13 +53,11 @@ public static class RoomCoordinateHelper
     /// </summary>
     public static bool TryParse(string roomName, out int x, out int y)
     {
-        try
-        {
+        try {
             (x, y) = ToCoordinates(roomName);
             return true;
         }
-        catch
-        {
+        catch {
             x = 0;
             y = 0;
             return false;
@@ -100,8 +98,7 @@ public static class RoomCoordinateHelper
         var dx = Math.Abs(ax - bx);
         var dy = Math.Abs(ay - by);
 
-        if (wrapWorld && worldSize is { } size && size > 0)
-        {
+        if (wrapWorld && worldSize is { } size && size > 0) {
             dx %= size;
             dy %= size;
             dx = Math.Min(dx, size - dx);

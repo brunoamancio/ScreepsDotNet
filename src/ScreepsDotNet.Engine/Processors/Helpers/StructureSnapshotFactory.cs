@@ -86,8 +86,7 @@ internal sealed class StructureSnapshotFactory : IStructureSnapshotFactory
         var hits = blueprint.Hits.Hits;
         var hitsMax = blueprint.Hits.HitsMax;
 
-        if (blueprint.Road is not null)
-        {
+        if (blueprint.Road is not null) {
             hits = blueprint.Road.BaseHits;
             if (options.OnSwamp)
                 hits *= blueprint.Road.SwampMultiplier;
@@ -96,8 +95,7 @@ internal sealed class StructureSnapshotFactory : IStructureSnapshotFactory
             hitsMax = hits;
         }
 
-        if (blueprint.Rampart is not null && options.ControllerLevel.HasValue)
-        {
+        if (blueprint.Rampart is not null && options.ControllerLevel.HasValue) {
             var level = options.ControllerLevel.Value;
             if (blueprint.Rampart.HitsMaxByControllerLevel.TryGetValue(level, out var rampartHitsMax) && rampartHitsMax > 0)
                 hitsMax = rampartHitsMax;
@@ -118,8 +116,7 @@ internal sealed class StructureSnapshotFactory : IStructureSnapshotFactory
             ? new Dictionary<string, int>(0, Comparer)
             : new Dictionary<string, int>(blueprint.Store.StoreCapacityResource, Comparer);
 
-        if (blueprint.Store.ControllerLevelCapacity is not null && options.ControllerLevel.HasValue)
-        {
+        if (blueprint.Store.ControllerLevelCapacity is not null && options.ControllerLevel.HasValue) {
             var level = options.ControllerLevel.Value;
             if (blueprint.Store.ControllerLevelCapacity.TryGetValue(level, out var capacity))
                 storeCapacityResource[RoomDocumentFields.RoomObject.Store.Energy] = capacity;

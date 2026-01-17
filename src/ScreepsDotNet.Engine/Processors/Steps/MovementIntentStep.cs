@@ -72,8 +72,7 @@ internal sealed class MovementIntentStep(ICreepDeathProcessor deathProcessor) : 
         if (transfers.Count == 0)
             return processed;
 
-        foreach (var transfer in transfers)
-        {
+        foreach (var transfer in transfers) {
             var patch = new RoomObjectPatchPayload
             {
                 InterRoom = transfer.Destination
@@ -91,13 +90,11 @@ internal sealed class MovementIntentStep(ICreepDeathProcessor deathProcessor) : 
         Dictionary<TileCoord, TileInfo> tiles,
         HashSet<string> skipIds)
     {
-        foreach (var (coord, tile) in tiles)
-        {
+        foreach (var (coord, tile) in tiles) {
             if (tile.Structures.Count == 0 || tile.Creeps.Count == 0)
                 continue;
 
-            foreach (var structure in tile.Structures)
-            {
+            foreach (var structure in tile.Structures) {
                 if (!string.Equals(structure.Type, RoomObjectTypes.Portal, StringComparison.Ordinal))
                     continue;
 
@@ -105,8 +102,7 @@ internal sealed class MovementIntentStep(ICreepDeathProcessor deathProcessor) : 
                 if (destination is null || string.IsNullOrWhiteSpace(destination.RoomName))
                     continue;
 
-                foreach (var creep in tile.Creeps)
-                {
+                foreach (var creep in tile.Creeps) {
                     if (!creep.IsCreep(includePowerCreep: true) || creep.IsSpawning == true)
                         continue;
 
@@ -136,8 +132,7 @@ internal sealed class MovementIntentStep(ICreepDeathProcessor deathProcessor) : 
         RoomProcessorContext context,
         IReadOnlyDictionary<string, TileCoord> acceptedMoves)
     {
-        foreach (var (creepId, target) in acceptedMoves)
-        {
+        foreach (var (creepId, target) in acceptedMoves) {
             if (!context.State.Objects.TryGetValue(creepId, out var creep))
                 continue;
 
@@ -179,24 +174,20 @@ internal sealed class MovementIntentStep(ICreepDeathProcessor deathProcessor) : 
 
             var candidate = assignment.Candidate;
 
-            if (candidate.IsOutOfBounds)
-            {
+            if (candidate.IsOutOfBounds) {
                 var exitEvaluation = EvaluateExitAttempt(candidate, exitTopology, out var descriptor, out var direction);
-                if (exitEvaluation == ExitEvaluation.Fatal)
-                {
+                if (exitEvaluation == ExitEvaluation.Fatal) {
                     RemoveAssignment(target, fatal: true);
                     return;
                 }
 
-                if (descriptor is null || direction is null)
-                {
+                if (descriptor is null || direction is null) {
                     RemoveAssignment(target);
                     return;
                 }
 
                 if (string.IsNullOrWhiteSpace(candidate.Creep.UserId) ||
-                    SystemUserIds.IsNpcUser(candidate.Creep.UserId))
-                {
+                    SystemUserIds.IsNpcUser(candidate.Creep.UserId)) {
                     RemoveAssignment(target);
                     return;
                 }
@@ -205,21 +196,18 @@ internal sealed class MovementIntentStep(ICreepDeathProcessor deathProcessor) : 
                 return;
             }
 
-            if (!CanMove(candidate))
-            {
+            if (!CanMove(candidate)) {
                 RemoveAssignment(target);
                 return;
             }
 
             var obstacle = EvaluateObstacle(target, candidate, tiles, plannedMoves, safeModeOwner, terrain, out var portalTransfer);
-            if (obstacle == ObstacleEvaluation.Fatal)
-            {
+            if (obstacle == ObstacleEvaluation.Fatal) {
                 RemoveAssignment(target, fatal: true);
                 return;
             }
 
-            if (obstacle == ObstacleEvaluation.Blocked)
-            {
+            if (obstacle == ObstacleEvaluation.Blocked) {
                 RemoveAssignment(target);
                 return;
             }
@@ -235,8 +223,7 @@ internal sealed class MovementIntentStep(ICreepDeathProcessor deathProcessor) : 
 
             plannedMoves.Remove(assignment.Candidate.Creep.Id);
 
-            if (fatal)
-            {
+            if (fatal) {
                 CrashAdditionalEntrants(target, assignment.Candidate);
                 RegisterCrash(assignment.Candidate);
             }
@@ -269,8 +256,9 @@ internal sealed class MovementIntentStep(ICreepDeathProcessor deathProcessor) : 
                 return false;
 
             if (!resolved.TryGetValue(partnerTarget, out var assignment) ||
-                !string.Equals(assignment.Candidate.Creep.Id, creep.Id, StringComparison.Ordinal))
+                !string.Equals(assignment.Candidate.Creep.Id, creep.Id, StringComparison.Ordinal)) {
                 return false;
+            }
 
             RemoveAssignment(partnerTarget, fatal);
             return true;
@@ -284,8 +272,7 @@ internal sealed class MovementIntentStep(ICreepDeathProcessor deathProcessor) : 
             if (!matrix.TryGetValue(target, out var entrants) || entrants.Count == 0)
                 return;
 
-            foreach (var entrant in entrants)
-            {
+            foreach (var entrant in entrants) {
                 if (ReferenceEquals(entrant, winner))
                     continue;
 
@@ -319,10 +306,8 @@ internal sealed class MovementIntentStep(ICreepDeathProcessor deathProcessor) : 
     private static Dictionary<TileCoord, List<MoveCandidate>> BuildMatrix(IReadOnlyList<MoveCandidate> candidates)
     {
         var matrix = new Dictionary<TileCoord, List<MoveCandidate>>();
-        foreach (var candidate in candidates)
-        {
-            if (!matrix.TryGetValue(candidate.Target, out var list))
-            {
+        foreach (var candidate in candidates) {
+            if (!matrix.TryGetValue(candidate.Target, out var list)) {
                 list = new List<MoveCandidate>(2);
                 matrix[candidate.Target] = list;
             }
@@ -337,8 +322,7 @@ internal sealed class MovementIntentStep(ICreepDeathProcessor deathProcessor) : 
         Dictionary<TileCoord, List<MoveCandidate>> matrix)
     {
         var resolved = new Dictionary<TileCoord, MoveAssignment>(matrix.Count);
-        foreach (var (target, entries) in matrix)
-        {
+        foreach (var (target, entries) in matrix) {
             var winner = entries.Count == 1
                 ? entries[0]
                 : SelectWinner(entries, target, matrix);
@@ -411,8 +395,7 @@ internal sealed class MovementIntentStep(ICreepDeathProcessor deathProcessor) : 
         if (!tiles.TryGetValue(target, out var tile))
             return terrain.IsWall(target.X, target.Y) ? ObstacleEvaluation.Fatal : ObstacleEvaluation.None;
 
-        foreach (var structure in tile.Structures)
-        {
+        foreach (var structure in tile.Structures) {
             var structureEvaluation = EvaluateStructure(structure, candidate.Creep, out var portalPatch);
             if (structureEvaluation != ObstacleEvaluation.None)
                 return structureEvaluation;
@@ -421,8 +404,7 @@ internal sealed class MovementIntentStep(ICreepDeathProcessor deathProcessor) : 
                 portalTransfer = portalPatch;
         }
 
-        foreach (var occupant in tile.Creeps)
-        {
+        foreach (var occupant in tile.Creeps) {
             if (string.Equals(occupant.Id, candidate.Creep.Id, StringComparison.Ordinal))
                 continue;
 
@@ -462,8 +444,7 @@ internal sealed class MovementIntentStep(ICreepDeathProcessor deathProcessor) : 
     {
         portalTransfer = null;
         var type = structure.Type;
-        if (string.Equals(type, RoomObjectTypes.Rampart, StringComparison.Ordinal))
-        {
+        if (string.Equals(type, RoomObjectTypes.Rampart, StringComparison.Ordinal)) {
             if (structure.IsPublic == true)
                 return ObstacleEvaluation.None;
 
@@ -472,21 +453,18 @@ internal sealed class MovementIntentStep(ICreepDeathProcessor deathProcessor) : 
                 : ObstacleEvaluation.None;
         }
 
-        if (string.Equals(type, RoomObjectTypes.ConstructionSite, StringComparison.Ordinal))
-        {
+        if (string.Equals(type, RoomObjectTypes.ConstructionSite, StringComparison.Ordinal)) {
             return BlocksConstructionSite(structure.StructureType, structure.UserId, creep.UserId)
                 ? ObstacleEvaluation.Fatal
                 : ObstacleEvaluation.None;
         }
 
-        if (string.Equals(type, RoomObjectTypes.Portal, StringComparison.Ordinal))
-        {
+        if (string.Equals(type, RoomObjectTypes.Portal, StringComparison.Ordinal)) {
             if (string.Equals(creep.Type, RoomObjectTypes.PowerCreep, StringComparison.Ordinal))
                 return ObstacleEvaluation.Fatal;
 
             if (structure.PortalDestination is { } destination &&
-                !string.IsNullOrWhiteSpace(destination.RoomName))
-            {
+                !string.IsNullOrWhiteSpace(destination.RoomName)) {
                 portalTransfer = new RoomObjectInterRoomPatch(
                     destination.RoomName,
                     Math.Clamp(destination.X, 0, 49),
@@ -521,13 +499,11 @@ internal sealed class MovementIntentStep(ICreepDeathProcessor deathProcessor) : 
         var pullTargets = new Dictionary<string, string>(Comparer);
         var pulledBy = new Dictionary<string, string>(Comparer);
 
-        foreach (var envelope in intents.Users.Values)
-        {
+        foreach (var envelope in intents.Users.Values) {
             if (envelope?.ObjectIntents is null)
                 continue;
 
-            foreach (var (objectId, records) in envelope.ObjectIntents)
-            {
+            foreach (var (objectId, records) in envelope.ObjectIntents) {
                 if (!context.State.Objects.TryGetValue(objectId, out var creep))
                     continue;
 
@@ -537,8 +513,7 @@ internal sealed class MovementIntentStep(ICreepDeathProcessor deathProcessor) : 
                 if (!string.Equals(creep.UserId, envelope.UserId, StringComparison.Ordinal))
                     continue;
 
-                foreach (var record in records)
-                {
+                foreach (var record in records) {
                     if (!string.Equals(record.Name, IntentKeys.Pull, StringComparison.Ordinal))
                         continue;
 
@@ -578,13 +553,11 @@ internal sealed class MovementIntentStep(ICreepDeathProcessor deathProcessor) : 
         PullState pullState)
     {
         var result = new List<MoveCandidate>();
-        foreach (var envelope in intents.Users.Values)
-        {
+        foreach (var envelope in intents.Users.Values) {
             if (envelope?.CreepIntents is null || envelope.CreepIntents.Count == 0)
                 continue;
 
-            foreach (var (objectId, creepIntent) in envelope.CreepIntents)
-            {
+            foreach (var (objectId, creepIntent) in envelope.CreepIntents) {
                 if (creepIntent?.Move is null)
                     continue;
 
@@ -638,8 +611,7 @@ internal sealed class MovementIntentStep(ICreepDeathProcessor deathProcessor) : 
 
     private static string? DetermineSafeModeOwner(RoomProcessorContext context)
     {
-        foreach (var obj in context.State.Objects.Values)
-        {
+        foreach (var obj in context.State.Objects.Values) {
             if (!string.Equals(obj.Type, RoomObjectTypes.Controller, StringComparison.Ordinal))
                 continue;
 
@@ -658,13 +630,11 @@ internal sealed class MovementIntentStep(ICreepDeathProcessor deathProcessor) : 
     private static Dictionary<TileCoord, TileInfo> BuildTileMap(RoomProcessorContext context)
     {
         var tiles = new Dictionary<TileCoord, TileInfo>();
-        foreach (var obj in context.State.Objects.Values)
-        {
+        foreach (var obj in context.State.Objects.Values) {
             var key = new TileCoord(obj.X, obj.Y);
             var tile = GetOrCreateTile(tiles, key);
 
-            if (obj.IsCreep(includePowerCreep: true))
-            {
+            if (obj.IsCreep(includePowerCreep: true)) {
                 if (obj.IsSpawning == true)
                     continue;
 
@@ -682,8 +652,7 @@ internal sealed class MovementIntentStep(ICreepDeathProcessor deathProcessor) : 
 
     private static TileInfo GetOrCreateTile(Dictionary<TileCoord, TileInfo> tiles, TileCoord key)
     {
-        if (!tiles.TryGetValue(key, out var tile))
-        {
+        if (!tiles.TryGetValue(key, out var tile)) {
             tile = new TileInfo();
             tiles[key] = tile;
         }
@@ -712,6 +681,10 @@ internal sealed class MovementIntentStep(ICreepDeathProcessor deathProcessor) : 
         {
             IntentFieldValueKind.Text => value.TextValue ?? string.Empty,
             IntentFieldValueKind.Number => value.NumberValue?.ToString() ?? string.Empty,
+            IntentFieldValueKind.Boolean => throw new NotImplementedException(),
+            IntentFieldValueKind.TextArray => throw new NotImplementedException(),
+            IntentFieldValueKind.NumberArray => throw new NotImplementedException(),
+            IntentFieldValueKind.BodyPartArray => throw new NotImplementedException(),
             _ => string.Empty
         };
 
@@ -725,8 +698,7 @@ internal sealed class MovementIntentStep(ICreepDeathProcessor deathProcessor) : 
         string targetId)
     {
         var current = targetId;
-        while (pullTargets.TryGetValue(current, out var next))
-        {
+        while (pullTargets.TryGetValue(current, out var next)) {
             if (string.Equals(next, pullerId, StringComparison.Ordinal))
                 return true;
 
@@ -734,8 +706,7 @@ internal sealed class MovementIntentStep(ICreepDeathProcessor deathProcessor) : 
         }
 
         current = pullerId;
-        while (pulledBy.TryGetValue(current, out var upstream))
-        {
+        while (pulledBy.TryGetValue(current, out var upstream)) {
             if (string.Equals(upstream, targetId, StringComparison.Ordinal))
                 return true;
 
@@ -796,8 +767,7 @@ internal sealed class MovementIntentStep(ICreepDeathProcessor deathProcessor) : 
     private static int CountActiveMoveParts(RoomObjectSnapshot creep)
     {
         var count = 0;
-        foreach (var part in creep.Body)
-        {
+        foreach (var part in creep.Body) {
             if (part.Type == BodyPartType.Move && part.Hits > 0)
                 count++;
         }
@@ -811,12 +781,11 @@ internal sealed class MovementIntentStep(ICreepDeathProcessor deathProcessor) : 
             return 1;
 
         var weight = 0;
-        foreach (var part in creep.Body)
-        {
+        foreach (var part in creep.Body) {
             if (part.Hits <= 0)
                 continue;
 
-            if (part.Type == BodyPartType.Move || part.Type == BodyPartType.Carry)
+            if (part.Type is BodyPartType.Move or BodyPartType.Carry)
                 continue;
 
             weight++;
@@ -838,8 +807,7 @@ internal sealed class MovementIntentStep(ICreepDeathProcessor deathProcessor) : 
 
         var remaining = total;
         var weight = 0;
-        for (var i = creep.Body.Count - 1; i >= 0 && remaining > 0; i--)
-        {
+        for (var i = creep.Body.Count - 1; i >= 0 && remaining > 0; i--) {
             var part = creep.Body[i];
             if (part.Type != BodyPartType.Carry || part.Hits <= 0)
                 continue;

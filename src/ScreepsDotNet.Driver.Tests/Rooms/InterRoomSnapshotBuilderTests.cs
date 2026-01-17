@@ -1,11 +1,11 @@
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
+using ScreepsDotNet.Common.Constants;
 using ScreepsDotNet.Driver.Abstractions.Rooms;
 using ScreepsDotNet.Driver.Contracts;
 using ScreepsDotNet.Driver.Services.Rooms;
 using ScreepsDotNet.Driver.Tests.TestDoubles;
 using ScreepsDotNet.Storage.MongoRedis.Repositories.Documents;
-using ScreepsDotNet.Common.Constants;
 
 namespace ScreepsDotNet.Driver.Tests.Rooms;
 
@@ -141,15 +141,15 @@ public sealed class InterRoomSnapshotBuilderTests
             };
 
             var market = new InterRoomMarketSnapshot(
-                new List<MarketOrderDocument> { order },
-                new List<UserDocument> { user },
-                new List<PowerCreepDocument> { powerCreep },
-                new List<UserIntentDocument> { intent },
+                [order],
+                [user],
+                [powerCreep],
+                [intent],
                 "shard0");
 
             var snapshot = new InterRoomSnapshot(
                 gameTime,
-                new List<RoomObjectDocument> { creep },
+                [creep],
                 new Dictionary<string, RoomDocument>(StringComparer.Ordinal) { ["W0N0"] = room },
                 new Dictionary<string, RoomExitTopology>(StringComparer.Ordinal)
                 {
@@ -159,7 +159,7 @@ public sealed class InterRoomSnapshotBuilderTests
                                    null,
                                    null)
                 },
-                new List<RoomObjectDocument> { special },
+                [special],
                 market);
 
             return Task.FromResult(snapshot);

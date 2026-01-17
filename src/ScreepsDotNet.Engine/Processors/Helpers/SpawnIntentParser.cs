@@ -24,8 +24,7 @@ internal sealed class SpawnIntentParser(IBodyAnalysisHelper bodyAnalysisHelper) 
         ParsedSetDirectionsIntent? setDirections = null;
         var cancel = envelope.CancelSpawning;
 
-        if (envelope.CreateCreep is not null)
-        {
+        if (envelope.CreateCreep is not null) {
             var createResult = ValidateCreate(envelope.CreateCreep);
             if (!createResult.Success)
                 return SpawnIntentParseResult.Failure(createResult.Error!);
@@ -33,24 +32,21 @@ internal sealed class SpawnIntentParser(IBodyAnalysisHelper bodyAnalysisHelper) 
             create = createResult.CreateIntent!;
         }
 
-        if (envelope.RenewCreep is not null)
-        {
+        if (envelope.RenewCreep is not null) {
             if (string.IsNullOrWhiteSpace(envelope.RenewCreep.TargetId))
                 return SpawnIntentParseResult.Failure("Renew intent missing target id.");
 
             renew = new ParsedRenewIntent(envelope.RenewCreep.TargetId);
         }
 
-        if (envelope.RecycleCreep is not null)
-        {
+        if (envelope.RecycleCreep is not null) {
             if (string.IsNullOrWhiteSpace(envelope.RecycleCreep.TargetId))
                 return SpawnIntentParseResult.Failure("Recycle intent missing target id.");
 
             recycle = new ParsedRecycleIntent(envelope.RecycleCreep.TargetId);
         }
 
-        if (envelope.SetSpawnDirections is not null)
-        {
+        if (envelope.SetSpawnDirections is not null) {
             var directions = SanitizeDirections(envelope.SetSpawnDirections.Directions);
             if (directions.Count == 0)
                 return SpawnIntentParseResult.Failure("Spawn directions must contain values between 1 and 8.");

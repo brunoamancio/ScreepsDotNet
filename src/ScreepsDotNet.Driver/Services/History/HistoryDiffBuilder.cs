@@ -13,15 +13,11 @@ internal static class HistoryDiffBuilder
         var result = new Dictionary<int, JsonNode?>(orderedKeys.Length);
 
         JsonNode? previous = null;
-        foreach (var tick in orderedKeys)
-        {
+        foreach (var tick in orderedKeys) {
             if (!ticks.TryGetValue(tick, out var current))
                 continue;
 
-            if (previous is null || tick == baseGameTime)
-                result[tick] = current?.DeepClone();
-            else
-                result[tick] = CreateDiff(previous, current);
+            result[tick] = previous is null || tick == baseGameTime ? (current?.DeepClone()) : CreateDiff(previous, current);
 
             previous = current;
         }
@@ -43,27 +39,23 @@ internal static class HistoryDiffBuilder
         if (current is JsonArray array)
             return array.DeepClone();
 
-        if (current is JsonObject currentObject && previous is JsonObject previousObject)
-        {
+        if (current is JsonObject currentObject && previous is JsonObject previousObject) {
             var diff = new JsonObject();
             var keys = currentObject.Select(pair => pair.Key)
                                     .Concat(previousObject.Select(pair => pair.Key))
                                     .Distinct(StringComparer.Ordinal);
 
-            foreach (var key in keys)
-            {
+            foreach (var key in keys) {
                 var previousChild = previousObject[key];
                 var currentChild = currentObject[key];
 
-                if (currentChild is null)
-                {
+                if (currentChild is null) {
                     if (previousChild is not null)
                         diff[key] = null;
                     continue;
                 }
 
-                if (previousChild is null)
-                {
+                if (previousChild is null) {
                     diff[key] = currentChild.DeepClone();
                     continue;
                 }
