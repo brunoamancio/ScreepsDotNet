@@ -219,9 +219,7 @@ internal sealed class SpawnSpawningStep(ISpawnStateReader spawnStateReader, ICre
     private static void RemoveOccupant(Dictionary<TileCoord, TileInfo> tiles, TileCoord coordinate, string occupantId)
     {
         if (tiles.TryGetValue(coordinate, out var tile))
-        {
             tile.Creeps.RemoveAll(creep => string.Equals(creep.Id, occupantId, StringComparison.Ordinal));
-        }
     }
 
     private static TileOccupancy AnalyzeTile(
@@ -284,13 +282,9 @@ internal sealed class SpawnSpawningStep(ISpawnStateReader spawnStateReader, ICre
                 tile.HasRoad = true;
 
             if (obj.IsCreep(includePowerCreep: true))
-            {
                 tile.Creeps.Add(obj);
-            }
             else
-            {
                 tile.Structures.Add(obj);
-            }
         }
 
         return tiles;
