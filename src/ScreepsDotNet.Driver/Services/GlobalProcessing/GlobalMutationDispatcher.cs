@@ -17,8 +17,29 @@ internal sealed class GlobalMutationDispatcher(IBulkWriterFactory bulkWriterFact
         var powerWriter = bulkWriterFactory.CreateUsersPowerCreepsWriter();
         var hasPowerOps = ApplyPowerCreepMutations(powerWriter, batch.PowerCreepMutations);
 
+        var marketWriter = bulkWriterFactory.CreateMarketOrdersWriter();
+        var interShardWriter = bulkWriterFactory.CreateMarketIntershardOrdersWriter();
+        var hasMarketOps = ApplyMarketOrderMutations(marketWriter, interShardWriter, batch.MarketOrderMutations);
+
+        var usersWriter = bulkWriterFactory.CreateUsersWriter();
+        var hasUserMoneyOps = ApplyUserMoneyMutations(usersWriter, batch.UserMoneyMutations);
+
+        var userMoneyWriter = bulkWriterFactory.CreateUsersMoneyWriter();
+        var hasMoneyEntryOps = ApplyUserMoneyLogEntries(userMoneyWriter, batch.UserMoneyLogEntries);
+
         if (hasPowerOps)
             await powerWriter.ExecuteAsync(token).ConfigureAwait(false);
+        if (hasMarketOps)
+        {
+            if (marketWriter.HasPendingOperations)
+                await marketWriter.ExecuteAsync(token).ConfigureAwait(false);
+            if (interShardWriter.HasPendingOperations)
+                await interShardWriter.ExecuteAsync(token).ConfigureAwait(false);
+        }
+        if (hasUserMoneyOps)
+            await usersWriter.ExecuteAsync(token).ConfigureAwait(false);
+        if (hasMoneyEntryOps)
+            await userMoneyWriter.ExecuteAsync(token).ConfigureAwait(false);
     }
 
     private static bool ApplyPowerCreepMutations(IBulkWriter<PowerCreepDocument> writer, IReadOnlyList<PowerCreepMutation> mutations)
@@ -91,6 +112,79 @@ internal sealed class GlobalMutationDispatcher(IBulkWriterFactory bulkWriterFact
         }
 
         return document;
+    }
+
+    private static bool ApplyMarketOrderMutations(
+        IBulkWriter<MarketOrderDocument> regularWriter,
+        IBulkWriter<MarketOrderDocument> interShardWriter,
+        IReadOnlyList<MarketOrderMutation> mutations)
+    {
+        if (mutations.Count == 0)
+            return false;
+
+        foreach (var mutation in mutations)
+        {
+            if (string.IsNullOrWhiteSpace(mutation.Id))
+                continue;
+
+            var writer = mutation.IsInterShard ? interShardWriter : regularWriter;
+
+            switch (mutation.Type)
+            {
+                case MarketOrderMutationType.Upsert:
+                    if (mutation.Snapshot is null)
+                        continue;
+                    var document = MarketOrderDocumentMapper.ToDocument(mutation.Snapshot);
+                    writer.Insert(document, NormalizeId(mutation.Snapshot.Id));
+                    break;
+
+                case MarketOrderMutationType.Patch:
+                    if (mutation.Patch is null)
+                        continue;
+                    var patchDocument = MarketOrderDocumentMapper.BuildPatchDocument(mutation.Patch);
+                    if (patchDocument.ElementCount == 0)
+                        continue;
+                    writer.Update(NormalizeId(mutation.Id), patchDocument);
+                    break;
+
+                case MarketOrderMutationType.Remove:
+                    writer.Remove(NormalizeId(mutation.Id));
+                    break;
+            }
+        }
+
+        return regularWriter.HasPendingOperations || interShardWriter.HasPendingOperations;
+    }
+
+    private static bool ApplyUserMoneyMutations(IBulkWriter<UserDocument> writer, IReadOnlyList<UserMoneyMutation> mutations)
+    {
+        if (mutations.Count == 0)
+            return false;
+
+        foreach (var mutation in mutations)
+        {
+            if (string.IsNullOrWhiteSpace(mutation.UserId))
+                continue;
+
+            var update = new BsonDocument(UserDocumentFields.Money, mutation.NewMoney);
+            writer.Update(mutation.UserId, update);
+        }
+
+        return writer.HasPendingOperations;
+    }
+
+    private static bool ApplyUserMoneyLogEntries(IBulkWriter<UserMoneyEntryDocument> writer, IReadOnlyList<UserMoneyLogEntry> entries)
+    {
+        if (entries.Count == 0)
+            return false;
+
+        foreach (var entry in entries)
+        {
+            var document = UserMoneyEntryDocumentMapper.ToDocument(entry);
+            writer.Insert(document);
+        }
+
+        return writer.HasPendingOperations;
     }
 
     private static string NormalizeId(string id)

@@ -47,6 +47,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IGlobalProcessor, EngineGlobalProcessor>();
         services.AddSingleton<IGlobalProcessorStep, InterRoomTransferStep>();
         services.AddSingleton<IGlobalProcessorStep, PowerCreepIntentStep>();
+        services.AddSingleton<IGlobalProcessorStep, MarketIntentStep>();
         services.AddSingleton<IGlobalMutationWriterFactory, GlobalMutationWriterFactory>();
         services.AddSingleton<IEngineHost, EngineHost>();
         return services;

@@ -127,6 +127,14 @@ public static class ScreepsGameConstants
         ResourceTypes.Essence
     ];
 
+    public static IReadOnlyList<string> IntershardResources { get; } =
+    [
+        ResourceTypes.SubscriptionToken,
+        ResourceTypes.CpuUnlock,
+        ResourceTypes.Pixel,
+        ResourceTypes.AccessKey
+    ];
+
     public static IReadOnlyDictionary<int, int> ExtensionEnergyCapacityByControllerLevel { get; } =
         new Dictionary<int, int>
         {
@@ -161,6 +169,7 @@ public static class ScreepsGameConstants
     public const int TerminalHits = 3000;
     public const int TerminalCapacity = 300_000;
     public const int TerminalCooldown = 10;
+    public const double MarketFee = 0.05;
     public const int PowerCreepDeleteCooldownMilliseconds = 24 * 60 * 60 * 1000;
     public const int PowerExperimentationCooldownMilliseconds = 24 * 60 * 60 * 1000;
     public const int ContainerHits = 250_000;

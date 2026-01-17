@@ -5,7 +5,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using ScreepsDotNet.Common.Constants;
 using ScreepsDotNet.Driver.Contracts;
-using ScreepsDotNet.Engine.Data.GlobalMutations;
 using ScreepsDotNet.Engine.Data.Models;
 using ScreepsDotNet.Engine.Processors.GlobalSteps;
 using Xunit;
@@ -182,28 +181,5 @@ public sealed class PowerCreepIntentStepTests
             new Dictionary<string, RoomExitTopology>(),
             [],
             market);
-    }
-
-    private sealed class RecordingGlobalMutationWriter : IGlobalMutationWriter
-    {
-        public List<(string Id, PowerCreepMutationPatch Patch)> PowerCreepPatches { get; } = [];
-        public List<string> RemovedPowerCreeps { get; } = [];
-
-        public void PatchPowerCreep(string powerCreepId, PowerCreepMutationPatch patch)
-            => PowerCreepPatches.Add((powerCreepId, patch));
-
-        public void RemovePowerCreep(string powerCreepId) => RemovedPowerCreeps.Add(powerCreepId);
-
-        public void UpsertPowerCreep(PowerCreepSnapshot snapshot)
-        {
-        }
-
-        public Task FlushAsync(CancellationToken token = default) => Task.CompletedTask;
-
-        public void Reset()
-        {
-            PowerCreepPatches.Clear();
-            RemovedPowerCreeps.Clear();
-        }
     }
 }

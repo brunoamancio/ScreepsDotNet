@@ -256,4 +256,16 @@ public static class ResourceTypes
 
     /// <summary>Essence commodity (RESOURCE_ESSENCE).</summary>
     public const string Essence = "essence";
+
+    /// <summary>Subscription token (SUBSCRIPTION_TOKEN).</summary>
+    public const string SubscriptionToken = "subscription_token";
+
+    /// <summary>CPU unlock item (CPU_UNLOCK).</summary>
+    public const string CpuUnlock = "cpu_unlock";
+
+    /// <summary>Pixel item (PIXEL).</summary>
+    public const string Pixel = "pixel";
+
+    /// <summary>Access key item (ACCESS_KEY).</summary>
+    public const string AccessKey = "access_key";
 }
