@@ -150,6 +150,28 @@ public sealed class MovementIntentStepTests
     }
 
     [Fact]
+    public async Task ExecuteAsync_IdleOnPortalSchedulesTransfer()
+    {
+        var mover = CreateCreep("creepA", 11, 10);
+        var portalDestination = new RoomPortalDestinationSnapshot("W0S0", 20, 0, null);
+        var portal = CreatePortal("portal1", 11, 10, portalDestination);
+
+        var intents = CreateEmptyIntentSnapshot();
+        var state = CreateState([mover, portal], intents);
+        var writer = new RecordingMutationWriter();
+        var step = new MovementIntentStep(new NullDeathProcessor());
+
+        await step.ExecuteAsync(new RoomProcessorContext(state, writer, new NullCreepStatsSink()), TestContext.Current.CancellationToken);
+
+        var transferPatch = writer.Patches.FirstOrDefault(p => p.Payload.InterRoom is not null);
+        Assert.NotNull(transferPatch.Payload.InterRoom);
+        Assert.Equal("W0S0", transferPatch.Payload.InterRoom!.RoomName);
+        Assert.Equal(20, transferPatch.Payload.InterRoom.X);
+        Assert.Equal(0, transferPatch.Payload.InterRoom.Y);
+        Assert.Null(transferPatch.Payload.InterRoom.Shard);
+    }
+
+    [Fact]
     public async Task ExecuteAsync_CrashesWhenBlockedByStructure()
     {
         var mover = CreateCreep("creepA", 10, 10);
@@ -353,6 +375,19 @@ public sealed class MovementIntentStepTests
                 new Dictionary<string, SpawnIntentEnvelope>(0, Comparer),
                 creepIntentMap);
         }
+
+        return new RoomIntentSnapshot("W1N1", null, envelopes);
+    }
+
+    private static RoomIntentSnapshot CreateEmptyIntentSnapshot()
+    {
+        var envelopes = new Dictionary<string, IntentEnvelope>(Comparer)
+        {
+            ["user1"] = new("user1",
+                            new Dictionary<string, IReadOnlyList<IntentRecord>>(Comparer),
+                            new Dictionary<string, SpawnIntentEnvelope>(Comparer),
+                            new Dictionary<string, CreepIntentEnvelope>(Comparer))
+        };
 
         return new RoomIntentSnapshot("W1N1", null, envelopes);
     }

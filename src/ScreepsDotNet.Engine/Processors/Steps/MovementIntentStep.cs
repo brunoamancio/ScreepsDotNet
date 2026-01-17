@@ -41,8 +41,6 @@ internal sealed class MovementIntentStep(ICreepDeathProcessor deathProcessor) : 
 
         var pullState = CollectPullIntents(context, intents);
         var requests = CollectMoveCandidates(context, intents, pullState);
-        if (requests.Count == 0)
-            return Task.CompletedTask;
 
         var tiles = BuildTileMap(context);
         var terrain = BuildTerrainCache(context);
@@ -51,8 +49,9 @@ internal sealed class MovementIntentStep(ICreepDeathProcessor deathProcessor) : 
         var (acceptedMoves, crashes, transfers) = ResolveMoves(requests, tiles, terrain, safeModeOwner, context.ExitTopology);
 
         ApplyAcceptedMoves(context, acceptedMoves);
-        ProcessTransfers(context, transfers);
+        var transferIds = ProcessTransfers(context, transfers);
         ProcessCrashes(context, crashes);
+        ProcessIdlePortalTransfers(context, tiles, transferIds);
 
         return Task.CompletedTask;
     }
@@ -67,10 +66,11 @@ internal sealed class MovementIntentStep(ICreepDeathProcessor deathProcessor) : 
             deathProcessor.Process(context, creep, new CreepDeathOptions(ViolentDeath: true), energyLedger);
     }
 
-    private static void ProcessTransfers(RoomProcessorContext context, IReadOnlyList<InterRoomTransfer> transfers)
+    private static HashSet<string> ProcessTransfers(RoomProcessorContext context, IReadOnlyList<InterRoomTransfer> transfers)
     {
+        var processed = new HashSet<string>(Comparer);
         if (transfers.Count == 0)
-            return;
+            return processed;
 
         foreach (var transfer in transfers)
         {
@@ -80,6 +80,55 @@ internal sealed class MovementIntentStep(ICreepDeathProcessor deathProcessor) : 
             };
 
             context.MutationWriter.Patch(transfer.Creep.Id, patch);
+            processed.Add(transfer.Creep.Id);
+        }
+
+        return processed;
+    }
+
+    private static void ProcessIdlePortalTransfers(
+        RoomProcessorContext context,
+        Dictionary<TileCoord, TileInfo> tiles,
+        HashSet<string> skipIds)
+    {
+        foreach (var (coord, tile) in tiles)
+        {
+            if (tile.Structures.Count == 0 || tile.Creeps.Count == 0)
+                continue;
+
+            foreach (var structure in tile.Structures)
+            {
+                if (!string.Equals(structure.Type, RoomObjectTypes.Portal, StringComparison.Ordinal))
+                    continue;
+
+                var destination = structure.PortalDestination;
+                if (destination is null || string.IsNullOrWhiteSpace(destination.RoomName))
+                    continue;
+
+                foreach (var creep in tile.Creeps)
+                {
+                    if (!creep.IsCreep(includePowerCreep: true) || creep.IsSpawning == true)
+                        continue;
+
+                    if (string.IsNullOrWhiteSpace(creep.UserId) || SystemUserIds.IsNpcUser(creep.UserId))
+                        continue;
+
+                    if (skipIds.Contains(creep.Id))
+                        continue;
+
+                    var patch = new RoomObjectPatchPayload
+                    {
+                        InterRoom = new RoomObjectInterRoomPatch(
+                            destination.RoomName,
+                            ClampCoordinate(destination.X),
+                            ClampCoordinate(destination.Y),
+                            destination.Shard)
+                    };
+
+                    context.MutationWriter.Patch(creep.Id, patch);
+                    skipIds.Add(creep.Id);
+                }
+            }
         }
     }
 
@@ -847,6 +896,9 @@ internal sealed class MovementIntentStep(ICreepDeathProcessor deathProcessor) : 
     private sealed record InterRoomTransfer(
         RoomObjectSnapshot Creep,
         RoomObjectInterRoomPatch Destination);
+
+    private static int ClampCoordinate(int value)
+        => value < 0 ? 0 : value > 49 ? 49 : value;
 
     private sealed class TileInfo
     {
