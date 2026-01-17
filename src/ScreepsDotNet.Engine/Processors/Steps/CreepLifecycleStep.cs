@@ -1,5 +1,6 @@
 namespace ScreepsDotNet.Engine.Processors.Steps;
 
+using ScreepsDotNet.Common.Constants;
 using ScreepsDotNet.Driver.Contracts;
 using ScreepsDotNet.Engine.Processors;
 using ScreepsDotNet.Engine.Processors.Helpers;
@@ -18,6 +19,18 @@ internal sealed class CreepLifecycleStep(ICreepDeathProcessor deathProcessor) : 
         {
             if (!obj.IsCreep())
                 continue;
+
+            if (obj.Hits is <= 0)
+            {
+                deathProcessor.Process(context, obj, new CreepDeathOptions(ViolentDeath: true), energyLedger);
+                continue;
+            }
+
+            if (ShouldDespawnUserSummoned(context, obj))
+            {
+                deathProcessor.Process(context, obj, new CreepDeathOptions(), energyLedger);
+                continue;
+            }
 
             int? ticksToLivePatch = null;
             RoomObjectActionLogPatch? actionLogPatch = null;
@@ -71,4 +84,46 @@ internal sealed class CreepLifecycleStep(ICreepDeathProcessor deathProcessor) : 
 
         return obj.TicksToLive is <= 1;
     }
+
+    private static bool ShouldDespawnUserSummoned(RoomProcessorContext context, RoomObjectSnapshot creep)
+    {
+        if (creep.UserSummoned != true)
+            return false;
+
+        var controllerOwner = FindControllerOwner(context.State.Objects);
+
+        foreach (var other in context.State.Objects.Values)
+        {
+            if (ReferenceEquals(other, creep))
+                continue;
+
+            if (!other.IsCreep())
+                continue;
+
+            var otherUser = other.UserId;
+            if (string.IsNullOrWhiteSpace(otherUser) || SystemUserIds.IsNpcUser(otherUser))
+                continue;
+
+            if (!string.IsNullOrWhiteSpace(controllerOwner) &&
+                string.Equals(otherUser, controllerOwner, StringComparison.Ordinal))
+                continue;
+
+            return true;
+        }
+
+        return false;
+    }
+
+    private static string? FindControllerOwner(IReadOnlyDictionary<string, RoomObjectSnapshot> objects)
+    {
+        foreach (var obj in objects.Values)
+        {
+            if (string.Equals(obj.Type, RoomObjectTypes.Controller, StringComparison.Ordinal) &&
+                !string.IsNullOrWhiteSpace(obj.UserId))
+                return obj.UserId;
+        }
+
+        return null;
+    }
+
 }

@@ -40,15 +40,18 @@ public sealed class CreepLifecycleStepTests
         Assert.Equal("creep1", deathProcessor.Creeps[0].Id);
     }
 
-    private static RoomProcessorContext CreateContext(RoomObjectSnapshot creep)
+    private static RoomProcessorContext CreateContext(RoomObjectSnapshot primary, params RoomObjectSnapshot[] additional)
     {
         var objects = new Dictionary<string, RoomObjectSnapshot>(StringComparer.Ordinal)
         {
-            [creep.Id] = creep
+            [primary.Id] = primary
         };
 
+        foreach (var extra in additional)
+            objects[extra.Id] = extra;
+
         var state = new RoomState(
-            creep.RoomName,
+            primary.RoomName,
             10,
             null,
             objects,
@@ -63,16 +66,16 @@ public sealed class CreepLifecycleStepTests
             new NullCreepStatsSink());
     }
 
-    private static RoomObjectSnapshot CreateCreep(int ticksToLive)
+    private static RoomObjectSnapshot CreateCreep(int ticksToLive, int hits = 100, string userId = "user1", bool userSummoned = false, string id = "creep1")
         => new(
-            "creep1",
+            id,
             RoomObjectTypes.Creep,
             "W1N1",
             null,
-            "user1",
+            userId,
             10,
             10,
-            Hits: 100,
+            Hits: hits,
             HitsMax: 100,
             Fatigue: 0,
             TicksToLive: ticksToLive,
@@ -90,7 +93,39 @@ public sealed class CreepLifecycleStepTests
             Structure: null,
             Effects: new Dictionary<string, object?>(StringComparer.Ordinal),
             Spawning: null,
-            Body: Array.Empty<CreepBodyPartSnapshot>());
+            Body: [],
+            UserSummoned: userSummoned);
+
+    [Fact]
+    public async Task ExecuteAsync_RemovesZeroHitCreeps()
+    {
+        var creep = CreateCreep(ticksToLive: 50, hits: 0);
+        var deathProcessor = new RecordingDeathProcessor();
+        var context = CreateContext(creep);
+        var step = new CreepLifecycleStep(deathProcessor);
+
+        await step.ExecuteAsync(context, TestContext.Current.CancellationToken);
+
+        Assert.Empty(((RecordingMutationWriter)context.MutationWriter).Patches);
+        Assert.Single(deathProcessor.Creeps);
+        Assert.Equal("creep1", deathProcessor.Creeps[0].Id);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_UserSummonedDiesWhenEnemyPlayerPresent()
+    {
+        var summoned = CreateCreep(ticksToLive: 100, hits: 50, userId: "Invader", userSummoned: true, id: "summoned");
+        var hostile = CreateCreep(ticksToLive: 200, hits: 100, userId: "player1", id: "hostile");
+        var controller = CreateController("ally");
+        var deathProcessor = new RecordingDeathProcessor();
+        var context = CreateContext(summoned, hostile, controller);
+        var step = new CreepLifecycleStep(deathProcessor);
+
+        await step.ExecuteAsync(context, TestContext.Current.CancellationToken);
+
+        Assert.Single(deathProcessor.Creeps);
+        Assert.Equal("summoned", deathProcessor.Creeps[0].Id);
+    }
 
     private sealed class NullDeathProcessor : ICreepDeathProcessor
     {
@@ -127,4 +162,33 @@ public sealed class CreepLifecycleStepTests
         public void Reset()
             => Patches.Clear();
     }
+
+    private static RoomObjectSnapshot CreateController(string userId)
+        => new(
+            "controller1",
+            RoomObjectTypes.Controller,
+            "W1N1",
+            null,
+            userId,
+            5,
+            5,
+            Hits: 0,
+            HitsMax: 0,
+            Fatigue: null,
+            TicksToLive: null,
+            Name: null,
+            Level: 3,
+            Density: null,
+            MineralType: null,
+            DepositType: null,
+            StructureType: null,
+            Store: new Dictionary<string, int>(StringComparer.Ordinal),
+            StoreCapacity: null,
+            StoreCapacityResource: new Dictionary<string, int>(StringComparer.Ordinal),
+            Reservation: null,
+            Sign: null,
+            Structure: null,
+            Effects: new Dictionary<string, object?>(StringComparer.Ordinal),
+            Spawning: null,
+            Body: Array.Empty<CreepBodyPartSnapshot>());
 }

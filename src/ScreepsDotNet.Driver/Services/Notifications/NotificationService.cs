@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using MongoDB.Driver;
+using ScreepsDotNet.Common.Constants;
 using ScreepsDotNet.Driver.Abstractions.Notifications;
 using ScreepsDotNet.Driver.Constants;
 using ScreepsDotNet.Storage.MongoRedis.Providers;
@@ -87,12 +88,12 @@ internal sealed class NotificationService(IMongoDatabaseProvider databaseProvide
         await _notifications.UpdateOneAsync(filter, update, new UpdateOptions { IsUpsert = true }, token).ConfigureAwait(false);
     }
 
-    private static bool IsNpcUser(string userId) => userId is "2" or "3";
+    private static bool IsNpcUser(string userId) => SystemUserIds.IsNpcUser(userId);
 
     private static string GetNpcName(string userId) => userId switch
     {
-        "2" => "Invader",
-        "3" => "Source Keeper",
+        SystemUserIds.LegacyInvader or SystemUserIds.NamedInvader => "Invader",
+        SystemUserIds.LegacySourceKeeper or SystemUserIds.NamedSourceKeeper => "Source Keeper",
         _ => "NPC"
     };
 }
