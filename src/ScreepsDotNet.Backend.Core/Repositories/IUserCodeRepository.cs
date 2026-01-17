@@ -1,6 +1,6 @@
-﻿using ScreepsDotNet.Backend.Core.Models;
+﻿namespace ScreepsDotNet.Backend.Core.Repositories;
 
-namespace ScreepsDotNet.Backend.Core.Repositories;
+using ScreepsDotNet.Backend.Core.Models;
 
 public interface IUserCodeRepository
 {

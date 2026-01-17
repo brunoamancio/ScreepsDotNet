@@ -1,6 +1,5 @@
 namespace ScreepsDotNet.Backend.Http.Endpoints;
 
-using System;
 using Microsoft.AspNetCore.Mvc;
 using ScreepsDotNet.Backend.Core.Context;
 using ScreepsDotNet.Backend.Core.Services;

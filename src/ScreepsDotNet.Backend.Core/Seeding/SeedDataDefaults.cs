@@ -1,8 +1,5 @@
 ﻿namespace ScreepsDotNet.Backend.Core.Seeding;
 
-using System;
-using System.Collections.Generic;
-
 public static class SeedDataDefaults
 {
     public static class Database

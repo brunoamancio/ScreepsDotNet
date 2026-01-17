@@ -1,7 +1,5 @@
 ﻿namespace ScreepsDotNet.Backend.Http.Endpoints;
 
-using System;
-using System.Linq;
 using Microsoft.Extensions.Options;
 using ScreepsDotNet.Backend.Core.Configuration;
 using ScreepsDotNet.Backend.Core.Context;

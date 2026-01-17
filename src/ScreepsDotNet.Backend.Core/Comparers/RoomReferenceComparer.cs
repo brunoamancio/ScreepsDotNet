@@ -1,7 +1,5 @@
 ﻿namespace ScreepsDotNet.Backend.Core.Comparers;
 
-using System;
-using System.Collections.Generic;
 using ScreepsDotNet.Backend.Core.Models;
 
 public sealed class RoomReferenceComparer : IEqualityComparer<RoomReference>

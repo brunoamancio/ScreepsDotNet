@@ -1,7 +1,5 @@
 ﻿namespace ScreepsDotNet.Backend.Core.Models;
 
-using System.Collections.Generic;
-
 public static class ServerDataExtensions
 {
     public static ServerData WithCustomObjectOverrides(this ServerData source, IReadOnlyDictionary<string, object?> overrides)

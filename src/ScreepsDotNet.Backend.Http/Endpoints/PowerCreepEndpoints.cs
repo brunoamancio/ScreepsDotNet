@@ -1,7 +1,5 @@
 ﻿namespace ScreepsDotNet.Backend.Http.Endpoints;
 
-using System.Collections.Generic;
-using System.Linq;
 using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Mvc;
 using ScreepsDotNet.Backend.Core.Context;
@@ -43,7 +41,7 @@ internal static class PowerCreepEndpoints
                                   return Results.Unauthorized();
 
                               var creeps = await powerCreepService.GetListAsync(userId, cancellationToken).ConfigureAwait(false);
-                              var response = new PowerCreepListResponse(creeps.Select(PowerCreepResponse.FromModel).ToList());
+                              var response = new PowerCreepListResponse([.. creeps.Select(PowerCreepResponse.FromModel)]);
                               return Results.Ok(response);
                           })
            .RequireTokenAuthentication()

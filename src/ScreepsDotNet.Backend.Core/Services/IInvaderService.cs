@@ -1,7 +1,5 @@
 ﻿namespace ScreepsDotNet.Backend.Core.Services;
 
-using System.Threading;
-using System.Threading.Tasks;
 using ScreepsDotNet.Backend.Core.Models;
 
 public interface IInvaderService

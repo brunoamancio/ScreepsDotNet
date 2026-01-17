@@ -1,9 +1,5 @@
 ﻿namespace ScreepsDotNet.Backend.Core.Intents;
 
-using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
-
 /// <summary>
 /// Provides the combined set of built-in and mod-defined intent schemas.
 /// </summary>

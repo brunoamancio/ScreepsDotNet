@@ -1,7 +1,7 @@
-﻿using ScreepsDotNet.Backend.Core.Models;
-using ScreepsDotNet.Backend.Core.Repositories;
+﻿namespace ScreepsDotNet.Backend.Core.Services;
 
-namespace ScreepsDotNet.Backend.Core.Services;
+using ScreepsDotNet.Backend.Core.Models;
+using ScreepsDotNet.Backend.Core.Repositories;
 
 public sealed class VersionInfoProvider(IUserRepository userRepository,
                                         IServerDataRepository serverDataRepository,

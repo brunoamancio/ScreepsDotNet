@@ -1,7 +1,5 @@
 ﻿namespace ScreepsDotNet.Backend.Core.Models;
 
-using System.Collections.Generic;
-
 /// <summary>
 /// Input payload required to compute Screeps map statistics.
 /// </summary>

@@ -78,7 +78,7 @@ internal static partial class UserBadgeUpdateFactory
     }
 
     private static IList<object?> ConvertJsonArray(JsonElement element)
-        => element.EnumerateArray().Select(ConvertJsonElementToDotNet).ToList();
+        => [.. element.EnumerateArray().Select(ConvertJsonElementToDotNet)];
 
     [GeneratedRegex("^#[0-9a-f]{6}$", RegexOptions.IgnoreCase)]
     private static partial Regex BuildBadgeColorRegex();

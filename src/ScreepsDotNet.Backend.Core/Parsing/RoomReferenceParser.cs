@@ -1,7 +1,5 @@
 ﻿namespace ScreepsDotNet.Backend.Core.Parsing;
 
-using System.Collections.Generic;
-using System.Linq;
 using System.Text.RegularExpressions;
 using ScreepsDotNet.Backend.Core.Comparers;
 using ScreepsDotNet.Backend.Core.Models;

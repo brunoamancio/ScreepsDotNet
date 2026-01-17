@@ -1,7 +1,5 @@
 ﻿namespace ScreepsDotNet.Backend.Core.Models;
 
-using System;
-
 /// <summary>
 /// Identifies a Screeps room, optionally scoped to a shard.
 /// </summary>

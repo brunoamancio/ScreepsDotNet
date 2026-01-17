@@ -15,9 +15,9 @@ internal static class MarketEndpoints
     private const string MyOrdersEndpointName = "GetMarketMyOrders";
     private const string StatsEndpointName = "GetMarketStats";
     private const string InvalidParamsMessage = "invalid params";
-#pragma warning disable IDE0052 // Used in attribute parameters
+#pragma warning disable IDE0051, IDE0052 // Used in attribute parameters
     private const string ResourceTypeQueryName = "resourceType";
-#pragma warning restore IDE0052
+#pragma warning restore IDE0051, IDE0052
     private const string MissingUserContextMessage = "User context is not available.";
 
     public static void Map(WebApplication app)

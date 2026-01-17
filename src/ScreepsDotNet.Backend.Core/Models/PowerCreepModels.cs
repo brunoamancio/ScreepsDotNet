@@ -1,7 +1,5 @@
 ﻿namespace ScreepsDotNet.Backend.Core.Models;
 
-using System.Collections.Generic;
-
 public sealed record PowerCreepListItem(
     string Id,
     string? Name,

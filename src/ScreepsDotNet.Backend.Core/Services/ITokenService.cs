@@ -1,6 +1,5 @@
 ﻿namespace ScreepsDotNet.Backend.Core.Services;
 
-using System.Collections.Generic;
 using ScreepsDotNet.Backend.Core.Models;
 
 public interface ITokenService

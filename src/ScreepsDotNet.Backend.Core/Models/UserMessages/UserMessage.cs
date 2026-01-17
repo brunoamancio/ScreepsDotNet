@@ -1,7 +1,5 @@
 namespace ScreepsDotNet.Backend.Core.Models.UserMessages;
 
-using System;
-
 public sealed record UserMessage(
     string Id,
     string UserId,

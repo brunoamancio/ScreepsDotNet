@@ -1,7 +1,5 @@
 ﻿namespace ScreepsDotNet.Backend.Core.Models;
 
-using System.Collections.Generic;
-
 /// <summary>
 /// Minimal data required by /api/game/room-overview.
 /// </summary>

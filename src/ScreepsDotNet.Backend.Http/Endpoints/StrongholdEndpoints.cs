@@ -1,8 +1,5 @@
 ﻿namespace ScreepsDotNet.Backend.Http.Endpoints;
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Mvc;
 using ScreepsDotNet.Backend.Core.Constants;
@@ -41,17 +38,16 @@ internal static class StrongholdEndpoints
                               var templates = await templateProvider.GetTemplatesAsync(cancellationToken).ConfigureAwait(false);
                               var depositTypes = await templateProvider.GetDepositTypesAsync(cancellationToken).ConfigureAwait(false);
                               var response = new StrongholdTemplatesResponse(
-                           templates.Select(t => new StrongholdTemplateResponse(
+                           [.. templates.Select(t => new StrongholdTemplateResponse(
                                                     t.Name,
                                                     t.Description,
                                                     t.RewardLevel,
-                                                    t.Structures.Select(s => new StrongholdStructureResponse(
+                                                    [.. t.Structures.Select(s => new StrongholdStructureResponse(
                                                                                     s.Type.ToDocumentValue(),
                                                                                     s.OffsetX,
                                                                                     s.OffsetY,
                                                                                     s.Level,
-                                                                                    s.Behavior)).ToList()))
-                                    .ToList(),
+                                                                                    s.Behavior))]))],
                            depositTypes);
                               return Results.Ok(response);
                           })

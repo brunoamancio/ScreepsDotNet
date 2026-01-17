@@ -1,8 +1,5 @@
 ﻿namespace ScreepsDotNet.Backend.Http.Endpoints;
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 using System.Text.Json;
 using Microsoft.AspNetCore.Http;
@@ -79,11 +76,11 @@ internal static class UserEndpoints
     private const string IndexUserMessagesEndpointName = "GetUserMessageIndex";
     private const string MarkUserMessageReadEndpointName = "PostUserMessageMarkRead";
     private const string UnreadMessageCountEndpointName = "GetUserMessageUnreadCount";
-#pragma warning disable IDE0052 // Used in attribute parameters
+#pragma warning disable IDE0051, IDE0052 // Used in attribute parameters
     private const string UsernameQueryName = "username";
     private const string UserIdQueryName = "id";
     private const string BorderQueryName = "border";
-#pragma warning restore IDE0052
+#pragma warning restore IDE0051, IDE0052
     private const string DefaultOverviewStatName = "energyHarvested";
     private static readonly int[] AllowedStatsIntervals = [8, 180, 1440];
     private static readonly int[] AllowedNotifyIntervals = [5, 10, 30, 60, 180, 360, 720, 1440, 4320];
@@ -179,10 +176,7 @@ internal static class UserEndpoints
                                    return Results.BadRequest(new ErrorResponse(errorMessage ?? UserBadgeUpdateFactory.InvalidBadgeParamsMessage));
 
                                var success = await userRepository.UpdateBadgeAsync(user.Id, badgeUpdate!, cancellationToken).ConfigureAwait(false);
-                               if (!success)
-                                   return Results.BadRequest(new ErrorResponse(UserNotFoundMessage));
-
-                               return Results.Ok(UserResponseFactory.CreateEmpty());
+                               return !success ? Results.BadRequest(new ErrorResponse(UserNotFoundMessage)) : Results.Ok(UserResponseFactory.CreateEmpty());
                            })
            .RequireTokenAuthentication()
            .WithName(BadgeEndpointName);
@@ -235,10 +229,9 @@ internal static class UserEndpoints
                                    return Results.BadRequest(new ErrorResponse(InvalidStatsIntervalMessage));
 
                                var updated = await repository.UpdateBranchModulesAsync(user.Id, branchIdentifier, request.Modules, cancellationToken).ConfigureAwait(false);
-                               if (!updated)
-                                   return Results.BadRequest(new ErrorResponse(BranchOperationFailedMessage));
-
-                               return Results.Ok(UserResponseFactory.CreateTimestamp());
+                               return !updated
+                                   ? Results.BadRequest(new ErrorResponse(BranchOperationFailedMessage))
+                                   : Results.Ok(UserResponseFactory.CreateTimestamp());
                            })
            .RequireTokenAuthentication()
            .WithName(PostCodeEndpointName);
@@ -258,10 +251,9 @@ internal static class UserEndpoints
                                }
 
                                var success = await repository.SetActiveBranchAsync(user.Id, request.Branch!, request.ActiveName!, cancellationToken).ConfigureAwait(false);
-                               if (!success)
-                                   return Results.BadRequest(new ErrorResponse(BranchOperationFailedMessage));
-
-                               return Results.Ok(UserResponseFactory.CreateTimestamp());
+                               return !success
+                                   ? Results.BadRequest(new ErrorResponse(BranchOperationFailedMessage))
+                                   : Results.Ok(UserResponseFactory.CreateTimestamp());
                            })
            .RequireTokenAuthentication()
            .WithName(SetActiveBranchEndpointName);
@@ -286,10 +278,9 @@ internal static class UserEndpoints
                                                                         request.NewName!,
                                                                         request.DefaultModules,
                                                                         cancellationToken).ConfigureAwait(false);
-                               if (!success)
-                                   return Results.BadRequest(new ErrorResponse(BranchOperationFailedMessage));
-
-                               return Results.Ok(UserResponseFactory.CreateTimestamp());
+                               return !success
+                                   ? Results.BadRequest(new ErrorResponse(BranchOperationFailedMessage))
+                                   : Results.Ok(UserResponseFactory.CreateTimestamp());
                            })
            .RequireTokenAuthentication()
            .WithName(CloneBranchEndpointName);
@@ -307,10 +298,9 @@ internal static class UserEndpoints
                                    return Results.BadRequest(new ErrorResponse(InvalidStatsIntervalMessage));
 
                                var success = await repository.DeleteBranchAsync(user.Id, request.Branch!, cancellationToken).ConfigureAwait(false);
-                               if (!success)
-                                   return Results.BadRequest(new ErrorResponse(BranchOperationFailedMessage));
-
-                               return Results.Ok(UserResponseFactory.CreateTimestamp());
+                               return !success
+                                   ? Results.BadRequest(new ErrorResponse(BranchOperationFailedMessage))
+                                   : Results.Ok(UserResponseFactory.CreateTimestamp());
                            })
            .RequireTokenAuthentication()
            .WithName(DeleteBranchEndpointName);
@@ -354,13 +344,12 @@ internal static class UserEndpoints
                               var memory = await memoryRepository.GetMemoryAsync(user.Id, cancellationToken).ConfigureAwait(false);
                               var effectiveMemory = UserMemoryHelper.EnsureEffectiveMemory(memory, DefaultMemory);
                               var value = UserMemoryHelper.ResolveMemoryPath(effectiveMemory, path);
-                              if (value is null)
-                                  return Results.Ok(new Dictionary<string, object?> { [UserResponseFields.Data] = MemoryPathErrorMessage });
-
-                              return Results.Ok(new Dictionary<string, object?>
-                              {
-                                  [UserResponseFields.Data] = UserMemoryHelper.EncodeMemoryValue(value, MemoryConstants.GzipPrefix)
-                              });
+                              return value is null
+                                  ? Results.Ok(new Dictionary<string, object?> { [UserResponseFields.Data] = MemoryPathErrorMessage })
+                                  : Results.Ok(new Dictionary<string, object?>
+                                  {
+                                      [UserResponseFields.Data] = UserMemoryHelper.EncodeMemoryValue(value, MemoryConstants.GzipPrefix)
+                                  });
                           })
            .RequireTokenAuthentication()
            .WithName(GetMemoryEndpointName);
@@ -680,14 +669,13 @@ internal static class UserEndpoints
                               var user = UserEndpointGuards.RequireUser(userAccessor, MissingUserContextMessage);
                               var branchName = branch ?? ActiveWorldIdentifier;
                               var codeBranch = await repository.GetBranchAsync(user.Id, branchName, cancellationToken).ConfigureAwait(false);
-                              if (codeBranch is null)
-                                  return Results.BadRequest(new ErrorResponse(NoCodeMessage));
-
-                              return Results.Ok(new Dictionary<string, object?>
-                              {
-                                  [UserResponseFields.Branch] = codeBranch.Branch,
-                                  [UserResponseFields.Modules] = codeBranch.Modules
-                              });
+                              return codeBranch is null
+                                  ? Results.BadRequest(new ErrorResponse(NoCodeMessage))
+                                  : Results.Ok(new Dictionary<string, object?>
+                                  {
+                                      [UserResponseFields.Branch] = codeBranch.Branch,
+                                      [UserResponseFields.Modules] = codeBranch.Modules
+                                  });
                           })
            .RequireTokenAuthentication()
            .WithName(GetCodeEndpointName);
@@ -835,5 +823,5 @@ internal static class UserEndpoints
     }
 
     private static IReadOnlyList<string> FormatRoomReferences(IEnumerable<RoomReference> references)
-        => references.Select(RoomReferenceParser.Format).ToList();
+        => [.. references.Select(RoomReferenceParser.Format)];
 }

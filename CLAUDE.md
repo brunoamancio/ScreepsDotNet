@@ -17,7 +17,7 @@ Modern .NET rewrite of the Screeps private server backend. Exposes legacy HTTP +
 - ✅ **ALWAYS** use pattern matching (`if (obj is User user)` not `as` + null check)
 - ✅ **ALWAYS** use trailing commas in multi-line collections/arrays
 - ✅ **ALWAYS** keep lines under 185 characters (don't wrap unnecessarily)
-- ✅ **ALWAYS** run `dotnet format style` before committing
+- ✅ **ALWAYS** run `dotnet format style --exclude-diagnostics IDE0051 IDE0052 IDE0060` before committing
 - ✅ **ALWAYS** run `git status` from `ScreepsDotNet/` directory (not repo root)
 - ✅ **ALWAYS** use Testcontainers for integration tests (never local Docker state)
 - ❌ **NEVER** modify files in `ScreepsNodeJs/` (separate git repository)
@@ -131,22 +131,39 @@ ScreepsDotNet/
 All rules below are enforced at **ERROR** level unless otherwise noted.
 
 ### Implicit Usings
-Configured in `Directory.Build.props`. Never add these manually:
+Configured in `Directory.Build.props` (`<ImplicitUsings>enable</ImplicitUsings>`).
 
-**❌ Bad:**
+**The following 7 usings are IMPLICIT (never add manually):**
+1. `System`
+2. `System.Collections.Generic`
+3. `System.IO`
+4. `System.Linq`
+5. `System.Net.Http`
+6. `System.Threading`
+7. `System.Threading.Tasks`
+
+**ALL other System.* usings are EXPLICIT (must be added):**
+- ✅ `System.Text` - Required for `Encoding`
+- ✅ `System.Text.Json` - Required for `JsonSerializer`, `JsonElement`, `JsonValueKind`
+- ✅ `System.Text.RegularExpressions` - Required for `Regex`, `GeneratedRegexAttribute`
+- ✅ Any other System.* namespace not in the list above
+
+**❌ Bad (adding implicit usings):**
 ```csharp
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using System;                          // ❌ Implicit - remove
+using System.Collections.Generic;      // ❌ Implicit - remove
+using System.Linq;                     // ❌ Implicit - remove
+using System.Threading.Tasks;          // ❌ Implicit - remove
 ```
 
-**✅ Good:**
+**✅ Good (only explicit usings):**
 ```csharp
-// No usings needed for System.* - already imported
-// Only add explicit usings for third-party or project namespaces
-using MongoDB.Driver;
-using ScreepsDotNet.Backend.Core.Abstractions;
+// Implicit System.* usings omitted (automatically available)
+// Only add NON-implicit System.* usings and external namespaces
+using System.Text;                     // ✅ Explicit - required for Encoding
+using System.Text.Json;                // ✅ Explicit - required for JsonSerializer
+using MongoDB.Driver;                  // ✅ External - always required
+using ScreepsDotNet.Backend.Core.Abstractions;  // ✅ Project - always required
 ```
 
 ### Variable Declarations
@@ -1034,19 +1051,29 @@ var number = (int)5;  // Unnecessary
 var count = this.items.Count;  // Remove 'this.'
 ```
 
-### IDE0052 False Positives (Attribute Parameters)
+### IDE0051/IDE0052 False Positives (Attribute Parameters)
 **⚠️ CRITICAL: Known Roslyn Bug**
 
-IDE0052 incorrectly flags constants as "unread" when they are **only used in attribute parameters**. This causes `dotnet format style` to delete actively-used constants.
+IDE0051 ("Remove unused private members") and IDE0052 ("Remove unread private members") incorrectly flag constants as unused/unread when they are **only used in attribute parameters**. This causes `dotnet format style` to delete actively-used constants.
 
-**✅ Good - Protect with pragma:**
+**✅ Solution 1 - Run formatter with exclusions (REQUIRED):**
+```bash
+# ALWAYS use this command instead of plain 'dotnet format style'
+dotnet format style --exclude-diagnostics IDE0051 IDE0052 IDE0060
+
+# IDE0051 = Remove unused private members (false positive for attribute params)
+# IDE0052 = Remove unread private members (false positive for attribute params)
+# IDE0060 = Remove unused parameters (optional exclusion for consistency)
+```
+
+**✅ Solution 2 - Protect constants with pragma (REQUIRED):**
 ```csharp
 // Endpoint constants used ONLY in [FromQuery(Name = ...)] attributes
-#pragma warning disable IDE0052 // Used in attribute parameters
+#pragma warning disable IDE0051, IDE0052 // Used in attribute parameters
 private const string UsernameQueryName = "username";
 private const string UserIdQueryName = "id";
 private const string ResourceTypeQueryName = "resourceType";
-#pragma warning restore IDE0052
+#pragma warning restore IDE0051, IDE0052
 
 // Usage in attributes
 app.MapGet("/api/user",
@@ -1063,10 +1090,15 @@ private const string UsernameQueryName = "username";
 
 app.MapGet("/api/user",
     async ([FromQuery(Name = UsernameQueryName)] string? username) => {
-        // After dotnet format style, UsernameQueryName will be deleted
+        // After 'dotnet format style' without exclusions, UsernameQueryName will be deleted
         // causing compilation errors!
     });
 ```
+
+**Why both solutions are needed:**
+- **Pragma suppression** prevents IDE warnings and protects individual constants
+- **Command-line exclusions** prevent the formatter from deleting constants globally
+- Both work together to prevent Roslyn from breaking the code
 
 **When to add pragma suppression:**
 - Constants used **exclusively** in attribute parameters (`[FromQuery]`, `[FromHeader]`, `[FromRoute]`, etc.)
@@ -1074,7 +1106,7 @@ app.MapGet("/api/user",
 - Applies to all endpoint files: `*Endpoints.cs` in `ScreepsDotNet.Backend.Http/Endpoints/`
 
 **Examples in codebase:**
-- `UserEndpoints.cs` lines 82-86: `UsernameQueryName`, `UserIdQueryName`, `BorderQueryName`
+- `UserEndpoints.cs` lines 79-83: `UsernameQueryName`, `UserIdQueryName`, `BorderQueryName`
 - `MarketEndpoints.cs` lines 18-20: `ResourceTypeQueryName`
 
 ### Lock Primitives
@@ -1288,7 +1320,7 @@ dotnet run --project src/ScreepsDotNet.Backend.Cli/ScreepsDotNet.Backend.Cli.csp
 # 3. Make changes, test
 
 # 4. Before committing
-dotnet format style
+dotnet format style --exclude-diagnostics IDE0051 IDE0052 IDE0060
 dotnet test src/ScreepsDotNet.slnx
 git status  # Verify ScreepsNodeJs/ is not included
 ```
@@ -1735,7 +1767,8 @@ This file provides **solution-wide** context. For subsystem-specific details:
 - Create TODO comments instead of tracking in roadmaps
 - Duplicate documentation between files
 - Mix constant types randomly in endpoint classes (follow organization pattern: value constants → messages → endpoint names → query params → defaults → numeric arrays → limits → complex objects)
-- Forget to add `#pragma warning disable IDE0052` for constants used ONLY in attribute parameters (see "IDE0052 False Positives" section)
+- Forget to add `#pragma warning disable IDE0051, IDE0052` for constants used ONLY in attribute parameters (see "IDE0051/IDE0052 False Positives" section)
+- Run `dotnet format style` without exclusions (always use `--exclude-diagnostics IDE0051 IDE0052 IDE0060`)
 
 ✅ **Do:**
 - Use `var` for ALL variable declarations
@@ -1756,7 +1789,7 @@ This file provides **solution-wide** context. For subsystem-specific details:
 - Use target-typed `new()` when type is evident
 - Use expression-bodied members with `=>` on new line
 - Use Context7 MCP for library documentation proactively
-- Run `dotnet format style` before committing
+- Run `dotnet format style --exclude-diagnostics IDE0051 IDE0052 IDE0060` before committing
 - Use Testcontainers for integration tests
 - Update docs when changing functionality
 - Check `git status` from `ScreepsDotNet/` directory
@@ -1764,7 +1797,8 @@ This file provides **solution-wide** context. For subsystem-specific details:
 - Stop `dotnet run` before `dotnet build`
 - Keep configuration in sync (appsettings.json, appsettings.Development.json)
 - Organize constants in endpoint classes by type (see "Constant Organization in Endpoint Classes" section)
-- Protect constants used ONLY in attribute parameters with `#pragma warning disable IDE0052` (see "IDE0052 False Positives" section)
+- Protect constants used ONLY in attribute parameters with `#pragma warning disable IDE0051, IDE0052` (see "IDE0051/IDE0052 False Positives" section)
+- Run `dotnet format style --exclude-diagnostics IDE0051 IDE0052 IDE0060` to avoid deleting attribute parameter constants
 
 ## Documentation Map
 

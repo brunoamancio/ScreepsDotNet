@@ -1,7 +1,5 @@
 ﻿namespace ScreepsDotNet.Backend.Core.Constants;
 
-using System.Collections.Generic;
-
 public static class PowerConstants
 {
     public const double PowerLevelMultiply = 1000;

@@ -1,8 +1,5 @@
 ﻿namespace ScreepsDotNet.Backend.Core.Intents;
 
-using System;
-using System.Collections.Generic;
-
 public enum IntentFieldType
 {
     ScalarString,

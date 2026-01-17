@@ -1,7 +1,5 @@
 ﻿namespace ScreepsDotNet.Backend.Core.Models.Mods;
 
-using System;
-using System.Collections.Generic;
 using ScreepsDotNet.Backend.Core.Intents;
 
 /// <summary>
