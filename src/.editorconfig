@@ -427,6 +427,9 @@ csharp_style_inlined_variable_declaration = true:error
 # IDE0018: Inline variable declaration
 dotnet_diagnostic.ide0018.severity = error
 
+# IDE0090: Use 'new(...)' - Simplify new expression
+dotnet_diagnostic.ide0090.severity = error
+
 # No warning at compilation time needed at this time.
 csharp_style_prefer_index_operator = true:warning
 csharp_style_prefer_range_operator = true:warning
