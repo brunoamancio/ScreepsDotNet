@@ -157,17 +157,70 @@ public sealed class MovementIntentStepTests
         var intents = CreateIntentSnapshot([("enemy", "enemy", new MoveIntent(11, 10))]);
         var state = CreateState([enemy, rampart], intents);
         var writer = new RecordingMutationWriter();
-        var step = new MovementIntentStep(new NullDeathProcessor());
+        var death = new RecordingDeathProcessor();
+        var step = new MovementIntentStep(death);
 
         await step.ExecuteAsync(new RoomProcessorContext(state, writer, new NullCreepStatsSink()), TestContext.Current.CancellationToken);
         Assert.Empty(writer.Patches);
+        Assert.Contains(death.Creeps, c => c.Id == "enemy");
 
         var publicRampart = rampart with { IsPublic = true };
         state = CreateState([enemy, publicRampart], intents);
         writer.Reset();
+        death.Reset();
 
         await step.ExecuteAsync(new RoomProcessorContext(state, writer, new NullCreepStatsSink()), TestContext.Current.CancellationToken);
         Assert.Contains(writer.Patches, p => p.ObjectId == "enemy");
+        Assert.Empty(death.Creeps);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_CrashesPullChainWhenTargetIsFatal()
+    {
+        var puller = CreateCreep("puller", 10, 10);
+        var pulled = CreateCreep("pulled", 10, 11);
+        var wall = CreateStructure("wall1", RoomObjectTypes.ConstructedWall, 11, 10);
+
+        var objectIntents = new[]
+        {
+            ("user1", "puller", CreateTargetIntentRecord(IntentKeys.Pull, "pulled"))
+        };
+
+        var intents = CreateIntentSnapshot(
+            [
+                ("user1", "puller", new MoveIntent(11, 10)),
+                ("user1", "pulled", new MoveIntent(11, 10))
+            ],
+            objectIntents);
+
+        var state = CreateState([puller, pulled, wall], intents);
+        var writer = new RecordingMutationWriter();
+        var death = new RecordingDeathProcessor();
+        var step = new MovementIntentStep(death);
+
+        await step.ExecuteAsync(new RoomProcessorContext(state, writer, new NullCreepStatsSink()), TestContext.Current.CancellationToken);
+
+        Assert.Empty(writer.Patches);
+        Assert.Equal(2, death.Creeps.Count);
+        Assert.Contains(death.Creeps, c => c.Id == "puller");
+        Assert.Contains(death.Creeps, c => c.Id == "pulled");
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_PowerCreepCrashesOnPortal()
+    {
+        var powerCreep = CreatePowerCreep("pc1", 10, 10);
+        var portal = CreatePortal("portal1", 11, 10);
+        var intents = CreateIntentSnapshot([("user1", "pc1", new MoveIntent(11, 10))]);
+        var state = CreateState([powerCreep, portal], intents);
+        var writer = new RecordingMutationWriter();
+        var death = new RecordingDeathProcessor();
+        var step = new MovementIntentStep(death);
+
+        await step.ExecuteAsync(new RoomProcessorContext(state, writer, new NullCreepStatsSink()), TestContext.Current.CancellationToken);
+
+        Assert.Empty(writer.Patches);
+        Assert.Contains(death.Creeps, c => c.Id == "pc1");
     }
 
     private static RoomIntentSnapshot CreateIntentSnapshot(
@@ -253,6 +306,38 @@ public sealed class MovementIntentStepTests
                 new(BodyPartType.Move, ScreepsGameConstants.BodyPartHitPoints, null)
             });
 
+    private static RoomObjectSnapshot CreatePowerCreep(string id, int x, int y, string userId = "user1")
+        => new(
+            id,
+            RoomObjectTypes.PowerCreep,
+            "W1N1",
+            null,
+            userId,
+            x,
+            y,
+            Hits: 100,
+            HitsMax: 100,
+            Fatigue: 0,
+            TicksToLive: 1000,
+            Name: id,
+            Level: null,
+            Density: null,
+            MineralType: null,
+            DepositType: null,
+            StructureType: null,
+            Store: new Dictionary<string, int>(Comparer),
+            StoreCapacity: null,
+            StoreCapacityResource: new Dictionary<string, int>(Comparer),
+            Reservation: null,
+            Sign: null,
+            Structure: null,
+            Effects: new Dictionary<string, object?>(Comparer),
+            Spawning: null,
+            Body: new List<CreepBodyPartSnapshot>
+            {
+                new(BodyPartType.Move, ScreepsGameConstants.BodyPartHitPoints, null)
+            });
+
     private static RoomObjectSnapshot CreateRampart(string id, int x, int y, string owner, bool isPublic)
         => new(
             id,
@@ -284,6 +369,35 @@ public sealed class MovementIntentStepTests
             IsSpawning: null,
             UserSummoned: null,
             IsPublic: isPublic);
+
+    private static RoomObjectSnapshot CreatePortal(string id, int x, int y)
+        => new(
+            id,
+            RoomObjectTypes.Portal,
+            "W1N1",
+            null,
+            null,
+            x,
+            y,
+            Hits: null,
+            HitsMax: null,
+            Fatigue: null,
+            TicksToLive: null,
+            Name: null,
+            Level: null,
+            Density: null,
+            MineralType: null,
+            DepositType: null,
+            StructureType: RoomObjectTypes.Portal,
+            Store: new Dictionary<string, int>(Comparer),
+            StoreCapacity: null,
+            StoreCapacityResource: new Dictionary<string, int>(Comparer),
+            Reservation: null,
+            Sign: null,
+            Structure: null,
+            Effects: new Dictionary<string, object?>(Comparer),
+            Spawning: null,
+            Body: Array.Empty<CreepBodyPartSnapshot>());
 
     private static RoomObjectSnapshot CreateStructure(string id, string type, int x, int y, string? owner = "system")
         => new(
@@ -358,5 +472,7 @@ public sealed class MovementIntentStepTests
 
         public void Process(RoomProcessorContext context, RoomObjectSnapshot creep, CreepDeathOptions options, IDictionary<string, int> energyLedger)
             => Creeps.Add(creep);
+
+        public void Reset() => Creeps.Clear();
     }
 }

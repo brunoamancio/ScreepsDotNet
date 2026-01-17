@@ -97,12 +97,12 @@ internal sealed class MovementIntentStep(ICreepDeathProcessor deathProcessor) : 
 
         var resolved = BuildResolvedMatrix(matrix);
         var plannedMoves = resolved.Values.ToDictionary(a => a.Candidate.Creep.Id, a => a.Target, Comparer);
-        var crashes = new List<RoomObjectSnapshot>();
+        var crashes = new Dictionary<string, RoomObjectSnapshot>(Comparer);
 
         foreach (var target in resolved.Keys.ToList())
             ValidateAssignment(target);
 
-        return (plannedMoves, crashes);
+        return (plannedMoves, crashes.Values.ToList());
 
         void ValidateAssignment(TileCoord target)
         {
@@ -110,6 +110,7 @@ internal sealed class MovementIntentStep(ICreepDeathProcessor deathProcessor) : 
                 return;
 
             var candidate = assignment.Candidate;
+
             if (candidate.IsOutOfBounds)
             {
                 RemoveAssignment(target, fatal: true);
@@ -141,12 +142,45 @@ internal sealed class MovementIntentStep(ICreepDeathProcessor deathProcessor) : 
             plannedMoves.Remove(assignment.Candidate.Creep.Id);
 
             if (fatal)
-                crashes.Add(assignment.Candidate.Creep);
+                RegisterCrash(assignment.Candidate);
 
             var origin = assignment.Candidate.Origin;
             if (resolved.ContainsKey(origin))
                 RemoveAssignment(origin);
         }
+        void RegisterCrash(MoveCandidate candidate)
+        {
+            AddCrash(candidate.Creep);
+            CrashPartner(candidate.PullTarget);
+            CrashPartner(candidate.Puller);
+        }
+
+        void CrashPartner(RoomObjectSnapshot? partner)
+        {
+            if (partner is null)
+                return;
+
+            if (RemoveAssignmentByCreep(partner, fatal: true))
+                return;
+
+            AddCrash(partner);
+        }
+
+        bool RemoveAssignmentByCreep(RoomObjectSnapshot creep, bool fatal)
+        {
+            if (!plannedMoves.TryGetValue(creep.Id, out var partnerTarget))
+                return false;
+
+            if (!resolved.TryGetValue(partnerTarget, out var assignment) ||
+                !string.Equals(assignment.Candidate.Creep.Id, creep.Id, StringComparison.Ordinal))
+                return false;
+
+            RemoveAssignment(partnerTarget, fatal);
+            return true;
+        }
+
+        void AddCrash(RoomObjectSnapshot creep)
+            => crashes.TryAdd(creep.Id, creep);
     }
 
     private static Dictionary<TileCoord, List<MoveCandidate>> BuildMatrix(IReadOnlyList<MoveCandidate> candidates)
@@ -244,8 +278,9 @@ internal sealed class MovementIntentStep(ICreepDeathProcessor deathProcessor) : 
 
         foreach (var structure in tile.Structures)
         {
-            if (BlocksStructure(structure, candidate.Creep))
-                return ObstacleEvaluation.Fatal;
+            var structureEvaluation = EvaluateStructure(structure, candidate.Creep);
+            if (structureEvaluation != ObstacleEvaluation.None)
+                return structureEvaluation;
         }
 
         foreach (var occupant in tile.Creeps)
@@ -282,21 +317,40 @@ internal sealed class MovementIntentStep(ICreepDeathProcessor deathProcessor) : 
         return string.Equals(mover.UserId, occupant.UserId, StringComparison.Ordinal);
     }
 
-    private static bool BlocksStructure(RoomObjectSnapshot structure, RoomObjectSnapshot creep)
+    private static ObstacleEvaluation EvaluateStructure(RoomObjectSnapshot structure, RoomObjectSnapshot creep)
     {
         var type = structure.Type;
         if (string.Equals(type, RoomObjectTypes.Rampart, StringComparison.Ordinal))
         {
             if (structure.IsPublic == true)
-                return false;
+                return ObstacleEvaluation.None;
 
-            return !string.Equals(structure.UserId, creep.UserId, StringComparison.Ordinal);
+            return !string.Equals(structure.UserId, creep.UserId, StringComparison.Ordinal)
+                ? ObstacleEvaluation.Fatal
+                : ObstacleEvaluation.None;
         }
 
         if (string.Equals(type, RoomObjectTypes.ConstructionSite, StringComparison.Ordinal))
-            return BlocksConstructionSite(structure.StructureType, structure.UserId, creep.UserId);
+        {
+            return BlocksConstructionSite(structure.StructureType, structure.UserId, creep.UserId)
+                ? ObstacleEvaluation.Fatal
+                : ObstacleEvaluation.None;
+        }
 
-        return BlockingStructureTypes.Contains(type);
+        if (string.Equals(type, RoomObjectTypes.Portal, StringComparison.Ordinal))
+        {
+            if (string.Equals(creep.Type, RoomObjectTypes.PowerCreep, StringComparison.Ordinal))
+                return ObstacleEvaluation.Fatal;
+
+            return ObstacleEvaluation.None;
+        }
+
+        if (string.Equals(type, RoomObjectTypes.Exit, StringComparison.Ordinal))
+            return ObstacleEvaluation.None;
+
+        return BlockingStructureTypes.Contains(type)
+            ? ObstacleEvaluation.Fatal
+            : ObstacleEvaluation.None;
     }
 
     private static bool BlocksConstructionSite(string? structureType, string? siteOwner, string? moverOwner)
@@ -402,13 +456,24 @@ internal sealed class MovementIntentStep(ICreepDeathProcessor deathProcessor) : 
                 var origin = new TileCoord(creep.X, creep.Y);
                 var target = new TileCoord(clampedX, clampedY);
 
+                var puller = pullState.PulledBy.TryGetValue(creep.Id, out var pullerId) &&
+                             context.State.Objects.TryGetValue(pullerId, out var pullerSnapshot)
+                    ? pullerSnapshot
+                    : null;
+                var pullTarget = pullState.PullTargets.TryGetValue(creep.Id, out var pullTargetId) &&
+                                 context.State.Objects.TryGetValue(pullTargetId, out var pullTargetSnapshot)
+                    ? pullTargetSnapshot
+                    : null;
+
                 var candidate = new MoveCandidate(
                     creep,
                     origin,
                     target,
-                    pullState.PulledBy.ContainsKey(creep.Id),
-                    pullState.PullTargets.ContainsKey(creep.Id),
-                    isOutOfBounds);
+                    puller is not null,
+                    pullTarget is not null,
+                    isOutOfBounds,
+                    puller,
+                    pullTarget);
 
                 result.Add(candidate);
             }
@@ -598,7 +663,9 @@ internal sealed class MovementIntentStep(ICreepDeathProcessor deathProcessor) : 
         TileCoord Target,
         bool IsPulled,
         bool IsPulling,
-        bool IsOutOfBounds);
+        bool IsOutOfBounds,
+        RoomObjectSnapshot? Puller,
+        RoomObjectSnapshot? PullTarget);
 
     private sealed record MoveAssignment(MoveCandidate Candidate, TileCoord Target);
 
