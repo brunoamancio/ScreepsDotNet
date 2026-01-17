@@ -4,7 +4,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using ScreepsDotNet.Common;
 using ScreepsDotNet.Common.Constants;
 using ScreepsDotNet.Common.Structures;
 using ScreepsDotNet.Driver.Contracts;

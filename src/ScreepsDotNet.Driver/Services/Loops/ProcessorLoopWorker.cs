@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using MongoDB.Bson;
 using ScreepsDotNet.Common;
 using ScreepsDotNet.Common.Constants;
+using ScreepsDotNet.Common.Extensions;
 using ScreepsDotNet.Driver.Abstractions;
 using ScreepsDotNet.Driver.Abstractions.Config;
 using ScreepsDotNet.Driver.Abstractions.Environment;

@@ -2,7 +2,6 @@ namespace ScreepsDotNet.Driver.Contracts;
 
 using System;
 using System.Collections.Generic;
-using ScreepsDotNet.Common;
 using ScreepsDotNet.Common.Constants;
 using ScreepsDotNet.Common.Types;
 
@@ -38,6 +37,7 @@ public sealed record RoomObjectSnapshot(
     IReadOnlyList<CreepBodyPartSnapshot> Body,
     bool? IsSpawning = null,
     bool? UserSummoned = null,
+    bool? IsPublic = null,
     string? StrongholdId = null,
     int? DeathTime = null,
     int? DecayTime = null,
@@ -55,7 +55,8 @@ public sealed record RoomObjectSnapshot(
     int? InvaderHarvested = null,
     int? Harvested = null,
     int? Cooldown = null,
-    int? CooldownTime = null)
+    int? CooldownTime = null,
+    int? SafeMode = null)
 {
     public int? MoveBodyParts => GetStoreValue(IntentKeys.Move);
     public int? ControllerDowngradeTimer => GetStoreValue(StoreKeys.DowngradeTimer);

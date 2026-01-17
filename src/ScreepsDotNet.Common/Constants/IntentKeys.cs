@@ -1,4 +1,4 @@
-namespace ScreepsDotNet.Common;
+namespace ScreepsDotNet.Common.Constants;
 
 public static class IntentKeys
 {
@@ -26,6 +26,7 @@ public static class IntentKeys
     public const string Build = "build";
     public const string Repair = "repair";
     public const string Harvest = "harvest";
+    public const string Pull = "pull";
     public const string Transfer = "transfer";
     public const string Withdraw = "withdraw";
     public const string Pickup = "pickup";

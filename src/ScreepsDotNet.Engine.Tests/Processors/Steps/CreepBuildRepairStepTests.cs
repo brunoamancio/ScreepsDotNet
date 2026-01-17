@@ -2,7 +2,6 @@ namespace ScreepsDotNet.Engine.Tests.Processors.Steps;
 
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using ScreepsDotNet.Common;
 using ScreepsDotNet.Common.Constants;
 using ScreepsDotNet.Common.Structures;
 using ScreepsDotNet.Common.Types;

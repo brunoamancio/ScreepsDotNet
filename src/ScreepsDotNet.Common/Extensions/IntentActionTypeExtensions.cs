@@ -1,4 +1,6 @@
-namespace ScreepsDotNet.Common;
+using ScreepsDotNet.Common.Constants;
+
+namespace ScreepsDotNet.Common.Extensions;
 
 public static class IntentActionTypeExtensions
 {

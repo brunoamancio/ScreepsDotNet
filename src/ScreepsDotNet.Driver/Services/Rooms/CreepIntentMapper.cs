@@ -1,5 +1,5 @@
 using MongoDB.Bson;
-using ScreepsDotNet.Common;
+using ScreepsDotNet.Common.Constants;
 using ScreepsDotNet.Driver.Constants;
 using ScreepsDotNet.Driver.Contracts;
 

@@ -71,6 +71,7 @@ internal static class RoomContractMapper
             body,
             isSpawning,
             document.UserSummoned,
+            document.IsPublic,
             document.StrongholdId,
             document.DeathTime,
             document.DecayTime,
@@ -88,7 +89,8 @@ internal static class RoomContractMapper
             document.InvaderHarvested,
             document.Harvested,
             document.Cooldown,
-            document.CooldownTime);
+            document.CooldownTime,
+            document.SafeMode);
     }
 
     public static IReadOnlyDictionary<string, UserState> MapUsers(IReadOnlyDictionary<string, UserDocument> users)

@@ -81,6 +81,9 @@ public sealed class RoomObjectDocument
     [BsonElement("notifyWhenAttacked")]
     public bool? NotifyWhenAttacked { get; set; }
 
+    [BsonElement("isPublic")]
+    public bool? IsPublic { get; set; }
+
     [BsonElement("creepId")]
     public string? CreepId { get; set; }
 
