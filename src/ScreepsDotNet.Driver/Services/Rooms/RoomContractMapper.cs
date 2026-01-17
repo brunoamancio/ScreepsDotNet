@@ -90,7 +90,8 @@ internal static class RoomContractMapper
             document.Harvested,
             document.Cooldown,
             document.CooldownTime,
-            document.SafeMode);
+            document.SafeMode,
+            MapPortalDestination(document.Destination));
     }
 
     public static IReadOnlyDictionary<string, UserState> MapUsers(IReadOnlyDictionary<string, UserDocument> users)
@@ -138,6 +139,46 @@ internal static class RoomContractMapper
         => document is null
             ? null
             : new RoomObjectStructureSnapshot(document.Id, document.Type, document.UserId, document.Hits, document.HitsMax);
+
+    private static RoomPortalDestinationSnapshot? MapPortalDestination(BsonDocument? document)
+    {
+        if (document is null)
+            return null;
+
+        if (!document.TryGetValue(RoomDocumentFields.RoomObject.PortalFields.Room, out var roomValue) ||
+            !roomValue.IsString)
+            return null;
+
+        var roomName = roomValue.AsString;
+        if (string.IsNullOrWhiteSpace(roomName))
+            return null;
+
+        var x = ReadCoordinate(document, RoomDocumentFields.RoomObject.PortalFields.X);
+        var y = ReadCoordinate(document, RoomDocumentFields.RoomObject.PortalFields.Y);
+        var shard = document.TryGetValue(RoomDocumentFields.RoomObject.PortalFields.Shard, out var shardValue) && shardValue.IsString
+            ? shardValue.AsString
+            : null;
+
+        return new RoomPortalDestinationSnapshot(roomName, x, y, shard);
+    }
+
+    private static BsonDocument? MapPortalDestination(RoomPortalDestinationSnapshot? snapshot)
+    {
+        if (snapshot is null)
+            return null;
+
+        var document = new BsonDocument
+        {
+            [RoomDocumentFields.RoomObject.PortalFields.Room] = snapshot.RoomName,
+            [RoomDocumentFields.RoomObject.PortalFields.X] = snapshot.X,
+            [RoomDocumentFields.RoomObject.PortalFields.Y] = snapshot.Y
+        };
+
+        if (!string.IsNullOrWhiteSpace(snapshot.Shard))
+            document[RoomDocumentFields.RoomObject.PortalFields.Shard] = snapshot.Shard;
+
+        return document;
+    }
 
     private static IReadOnlyDictionary<string, object?> MapEffects(BsonArray? effects)
     {
@@ -399,7 +440,8 @@ internal static class RoomContractMapper
             ProgressTotal = snapshot.ProgressTotal,
             Harvested = snapshot.Harvested,
             Cooldown = snapshot.Cooldown,
-            CooldownTime = snapshot.CooldownTime
+            CooldownTime = snapshot.CooldownTime,
+            Destination = MapPortalDestination(snapshot.PortalDestination)
         };
 
         return document;
@@ -495,6 +537,14 @@ internal static class RoomContractMapper
             { IsString: true } when int.TryParse(value.AsString, out var parsed) => parsed,
             _ => null
         };
+    }
+
+    private static int ReadCoordinate(BsonDocument document, string field)
+    {
+        var value = TryReadInt(document, field) ?? 0;
+        if (value < 0) return 0;
+        if (value > 49) return 49;
+        return value;
     }
 
     private static IReadOnlyList<Direction> ReadDirections(BsonDocument document, string field)

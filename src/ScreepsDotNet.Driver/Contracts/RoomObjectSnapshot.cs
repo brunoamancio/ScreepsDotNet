@@ -56,7 +56,8 @@ public sealed record RoomObjectSnapshot(
     int? Harvested = null,
     int? Cooldown = null,
     int? CooldownTime = null,
-    int? SafeMode = null)
+    int? SafeMode = null,
+    RoomPortalDestinationSnapshot? PortalDestination = null)
 {
     public int? MoveBodyParts => GetStoreValue(IntentKeys.Move);
     public int? ControllerDowngradeTimer => GetStoreValue(StoreKeys.DowngradeTimer);
@@ -94,3 +95,5 @@ public sealed record RoomSpawnSpawningSnapshot(
     IReadOnlyList<Direction> Directions);
 
 public sealed record CreepBodyPartSnapshot(BodyPartType Type, int Hits, string? Boost);
+
+public sealed record RoomPortalDestinationSnapshot(string RoomName, int X, int Y, string? Shard);

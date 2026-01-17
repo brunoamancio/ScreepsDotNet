@@ -123,6 +123,9 @@ public sealed class RoomObjectDocument
     [BsonElement("interRoom")]
     public BsonDocument? InterRoom { get; set; }
 
+    [BsonElement("destination")]
+    public BsonDocument? Destination { get; set; }
+
     [BsonElement("effects")]
     public BsonArray? Effects { get; set; }
 

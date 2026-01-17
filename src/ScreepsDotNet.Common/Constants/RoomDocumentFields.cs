@@ -111,6 +111,15 @@ public static class RoomDocumentFields
             public const string Shard = "shard";
         }
 
+        public static class PortalFields
+        {
+            public const string Destination = "destination";
+            public const string Room = "room";
+            public const string X = "x";
+            public const string Y = "y";
+            public const string Shard = "shard";
+        }
+
         public static class EffectFields
         {
             public const string Effect = "effect";

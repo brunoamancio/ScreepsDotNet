@@ -152,7 +152,7 @@ internal sealed class MovementIntentStep(ICreepDeathProcessor deathProcessor) : 
                     return;
                 }
 
-                RegisterTransfer(candidate, descriptor, direction.Value);
+                RegisterEdgeTransfer(candidate, descriptor, direction.Value);
                 return;
             }
 
@@ -162,7 +162,7 @@ internal sealed class MovementIntentStep(ICreepDeathProcessor deathProcessor) : 
                 return;
             }
 
-            var obstacle = EvaluateObstacle(target, candidate, tiles, plannedMoves, safeModeOwner, terrain);
+            var obstacle = EvaluateObstacle(target, candidate, tiles, plannedMoves, safeModeOwner, terrain, out var portalTransfer);
             if (obstacle == ObstacleEvaluation.Fatal)
             {
                 RemoveAssignment(target, fatal: true);
@@ -170,7 +170,13 @@ internal sealed class MovementIntentStep(ICreepDeathProcessor deathProcessor) : 
             }
 
             if (obstacle == ObstacleEvaluation.Blocked)
+            {
                 RemoveAssignment(target);
+                return;
+            }
+
+            if (portalTransfer is not null)
+                RegisterInterRoomTransfer(candidate.Creep, portalTransfer);
         }
 
         void RemoveAssignment(TileCoord target, bool fatal = false)
@@ -238,7 +244,10 @@ internal sealed class MovementIntentStep(ICreepDeathProcessor deathProcessor) : 
             }
         }
 
-        void RegisterTransfer(MoveCandidate candidate, RoomExitDescriptor descriptor, ExitDirection direction)
+        void RegisterInterRoomTransfer(RoomObjectSnapshot creep, RoomObjectInterRoomPatch destination)
+            => transfers.Add(new InterRoomTransfer(creep, destination));
+
+        void RegisterEdgeTransfer(MoveCandidate candidate, RoomExitDescriptor descriptor, ExitDirection direction)
         {
             var destinationRoom = descriptor.TargetRoomName;
             if (string.IsNullOrWhiteSpace(destinationRoom))
@@ -253,9 +262,8 @@ internal sealed class MovementIntentStep(ICreepDeathProcessor deathProcessor) : 
                 _ => (candidate.Target.X, candidate.Target.Y)
             };
 
-            transfers.Add(new InterRoomTransfer(
-                candidate.Creep,
-                new RoomObjectInterRoomPatch(destinationRoom, destinationX, destinationY)));
+            var patch = new RoomObjectInterRoomPatch(destinationRoom, destinationX, destinationY);
+            RegisterInterRoomTransfer(candidate.Creep, patch);
         }
     }
 
@@ -347,16 +355,21 @@ internal sealed class MovementIntentStep(ICreepDeathProcessor deathProcessor) : 
         Dictionary<TileCoord, TileInfo> tiles,
         IReadOnlyDictionary<string, TileCoord> plannedMoves,
         string? safeModeOwner,
-        TerrainCache terrain)
+        TerrainCache terrain,
+        out RoomObjectInterRoomPatch? portalTransfer)
     {
+        portalTransfer = null;
         if (!tiles.TryGetValue(target, out var tile))
             return terrain.IsWall(target.X, target.Y) ? ObstacleEvaluation.Fatal : ObstacleEvaluation.None;
 
         foreach (var structure in tile.Structures)
         {
-            var structureEvaluation = EvaluateStructure(structure, candidate.Creep);
+            var structureEvaluation = EvaluateStructure(structure, candidate.Creep, out var portalPatch);
             if (structureEvaluation != ObstacleEvaluation.None)
                 return structureEvaluation;
+
+            if (portalPatch is not null)
+                portalTransfer = portalPatch;
         }
 
         foreach (var occupant in tile.Creeps)
@@ -393,8 +406,12 @@ internal sealed class MovementIntentStep(ICreepDeathProcessor deathProcessor) : 
         return string.Equals(mover.UserId, occupant.UserId, StringComparison.Ordinal);
     }
 
-    private static ObstacleEvaluation EvaluateStructure(RoomObjectSnapshot structure, RoomObjectSnapshot creep)
+    private static ObstacleEvaluation EvaluateStructure(
+        RoomObjectSnapshot structure,
+        RoomObjectSnapshot creep,
+        out RoomObjectInterRoomPatch? portalTransfer)
     {
+        portalTransfer = null;
         var type = structure.Type;
         if (string.Equals(type, RoomObjectTypes.Rampart, StringComparison.Ordinal))
         {
@@ -417,6 +434,16 @@ internal sealed class MovementIntentStep(ICreepDeathProcessor deathProcessor) : 
         {
             if (string.Equals(creep.Type, RoomObjectTypes.PowerCreep, StringComparison.Ordinal))
                 return ObstacleEvaluation.Fatal;
+
+            if (structure.PortalDestination is { } destination &&
+                !string.IsNullOrWhiteSpace(destination.RoomName))
+            {
+                portalTransfer = new RoomObjectInterRoomPatch(
+                    destination.RoomName,
+                    Math.Clamp(destination.X, 0, 49),
+                    Math.Clamp(destination.Y, 0, 49),
+                    destination.Shard);
+            }
 
             return ObstacleEvaluation.None;
         }

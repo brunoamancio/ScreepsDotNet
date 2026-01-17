@@ -117,6 +117,39 @@ public sealed class RoomContractMapperTests
     }
 
     [Fact]
+    public void MapRoomObject_MapsPortalDestination()
+    {
+        var document = new RoomObjectDocument
+        {
+            Id = ObjectId.GenerateNewId(),
+            Type = RoomObjectTypes.Portal,
+            Room = "W1N1",
+            X = 10,
+            Y = 20,
+            Destination = new BsonDocument
+            {
+                [RoomDocumentFields.RoomObject.PortalFields.Room] = "W0S0",
+                [RoomDocumentFields.RoomObject.PortalFields.X] = 0,
+                [RoomDocumentFields.RoomObject.PortalFields.Y] = 49,
+                [RoomDocumentFields.RoomObject.PortalFields.Shard] = "shard3"
+            }
+        };
+
+        var snapshot = RoomContractMapper.MapRoomObject(document);
+        Assert.Equal("W0S0", snapshot.PortalDestination?.RoomName);
+        Assert.Equal(0, snapshot.PortalDestination?.X);
+        Assert.Equal(49, snapshot.PortalDestination?.Y);
+        Assert.Equal("shard3", snapshot.PortalDestination?.Shard);
+
+        var roundtrip = RoomContractMapper.MapRoomObjectDocument(snapshot);
+        Assert.NotNull(roundtrip.Destination);
+        Assert.Equal("W0S0", roundtrip.Destination![RoomDocumentFields.RoomObject.PortalFields.Room].AsString);
+        Assert.Equal(0, roundtrip.Destination[RoomDocumentFields.RoomObject.PortalFields.X].AsInt32);
+        Assert.Equal(49, roundtrip.Destination[RoomDocumentFields.RoomObject.PortalFields.Y].AsInt32);
+        Assert.Equal("shard3", roundtrip.Destination[RoomDocumentFields.RoomObject.PortalFields.Shard].AsString);
+    }
+
+    [Fact]
     public void CreateRoomObjectPatchDocument_WritesInterRoomDestination()
     {
         var patch = new RoomObjectPatchPayload

@@ -128,6 +128,28 @@ public sealed class MovementIntentStepTests
     }
 
     [Fact]
+    public async Task ExecuteAsync_PortalMoveSchedulesTransfer()
+    {
+        var mover = CreateCreep("creepA", 10, 10);
+        var portalDestination = new RoomPortalDestinationSnapshot("W0S0", 25, 0, "shard3");
+        var portal = CreatePortal("portal1", 11, 10, portalDestination);
+
+        var intents = CreateIntentSnapshot([("user1", "creepA", new MoveIntent(11, 10))]);
+        var state = CreateState([mover, portal], intents);
+        var writer = new RecordingMutationWriter();
+        var step = new MovementIntentStep(new NullDeathProcessor());
+
+        await step.ExecuteAsync(new RoomProcessorContext(state, writer, new NullCreepStatsSink()), TestContext.Current.CancellationToken);
+
+        var transferPatch = writer.Patches.FirstOrDefault(p => p.Payload.InterRoom is not null);
+        Assert.NotNull(transferPatch.Payload.InterRoom);
+        Assert.Equal("W0S0", transferPatch.Payload.InterRoom!.RoomName);
+        Assert.Equal(25, transferPatch.Payload.InterRoom.X);
+        Assert.Equal(0, transferPatch.Payload.InterRoom.Y);
+        Assert.Equal("shard3", transferPatch.Payload.InterRoom.Shard);
+    }
+
+    [Fact]
     public async Task ExecuteAsync_CrashesWhenBlockedByStructure()
     {
         var mover = CreateCreep("creepA", 10, 10);
@@ -445,7 +467,7 @@ public sealed class MovementIntentStepTests
             UserSummoned: null,
             IsPublic: isPublic);
 
-    private static RoomObjectSnapshot CreatePortal(string id, int x, int y)
+    private static RoomObjectSnapshot CreatePortal(string id, int x, int y, RoomPortalDestinationSnapshot? destination = null)
         => new(
             id,
             RoomObjectTypes.Portal,
@@ -472,7 +494,8 @@ public sealed class MovementIntentStepTests
             Structure: null,
             Effects: new Dictionary<string, object?>(Comparer),
             Spawning: null,
-            Body: Array.Empty<CreepBodyPartSnapshot>());
+            Body: Array.Empty<CreepBodyPartSnapshot>(),
+            PortalDestination: destination);
 
     private static RoomObjectSnapshot CreateStructure(string id, string type, int x, int y, string? owner = "system")
         => new(
