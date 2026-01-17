@@ -236,8 +236,8 @@ public sealed class FlagEndpointsIntegrationTests(IntegrationTestHarness harness
     public async Task CreateFlag_RespectsLimit()
     {
         // Arrange
-        var token = await LoginAsync();
-        var flagsCollection = harness.Database.GetCollection<RoomFlagDocument>("rooms.flags");
+        _ = await LoginAsync();
+        _ = harness.Database.GetCollection<RoomFlagDocument>("rooms.flags");
 
         // Insert many flags (not 10000, just enough to test logic if we lower the limit for testing or just mock it)
         // Since I hardcoded 10000, I'll just check if it returns error when I reach it.

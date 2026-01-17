@@ -285,7 +285,7 @@ internal sealed class FakeUserCodeRepository : IUserCodeRepository
     ];
 
     public Task<IReadOnlyCollection<UserCodeBranch>> GetBranchesAsync(string userId, CancellationToken cancellationToken = default)
-        => Task.FromResult<IReadOnlyCollection<UserCodeBranch>>(_branches.Select(CloneBranch).ToArray());
+        => Task.FromResult<IReadOnlyCollection<UserCodeBranch>>([.. _branches.Select(CloneBranch)]);
 
     public Task<UserCodeBranch?> GetBranchAsync(string userId, string branchIdentifier, CancellationToken cancellationToken = default)
     {
@@ -376,10 +376,10 @@ internal sealed class FakeUserCodeRepository : IUserCodeRepository
 
     private UserCodeBranch? ResolveBranch(string identifier)
     {
-        if (string.Equals(identifier, ActiveWorldBranchIdentifier, StringComparison.OrdinalIgnoreCase))
-            return _branches.FirstOrDefault(branch => branch.ActiveWorld) ?? _branches.FirstOrDefault();
-
-        return FindBranchByName(identifier);
+        var result = string.Equals(identifier, ActiveWorldBranchIdentifier, StringComparison.OrdinalIgnoreCase)
+            ? _branches.FirstOrDefault(branch => branch.ActiveWorld) ?? _branches.FirstOrDefault()
+            : FindBranchByName(identifier);
+        return result;
     }
 
     private UserCodeBranch? FindBranchByName(string? name)
@@ -525,7 +525,7 @@ internal sealed class FakeUserMemoryRepository : IUserMemoryRepository
     }
 
     private static IList<object?> ConvertArray(JsonElement element)
-        => element.EnumerateArray().Select(ConvertJson).ToList();
+        => [.. element.EnumerateArray().Select(ConvertJson)];
 
     private static IDictionary<string, object?> CloneDictionary(IDictionary<string, object?> source)
     {
@@ -605,10 +605,10 @@ sealed file class FakeMarketOrderRepository : IMarketOrderRepository
         => Task.FromResult(Summaries);
 
     public Task<IReadOnlyList<MarketOrder>> GetActiveOrdersByResourceAsync(string resourceType, CancellationToken cancellationToken = default)
-        => Task.FromResult<IReadOnlyList<MarketOrder>>(Orders.Where(o => string.Equals(o.ResourceType, resourceType, StringComparison.OrdinalIgnoreCase)).ToList());
+        => Task.FromResult<IReadOnlyList<MarketOrder>>([.. Orders.Where(o => string.Equals(o.ResourceType, resourceType, StringComparison.OrdinalIgnoreCase))]);
 
     public Task<IReadOnlyList<MarketOrder>> GetOrdersByUserAsync(string userId, CancellationToken cancellationToken = default)
-        => Task.FromResult<IReadOnlyList<MarketOrder>>(Orders.Where(o => string.Equals(o.UserId, userId, StringComparison.Ordinal)).ToList());
+        => Task.FromResult<IReadOnlyList<MarketOrder>>([.. Orders.Where(o => string.Equals(o.UserId, userId, StringComparison.Ordinal))]);
 }
 
 sealed file class FakeMarketStatsRepository : IMarketStatsRepository
@@ -619,7 +619,7 @@ sealed file class FakeMarketStatsRepository : IMarketStatsRepository
     ];
 
     public Task<IReadOnlyList<MarketStatsEntry>> GetStatsAsync(string resourceType, CancellationToken cancellationToken = default)
-        => Task.FromResult<IReadOnlyList<MarketStatsEntry>>(Entries.Where(e => string.Equals(e.ResourceType, resourceType, StringComparison.OrdinalIgnoreCase)).ToList());
+        => Task.FromResult<IReadOnlyList<MarketStatsEntry>>([.. Entries.Where(e => string.Equals(e.ResourceType, resourceType, StringComparison.OrdinalIgnoreCase))]);
 }
 
 sealed file class FakeRoomStatusRepository : IRoomStatusRepository
@@ -653,7 +653,7 @@ sealed file class FakeRoomTerrainRepository : IRoomTerrainRepository
                        ?? new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var result = requested.Count == 0
             ? Entries.ToList()
-            : Entries.Where(entry => requested.Contains(entry.RoomName)).ToList();
+            : [.. Entries.Where(entry => requested.Contains(entry.RoomName))];
         return Task.FromResult<IReadOnlyList<RoomTerrainData>>(result);
     }
 }

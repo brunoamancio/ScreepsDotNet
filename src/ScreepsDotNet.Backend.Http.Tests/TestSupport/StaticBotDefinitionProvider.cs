@@ -1,9 +1,5 @@
 ﻿namespace ScreepsDotNet.Backend.Http.Tests.TestSupport;
 
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using ScreepsDotNet.Backend.Core.Models.Bots;
 using ScreepsDotNet.Backend.Core.Services;
 
@@ -20,7 +16,7 @@ internal sealed class StaticBotDefinitionProvider : IBotDefinitionProvider
     };
 
     public Task<IReadOnlyList<BotDefinition>> GetDefinitionsAsync(CancellationToken cancellationToken = default)
-        => Task.FromResult<IReadOnlyList<BotDefinition>>(_definitions.Values.ToList());
+        => Task.FromResult<IReadOnlyList<BotDefinition>>([.. _definitions.Values]);
 
     public Task<BotDefinition?> FindDefinitionAsync(string name, CancellationToken cancellationToken = default)
     {

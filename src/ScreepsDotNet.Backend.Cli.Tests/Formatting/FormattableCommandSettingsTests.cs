@@ -1,6 +1,5 @@
 ﻿namespace ScreepsDotNet.Backend.Cli.Tests.Formatting;
 
-using System;
 using ScreepsDotNet.Backend.Cli.Formatting;
 
 public sealed class FormattableCommandSettingsTests

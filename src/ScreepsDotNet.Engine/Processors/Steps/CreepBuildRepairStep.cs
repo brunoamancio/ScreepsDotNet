@@ -281,13 +281,10 @@ internal sealed class CreepBuildRepairStep(IStructureBlueprintProvider blueprint
 
     private StructureBlueprint? ResolveBlueprint(string? structureType)
     {
-        if (string.IsNullOrWhiteSpace(structureType))
-            return null;
-
-        if (blueprintProvider.TryGet(structureType, out var blueprint))
-            return blueprint;
-
-        return null;
+        var blueprint = string.IsNullOrWhiteSpace(structureType)
+            ? null
+            : blueprintProvider.TryGet(structureType, out var foundBlueprint) ? foundBlueprint : null;
+        return blueprint;
     }
 
     private static TerrainCache BuildTerrainCache(RoomProcessorContext context)
@@ -302,10 +299,7 @@ internal sealed class CreepBuildRepairStep(IStructureBlueprintProvider blueprint
             return 0;
 
         var index = (y * 50) + x;
-        if (index < 0 || index >= cache.Terrain.Length)
-            return 0;
-
-        return TerrainEncoding.Decode(cache.Terrain[index]);
+        return index < 0 || index >= cache.Terrain.Length ? 0 : TerrainEncoding.Decode(cache.Terrain[index]);
     }
 
     private static void UpdateObjectOverrides(

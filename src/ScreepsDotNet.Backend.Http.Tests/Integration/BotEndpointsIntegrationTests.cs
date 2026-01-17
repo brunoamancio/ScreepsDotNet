@@ -259,6 +259,7 @@ public sealed class BotEndpointsIntegrationTests(IntegrationTestHarness harness)
         if (!response.IsSuccessStatusCode)
             throw new XunitException($"Expected success but received {(int)response.StatusCode} {response.StatusCode}. Payload: {json}");
 
-        return JsonSerializer.Deserialize<JsonElement>(json);
+        var result = JsonSerializer.Deserialize<JsonElement>(json);
+        return result;
     }
 }

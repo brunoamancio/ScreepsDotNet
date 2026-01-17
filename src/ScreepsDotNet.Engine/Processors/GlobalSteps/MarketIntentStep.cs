@@ -312,13 +312,7 @@ internal sealed class MarketIntentStep : IGlobalProcessorStep
             ? MarketOrderTypes.Buy
             : MarketOrderTypes.Sell;
 
-    private static bool IsValidResource(string? resourceType)
-    {
-        if (string.IsNullOrWhiteSpace(resourceType))
-            return false;
-
-        return ValidResources.Contains(resourceType!) || IntershardResources.Contains(resourceType!);
-    }
+    private static bool IsValidResource(string? resourceType) => !string.IsNullOrWhiteSpace(resourceType) && (ValidResources.Contains(resourceType!) || IntershardResources.Contains(resourceType!));
 
     private static bool IsRoomTerminalOwnedByUser(string roomName, string userId, IReadOnlyDictionary<string, RoomObjectSnapshot> terminalsByRoom)
         => terminalsByRoom.TryGetValue(roomName, out var terminal) &&
@@ -326,24 +320,20 @@ internal sealed class MarketIntentStep : IGlobalProcessorStep
 
     private static string? GetText(IntentArgument argument, string field)
     {
-        if (!argument.Fields.TryGetValue(field, out var value))
-            return null;
-
-        return value.Kind switch
-        {
-            IntentFieldValueKind.Text => value.TextValue,
-            IntentFieldValueKind.Number => value.NumberValue?.ToString(),
-            _ => value.TextValue
-        };
+        return !argument.Fields.TryGetValue(field, out var value)
+            ? null
+            : value.Kind switch
+            {
+                IntentFieldValueKind.Text => value.TextValue,
+                IntentFieldValueKind.Number => value.NumberValue?.ToString(),
+                _ => value.TextValue
+            };
     }
 
     private static bool TryGetInt(IntentArgument argument, string field, out int result)
     {
         result = 0;
-        if (!argument.Fields.TryGetValue(field, out var value))
-            return false;
-
-        return value.Kind switch
+        return argument.Fields.TryGetValue(field, out var value) && value.Kind switch
         {
             IntentFieldValueKind.Number when value.NumberValue.HasValue => TryConvertInt(value.NumberValue.Value, out result),
             _ => false

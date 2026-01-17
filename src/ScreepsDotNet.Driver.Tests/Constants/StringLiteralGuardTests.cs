@@ -29,14 +29,10 @@ public sealed class StringLiteralGuardTests
     }
 
     private static IReadOnlyCollection<string> GetRoomObjectTypeLiterals()
-        => typeof(RoomObjectTypes).GetFields(BindingFlags.Public | BindingFlags.Static)
-                                  .Select(field => (string)field.GetValue(null)!)
-                                  .ToArray();
+        => [.. typeof(RoomObjectTypes).GetFields(BindingFlags.Public | BindingFlags.Static).Select(field => (string)field.GetValue(null)!)];
 
     private static IReadOnlyCollection<string> GetIntentKeyLiterals()
-        => typeof(IntentKeys).GetFields(BindingFlags.Public | BindingFlags.Static)
-                             .Select(field => (string)field.GetValue(null)!)
-                             .ToArray();
+        => [.. typeof(IntentKeys).GetFields(BindingFlags.Public | BindingFlags.Static).Select(field => (string)field.GetValue(null)!)];
 
     private static string RoomObjectTypesFileName => $"{Path.DirectorySeparatorChar}RoomObjectTypes.cs";
     private static string IntentKeysFileName => $"{Path.DirectorySeparatorChar}IntentKeys.cs";

@@ -71,13 +71,7 @@ internal sealed class CreepLifecycleStep(ICreepDeathProcessor deathProcessor) : 
         return Task.CompletedTask;
     }
 
-    private static bool ShouldExpire(RoomObjectSnapshot obj)
-    {
-        if (obj.Spawning is not null || obj.IsSpawning == true)
-            return false;
-
-        return obj.TicksToLive is <= 1;
-    }
+    private static bool ShouldExpire(RoomObjectSnapshot obj) => obj.Spawning is null && obj.IsSpawning != true && obj.TicksToLive is <= 1;
 
     private static bool ShouldDespawnUserSummoned(RoomProcessorContext context, RoomObjectSnapshot creep)
     {

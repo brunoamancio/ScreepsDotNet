@@ -67,9 +67,9 @@ internal sealed class RoomMutationWriter(
 
         var batch = new RoomMutationBatch(
             roomName,
-            _upserts.ToArray(),
-            _patches.ToArray(),
-            _removals.ToArray(),
+            [.. _upserts],
+            [.. _patches],
+            [.. _removals],
             _roomInfoPatch,
             _mapView,
             _eventLog);

@@ -46,8 +46,9 @@ public sealed class MongoPowerCreepService : IPowerCreepService
                                             .ConfigureAwait(false);
         var roomLookup = roomObjects.ToDictionary(doc => doc.Id, doc => doc, new ObjectIdEqualityComparer());
 
-        return creeps.Select(creep => ToListItem(creep, roomLookup.TryGetValue(creep.Id, out var roomDoc) ? roomDoc : null))
-                     .ToList();
+        var items = creeps.Select(creep => ToListItem(creep, roomLookup.TryGetValue(creep.Id, out var roomDoc) ? roomDoc : null))
+                          .ToList();
+        return items;
     }
 
     public async Task<PowerCreepListItem> CreateAsync(string userId, string name, string className, CancellationToken cancellationToken = default)
@@ -277,7 +278,8 @@ public sealed class MongoPowerCreepService : IPowerCreepService
     private static string NormalizeName(string name)
     {
         var trimmed = (name ?? string.Empty).Trim();
-        return trimmed.Length > MaxNameLength ? trimmed[..MaxNameLength] : trimmed;
+        var normalizedName = trimmed.Length > MaxNameLength ? trimmed[..MaxNameLength] : trimmed;
+        return normalizedName;
     }
 
     private static string NormalizePowerKey(string key)

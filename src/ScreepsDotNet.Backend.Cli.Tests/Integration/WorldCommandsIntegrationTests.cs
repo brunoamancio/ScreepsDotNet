@@ -1,6 +1,5 @@
 ﻿namespace ScreepsDotNet.Backend.Cli.Tests.Integration;
 
-using System;
 using System.Text.Json;
 using Microsoft.Extensions.Logging.Abstractions;
 using ScreepsDotNet.Backend.Cli.Commands.World;

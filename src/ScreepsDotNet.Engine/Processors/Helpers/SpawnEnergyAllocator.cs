@@ -87,10 +87,9 @@ internal sealed class SpawnEnergyAllocator : ISpawnEnergyAllocator
 
     private static int GetEnergy(RoomObjectSnapshot obj, IReadOnlyDictionary<string, int>? overrides)
     {
-        if (overrides is not null && overrides.TryGetValue(obj.Id, out var remaining))
-            return remaining;
-
-        return obj.Store.GetValueOrDefault(RoomDocumentFields.RoomObject.Store.Energy, 0);
+        return overrides is not null && overrides.TryGetValue(obj.Id, out var remaining)
+            ? remaining
+            : obj.Store.GetValueOrDefault(RoomDocumentFields.RoomObject.Store.Energy, 0);
     }
 }
 

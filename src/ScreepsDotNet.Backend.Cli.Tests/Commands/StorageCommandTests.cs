@@ -1,6 +1,4 @@
-﻿using ScreepsDotNet.Storage.MongoRedis.Seeding;
-
-namespace ScreepsDotNet.Backend.Cli.Tests.Commands;
+﻿namespace ScreepsDotNet.Backend.Cli.Tests.Commands;
 
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
@@ -9,6 +7,7 @@ using ScreepsDotNet.Backend.Cli.Commands.Storage;
 using ScreepsDotNet.Backend.Cli.Formatting;
 using ScreepsDotNet.Backend.Core.Seeding;
 using ScreepsDotNet.Storage.MongoRedis.Options;
+using ScreepsDotNet.Storage.MongoRedis.Seeding;
 using Spectre.Console;
 
 public sealed class StorageCommandTests

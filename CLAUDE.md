@@ -18,7 +18,7 @@ Modern .NET rewrite of the Screeps private server backend. Exposes legacy HTTP +
 - ✅ **ALWAYS** use trailing commas in multi-line collections/arrays
 - ✅ **ALWAYS** keep lines under 185 characters (don't wrap unnecessarily)
 - ✅ **ALWAYS** use positive conditions in ternary operators (never negate: use `condition ? true : false` not `!condition ? false : true`)
-- ✅ **ALWAYS** assign ternary expressions to a variable before returning (never `return x ? a : b;` always `var result = x ? a : b; return result;`)
+- ✅ **ALWAYS** assign ternary expressions to a variable before returning - applies to ALL ternaries (simple, multi-line, nested, complex) - never `return x ? a : b;` always `var result = x ? a : b; return result;`
 - ✅ **ALWAYS** run `dotnet format style --exclude-diagnostics IDE0051 IDE0052 IDE0060` before committing
 - ✅ **ALWAYS** run `git status` from `ScreepsDotNet/` directory (not repo root)
 - ✅ **ALWAYS** use Testcontainers for integration tests (never local Docker state)
@@ -892,14 +892,33 @@ return intent;
 
 var exitCode = status.IsConnected ? 0 : 1;
 return exitCode;
+
+// Also applies to complex/nested/multi-line ternaries
+var healthResult = status.IsConnected ? HealthCheckResult.Healthy(HealthyMessage)
+                                      : HealthCheckResult.Unhealthy(status.Details ?? UnhealthyFallbackMessage);
+return healthResult;
+
+var blueprint = string.IsNullOrWhiteSpace(structureType)
+    ? null
+    : blueprintProvider.TryGet(structureType, out var foundBlueprint) ? foundBlueprint : null;
+return blueprint;
 ```
 
 **❌ Bad:**
 ```csharp
-// Don't return ternary expressions directly
+// Don't return ternary expressions directly (simple)
 return success ? Results.Ok(UserResponseFactory.CreateEmpty()) : Results.BadRequest(new ErrorResponse(UserNotFoundMessage));  // ❌
 return directions.Count == 0 ? null : new SetSpawnDirectionsIntent(directions);  // ❌
 return status.IsConnected ? 0 : 1;  // ❌
+
+// Don't return multi-line ternaries directly
+return status.IsConnected ? HealthCheckResult.Healthy(HealthyMessage)
+                          : HealthCheckResult.Unhealthy(status.Details ?? UnhealthyFallbackMessage);  // ❌
+
+// Don't return nested ternaries directly
+return string.IsNullOrWhiteSpace(structureType)
+    ? null
+    : blueprintProvider.TryGet(structureType, out var blueprint) ? blueprint : null;  // ❌
 ```
 
 ### Inferred Member Names
@@ -1806,7 +1825,7 @@ This file provides **solution-wide** context. For subsystem-specific details:
 - Declare variables before `out` parameters (use inline: `out var value`)
 - Repeat type when evident (`UserService service = new UserService()` use `new()`)
 - Use negated conditions in ternary operators (flip condition and swap values: `success ? a : b` not `!success ? b : a`)
-- Return ternary expressions directly (assign to variable first: `var x = a ? b : c; return x;` not `return a ? b : c;`)
+- Return ternary expressions directly - applies to ALL ternaries (simple, multi-line, nested, complex) - always assign to variable first: `var x = a ? b : c; return x;` not `return a ? b : c;`
 - Add `using System;` or other implicit usings manually
 - Use `object` for locks (use `Lock`)
 - Use `BsonDocument` in repositories (use typed POCOs)
@@ -1840,7 +1859,7 @@ This file provides **solution-wide** context. For subsystem-specific details:
 - Use target-typed `new()` when type is evident
 - Use expression-bodied members with `=>` on new line
 - Use positive conditions in ternary operators (not negated)
-- Assign ternary expressions to variables before returning them
+- Assign ALL ternary expressions (simple, multi-line, nested, complex) to variables before returning them
 - Use Context7 MCP for library documentation proactively
 - Run `dotnet format style --exclude-diagnostics IDE0051 IDE0052 IDE0060` before committing
 - Use Testcontainers for integration tests

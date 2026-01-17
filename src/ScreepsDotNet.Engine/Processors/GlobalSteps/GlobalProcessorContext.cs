@@ -46,7 +46,7 @@ public sealed class GlobalProcessorContext(GlobalState state, IGlobalMutationWri
         var dictionary = new Dictionary<string, IReadOnlyList<RoomObjectSnapshot>>(StringComparer.Ordinal);
         foreach (var group in objects.Where(obj => !string.IsNullOrWhiteSpace(obj.Type))
                                      .GroupBy(obj => obj.Type!, StringComparer.Ordinal)) {
-            dictionary[group.Key] = group.ToArray();
+            dictionary[group.Key] = [.. group];
         }
 
         return dictionary;

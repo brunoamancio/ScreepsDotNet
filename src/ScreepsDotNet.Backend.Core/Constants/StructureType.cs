@@ -39,7 +39,7 @@ public sealed class StructureTypeJsonConverter : JsonConverter<StructureType>
     public override StructureType Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
         var value = reader.GetString();
-        if (value != null && value.TryParseStructureType(out var structureType)) return structureType;
+        if (value is not null && value.TryParseStructureType(out var structureType)) return structureType;
 
         throw new JsonException($"Unknown structure type: {value}");
     }

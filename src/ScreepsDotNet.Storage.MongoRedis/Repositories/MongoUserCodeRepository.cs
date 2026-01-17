@@ -41,7 +41,8 @@ public sealed class MongoUserCodeRepository(IMongoDatabaseProvider databaseProvi
         var document = await _collection.Find(filter)
                                          .FirstOrDefaultAsync(cancellationToken)
                                          .ConfigureAwait(false);
-        return document is null ? null : ToBranch(document);
+        var result = document is null ? null : ToBranch(document);
+        return result;
     }
 
     public async Task<bool> UpdateBranchModulesAsync(string userId, string branchIdentifier, IDictionary<string, string> modules, CancellationToken cancellationToken = default)

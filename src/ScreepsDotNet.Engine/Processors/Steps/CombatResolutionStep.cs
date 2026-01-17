@@ -22,8 +22,7 @@ internal sealed class CombatResolutionStep(ICreepDeathProcessor deathProcessor) 
         foreach (var envelope in intents.Users.Values) {
             if (envelope?.CreepIntents is null || envelope.CreepIntents.Count == 0)
                 continue;
-
-            foreach (var (objectId, creepIntent) in envelope.CreepIntents) {
+            foreach (var (_, creepIntent) in envelope.CreepIntents) {
                 ApplyAttack(creepIntent?.Attack, hitsUpdates, removals);
                 ApplyAttack(creepIntent?.RangedAttack, hitsUpdates, removals);
             }

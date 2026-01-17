@@ -104,11 +104,6 @@ public sealed class RuntimeTelemetryMonitorTests
             return Task.CompletedTask;
         }
 
-        public Task WaitForAlertAsync(TimeSpan? timeout = null)
-        {
-            if (timeout is { } window)
-                return _alertSource.Task.WaitAsync(window);
-            return _alertSource.Task;
-        }
+        public Task WaitForAlertAsync(TimeSpan? timeout = null) => timeout is { } window ? _alertSource.Task.WaitAsync(window) : _alertSource.Task;
     }
 }

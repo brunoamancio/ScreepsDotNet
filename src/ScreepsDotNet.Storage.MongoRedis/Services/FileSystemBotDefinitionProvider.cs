@@ -30,7 +30,8 @@ public sealed class FileSystemBotDefinitionProvider(IModManifestProvider manifes
     public async Task<BotDefinition?> FindDefinitionAsync(string name, CancellationToken cancellationToken = default)
     {
         await EnsureCacheAsync(cancellationToken).ConfigureAwait(false);
-        return _cache.TryGetValue(name, out var definition) ? definition : null;
+        var result = _cache.TryGetValue(name, out var definition) ? definition : null;
+        return result;
     }
 
     private async Task EnsureCacheAsync(CancellationToken cancellationToken)

@@ -14,7 +14,8 @@ public sealed class StorageHealthCheck(IStorageAdapter storageAdapter) : IHealth
     {
         var status = await storageAdapter.GetStatusAsync(cancellationToken);
 
-        return status.IsConnected ? HealthCheckResult.Healthy(HealthyMessage)
-                                  : HealthCheckResult.Unhealthy(status.Details ?? UnhealthyFallbackMessage);
+        var result = status.IsConnected ? HealthCheckResult.Healthy(HealthyMessage)
+                                        : HealthCheckResult.Unhealthy(status.Details ?? UnhealthyFallbackMessage);
+        return result;
     }
 }

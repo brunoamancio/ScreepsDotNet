@@ -263,10 +263,7 @@ internal sealed class CreepDeathProcessor : ICreepDeathProcessor
                 totalCost += cost;
         }
 
-        if (totalCost <= 0)
-            return 0;
-
-        return (int)Math.Floor(totalCost * ttl / (double)ScreepsGameConstants.CreepLifeTime);
+        return totalCost <= 0 ? 0 : (int)Math.Floor(totalCost * ttl / (double)ScreepsGameConstants.CreepLifeTime);
     }
 
     private static void ApplyEnergyRefund(

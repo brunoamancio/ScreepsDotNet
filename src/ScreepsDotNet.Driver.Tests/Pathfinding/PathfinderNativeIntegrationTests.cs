@@ -190,7 +190,7 @@ public sealed class PathfinderNativeIntegrationTests
         var matrix = new byte[RoomArea];
         var hotZones = roomName == "W0N0"
             ? new (int X, int Y, int Radius)[] { (20, 20, 5), (35, 15, 4) }
-            : new (int X, int Y, int Radius)[] { (10, 30, 4), (25, 25, 5) };
+            : [(10, 30, 4), (25, 25, 5)];
 
         foreach (var (X, Y, Radius) in hotZones) {
             for (var dy = -Radius; dy <= Radius; dy++) {

@@ -359,27 +359,12 @@ internal sealed class HarvestIntentStep(IResourceDropHelper resourceDropHelper) 
         }
 
         var reservationUser = controller.Reservation?.UserId;
-        if (!string.IsNullOrWhiteSpace(reservationUser) &&
-            !string.Equals(reservationUser, creepUserId, StringComparison.Ordinal)) {
-            return false;
-        }
-
-        return true;
+        return string.IsNullOrWhiteSpace(reservationUser) ||
+            string.Equals(reservationUser, creepUserId, StringComparison.Ordinal);
     }
 
     private static bool IsStructureControllerAligned(RoomObjectSnapshot structure, RoomObjectSnapshot? controller)
-    {
-        if (string.IsNullOrWhiteSpace(structure.UserId))
-            return true;
-
-        if (controller is null)
-            return false;
-
-        if (controller.Level is null or <= 0)
-            return false;
-
-        return string.Equals(controller.UserId, structure.UserId, StringComparison.Ordinal);
-    }
+        => string.IsNullOrWhiteSpace(structure.UserId) || (controller is not null && controller.Level is not null and not <= 0 && string.Equals(controller.UserId, structure.UserId, StringComparison.Ordinal));
 
     private static RoomObjectSnapshot? FindExtractor(
         IReadOnlyDictionary<string, RoomObjectSnapshot> objects,

@@ -1,6 +1,5 @@
 ﻿namespace ScreepsDotNet.Backend.Cli.Tests.Commands;
 
-using System.Collections.Generic;
 using ScreepsDotNet.Backend.Cli.Commands.World;
 using ScreepsDotNet.Backend.Cli.Formatting;
 using ScreepsDotNet.Backend.Core.Models;

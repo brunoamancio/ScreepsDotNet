@@ -349,10 +349,9 @@ internal sealed class MovementIntentStep(ICreepDeathProcessor deathProcessor) : 
 
     private static int ComputeRate1(MoveCandidate candidate, TileCoord contestedTarget, IReadOnlyDictionary<TileCoord, List<MoveCandidate>> matrix)
     {
-        if (matrix.TryGetValue(candidate.Origin, out var inbound) && inbound.Count > 0)
-            return inbound.Any(entry => entry.Target.Equals(contestedTarget)) ? 100 : inbound.Count;
-
-        return 0;
+        return matrix.TryGetValue(candidate.Origin, out var inbound) && inbound.Count > 0
+            ? inbound.Any(entry => entry.Target.Equals(contestedTarget)) ? 100 : inbound.Count
+            : 0;
     }
 
     private static double ComputeMoveEfficiency(MoveCandidate candidate)
@@ -369,18 +368,7 @@ internal sealed class MovementIntentStep(ICreepDeathProcessor deathProcessor) : 
     }
 
     private static bool CanMove(MoveCandidate candidate)
-    {
-        if (string.Equals(candidate.Creep.Type, RoomObjectTypes.PowerCreep, StringComparison.Ordinal))
-            return true;
-
-        if (candidate.IsPulled)
-            return true;
-
-        if (candidate.Creep.Fatigue.GetValueOrDefault() > 0)
-            return false;
-
-        return candidate.Creep.Body.Any(part => part.Type == BodyPartType.Move && part.Hits > 0);
-    }
+        => string.Equals(candidate.Creep.Type, RoomObjectTypes.PowerCreep, StringComparison.Ordinal) || candidate.IsPulled || (candidate.Creep.Fatigue.GetValueOrDefault() <= 0 && candidate.Creep.Body.Any(part => part.Type == BodyPartType.Move && part.Hits > 0));
 
     private static ObstacleEvaluation EvaluateObstacle(
         TileCoord target,
@@ -415,26 +403,14 @@ internal sealed class MovementIntentStep(ICreepDeathProcessor deathProcessor) : 
                 return ObstacleEvaluation.Blocked;
         }
 
-        if (terrain.IsWall(target.X, target.Y) && !tile.HasRoad)
-            return ObstacleEvaluation.Fatal;
-
-        return ObstacleEvaluation.None;
+        return terrain.IsWall(target.X, target.Y) && !tile.HasRoad ? ObstacleEvaluation.Fatal : ObstacleEvaluation.None;
     }
 
     private static bool CreepBlocks(RoomObjectSnapshot occupant, RoomObjectSnapshot mover, string? safeModeOwner)
     {
         var isCreep = string.Equals(occupant.Type, RoomObjectTypes.Creep, StringComparison.Ordinal) ||
                       string.Equals(occupant.Type, RoomObjectTypes.PowerCreep, StringComparison.Ordinal);
-        if (!isCreep)
-            return false;
-
-        if (safeModeOwner is null)
-            return true;
-
-        if (!string.Equals(safeModeOwner, mover.UserId, StringComparison.Ordinal))
-            return true;
-
-        return string.Equals(mover.UserId, occupant.UserId, StringComparison.Ordinal);
+        return isCreep && (safeModeOwner is null || !string.Equals(safeModeOwner, mover.UserId, StringComparison.Ordinal) || string.Equals(mover.UserId, occupant.UserId, StringComparison.Ordinal));
     }
 
     private static ObstacleEvaluation EvaluateStructure(
@@ -445,10 +421,9 @@ internal sealed class MovementIntentStep(ICreepDeathProcessor deathProcessor) : 
         portalTransfer = null;
         var type = structure.Type;
         if (string.Equals(type, RoomObjectTypes.Rampart, StringComparison.Ordinal)) {
-            if (structure.IsPublic == true)
-                return ObstacleEvaluation.None;
-
-            return !string.Equals(structure.UserId, creep.UserId, StringComparison.Ordinal)
+            return structure.IsPublic == true
+                ? ObstacleEvaluation.None
+                : !string.Equals(structure.UserId, creep.UserId, StringComparison.Ordinal)
                 ? ObstacleEvaluation.Fatal
                 : ObstacleEvaluation.None;
         }
@@ -475,10 +450,9 @@ internal sealed class MovementIntentStep(ICreepDeathProcessor deathProcessor) : 
             return ObstacleEvaluation.None;
         }
 
-        if (string.Equals(type, RoomObjectTypes.Exit, StringComparison.Ordinal))
-            return ObstacleEvaluation.None;
-
-        return BlockingStructureTypes.Contains(type)
+        return string.Equals(type, RoomObjectTypes.Exit, StringComparison.Ordinal)
+            ? ObstacleEvaluation.None
+            : BlockingStructureTypes.Contains(type)
             ? ObstacleEvaluation.Fatal
             : ObstacleEvaluation.None;
     }
@@ -488,10 +462,8 @@ internal sealed class MovementIntentStep(ICreepDeathProcessor deathProcessor) : 
         if (string.IsNullOrWhiteSpace(structureType))
             return false;
 
-        if (!string.Equals(siteOwner, moverOwner, StringComparison.Ordinal))
-            return false;
-
-        return BlockingStructureTypes.Contains(structureType);
+        var result = string.Equals(siteOwner, moverOwner, StringComparison.Ordinal) && BlockingStructureTypes.Contains(structureType);
+        return result;
     }
 
     private static PullState CollectPullIntents(RoomProcessorContext context, RoomIntentSnapshot intents)
@@ -737,27 +709,16 @@ internal sealed class MovementIntentStep(ICreepDeathProcessor deathProcessor) : 
             _ => null
         };
 
-        if (descriptor is null || descriptor.ExitCount <= 0)
-            return ExitEvaluation.Fatal;
-
-        return descriptor.TargetAccessible ? ExitEvaluation.Transfer : ExitEvaluation.Fatal;
+        return descriptor is null || descriptor.ExitCount <= 0
+            ? ExitEvaluation.Fatal
+            : descriptor.TargetAccessible ? ExitEvaluation.Transfer : ExitEvaluation.Fatal;
     }
 
     private static ExitDirection? DetermineExitDirection(int requestedX, int requestedY)
     {
-        if (requestedX < 0)
-            return ExitDirection.Left;
-
-        if (requestedX > 49)
-            return ExitDirection.Right;
-
-        if (requestedY < 0)
-            return ExitDirection.Top;
-
-        if (requestedY > 49)
-            return ExitDirection.Bottom;
-
-        return null;
+        return requestedX < 0
+            ? ExitDirection.Left
+            : requestedX > 49 ? ExitDirection.Right : requestedY < 0 ? ExitDirection.Top : requestedY > 49 ? ExitDirection.Bottom : null;
     }
 
     private static int CountActiveMoveParts(RoomObjectSnapshot creep)

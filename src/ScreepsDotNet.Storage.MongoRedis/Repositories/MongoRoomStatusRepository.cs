@@ -25,7 +25,8 @@ public sealed class MongoRoomStatusRepository(IMongoDatabaseProvider databasePro
         var document = await _collection.Find(filter)
                                         .FirstOrDefaultAsync(cancellationToken)
                                         .ConfigureAwait(false);
-        return document is null ? null : Convert(document);
+        var result = document is null ? null : Convert(document);
+        return result;
     }
 
     public async Task<IReadOnlyDictionary<string, RoomStatusInfo>> GetRoomStatusesAsync(IEnumerable<RoomReference> rooms, CancellationToken cancellationToken = default)

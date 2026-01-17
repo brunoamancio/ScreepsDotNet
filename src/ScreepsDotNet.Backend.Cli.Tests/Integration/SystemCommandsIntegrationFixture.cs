@@ -1,6 +1,5 @@
 ﻿namespace ScreepsDotNet.Backend.Cli.Tests.Integration;
 
-using System.Threading.Tasks;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using MongoDB.Driver;

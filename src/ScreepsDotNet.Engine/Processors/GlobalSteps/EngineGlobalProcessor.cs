@@ -1,7 +1,6 @@
 namespace ScreepsDotNet.Engine.Processors.GlobalSteps;
 
 using System.Collections.Generic;
-using System.Linq;
 using Microsoft.Extensions.Logging;
 using ScreepsDotNet.Engine.Data.GlobalMutations;
 using ScreepsDotNet.Engine.Data.GlobalState;
@@ -12,7 +11,7 @@ internal sealed class EngineGlobalProcessor(
     IEnumerable<IGlobalProcessorStep> steps,
     ILogger<EngineGlobalProcessor>? logger = null) : IGlobalProcessor
 {
-    private readonly IReadOnlyList<IGlobalProcessorStep> _steps = steps as IReadOnlyList<IGlobalProcessorStep> ?? steps.ToArray();
+    private readonly IReadOnlyList<IGlobalProcessorStep> _steps = steps as IReadOnlyList<IGlobalProcessorStep> ?? [.. steps];
 
     public async Task ExecuteAsync(int gameTime, CancellationToken token = default)
     {

@@ -78,10 +78,10 @@ internal sealed class GlobalMutationWriter(IGlobalMutationDispatcher dispatcher)
         }
 
         var batch = new GlobalMutationBatch(
-            _powerCreepMutations.ToArray(),
-            _marketOrderMutations.ToArray(),
-            _userMoneyMutations.ToArray(),
-            _userMoneyEntries.ToArray());
+            [.. _powerCreepMutations],
+            [.. _marketOrderMutations],
+            [.. _userMoneyMutations],
+            [.. _userMoneyEntries]);
         await dispatcher.ApplyAsync(batch, token).ConfigureAwait(false);
         Reset();
     }

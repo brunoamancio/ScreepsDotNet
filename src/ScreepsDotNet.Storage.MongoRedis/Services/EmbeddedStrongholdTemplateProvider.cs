@@ -24,7 +24,8 @@ public sealed class EmbeddedStrongholdTemplateProvider : IStrongholdTemplateProv
     public async Task<StrongholdTemplate?> FindTemplateAsync(string name, CancellationToken cancellationToken = default)
     {
         await EnsureLoadedAsync(cancellationToken).ConfigureAwait(false);
-        return _templates.TryGetValue(name, out var template) ? template : null;
+        var result = _templates.TryGetValue(name, out var template) ? template : null;
+        return result;
     }
 
     public async Task<IReadOnlyList<string>> GetDepositTypesAsync(CancellationToken cancellationToken = default)

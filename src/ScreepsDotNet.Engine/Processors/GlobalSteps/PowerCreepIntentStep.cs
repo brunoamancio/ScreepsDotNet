@@ -125,29 +125,27 @@ internal sealed class PowerCreepIntentStep : IGlobalProcessorStep
 
     private static string? GetTextArgument(IntentArgument argument, string field)
     {
-        if (!argument.Fields.TryGetValue(field, out var value))
-            return null;
-
-        return value.Kind switch
-        {
-            IntentFieldValueKind.Text => value.TextValue,
-            IntentFieldValueKind.Number => value.NumberValue?.ToString(),
-            _ => value.TextValue
-        };
+        return !argument.Fields.TryGetValue(field, out var value)
+            ? null
+            : value.Kind switch
+            {
+                IntentFieldValueKind.Text => value.TextValue,
+                IntentFieldValueKind.Number => value.NumberValue?.ToString(),
+                _ => value.TextValue
+            };
     }
 
     private static bool GetBooleanArgument(IntentArgument argument, string field, bool defaultValue = false)
     {
-        if (!argument.Fields.TryGetValue(field, out var value))
-            return defaultValue;
-
-        return value.Kind switch
-        {
-            IntentFieldValueKind.Boolean => value.BooleanValue ?? defaultValue,
-            IntentFieldValueKind.Number => value.NumberValue is { } number && number != 0,
-            IntentFieldValueKind.Text => bool.TryParse(value.TextValue, out var parsed) ? parsed : defaultValue,
-            _ => defaultValue
-        };
+        return !argument.Fields.TryGetValue(field, out var value)
+            ? defaultValue
+            : value.Kind switch
+            {
+                IntentFieldValueKind.Boolean => value.BooleanValue ?? defaultValue,
+                IntentFieldValueKind.Number => value.NumberValue is { } number && number != 0,
+                IntentFieldValueKind.Text => bool.TryParse(value.TextValue, out var parsed) ? parsed : defaultValue,
+                _ => defaultValue
+            };
     }
 
     private static string? NormalizeName(string? source)

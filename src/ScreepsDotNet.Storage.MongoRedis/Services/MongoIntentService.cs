@@ -268,13 +268,15 @@ public sealed class MongoIntentService : IIntentService
     private static string ConvertToUserString(JsonElement element)
     {
         var value = ConvertToFlexibleString(element);
-        return value.Length <= 100 ? value : value[..100];
+        var userString = value.Length <= 100 ? value : value[..100];
+        return userString;
     }
 
     private static string ConvertToUserText(JsonElement element)
     {
         var value = ConvertToFlexibleString(element);
-        return value.Length <= 1000 ? value : value[..1000];
+        var userText = value.Length <= 1000 ? value : value[..1000];
+        return userText;
     }
 
     private static int ConvertToInt(JsonElement element)
