@@ -17,6 +17,7 @@ Modern .NET rewrite of the Screeps private server backend. Exposes legacy HTTP +
 - ✅ **ALWAYS** use pattern matching (`if (obj is User user)` not `as` + null check)
 - ✅ **ALWAYS** use trailing commas in multi-line collections/arrays
 - ✅ **ALWAYS** keep lines under 185 characters (don't wrap unnecessarily)
+- ✅ **ALWAYS** use positive conditions in ternary operators (never negate: use `condition ? true : false` not `!condition ? false : true`)
 - ✅ **ALWAYS** run `dotnet format style --exclude-diagnostics IDE0051 IDE0052 IDE0060` before committing
 - ✅ **ALWAYS** run `git status` from `ScreepsDotNet/` directory (not repo root)
 - ✅ **ALWAYS** use Testcontainers for integration tests (never local Docker state)
@@ -851,6 +852,31 @@ else
 // Don't use long form
 count = count + 5;  // Use count += 5
 total = total * 2;  // Use total *= 2
+```
+
+### Positive Conditions in Ternary Operators
+**✅ Good:**
+```csharp
+// Always use positive conditions (not negated)
+var result = success ? "Success" : "Failed";
+var value = isValid ? trueValue : falseValue;
+var interval = string.IsNullOrWhiteSpace(userId) ? null : ownedInterval;
+
+// Return statements
+return success ? Results.Ok() : Results.BadRequest();
+return isEnabled ? enabledValue : disabledValue;
+```
+
+**❌ Bad:**
+```csharp
+// Don't negate the condition - flip the values instead
+var result = !success ? "Failed" : "Success";  // ❌ Negated condition
+var value = !isValid ? falseValue : trueValue;  // ❌ Negated condition
+var interval = !string.IsNullOrWhiteSpace(userId) ? ownedInterval : null;  // ❌ Negated condition
+
+// Return statements
+return !success ? Results.BadRequest() : Results.Ok();  // ❌ Negated condition
+return !isEnabled ? disabledValue : enabledValue;  // ❌ Negated condition
 ```
 
 ### Inferred Member Names
@@ -1756,6 +1782,7 @@ This file provides **solution-wide** context. For subsystem-specific details:
 - Omit braces for multi-line control flow statements
 - Declare variables before `out` parameters (use inline: `out var value`)
 - Repeat type when evident (`UserService service = new UserService()` use `new()`)
+- Use negated conditions in ternary operators (flip condition and swap values: `success ? a : b` not `!success ? b : a`)
 - Add `using System;` or other implicit usings manually
 - Use `object` for locks (use `Lock`)
 - Use `BsonDocument` in repositories (use typed POCOs)
@@ -1788,6 +1815,7 @@ This file provides **solution-wide** context. For subsystem-specific details:
 - Declare variables inline with `out` parameters
 - Use target-typed `new()` when type is evident
 - Use expression-bodied members with `=>` on new line
+- Use positive conditions in ternary operators (not negated)
 - Use Context7 MCP for library documentation proactively
 - Run `dotnet format style --exclude-diagnostics IDE0051 IDE0052 IDE0060` before committing
 - Use Testcontainers for integration tests

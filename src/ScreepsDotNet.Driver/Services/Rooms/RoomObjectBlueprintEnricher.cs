@@ -93,7 +93,7 @@ internal sealed class RoomObjectBlueprintEnricher(IStructureBlueprintProvider bl
         if (decay is not { HasDecay: true })
             return null;
 
-        var ownedInterval = !string.IsNullOrWhiteSpace(snapshot.UserId) ? decay.OwnedIntervalTicks : null;
+        var ownedInterval = string.IsNullOrWhiteSpace(snapshot.UserId) ? null : decay.OwnedIntervalTicks;
         var interval = ownedInterval ?? decay.IntervalTicks;
         if (interval is not > 0)
             return null;

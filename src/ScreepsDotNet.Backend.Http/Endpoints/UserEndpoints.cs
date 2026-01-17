@@ -176,7 +176,7 @@ internal static class UserEndpoints
                                    return Results.BadRequest(new ErrorResponse(errorMessage ?? UserBadgeUpdateFactory.InvalidBadgeParamsMessage));
 
                                var success = await userRepository.UpdateBadgeAsync(user.Id, badgeUpdate!, cancellationToken).ConfigureAwait(false);
-                               return !success ? Results.BadRequest(new ErrorResponse(UserNotFoundMessage)) : Results.Ok(UserResponseFactory.CreateEmpty());
+                               return success ? Results.Ok(UserResponseFactory.CreateEmpty()) : Results.BadRequest(new ErrorResponse(UserNotFoundMessage));
                            })
            .RequireTokenAuthentication()
            .WithName(BadgeEndpointName);
