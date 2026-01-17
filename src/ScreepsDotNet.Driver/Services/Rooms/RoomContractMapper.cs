@@ -639,6 +639,21 @@ internal static class RoomContractMapper
                 document[RoomDocumentFields.RoomObject.Body] = bodyArray;
         }
 
+        if (patch.InterRoom is { } interRoom)
+        {
+            var destination = new BsonDocument
+            {
+                [RoomDocumentFields.RoomObject.InterRoomFields.Room] = interRoom.RoomName,
+                [RoomDocumentFields.RoomObject.InterRoomFields.X] = interRoom.X,
+                [RoomDocumentFields.RoomObject.InterRoomFields.Y] = interRoom.Y
+            };
+
+            if (!string.IsNullOrWhiteSpace(interRoom.Shard))
+                destination[RoomDocumentFields.RoomObject.InterRoomFields.Shard] = interRoom.Shard;
+
+            document[RoomDocumentFields.RoomObject.InterRoom] = destination;
+        }
+
         if (patch.Spawning is not null)
         {
             if (MapSpawning(patch.Spawning) is BsonDocument spawningDocument)

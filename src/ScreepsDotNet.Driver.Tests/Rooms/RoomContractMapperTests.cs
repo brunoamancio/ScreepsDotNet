@@ -117,6 +117,24 @@ public sealed class RoomContractMapperTests
     }
 
     [Fact]
+    public void CreateRoomObjectPatchDocument_WritesInterRoomDestination()
+    {
+        var patch = new RoomObjectPatchPayload
+        {
+            InterRoom = new RoomObjectInterRoomPatch("E1S1", 0, 25, "shard3")
+        };
+
+        var document = RoomContractMapper.CreateRoomObjectPatchDocument(patch);
+        Assert.True(document.Contains(RoomDocumentFields.RoomObject.InterRoom));
+
+        var interRoom = document[RoomDocumentFields.RoomObject.InterRoom].AsBsonDocument;
+        Assert.Equal("E1S1", interRoom[RoomDocumentFields.RoomObject.InterRoomFields.Room].AsString);
+        Assert.Equal(0, interRoom[RoomDocumentFields.RoomObject.InterRoomFields.X].AsInt32);
+        Assert.Equal(25, interRoom[RoomDocumentFields.RoomObject.InterRoomFields.Y].AsInt32);
+        Assert.Equal("shard3", interRoom[RoomDocumentFields.RoomObject.InterRoomFields.Shard].AsString);
+    }
+
+    [Fact]
     public void MapRoomObject_MapsActionLogRepairAndBuild()
     {
         var document = new RoomObjectDocument

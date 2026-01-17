@@ -48,9 +48,10 @@ internal sealed class MovementIntentStep(ICreepDeathProcessor deathProcessor) : 
         var terrain = BuildTerrainCache(context);
         var safeModeOwner = DetermineSafeModeOwner(context);
 
-        var (acceptedMoves, crashes) = ResolveMoves(requests, tiles, terrain, safeModeOwner, context.ExitTopology);
+        var (acceptedMoves, crashes, transfers) = ResolveMoves(requests, tiles, terrain, safeModeOwner, context.ExitTopology);
 
         ApplyAcceptedMoves(context, acceptedMoves);
+        ProcessTransfers(context, transfers);
         ProcessCrashes(context, crashes);
 
         return Task.CompletedTask;
@@ -64,6 +65,22 @@ internal sealed class MovementIntentStep(ICreepDeathProcessor deathProcessor) : 
         var energyLedger = new Dictionary<string, int>(Comparer);
         foreach (var creep in crashes)
             deathProcessor.Process(context, creep, new CreepDeathOptions(ViolentDeath: true), energyLedger);
+    }
+
+    private static void ProcessTransfers(RoomProcessorContext context, IReadOnlyList<InterRoomTransfer> transfers)
+    {
+        if (transfers.Count == 0)
+            return;
+
+        foreach (var transfer in transfers)
+        {
+            var patch = new RoomObjectPatchPayload
+            {
+                InterRoom = transfer.Destination
+            };
+
+            context.MutationWriter.Patch(transfer.Creep.Id, patch);
+        }
     }
 
     private static void ApplyAcceptedMoves(
@@ -85,7 +102,7 @@ internal sealed class MovementIntentStep(ICreepDeathProcessor deathProcessor) : 
         }
     }
 
-    private static (Dictionary<string, TileCoord>, List<RoomObjectSnapshot>) ResolveMoves(
+    private static (Dictionary<string, TileCoord>, List<RoomObjectSnapshot>, List<InterRoomTransfer>) ResolveMoves(
         IReadOnlyList<MoveCandidate> candidates,
         Dictionary<TileCoord, TileInfo> tiles,
         TerrainCache terrain,
@@ -94,16 +111,20 @@ internal sealed class MovementIntentStep(ICreepDeathProcessor deathProcessor) : 
     {
         var matrix = BuildMatrix(candidates);
         if (matrix.Count == 0)
-            return (new Dictionary<string, TileCoord>(Comparer), []);
+            return (
+                new Dictionary<string, TileCoord>(Comparer),
+                new List<RoomObjectSnapshot>(0),
+                new List<InterRoomTransfer>(0));
 
         var resolved = BuildResolvedMatrix(matrix);
         var plannedMoves = resolved.Values.ToDictionary(a => a.Candidate.Creep.Id, a => a.Target, Comparer);
         var crashes = new Dictionary<string, RoomObjectSnapshot>(Comparer);
+        var transfers = new List<InterRoomTransfer>();
 
         foreach (var target in resolved.Keys.ToList())
             ValidateAssignment(target);
 
-        return (plannedMoves, crashes.Values.ToList());
+        return (plannedMoves, crashes.Values.ToList(), transfers);
 
         void ValidateAssignment(TileCoord target)
         {
@@ -114,11 +135,27 @@ internal sealed class MovementIntentStep(ICreepDeathProcessor deathProcessor) : 
 
             if (candidate.IsOutOfBounds)
             {
-                var exitEvaluation = EvaluateExitAttempt(candidate, exitTopology);
+                var exitEvaluation = EvaluateExitAttempt(candidate, exitTopology, out var descriptor, out var direction);
                 if (exitEvaluation == ExitEvaluation.Fatal)
+                {
                     RemoveAssignment(target, fatal: true);
-                else
+                    return;
+                }
+
+                if (descriptor is null || direction is null)
+                {
                     RemoveAssignment(target);
+                    return;
+                }
+
+                if (string.IsNullOrWhiteSpace(candidate.Creep.UserId) ||
+                    SystemUserIds.IsNpcUser(candidate.Creep.UserId))
+                {
+                    RemoveAssignment(target);
+                    return;
+                }
+
+                RegisterTransfer(candidate, descriptor, direction.Value);
                 return;
             }
 
@@ -202,6 +239,26 @@ internal sealed class MovementIntentStep(ICreepDeathProcessor deathProcessor) : 
 
                 RegisterCrash(entrant);
             }
+        }
+
+        void RegisterTransfer(MoveCandidate candidate, RoomExitDescriptor descriptor, ExitDirection direction)
+        {
+            var destinationRoom = descriptor.TargetRoomName;
+            if (string.IsNullOrWhiteSpace(destinationRoom))
+                return;
+
+            var (destinationX, destinationY) = direction switch
+            {
+                ExitDirection.Left => (49, candidate.Target.Y),
+                ExitDirection.Right => (0, candidate.Target.Y),
+                ExitDirection.Top => (candidate.Target.X, 49),
+                ExitDirection.Bottom => (candidate.Target.X, 0),
+                _ => (candidate.Target.X, candidate.Target.Y)
+            };
+
+            transfers.Add(new InterRoomTransfer(
+                candidate.Creep,
+                new RoomObjectInterRoomPatch(destinationRoom, destinationX, destinationY)));
         }
     }
 
@@ -615,16 +672,23 @@ internal sealed class MovementIntentStep(ICreepDeathProcessor deathProcessor) : 
         return false;
     }
 
-    private static ExitEvaluation EvaluateExitAttempt(MoveCandidate candidate, RoomExitTopology? topology)
+    private static ExitEvaluation EvaluateExitAttempt(
+        MoveCandidate candidate,
+        RoomExitTopology? topology,
+        out RoomExitDescriptor? descriptor,
+        out ExitDirection? direction)
     {
+        descriptor = null;
+        direction = null;
+
         if (topology is null)
             return ExitEvaluation.Fatal;
 
-        var direction = DetermineExitDirection(candidate.RequestedX, candidate.RequestedY);
+        direction = DetermineExitDirection(candidate.RequestedX, candidate.RequestedY);
         if (direction is null)
             return ExitEvaluation.Fatal;
 
-        var descriptor = direction.Value switch
+        descriptor = direction.Value switch
         {
             ExitDirection.Top => topology.Top,
             ExitDirection.Right => topology.Right,
@@ -755,6 +819,10 @@ internal sealed class MovementIntentStep(ICreepDeathProcessor deathProcessor) : 
         IReadOnlyDictionary<string, string> PulledBy);
 
     private readonly record struct TileCoord(int X, int Y);
+
+    private sealed record InterRoomTransfer(
+        RoomObjectSnapshot Creep,
+        RoomObjectInterRoomPatch Destination);
 
     private sealed class TileInfo
     {

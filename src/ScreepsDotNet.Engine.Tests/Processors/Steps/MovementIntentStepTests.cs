@@ -79,7 +79,7 @@ public sealed class MovementIntentStepTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_OutOfBoundsWithAccessibleExitDoesNotCrash()
+    public async Task ExecuteAsync_OutOfBoundsWithAccessibleExitSchedulesTransfer()
     {
         var mover = CreateCreep("creepA", 0, 0);
         var intents = CreateIntentSnapshot([("user1", "creepA", new MoveIntent(-1, 0))]);
@@ -96,8 +96,13 @@ public sealed class MovementIntentStepTests
 
         await step.ExecuteAsync(context, TestContext.Current.CancellationToken);
 
-        Assert.Empty(writer.Patches);
+        Assert.NotEmpty(writer.Patches);
         Assert.Empty(death.Creeps);
+        var transferPatch = writer.Patches.FirstOrDefault(p => p.Payload.InterRoom is not null);
+        Assert.NotNull(transferPatch.Payload.InterRoom);
+        Assert.Equal("W0S0", transferPatch.Payload.InterRoom!.RoomName);
+        Assert.Equal(49, transferPatch.Payload.InterRoom.X);
+        Assert.Equal(0, transferPatch.Payload.InterRoom.Y);
     }
 
     [Fact]

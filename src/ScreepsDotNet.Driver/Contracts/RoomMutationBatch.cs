@@ -34,6 +34,7 @@ public sealed record RoomObjectPatchPayload : IRoomObjectPatchPayload
     public int? StoreCapacity { get; init; }
     public RoomSpawnSpawningSnapshot? Spawning { get; init; }
     public bool ClearSpawning { get; init; }
+    public RoomObjectInterRoomPatch? InterRoom { get; init; }
     public IReadOnlyList<CreepBodyPartSnapshot>? Body { get; init; }
     public int? Energy { get; init; }
     public int? MineralAmount { get; init; }
@@ -57,6 +58,7 @@ public sealed record RoomObjectPatchPayload : IRoomObjectPatchPayload
         (Store is { Count: > 0 }) ||
         StoreCapacity.HasValue ||
         (Body is { Count: > 0 }) ||
+        InterRoom is not null ||
         Energy.HasValue ||
         MineralAmount.HasValue ||
         InvaderHarvested.HasValue ||
@@ -101,6 +103,8 @@ public sealed record RoomObjectActionLogSnapshot(
 {
     public bool HasEntries => Die is not null || Healed is not null || Repair is not null || Build is not null || Harvest is not null;
 }
+
+public sealed record RoomObjectInterRoomPatch(string RoomName, int X, int Y, string? Shard = null);
 
 public sealed record RoomInfoPatchPayload
 {
