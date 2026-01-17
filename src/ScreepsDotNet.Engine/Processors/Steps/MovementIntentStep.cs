@@ -110,22 +110,38 @@ internal sealed class MovementIntentStep(ICreepDeathProcessor deathProcessor) : 
                 return;
 
             var candidate = assignment.Candidate;
+            if (candidate.IsOutOfBounds)
+            {
+                RemoveAssignment(target, fatal: true);
+                return;
+            }
+
             if (!CanMove(candidate))
             {
                 RemoveAssignment(target);
                 return;
             }
 
-            if (IsObstacle(target, candidate, tiles, plannedMoves, safeModeOwner, terrain))
+            var obstacle = EvaluateObstacle(target, candidate, tiles, plannedMoves, safeModeOwner, terrain);
+            if (obstacle == ObstacleEvaluation.Fatal)
+            {
+                RemoveAssignment(target, fatal: true);
+                return;
+            }
+
+            if (obstacle == ObstacleEvaluation.Blocked)
                 RemoveAssignment(target);
         }
 
-        void RemoveAssignment(TileCoord target)
+        void RemoveAssignment(TileCoord target, bool fatal = false)
         {
             if (!resolved.Remove(target, out var assignment))
                 return;
 
             plannedMoves.Remove(assignment.Candidate.Creep.Id);
+
+            if (fatal)
+                crashes.Add(assignment.Candidate.Creep);
 
             var origin = assignment.Candidate.Origin;
             if (resolved.ContainsKey(origin))
@@ -215,7 +231,7 @@ internal sealed class MovementIntentStep(ICreepDeathProcessor deathProcessor) : 
         return candidate.Creep.Body.Any(part => part.Type == BodyPartType.Move && part.Hits > 0);
     }
 
-    private static bool IsObstacle(
+    private static ObstacleEvaluation EvaluateObstacle(
         TileCoord target,
         MoveCandidate candidate,
         Dictionary<TileCoord, TileInfo> tiles,
@@ -224,12 +240,12 @@ internal sealed class MovementIntentStep(ICreepDeathProcessor deathProcessor) : 
         TerrainCache terrain)
     {
         if (!tiles.TryGetValue(target, out var tile))
-            return terrain.IsWall(target.X, target.Y);
+            return terrain.IsWall(target.X, target.Y) ? ObstacleEvaluation.Fatal : ObstacleEvaluation.None;
 
         foreach (var structure in tile.Structures)
         {
             if (BlocksStructure(structure, candidate.Creep))
-                return true;
+                return ObstacleEvaluation.Fatal;
         }
 
         foreach (var occupant in tile.Creeps)
@@ -241,13 +257,13 @@ internal sealed class MovementIntentStep(ICreepDeathProcessor deathProcessor) : 
                 continue;
 
             if (CreepBlocks(occupant, candidate.Creep, safeModeOwner))
-                return true;
+                return ObstacleEvaluation.Blocked;
         }
 
         if (terrain.IsWall(target.X, target.Y) && !tile.HasRoad)
-            return true;
+            return ObstacleEvaluation.Fatal;
 
-        return false;
+        return ObstacleEvaluation.None;
     }
 
     private static bool CreepBlocks(RoomObjectSnapshot occupant, RoomObjectSnapshot mover, string? safeModeOwner)
@@ -375,9 +391,12 @@ internal sealed class MovementIntentStep(ICreepDeathProcessor deathProcessor) : 
                 if (!string.Equals(creep.UserId, envelope.UserId, StringComparison.Ordinal))
                     continue;
 
-                var clampedX = Math.Clamp(creepIntent.Move.X, 0, 49);
-                var clampedY = Math.Clamp(creepIntent.Move.Y, 0, 49);
-                if (clampedX == creep.X && clampedY == creep.Y)
+                var targetX = creepIntent.Move.X;
+                var targetY = creepIntent.Move.Y;
+                var clampedX = Math.Clamp(targetX, 0, 49);
+                var clampedY = Math.Clamp(targetY, 0, 49);
+                var isOutOfBounds = clampedX != targetX || clampedY != targetY;
+                if (!isOutOfBounds && clampedX == creep.X && clampedY == creep.Y)
                     continue;
 
                 var origin = new TileCoord(creep.X, creep.Y);
@@ -388,7 +407,8 @@ internal sealed class MovementIntentStep(ICreepDeathProcessor deathProcessor) : 
                     origin,
                     target,
                     pullState.PulledBy.ContainsKey(creep.Id),
-                    pullState.PullTargets.ContainsKey(creep.Id));
+                    pullState.PullTargets.ContainsKey(creep.Id),
+                    isOutOfBounds);
 
                 result.Add(candidate);
             }
@@ -565,12 +585,20 @@ internal sealed class MovementIntentStep(ICreepDeathProcessor deathProcessor) : 
         return weight;
     }
 
+    private enum ObstacleEvaluation
+    {
+        None,
+        Blocked,
+        Fatal
+    }
+
     private sealed record MoveCandidate(
         RoomObjectSnapshot Creep,
         TileCoord Origin,
         TileCoord Target,
         bool IsPulled,
-        bool IsPulling);
+        bool IsPulling,
+        bool IsOutOfBounds);
 
     private sealed record MoveAssignment(MoveCandidate Candidate, TileCoord Target);
 

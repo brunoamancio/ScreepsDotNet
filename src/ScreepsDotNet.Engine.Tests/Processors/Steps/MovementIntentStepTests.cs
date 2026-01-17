@@ -62,17 +62,38 @@ public sealed class MovementIntentStepTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_IgnoresOutOfBoundsMove()
+    public async Task ExecuteAsync_CrashesOutOfBoundsMove()
     {
         var mover = CreateCreep("creepA", 0, 0);
         var intents = CreateIntentSnapshot([("user1", "creepA", new MoveIntent(-1, 0))]);
         var state = CreateState([mover], intents);
         var writer = new RecordingMutationWriter();
-        var step = new MovementIntentStep(new NullDeathProcessor());
+        var death = new RecordingDeathProcessor();
+        var step = new MovementIntentStep(death);
 
         await step.ExecuteAsync(new RoomProcessorContext(state, writer, new NullCreepStatsSink()), TestContext.Current.CancellationToken);
 
         Assert.Empty(writer.Patches);
+        var crashed = Assert.Single(death.Creeps);
+        Assert.Equal("creepA", crashed.Id);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_CrashesWhenBlockedByStructure()
+    {
+        var mover = CreateCreep("creepA", 10, 10);
+        var wall = CreateStructure("wall1", RoomObjectTypes.ConstructedWall, 11, 10);
+        var intents = CreateIntentSnapshot([("user1", "creepA", new MoveIntent(11, 10))]);
+        var state = CreateState([mover, wall], intents);
+        var writer = new RecordingMutationWriter();
+        var death = new RecordingDeathProcessor();
+        var step = new MovementIntentStep(death);
+
+        await step.ExecuteAsync(new RoomProcessorContext(state, writer, new NullCreepStatsSink()), TestContext.Current.CancellationToken);
+
+        Assert.Empty(writer.Patches);
+        var crashed = Assert.Single(death.Creeps);
+        Assert.Equal("creepA", crashed.Id);
     }
 
     [Fact]
@@ -263,6 +284,35 @@ public sealed class MovementIntentStepTests
             IsSpawning: null,
             UserSummoned: null,
             IsPublic: isPublic);
+
+    private static RoomObjectSnapshot CreateStructure(string id, string type, int x, int y, string? owner = "system")
+        => new(
+            id,
+            type,
+            "W1N1",
+            null,
+            owner,
+            x,
+            y,
+            Hits: 1000,
+            HitsMax: 1000,
+            Fatigue: null,
+            TicksToLive: null,
+            Name: null,
+            Level: null,
+            Density: null,
+            MineralType: null,
+            DepositType: null,
+            StructureType: type,
+            Store: new Dictionary<string, int>(Comparer),
+            StoreCapacity: null,
+            StoreCapacityResource: new Dictionary<string, int>(Comparer),
+            Reservation: null,
+            Sign: null,
+            Structure: null,
+            Effects: new Dictionary<string, object?>(Comparer),
+            Spawning: null,
+            Body: Array.Empty<CreepBodyPartSnapshot>());
 
     private static IntentRecord CreateTargetIntentRecord(string name, string targetId)
         => new(
