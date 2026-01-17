@@ -14,10 +14,11 @@ public sealed class MongoUserMemoryRepository(IMongoDatabaseProvider databasePro
     public async Task<IDictionary<string, object?>> GetMemoryAsync(string userId, CancellationToken cancellationToken = default)
     {
         var document = await FindDocumentAsync(userId, cancellationToken).ConfigureAwait(false);
-        var result = document?.Memory is { Count: > 0 } memory
-            ? new Dictionary<string, object?>(memory, StringComparer.Ordinal)
-            : new Dictionary<string, object?>(StringComparer.Ordinal);
-        return result;
+
+        if (document?.Memory is { Count: > 0 } memory)
+            return new Dictionary<string, object?>(memory, StringComparer.Ordinal);
+
+        return new Dictionary<string, object?>(StringComparer.Ordinal);
     }
 
     public async Task UpdateMemoryAsync(string userId, string? path, JsonElement value, CancellationToken cancellationToken = default)
@@ -60,8 +61,10 @@ public sealed class MongoUserMemoryRepository(IMongoDatabaseProvider databasePro
             return null;
 
         var key = segment.ToString();
-        var segmentData = document.Segments.TryGetValue(key, out var data) ? data : null;
-        return segmentData;
+        if (!document.Segments.TryGetValue(key, out var data))
+            return null;
+
+        return data;
     }
 
     public Task SetMemorySegmentAsync(string userId, int segment, string? data, CancellationToken cancellationToken = default)

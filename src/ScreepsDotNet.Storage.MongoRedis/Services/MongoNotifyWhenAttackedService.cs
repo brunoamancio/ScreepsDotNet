@@ -1,6 +1,5 @@
 ﻿namespace ScreepsDotNet.Storage.MongoRedis.Services;
 
-using System;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using ScreepsDotNet.Backend.Core.Services;

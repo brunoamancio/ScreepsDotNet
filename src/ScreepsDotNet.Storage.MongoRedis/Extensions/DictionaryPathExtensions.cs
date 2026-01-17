@@ -1,8 +1,5 @@
 ﻿namespace ScreepsDotNet.Storage.MongoRedis.Extensions;
 
-using System;
-using System.Collections.Generic;
-
 internal static class DictionaryPathExtensions
 {
     public static void SetValueAtPath(this IDictionary<string, object?> root, IReadOnlyList<string> segments, object? value)

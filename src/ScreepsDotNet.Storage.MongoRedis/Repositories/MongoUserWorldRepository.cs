@@ -46,8 +46,10 @@ public sealed class MongoUserWorldRepository(IMongoDatabaseProvider databaseProv
                                        .Select(o => o.Room)
                                       .Any(room => !string.IsNullOrEmpty(room) && controllerRooms.Contains(room));
 
-        var worldStatus = hasValidSpawn ? UserWorldStatus.Normal : UserWorldStatus.Lost;
-        return worldStatus;
+        if (hasValidSpawn)
+            return UserWorldStatus.Normal;
+
+        return UserWorldStatus.Lost;
     }
 
     private sealed record RoomObject(string? Type, string? Room);

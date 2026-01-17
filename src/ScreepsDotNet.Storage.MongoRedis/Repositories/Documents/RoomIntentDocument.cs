@@ -1,9 +1,8 @@
-﻿namespace ScreepsDotNet.Storage.MongoRedis.Repositories.Documents;
-
-using System.Collections.Generic;
-using MongoDB.Bson;
+﻿using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 using MongoDB.Bson.Serialization.Options;
+
+namespace ScreepsDotNet.Storage.MongoRedis.Repositories.Documents;
 
 [BsonIgnoreExtraElements]
 public sealed class RoomIntentDocument

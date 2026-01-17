@@ -1,8 +1,5 @@
 ﻿namespace ScreepsDotNet.Storage.MongoRedis.Services;
 
-using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using MongoDB.Bson;
 using MongoDB.Driver;
@@ -200,11 +197,13 @@ public sealed class MongoConstructionService(IMongoDatabaseProvider databaseProv
         if (structureType == StructureType.Spawn && controller == null)
             return new PlaceConstructionResult(PlaceConstructionResultStatus.InvalidRoom, ErrorMessage: "Spawn requires controller");
 
-        var owner = controller.Contains(RoomDocumentFields.RoomObject.User) && !controller[RoomDocumentFields.RoomObject.User].IsBsonNull ? controller[RoomDocumentFields.RoomObject.User].AsString : null;
+        var userIsNull = !controller.Contains(RoomDocumentFields.RoomObject.User) || controller[RoomDocumentFields.RoomObject.User].IsBsonNull;
+        var owner = userIsNull ? null : controller[RoomDocumentFields.RoomObject.User].AsString;
         var reservation = controller.GetValue(RoomDocumentFields.RoomObject.Reservation, BsonNull.Value);
-        var reservationUser = reservation.IsBsonDocument && reservation.AsBsonDocument.Contains(RoomDocumentFields.RoomObject.ReservationFields.User) && !reservation.AsBsonDocument[RoomDocumentFields.RoomObject.ReservationFields.User].IsBsonNull
-            ? reservation.AsBsonDocument[RoomDocumentFields.RoomObject.ReservationFields.User].AsString
-            : null;
+        var reservationUserIsNull = !reservation.IsBsonDocument || !reservation.AsBsonDocument.Contains(RoomDocumentFields.RoomObject.ReservationFields.User) || reservation.AsBsonDocument[RoomDocumentFields.RoomObject.ReservationFields.User].IsBsonNull;
+        var reservationUser = reservationUserIsNull
+            ? null
+            : reservation.AsBsonDocument[RoomDocumentFields.RoomObject.ReservationFields.User].AsString;
 
         if (owner != userId && reservationUser != userId)
             return new PlaceConstructionResult(PlaceConstructionResultStatus.NotControllerOwner);

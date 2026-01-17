@@ -19,8 +19,10 @@ public sealed class MongoUserRepository(IMongoDatabaseProvider databaseProvider)
                                          .FirstOrDefaultAsync(cancellationToken)
                                          .ConfigureAwait(false);
 
-        var result = document is null ? null : MapToUserProfile(document, userId);
-        return result;
+        if (document is null)
+            return null;
+
+        return MapToUserProfile(document, userId);
     }
 
     public async Task<int> GetActiveUsersCountAsync(CancellationToken cancellationToken = default)
@@ -85,8 +87,11 @@ public sealed class MongoUserRepository(IMongoDatabaseProvider databaseProvider)
                                            .Set(user => user.EmailDirty, false);
 
         var result = await _collection.UpdateOneAsync(user => user.Id == userId, update, cancellationToken: cancellationToken).ConfigureAwait(false);
-        var updateResult = result.MatchedCount == 0 ? EmailUpdateResult.UserNotFound : EmailUpdateResult.Success;
-        return updateResult;
+
+        if (result.MatchedCount == 0)
+            return EmailUpdateResult.UserNotFound;
+
+        return EmailUpdateResult.Success;
     }
 
     public async Task SetSteamVisibilityAsync(string userId, bool visible, CancellationToken cancellationToken = default)
@@ -150,8 +155,11 @@ public sealed class MongoUserRepository(IMongoDatabaseProvider databaseProvider)
         }
 
         var result = await _collection.UpdateOneAsync(user => user.Id == userId, update, cancellationToken: cancellationToken).ConfigureAwait(false);
-        var usernameResult = result.ModifiedCount == 0 ? SetUsernameResult.Failed : SetUsernameResult.Success;
-        return usernameResult;
+
+        if (result.ModifiedCount == 0)
+            return SetUsernameResult.Failed;
+
+        return SetUsernameResult.Success;
     }
 
     private static UserProfile MapToUserProfile(UserDocument document, string fallbackId)
@@ -180,8 +188,10 @@ public sealed class MongoUserRepository(IMongoDatabaseProvider databaseProvider)
 
     private static UserSteamProfile? BuildSteamProfile(UserSteamDocument? steam)
     {
-        var result = steam is null ? null : new UserSteamProfile(steam.Id, steam.DisplayName, steam.Ownership, steam.SteamProfileLinkHidden);
-        return result;
+        if (steam is null)
+            return null;
+
+        return new UserSteamProfile(steam.Id, steam.DisplayName, steam.Ownership, steam.SteamProfileLinkHidden);
     }
 
     private static FilterDefinition<UserDocument>? BuildPublicProfileFilter(string? username, string? userId)
@@ -207,8 +217,10 @@ public sealed class MongoUserRepository(IMongoDatabaseProvider databaseProvider)
             return null;
 
         var hidden = steam.SteamProfileLinkHidden ?? false;
-        var steamId = hidden ? null : steam.Id;
-        return steamId;
+        if (hidden)
+            return null;
+
+        return steam.Id;
     }
 
     private static Dictionary<string, object?> CreateBadgePayload(UserBadgeUpdate badge)

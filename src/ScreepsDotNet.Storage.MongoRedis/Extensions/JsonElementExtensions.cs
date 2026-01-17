@@ -1,8 +1,6 @@
-﻿namespace ScreepsDotNet.Storage.MongoRedis.Extensions;
+﻿using System.Text.Json;
 
-using System;
-using System.Collections.Generic;
-using System.Text.Json;
+namespace ScreepsDotNet.Storage.MongoRedis.Extensions;
 
 internal static class JsonElementExtensions
 {

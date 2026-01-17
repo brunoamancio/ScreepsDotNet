@@ -1,12 +1,6 @@
 ﻿namespace ScreepsDotNet.Storage.MongoRedis.Services;
 
-using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using ScreepsDotNet.Backend.Core.Models.Bots;
 using ScreepsDotNet.Backend.Core.Models.Mods;
@@ -129,9 +123,10 @@ public sealed class FileSystemBotDefinitionProvider(IModManifestProvider manifes
         var sanitized = moduleName.Replace(".", "$DOT$")
                                   .Replace("/", "$SLASH$")
                                   .Replace("\\", "$BACKSLASH$");
-        return sanitized.Length > 0 && sanitized[0] == '$'
+        var result = sanitized.Length > 0 && sanitized[0] == '$'
             ? string.Empty
             : sanitized;
+        return result;
     }
 
 }

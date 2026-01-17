@@ -1,10 +1,9 @@
-﻿namespace ScreepsDotNet.Storage.MongoRedis.Repositories.Documents;
-
-using System.Collections.Generic;
-using MongoDB.Bson;
+﻿using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 using MongoDB.Bson.Serialization.Options;
 using ScreepsDotNet.Common.Constants;
+
+namespace ScreepsDotNet.Storage.MongoRedis.Repositories.Documents;
 
 [BsonIgnoreExtraElements]
 public sealed class PowerCreepDocument
