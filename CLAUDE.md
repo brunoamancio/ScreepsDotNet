@@ -1034,6 +1034,49 @@ var number = (int)5;  // Unnecessary
 var count = this.items.Count;  // Remove 'this.'
 ```
 
+### IDE0052 False Positives (Attribute Parameters)
+**⚠️ CRITICAL: Known Roslyn Bug**
+
+IDE0052 incorrectly flags constants as "unread" when they are **only used in attribute parameters**. This causes `dotnet format style` to delete actively-used constants.
+
+**✅ Good - Protect with pragma:**
+```csharp
+// Endpoint constants used ONLY in [FromQuery(Name = ...)] attributes
+#pragma warning disable IDE0052 // Used in attribute parameters
+private const string UsernameQueryName = "username";
+private const string UserIdQueryName = "id";
+private const string ResourceTypeQueryName = "resourceType";
+#pragma warning restore IDE0052
+
+// Usage in attributes
+app.MapGet("/api/user",
+    async ([FromQuery(Name = UsernameQueryName)] string? username,
+           [FromQuery(Name = UserIdQueryName)] string? id) => {
+        // ...
+    });
+```
+
+**❌ Bad - Will be deleted by dotnet format:**
+```csharp
+// NO pragma protection - will be incorrectly deleted!
+private const string UsernameQueryName = "username";
+
+app.MapGet("/api/user",
+    async ([FromQuery(Name = UsernameQueryName)] string? username) => {
+        // After dotnet format style, UsernameQueryName will be deleted
+        // causing compilation errors!
+    });
+```
+
+**When to add pragma suppression:**
+- Constants used **exclusively** in attribute parameters (`[FromQuery]`, `[FromHeader]`, `[FromRoute]`, etc.)
+- If constant is also used in regular code (if statements, switches), no suppression needed
+- Applies to all endpoint files: `*Endpoints.cs` in `ScreepsDotNet.Backend.Http/Endpoints/`
+
+**Examples in codebase:**
+- `UserEndpoints.cs` lines 82-86: `UsernameQueryName`, `UserIdQueryName`, `BorderQueryName`
+- `MarketEndpoints.cs` lines 18-20: `ResourceTypeQueryName`
+
 ### Lock Primitives
 **✅ Good:**
 ```csharp
@@ -1692,6 +1735,7 @@ This file provides **solution-wide** context. For subsystem-specific details:
 - Create TODO comments instead of tracking in roadmaps
 - Duplicate documentation between files
 - Mix constant types randomly in endpoint classes (follow organization pattern: value constants → messages → endpoint names → query params → defaults → numeric arrays → limits → complex objects)
+- Forget to add `#pragma warning disable IDE0052` for constants used ONLY in attribute parameters (see "IDE0052 False Positives" section)
 
 ✅ **Do:**
 - Use `var` for ALL variable declarations
@@ -1720,6 +1764,7 @@ This file provides **solution-wide** context. For subsystem-specific details:
 - Stop `dotnet run` before `dotnet build`
 - Keep configuration in sync (appsettings.json, appsettings.Development.json)
 - Organize constants in endpoint classes by type (see "Constant Organization in Endpoint Classes" section)
+- Protect constants used ONLY in attribute parameters with `#pragma warning disable IDE0052` (see "IDE0052 False Positives" section)
 
 ## Documentation Map
 
