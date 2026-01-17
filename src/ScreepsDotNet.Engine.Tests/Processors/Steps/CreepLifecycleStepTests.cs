@@ -1,5 +1,3 @@
-using System;
-using System.Collections.Generic;
 using ScreepsDotNet.Common.Constants;
 using ScreepsDotNet.Driver.Contracts;
 using ScreepsDotNet.Engine.Data.Bulk;
