@@ -141,6 +141,32 @@ public sealed class MovementIntentStepTests
     }
 
     [Fact]
+    public async Task ExecuteAsync_CrashesAllEntrantsWhenTileIsFatal()
+    {
+        var creepA = CreateCreep("creepA", 10, 10);
+        var creepB = CreateCreep("creepB", 10, 11);
+        var spawn = CreateStructure("spawn1", RoomObjectTypes.Spawn, 11, 10);
+
+        var intents = CreateIntentSnapshot(
+            [
+                ("user1", "creepA", new MoveIntent(11, 10)),
+                ("user1", "creepB", new MoveIntent(11, 10))
+            ]);
+
+        var state = CreateState([creepA, creepB, spawn], intents);
+        var writer = new RecordingMutationWriter();
+        var death = new RecordingDeathProcessor();
+        var step = new MovementIntentStep(death);
+
+        await step.ExecuteAsync(new RoomProcessorContext(state, writer, new NullCreepStatsSink()), TestContext.Current.CancellationToken);
+
+        Assert.Empty(writer.Patches);
+        Assert.Equal(2, death.Creeps.Count);
+        Assert.Contains(death.Creeps, c => c.Id == "creepA");
+        Assert.Contains(death.Creeps, c => c.Id == "creepB");
+    }
+
+    [Fact]
     public async Task ExecuteAsync_AllowsSwapResolution()
     {
         var creepA = CreateCreep("creepA", 10, 10);

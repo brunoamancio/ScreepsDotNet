@@ -147,7 +147,10 @@ internal sealed class MovementIntentStep(ICreepDeathProcessor deathProcessor) : 
             plannedMoves.Remove(assignment.Candidate.Creep.Id);
 
             if (fatal)
+            {
+                CrashAdditionalEntrants(target, assignment.Candidate);
                 RegisterCrash(assignment.Candidate);
+            }
 
             var origin = assignment.Candidate.Origin;
             if (resolved.ContainsKey(origin))
@@ -186,6 +189,20 @@ internal sealed class MovementIntentStep(ICreepDeathProcessor deathProcessor) : 
 
         void AddCrash(RoomObjectSnapshot creep)
             => crashes.TryAdd(creep.Id, creep);
+
+        void CrashAdditionalEntrants(TileCoord target, MoveCandidate winner)
+        {
+            if (!matrix.TryGetValue(target, out var entrants) || entrants.Count == 0)
+                return;
+
+            foreach (var entrant in entrants)
+            {
+                if (ReferenceEquals(entrant, winner))
+                    continue;
+
+                RegisterCrash(entrant);
+            }
+        }
     }
 
     private static Dictionary<TileCoord, List<MoveCandidate>> BuildMatrix(IReadOnlyList<MoveCandidate> candidates)
