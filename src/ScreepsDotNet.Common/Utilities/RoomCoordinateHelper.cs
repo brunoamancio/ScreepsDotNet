@@ -3,63 +3,111 @@ namespace ScreepsDotNet.Common.Utilities;
 using System;
 
 /// <summary>
-/// Utility helpers for converting Screeps room names (e.g. "W8N3") to X/Y coordinates and back.
-/// Mirrors the legacy engine logic so driver and engine share the same mapping.
+/// Helpers for converting Screeps room names to Cartesian coordinates and computing distances.
 /// </summary>
 public static class RoomCoordinateHelper
 {
-    public static bool TryParse(string roomName, out int x, out int y)
+    /// <summary>
+    /// Converts a Screeps room name (e.g. W10N5) into world coordinates where the origin is at E0S0.
+    /// </summary>
+    public static (int X, int Y) ToCoordinates(string roomName)
     {
-        x = 0;
-        y = 0;
+        if (string.IsNullOrWhiteSpace(roomName))
+            throw new ArgumentException("Room name cannot be null or empty.", nameof(roomName));
 
-        if (string.IsNullOrWhiteSpace(roomName) || roomName.Length < 3)
-            return false;
-
-        // Determine split between horizontal and vertical sections (handles 1-3 digit coordinates).
-        var verticalIndex = FindVerticalIndex(roomName);
-        if (verticalIndex <= 0 || verticalIndex >= roomName.Length - 1)
-            return false;
-
-        if (!int.TryParse(roomName.AsSpan(1, verticalIndex - 1), out var horizontal))
-            return false;
-        if (!int.TryParse(roomName.AsSpan(verticalIndex + 1), out var vertical))
-            return false;
+        roomName = roomName.Trim();
+        if (roomName.Length < 3)
+            throw new FormatException($"Room name '{roomName}' is too short.");
 
         var horizontalDir = roomName[0];
-        var verticalDir = roomName[verticalIndex];
+        var index = 1;
+        while (index < roomName.Length && char.IsDigit(roomName[index]))
+            index++;
 
-        x = horizontalDir is 'W' or 'w'
-            ? -horizontal - 1
-            : horizontal;
+        if (index == roomName.Length)
+            throw new FormatException($"Room name '{roomName}' is missing the vertical half.");
 
-        y = verticalDir is 'N' or 'n'
-            ? -vertical - 1
-            : vertical;
+        if (!int.TryParse(roomName.AsSpan(1, index - 1), out var horizontalMagnitude))
+            throw new FormatException($"Room name '{roomName}' has an invalid horizontal magnitude.");
 
-        return true;
+        var verticalDir = roomName[index];
+        var verticalSpan = roomName[(index + 1)..];
+        if (verticalSpan.Length == 0)
+            throw new FormatException($"Room name '{roomName}' is missing the vertical magnitude.");
+
+        if (!int.TryParse(verticalSpan, out var verticalMagnitude))
+            throw new FormatException($"Room name '{roomName}' has an invalid vertical magnitude.");
+
+        var x = horizontalDir is 'W' or 'w'
+            ? -horizontalMagnitude - 1
+            : horizontalMagnitude;
+        var y = verticalDir is 'N' or 'n'
+            ? -verticalMagnitude - 1
+            : verticalMagnitude;
+
+        return (x, y);
     }
 
-    public static string ToRoomName(int x, int y)
+    /// <summary>
+    /// Attempts to parse a room name into coordinates without throwing on failure.
+    /// </summary>
+    public static bool TryParse(string roomName, out int x, out int y)
     {
-        var horizontal = x < 0 ? $"W{-x - 1}" : $"E{x}";
-        var vertical = y < 0 ? $"N{-y - 1}" : $"S{y}";
-        return string.Create(horizontal.Length + vertical.Length, (horizontal, vertical), static (span, state) =>
+        try
         {
-            state.horizontal.AsSpan().CopyTo(span);
-            state.vertical.AsSpan().CopyTo(span[state.horizontal.Length..]);
-        });
+            (x, y) = ToCoordinates(roomName);
+            return true;
+        }
+        catch
+        {
+            x = 0;
+            y = 0;
+            return false;
+        }
     }
 
-    private static int FindVerticalIndex(string roomName)
+    /// <summary>
+    /// Converts world coordinates back into a Screeps room name (e.g. (-1, -1) =&gt; W0N0).
+    /// </summary>
+    public static string FromCoordinates(int x, int y)
     {
-        for (var i = 1; i < roomName.Length; i++)
+        static string Encode(char positivePrefix, char negativePrefix, int value)
         {
-            var c = roomName[i];
-            if (c is 'N' or 'n' or 'S' or 's')
-                return i;
+            if (value < 0)
+                return $"{negativePrefix}{-value - 1}";
+            return $"{positivePrefix}{value}";
         }
 
-        return -1;
+        var horizontal = Encode('E', 'W', x);
+        var vertical = Encode('S', 'N', y);
+        return $"{horizontal}{vertical}";
+    }
+
+    /// <summary>
+    /// Alias for <see cref="FromCoordinates"/> to mirror the legacy helper name.
+    /// </summary>
+    public static string ToRoomName(int x, int y) => FromCoordinates(x, y);
+
+    /// <summary>
+    /// Calculates Chebyshev distance between two rooms. When <paramref name="wrapWorld"/> is true and
+    /// <paramref name="worldSize"/> is provided, distances wrap around the edges (as on persistent shards).
+    /// </summary>
+    public static int CalculateDistance(string roomA, string roomB, bool wrapWorld = false, int? worldSize = null)
+    {
+        var (ax, ay) = ToCoordinates(roomA);
+        var (bx, by) = ToCoordinates(roomB);
+
+        var dx = Math.Abs(ax - bx);
+        var dy = Math.Abs(ay - by);
+
+        if (wrapWorld && worldSize is { } size && size > 0)
+        {
+            dx %= size;
+            dy %= size;
+            dx = Math.Min(dx, size - dx);
+            dy = Math.Min(dy, size - dy);
+        }
+
+        return Math.Max(dx, dy);
     }
 }
