@@ -1,7 +1,5 @@
 namespace ScreepsDotNet.Engine.Processors.Helpers;
 
-using System.Threading;
-using System.Threading.Tasks;
 using ScreepsDotNet.Common.Constants;
 using ScreepsDotNet.Driver.Abstractions.History;
 

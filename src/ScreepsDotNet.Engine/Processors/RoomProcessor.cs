@@ -1,6 +1,5 @@
 namespace ScreepsDotNet.Engine.Processors;
 
-using System.Linq;
 using Microsoft.Extensions.Logging;
 using ScreepsDotNet.Driver.Abstractions.History;
 using ScreepsDotNet.Engine.Data.Bulk;

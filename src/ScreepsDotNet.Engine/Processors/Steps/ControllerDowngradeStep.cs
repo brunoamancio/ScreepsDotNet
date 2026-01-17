@@ -2,7 +2,6 @@ using ScreepsDotNet.Common.Constants;
 
 namespace ScreepsDotNet.Engine.Processors.Steps;
 
-using System;
 using ScreepsDotNet.Driver.Contracts;
 using ScreepsDotNet.Engine.Processors;
 

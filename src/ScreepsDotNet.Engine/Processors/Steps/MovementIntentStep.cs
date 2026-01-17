@@ -1,8 +1,5 @@
 namespace ScreepsDotNet.Engine.Processors.Steps;
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using ScreepsDotNet.Common.Constants;
 using ScreepsDotNet.Common.Types;
 using ScreepsDotNet.Common.Utilities;
@@ -380,8 +377,10 @@ internal sealed class MovementIntentStep(ICreepDeathProcessor deathProcessor) : 
         out RoomObjectInterRoomPatch? portalTransfer)
     {
         portalTransfer = null;
-        if (!tiles.TryGetValue(target, out var tile))
-            return terrain.IsWall(target.X, target.Y) ? ObstacleEvaluation.Fatal : ObstacleEvaluation.None;
+        if (!tiles.TryGetValue(target, out var tile)) {
+            var result = terrain.IsWall(target.X, target.Y) ? ObstacleEvaluation.Fatal : ObstacleEvaluation.None;
+            return result;
+        }
 
         foreach (var structure in tile.Structures) {
             var structureEvaluation = EvaluateStructure(structure, candidate.Creep, out var portalPatch);
@@ -403,7 +402,8 @@ internal sealed class MovementIntentStep(ICreepDeathProcessor deathProcessor) : 
                 return ObstacleEvaluation.Blocked;
         }
 
-        return terrain.IsWall(target.X, target.Y) && !tile.HasRoad ? ObstacleEvaluation.Fatal : ObstacleEvaluation.None;
+        var evaluation = terrain.IsWall(target.X, target.Y) && !tile.HasRoad ? ObstacleEvaluation.Fatal : ObstacleEvaluation.None;
+        return evaluation;
     }
 
     private static bool CreepBlocks(RoomObjectSnapshot occupant, RoomObjectSnapshot mover, string? safeModeOwner)

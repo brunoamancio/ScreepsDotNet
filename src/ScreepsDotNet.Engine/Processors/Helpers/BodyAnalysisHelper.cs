@@ -1,6 +1,5 @@
 namespace ScreepsDotNet.Engine.Processors.Helpers;
 
-using System.Collections.Generic;
 using ScreepsDotNet.Common.Constants;
 using ScreepsDotNet.Common.Types;
 

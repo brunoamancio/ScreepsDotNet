@@ -1,13 +1,9 @@
 namespace ScreepsDotNet.Engine.Tests.Processors.GlobalSteps;
 
-using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
 using ScreepsDotNet.Common.Constants;
 using ScreepsDotNet.Driver.Contracts;
 using ScreepsDotNet.Engine.Data.Models;
 using ScreepsDotNet.Engine.Processors.GlobalSteps;
-using Xunit;
 
 public sealed class PowerCreepIntentStepTests
 {

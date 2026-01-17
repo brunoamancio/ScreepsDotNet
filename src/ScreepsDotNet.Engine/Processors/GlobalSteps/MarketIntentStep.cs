@@ -1,7 +1,5 @@
 namespace ScreepsDotNet.Engine.Processors.GlobalSteps;
 
-using System;
-using System.Collections.Generic;
 using MongoDB.Bson;
 using ScreepsDotNet.Common.Constants;
 using ScreepsDotNet.Driver.Contracts;

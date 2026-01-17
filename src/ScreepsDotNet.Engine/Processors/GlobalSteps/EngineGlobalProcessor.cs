@@ -1,6 +1,5 @@
 namespace ScreepsDotNet.Engine.Processors.GlobalSteps;
 
-using System.Collections.Generic;
 using Microsoft.Extensions.Logging;
 using ScreepsDotNet.Engine.Data.GlobalMutations;
 using ScreepsDotNet.Engine.Data.GlobalState;

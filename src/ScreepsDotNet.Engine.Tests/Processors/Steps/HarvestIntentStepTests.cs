@@ -1,9 +1,5 @@
 namespace ScreepsDotNet.Engine.Tests.Processors.Steps;
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using ScreepsDotNet.Common.Constants;
 using ScreepsDotNet.Common.Types;
 using ScreepsDotNet.Driver.Contracts;

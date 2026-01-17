@@ -1,9 +1,6 @@
 namespace ScreepsDotNet.Engine.Processors.Steps;
 
-using System;
-using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
 using ScreepsDotNet.Common.Constants;
 using ScreepsDotNet.Common.Structures;
 using ScreepsDotNet.Common.Utilities;
@@ -299,7 +296,8 @@ internal sealed class CreepBuildRepairStep(IStructureBlueprintProvider blueprint
             return 0;
 
         var index = (y * 50) + x;
-        return index < 0 || index >= cache.Terrain.Length ? 0 : TerrainEncoding.Decode(cache.Terrain[index]);
+        var result = index < 0 || index >= cache.Terrain.Length ? 0 : TerrainEncoding.Decode(cache.Terrain[index]);
+        return result;
     }
 
     private static void UpdateObjectOverrides(

@@ -1,8 +1,5 @@
 namespace ScreepsDotNet.Engine.Tests.Processors.Steps;
 
-using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
 using ScreepsDotNet.Common.Constants;
 using ScreepsDotNet.Driver.Contracts;
 using ScreepsDotNet.Engine.Data.Bulk;
@@ -230,7 +227,8 @@ public sealed class TowerIntentStepTests
         public void IncrementSpawnRecycles(string userId) { }
         public void IncrementSpawnCreates(string userId) { }
         public void IncrementTombstonesCreated(string userId) { }
-        public void IncrementEnergyConstruction(string userId, int amount) => EnergyConstruction += amount;
+        public void IncrementEnergyConstruction(string userId, int amount)
+            => EnergyConstruction += amount;
         public void IncrementEnergyHarvested(string userId, int amount) { }
         public Task FlushAsync(int gameTime, CancellationToken token = default) => Task.CompletedTask;
     }

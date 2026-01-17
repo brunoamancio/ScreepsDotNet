@@ -1,7 +1,5 @@
 namespace ScreepsDotNet.Engine.Processors.Helpers;
 
-using System;
-using System.Collections.Generic;
 using ScreepsDotNet.Common.Constants;
 using ScreepsDotNet.Driver.Contracts;
 
@@ -37,9 +35,10 @@ internal sealed class SpawnEnergyAllocator : ISpawnEnergyAllocator
                 break;
         }
 
-        return remaining > 0
+        var result = remaining > 0
             ? EnergyAllocationResult.Failure("Not enough energy to satisfy the spawn intent.")
             : EnergyAllocationResult.CreateSuccess(draws);
+        return result;
     }
 
     private static IEnumerable<RoomObjectSnapshot> EnumerateCandidates(

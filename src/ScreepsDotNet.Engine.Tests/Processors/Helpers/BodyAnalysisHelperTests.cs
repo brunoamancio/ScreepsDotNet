@@ -1,6 +1,5 @@
 namespace ScreepsDotNet.Engine.Tests.Processors.Helpers;
 
-using System.Linq;
 using ScreepsDotNet.Common.Constants;
 using ScreepsDotNet.Common.Types;
 using ScreepsDotNet.Engine.Processors.Helpers;

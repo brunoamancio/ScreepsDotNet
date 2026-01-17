@@ -1,8 +1,5 @@
 namespace ScreepsDotNet.Engine.Processors.GlobalSteps;
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using ScreepsDotNet.Driver.Contracts;
 using ScreepsDotNet.Engine.Data.GlobalMutations;
 using ScreepsDotNet.Engine.Data.Models;

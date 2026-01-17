@@ -1,8 +1,5 @@
 namespace ScreepsDotNet.Engine.Processors.Steps;
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using ScreepsDotNet.Common.Constants;
 using ScreepsDotNet.Common.Types;
 using ScreepsDotNet.Common.Utilities;
@@ -223,7 +220,8 @@ internal sealed class SpawnSpawningStep(ISpawnStateReader spawnStateReader, ICre
     {
         if (!tiles.TryGetValue(target, out var tile)) {
             var isWall = terrain.IsWall(target.X, target.Y);
-            return isWall ? TileOccupancy.Blocked : TileOccupancy.Open;
+            var result = isWall ? TileOccupancy.Blocked : TileOccupancy.Open;
+            return result;
         }
 
         if (terrain.IsWall(target.X, target.Y) && !tile.HasRoad)

@@ -15,9 +15,10 @@ internal sealed class UserMemorySink(IUserDataService userDataService) : IUserMe
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(userId);
         ArgumentNullException.ThrowIfNull(segments);
-        return segments.Count == 0
+        var result = segments.Count == 0
             ? Task.CompletedTask
             : userDataService.SaveUserMemorySegmentsAsync(userId, segments, token);
+        return result;
     }
 
     public Task SaveInterShardSegmentAsync(string userId, string segmentData, CancellationToken token = default)
