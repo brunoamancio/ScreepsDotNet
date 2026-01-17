@@ -68,6 +68,18 @@ X-Token: <token-from-auth>
 
 ## Project Structure
 
+**Solution File:** `src/ScreepsDotNet.slnx` (XML-based solution format)
+
+**Working Directory:** `/home/th3b0y/screeps-rewrite/ScreepsDotNet`
+- Always run git commands from this directory (NOT the repo root)
+- Solution file is in `src/` subdirectory
+
+**Key Configuration Files:**
+- `.editorconfig`: `src/.editorconfig` (coding style rules - ERROR/WARNING levels)
+- `.DotSettings`: `src/ScreepsDotNet.slnx.DotSettings` (ReSharper settings)
+- `Directory.Build.props`: `src/Directory.Build.props` (implicit usings, global MSBuild properties)
+- Docker Compose: `src/docker-compose.yml` (MongoDB + Redis)
+
 ```
 ScreepsDotNet/
 ├── CLAUDE.md                                    # This file - AI context
@@ -81,6 +93,11 @@ ScreepsDotNet/
 │   └── README.md                               # Documentation ownership map
 ├── ScreepsNodeJs/                               # ⚠️ Separate git repo - DO NOT MODIFY
 └── src/
+    ├── ScreepsDotNet.slnx                      # ⚠️ SOLUTION FILE
+    ├── ScreepsDotNet.slnx.DotSettings          # ⚠️ ReSharper settings (ERROR/WARNING rules)
+    ├── .editorconfig                           # ⚠️ Coding style rules (ERROR/WARNING levels)
+    ├── Directory.Build.props                   # ⚠️ Global MSBuild properties, implicit usings
+    ├── docker-compose.yml                      # ⚠️ MongoDB + Redis orchestration
     ├── ScreepsDotNet.Backend.Core/             # Contracts, DTOs, abstractions
     │   └── Seeding/SeedDataDefaults.cs         # Test fixture constants
     ├── ScreepsDotNet.Backend.Http/             # ASP.NET Core API host
@@ -105,6 +122,13 @@ ScreepsDotNet/
 ```
 
 ## Coding Standards (Enforced)
+
+**Rules defined in:**
+- `src/.editorconfig` - C# style rules (ERROR/WARNING severity)
+- `src/ScreepsDotNet.slnx.DotSettings` - ReSharper inspections (ERROR/WARNING severity)
+- `src/Directory.Build.props` - Implicit usings, MSBuild properties
+
+All rules below are enforced at **ERROR** level unless otherwise noted.
 
 ### Implicit Usings
 Configured in `Directory.Build.props`. Never add these manually:
@@ -585,7 +609,11 @@ namespace ScreepsDotNet.Storage;  // ERROR: Incomplete namespace
 
 ## Code Quality Warnings
 
-The following rules are set to WARNING level. While not blocking errors, they should be followed for consistent code quality.
+**Rules defined in:**
+- `src/.editorconfig` - C# style rules (WARNING severity)
+- `src/ScreepsDotNet.slnx.DotSettings` - ReSharper inspections (WARNING severity)
+
+The following rules are set to **WARNING** level. While not blocking errors, they should be followed for consistent code quality.
 
 ### Naming Conventions
 **✅ Good:**
