@@ -7,6 +7,7 @@ using ScreepsDotNet.Backend.Core.Models;
 using ScreepsDotNet.Backend.Core.Parsing;
 using ScreepsDotNet.Backend.Core.Repositories;
 using ScreepsDotNet.Backend.Cli.Formatting;
+using ScreepsDotNet.Common.Utilities;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
@@ -108,7 +109,7 @@ internal sealed class WorldDumpCommand(IRoomTerrainRepository terrainRepository,
 
         var tiles = new List<TerrainTile>(encoded.Length);
         for (var index = 0; index < encoded.Length && index < 2500; index++) {
-            var value = DecodeChar(encoded[index]);
+            var value = TerrainEncoding.Decode(encoded[index]);
             var x = index % 50;
             var y = index / 50;
             var terrain = ResolveTerrain(value);
@@ -116,17 +117,6 @@ internal sealed class WorldDumpCommand(IRoomTerrainRepository terrainRepository,
         }
 
         return tiles;
-    }
-
-    private static int DecodeChar(char value)
-    {
-        if (value is >= '0' and <= '9')
-            return value - '0';
-        if (value is >= 'a' and <= 'z')
-            return 10 + (value - 'a');
-        if (value is >= 'A' and <= 'Z')
-            return 10 + (value - 'A');
-        return 0;
     }
 
     private static string ResolveTerrain(int value)

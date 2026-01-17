@@ -16,6 +16,7 @@ using ScreepsDotNet.Common.Constants;
 using ScreepsDotNet.Common.Structures;
 using ScreepsDotNet.Storage.MongoRedis.Providers;
 using ScreepsDotNet.Storage.MongoRedis.Repositories.Documents;
+using ScreepsDotNet.Common.Utilities;
 
 public sealed class MongoBotControlService(
     IMongoDatabaseProvider databaseProvider,
@@ -357,19 +358,8 @@ public sealed class MongoBotControlService(
         if (index < 0 || index >= terrain.Length)
             return true;
 
-        var value = DecodeTerrainValue(terrain[index]);
+        var value = TerrainEncoding.Decode(terrain[index]);
         return (value & 1) != 0;
-    }
-
-    private static int DecodeTerrainValue(char value)
-    {
-        if (value is >= '0' and <= '9')
-            return value - '0';
-        if (value is >= 'a' and <= 'z')
-            return 10 + (value - 'a');
-        if (value is >= 'A' and <= 'Z')
-            return 10 + (value - 'A');
-        return 0;
     }
 
     private static bool IsOccupied(IReadOnlyCollection<RoomObjectDocument> objects, int x, int y)

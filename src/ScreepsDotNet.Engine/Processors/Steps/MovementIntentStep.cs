@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using ScreepsDotNet.Common.Constants;
 using ScreepsDotNet.Common.Types;
+using ScreepsDotNet.Common.Utilities;
 using ScreepsDotNet.Driver.Contracts;
 using ScreepsDotNet.Engine.Processors;
 using ScreepsDotNet.Engine.Processors.Helpers;
@@ -597,19 +598,8 @@ internal sealed class MovementIntentStep(ICreepDeathProcessor deathProcessor) : 
             if (index < 0 || index >= Terrain.Length)
                 return false;
 
-            var mask = Decode(Terrain[index]);
+            var mask = TerrainEncoding.Decode(Terrain[index]);
             return (mask & ScreepsGameConstants.TerrainMaskWall) != 0;
-        }
-
-        private static int Decode(char value)
-        {
-            if (value is >= '0' and <= '9')
-                return value - '0';
-            if (value is >= 'a' and <= 'z')
-                return 10 + (value - 'a');
-            if (value is >= 'A' and <= 'Z')
-                return 10 + (value - 'A');
-            return 0;
         }
     }
 }

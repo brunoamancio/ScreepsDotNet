@@ -12,6 +12,7 @@ using ScreepsDotNet.Backend.Core.Services;
 using ScreepsDotNet.Common.Constants;
 using ScreepsDotNet.Storage.MongoRedis.Providers;
 using ScreepsDotNet.Storage.MongoRedis.Repositories.Documents;
+using ScreepsDotNet.Common.Utilities;
 
 public sealed class MongoStrongholdControlService(IMongoDatabaseProvider databaseProvider, IStrongholdTemplateProvider templateProvider, IWorldMetadataRepository worldMetadataRepository)
     : IStrongholdControlService
@@ -310,18 +311,7 @@ public sealed class MongoStrongholdControlService(IMongoDatabaseProvider databas
         if (index < 0 || index >= terrain.Length)
             return true;
 
-        var value = DecodeTerrainValue(terrain[index]);
+        var value = TerrainEncoding.Decode(terrain[index]);
         return (value & 1) != 0;
-    }
-
-    private static int DecodeTerrainValue(char value)
-    {
-        if (value is >= '0' and <= '9')
-            return value - '0';
-        if (value is >= 'a' and <= 'z')
-            return 10 + (value - 'a');
-        if (value is >= 'A' and <= 'Z')
-            return 10 + (value - 'A');
-        return 0;
     }
 }

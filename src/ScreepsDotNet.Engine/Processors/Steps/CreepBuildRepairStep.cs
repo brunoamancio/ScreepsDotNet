@@ -8,6 +8,7 @@ using ScreepsDotNet.Common.Constants;
 using ScreepsDotNet.Common.Structures;
 using ScreepsDotNet.Driver.Contracts;
 using ScreepsDotNet.Engine.Processors.Helpers;
+using ScreepsDotNet.Common.Utilities;
 
 internal sealed class CreepBuildRepairStep(IStructureBlueprintProvider blueprintProvider, IStructureSnapshotFactory structureFactory) : IRoomProcessorStep
 {
@@ -310,19 +311,7 @@ internal sealed class CreepBuildRepairStep(IStructureBlueprintProvider blueprint
         if (index < 0 || index >= cache.Terrain.Length)
             return 0;
 
-        var value = DecodeTerrainValue(cache.Terrain[index]);
-        return value;
-    }
-
-    private static int DecodeTerrainValue(char value)
-    {
-        if (value is >= '0' and <= '9')
-            return value - '0';
-        if (value is >= 'a' and <= 'z')
-            return 10 + (value - 'a');
-        if (value is >= 'A' and <= 'Z')
-            return 10 + (value - 'A');
-        return 0;
+        return TerrainEncoding.Decode(cache.Terrain[index]);
     }
 
     private static void UpdateObjectOverrides(
