@@ -515,7 +515,7 @@ dotnet_diagnostic.ide0004.severity = warning
 dotnet_diagnostic.ide0005.severity = error
 
 # IDE0010: Add missing cases
-dotnet_diagnostic.ide0010.severity = warning
+dotnet_diagnostic.ide0010.severity = none
 
 # IDE0035: Remove unreachable code
 dotnet_diagnostic.ide0035.severity = error
@@ -551,7 +551,7 @@ dotnet_diagnostic.ide0064.severity = error
 dotnet_diagnostic.ide0070.severity = error
 
 # IDE0072: Add missing cases
-dotnet_diagnostic.ide0072.severity = error
+dotnet_diagnostic.ide0072.severity = none
 
 # IDE0076: Remove invalid global SuppressMessageAttribute
 dotnet_diagnostic.ide0076.severity = error

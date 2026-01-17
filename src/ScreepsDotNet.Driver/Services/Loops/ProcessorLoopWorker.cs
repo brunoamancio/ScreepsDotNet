@@ -356,19 +356,6 @@ internal sealed class ProcessorLoopWorker(
                 element => ConvertBsonValue(element.Value),
                 StringComparer.Ordinal),
             BsonType.Array => value.AsBsonArray.Select(ConvertBsonValue).ToArray(),
-            BsonType.EndOfDocument => throw new NotImplementedException(),
-            BsonType.Binary => throw new NotImplementedException(),
-            BsonType.Undefined => throw new NotImplementedException(),
-            BsonType.ObjectId => throw new NotImplementedException(),
-            BsonType.DateTime => throw new NotImplementedException(),
-            BsonType.Null => throw new NotImplementedException(),
-            BsonType.RegularExpression => throw new NotImplementedException(),
-            BsonType.JavaScript => throw new NotImplementedException(),
-            BsonType.Symbol => throw new NotImplementedException(),
-            BsonType.JavaScriptWithScope => throw new NotImplementedException(),
-            BsonType.Timestamp => throw new NotImplementedException(),
-            BsonType.MinKey => throw new NotImplementedException(),
-            BsonType.MaxKey => throw new NotImplementedException(),
             _ => value.ToString()
         };
     }
@@ -382,22 +369,6 @@ internal sealed class ProcessorLoopWorker(
             BsonType.Int64 => value.AsInt64 != 0,
             BsonType.Double => Math.Abs(value.AsDouble) > double.Epsilon,
             BsonType.String => !string.IsNullOrWhiteSpace(value.AsString),
-            BsonType.EndOfDocument => throw new NotImplementedException(),
-            BsonType.Document => throw new NotImplementedException(),
-            BsonType.Array => throw new NotImplementedException(),
-            BsonType.Binary => throw new NotImplementedException(),
-            BsonType.Undefined => throw new NotImplementedException(),
-            BsonType.ObjectId => throw new NotImplementedException(),
-            BsonType.DateTime => throw new NotImplementedException(),
-            BsonType.Null => throw new NotImplementedException(),
-            BsonType.RegularExpression => throw new NotImplementedException(),
-            BsonType.JavaScript => throw new NotImplementedException(),
-            BsonType.Symbol => throw new NotImplementedException(),
-            BsonType.JavaScriptWithScope => throw new NotImplementedException(),
-            BsonType.Timestamp => throw new NotImplementedException(),
-            BsonType.Decimal128 => throw new NotImplementedException(),
-            BsonType.MinKey => throw new NotImplementedException(),
-            BsonType.MaxKey => throw new NotImplementedException(),
             _ => !value.IsBsonNull
         };
     }

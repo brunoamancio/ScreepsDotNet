@@ -132,10 +132,6 @@ internal sealed class PowerCreepIntentStep : IGlobalProcessorStep
         {
             IntentFieldValueKind.Text => value.TextValue,
             IntentFieldValueKind.Number => value.NumberValue?.ToString(),
-            IntentFieldValueKind.Boolean => throw new NotImplementedException(),
-            IntentFieldValueKind.TextArray => throw new NotImplementedException(),
-            IntentFieldValueKind.NumberArray => throw new NotImplementedException(),
-            IntentFieldValueKind.BodyPartArray => throw new NotImplementedException(),
             _ => value.TextValue
         };
     }
@@ -150,9 +146,6 @@ internal sealed class PowerCreepIntentStep : IGlobalProcessorStep
             IntentFieldValueKind.Boolean => value.BooleanValue ?? defaultValue,
             IntentFieldValueKind.Number => value.NumberValue is { } number && number != 0,
             IntentFieldValueKind.Text => bool.TryParse(value.TextValue, out var parsed) ? parsed : defaultValue,
-            IntentFieldValueKind.TextArray => throw new NotImplementedException(),
-            IntentFieldValueKind.NumberArray => throw new NotImplementedException(),
-            IntentFieldValueKind.BodyPartArray => throw new NotImplementedException(),
             _ => defaultValue
         };
     }

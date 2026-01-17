@@ -333,10 +333,6 @@ internal sealed class MarketIntentStep : IGlobalProcessorStep
         {
             IntentFieldValueKind.Text => value.TextValue,
             IntentFieldValueKind.Number => value.NumberValue?.ToString(),
-            IntentFieldValueKind.Boolean => throw new NotImplementedException(),
-            IntentFieldValueKind.TextArray => throw new NotImplementedException(),
-            IntentFieldValueKind.NumberArray => throw new NotImplementedException(),
-            IntentFieldValueKind.BodyPartArray => throw new NotImplementedException(),
             _ => value.TextValue
         };
     }
@@ -350,11 +346,6 @@ internal sealed class MarketIntentStep : IGlobalProcessorStep
         return value.Kind switch
         {
             IntentFieldValueKind.Number when value.NumberValue.HasValue => TryConvertInt(value.NumberValue.Value, out result),
-            IntentFieldValueKind.Text => throw new NotImplementedException(),
-            IntentFieldValueKind.Boolean => throw new NotImplementedException(),
-            IntentFieldValueKind.TextArray => throw new NotImplementedException(),
-            IntentFieldValueKind.NumberArray => throw new NotImplementedException(),
-            IntentFieldValueKind.BodyPartArray => throw new NotImplementedException(),
             _ => false
         };
     }

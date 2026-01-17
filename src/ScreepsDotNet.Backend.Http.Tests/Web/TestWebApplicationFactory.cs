@@ -513,8 +513,6 @@ internal sealed class FakeUserMemoryRepository : IUserMemoryRepository
             JsonValueKind.Number => element.GetDouble(),
             JsonValueKind.True => true,
             JsonValueKind.False => false,
-            JsonValueKind.Undefined => throw new NotImplementedException(),
-            JsonValueKind.Null => throw new NotImplementedException(),
             _ => null
         };
 

@@ -200,10 +200,6 @@ internal sealed class TowerIntentStep(ICreepDeathProcessor deathProcessor) : IRo
         {
             IntentFieldValueKind.Text => value.TextValue ?? string.Empty,
             IntentFieldValueKind.Number => value.NumberValue?.ToString() ?? string.Empty,
-            IntentFieldValueKind.Boolean => throw new NotImplementedException(),
-            IntentFieldValueKind.TextArray => throw new NotImplementedException(),
-            IntentFieldValueKind.NumberArray => throw new NotImplementedException(),
-            IntentFieldValueKind.BodyPartArray => throw new NotImplementedException(),
             _ => string.Empty
         };
 

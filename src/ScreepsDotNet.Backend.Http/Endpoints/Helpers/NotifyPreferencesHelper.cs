@@ -55,10 +55,6 @@ internal static class NotifyPreferencesHelper
             JsonValueKind.False => false,
             JsonValueKind.Number when element.TryGetInt32(out var intValue) => intValue,
             JsonValueKind.String => element.GetString(),
-            JsonValueKind.Undefined => throw new NotImplementedException(),
-            JsonValueKind.Object => throw new NotImplementedException(),
-            JsonValueKind.Array => throw new NotImplementedException(),
-            JsonValueKind.Null => throw new NotImplementedException(),
             _ => null
         };
 }

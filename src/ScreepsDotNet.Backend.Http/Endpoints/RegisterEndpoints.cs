@@ -85,7 +85,6 @@ internal static partial class RegisterEndpoints
                                    SetUsernameResult.UserNotFound => Results.NotFound(new ErrorResponse("user not found")),
                                    SetUsernameResult.UsernameAlreadySet => Results.BadRequest(new ErrorResponse(UsernameAlreadySetMessage)),
                                    SetUsernameResult.UsernameExists => Results.BadRequest(new ErrorResponse(InvalidUsernameMessage)),
-                                   SetUsernameResult.Failed => throw new NotImplementedException(),
                                    _ => Results.BadRequest(new ErrorResponse(InvalidUsernameMessage))
                                };
                            })

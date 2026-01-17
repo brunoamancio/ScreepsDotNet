@@ -31,12 +31,6 @@ internal static partial class UserBadgeUpdateFactory
         {
             JsonValueKind.Number when typeElement.TryGetInt32(out var typeInt) && typeInt is >= 1 and <= 24 => typeInt,
             JsonValueKind.Object when TryCreateCustomBadge(typeElement, user.CustomBadge, out var badgeObject) => badgeObject,
-            JsonValueKind.Undefined => throw new NotImplementedException(),
-            JsonValueKind.Array => throw new NotImplementedException(),
-            JsonValueKind.String => throw new NotImplementedException(),
-            JsonValueKind.True => throw new NotImplementedException(),
-            JsonValueKind.False => throw new NotImplementedException(),
-            JsonValueKind.Null => throw new NotImplementedException(),
             _ => null
         };
 
@@ -72,8 +66,6 @@ internal static partial class UserBadgeUpdateFactory
             JsonValueKind.Number => element.GetDouble(),
             JsonValueKind.True => true,
             JsonValueKind.False => false,
-            JsonValueKind.Undefined => throw new NotImplementedException(),
-            JsonValueKind.Null => throw new NotImplementedException(),
             _ => null
         };
 
