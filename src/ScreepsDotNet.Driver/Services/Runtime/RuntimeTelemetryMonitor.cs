@@ -29,7 +29,7 @@ internal sealed class RuntimeTelemetryMonitor : IRuntimeWatchdog, IDisposable
         _config.RuntimeTelemetry += HandleTelemetry;
     }
 
-    private async void HandleTelemetry(object? sender, RuntimeTelemetryEventArgs args)
+    private void HandleTelemetry(object? sender, RuntimeTelemetryEventArgs args)
     {
         var payload = args.Payload;
         var level = payload.TimedOut || payload.ScriptError ? LogLevel.Warning : LogLevel.Debug;
@@ -49,6 +49,11 @@ internal sealed class RuntimeTelemetryMonitor : IRuntimeWatchdog, IDisposable
             payload.ScriptError,
             payload.ColdStartRequested);
 
+        _ = ProcessTelemetryAsync(payload);
+    }
+
+    private async Task ProcessTelemetryAsync(RuntimeTelemetryPayload payload)
+    {
         try
         {
             await ProcessWatchdogAsync(payload).ConfigureAwait(false);

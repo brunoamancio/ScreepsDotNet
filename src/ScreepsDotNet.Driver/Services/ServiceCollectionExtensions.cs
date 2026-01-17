@@ -62,6 +62,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IObservabilityExporter, LoggingObservabilityExporter>();
         services.AddSingleton<IRuntimeTelemetryListener, SchedulerTelemetryListener>();
         services.AddSingleton<IRuntimeTelemetryListener, ObservabilityTelemetryListener>();
+        services.AddSingleton<IRoomStatsListener, RoomStatsTelemetryListener>();
         services.AddSingleton<IRuntimeTelemetrySink, RuntimeTelemetryPipeline>();
         services.AddSingleton<IRuntimeThrottleRegistry, RuntimeThrottleRegistry>();
         services.AddSingleton<RoomHistoryPipeline>();

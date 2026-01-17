@@ -9,6 +9,7 @@ using ScreepsDotNet.Driver.Services;
 using ScreepsDotNet.Driver.Services.Observability;
 using ScreepsDotNet.Driver.Services.Runtime;
 using ScreepsDotNet.Driver.Tests.TestSupport;
+using ScreepsDotNet.Driver.Contracts;
 
 namespace ScreepsDotNet.Driver.Tests.Observability;
 
@@ -73,6 +74,8 @@ public sealed class RuntimeTelemetryMonitorIntegrationTests
             _alert.TrySetResult(alert);
             return Task.CompletedTask;
         }
+
+        public Task ExportRoomStatsAsync(RoomStatsUpdate update, CancellationToken token = default) => Task.CompletedTask;
 
         public Task<RuntimeWatchdogAlert> WaitForAlertAsync() => _alert.Task.WaitAsync(TestContext.Current.CancellationToken);
     }

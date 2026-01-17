@@ -16,7 +16,7 @@ public sealed class RoomStatsPipelineTests
         var config = new DriverConfig(new FakeEnvironmentService());
         var repository = new RecordingRoomStatsRepository();
 
-        using var pipeline = new RoomStatsPipeline(config, repository);
+        using var pipeline = new RoomStatsPipeline(config, repository, []);
 
         var metrics = new Dictionary<string, IReadOnlyDictionary<string, int>>
         {
@@ -32,12 +32,46 @@ public sealed class RoomStatsPipelineTests
         Assert.Equal(3, recorded.Metrics["user1"][RoomStatsMetricNames.SpawnsCreate]);
     }
 
+    [Fact]
+    public async Task Pipeline_NotifiesListeners()
+    {
+        var config = new DriverConfig(new FakeEnvironmentService());
+        var repository = new RecordingRoomStatsRepository();
+        var listener = new RecordingRoomStatsListener();
+
+        using var pipeline = new RoomStatsPipeline(config, repository, [listener]);
+
+        var metrics = new Dictionary<string, IReadOnlyDictionary<string, int>>
+        {
+            ["user1"] = new Dictionary<string, int> { [RoomStatsMetricNames.SpawnsRecycle] = 1 }
+        };
+        var update = new RoomStatsUpdate("W8N8", 901, metrics);
+
+        config.EmitProcessorLoopStage(LoopStageNames.Processor.RoomStatsUpdated, update);
+
+        var notified = await listener.Updates.Task.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
+        Assert.Equal("W8N8", notified.Room);
+        Assert.Equal(1, notified.Metrics["user1"][RoomStatsMetricNames.SpawnsRecycle]);
+    }
+
     private sealed class RecordingRoomStatsRepository : IRoomStatsRepository
     {
         public TaskCompletionSource<RoomStatsUpdate> Updates { get; } =
             new(TaskCreationOptions.RunContinuationsAsynchronously);
 
         public Task AppendAsync(RoomStatsUpdate update, CancellationToken token = default)
+        {
+            Updates.TrySetResult(update);
+            return Task.CompletedTask;
+        }
+    }
+
+    private sealed class RecordingRoomStatsListener : IRoomStatsListener
+    {
+        public TaskCompletionSource<RoomStatsUpdate> Updates { get; } =
+            new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public Task OnRoomStatsAsync(RoomStatsUpdate update, CancellationToken token = default)
         {
             Updates.TrySetResult(update);
             return Task.CompletedTask;

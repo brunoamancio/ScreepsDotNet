@@ -2,6 +2,7 @@ using Microsoft.Extensions.Logging;
 using ScreepsDotNet.Driver.Abstractions.Loops;
 using ScreepsDotNet.Driver.Abstractions.Observability;
 using ScreepsDotNet.Driver.Abstractions.Runtime;
+using ScreepsDotNet.Driver.Contracts;
 
 namespace ScreepsDotNet.Driver.Services.Observability;
 
@@ -32,6 +33,16 @@ internal sealed class LoggingObservabilityExporter(ILogger<LoggingObservabilityE
             alert.Payload.Stage ?? "n/a",
             alert.Payload.TimedOut,
             alert.Payload.ScriptError);
+        return Task.CompletedTask;
+    }
+
+    public Task ExportRoomStatsAsync(RoomStatsUpdate update, CancellationToken token = default)
+    {
+        logger?.LogInformation(
+            "[RoomStats] room={Room} tick={Tick} users={UserCount}",
+            update.Room,
+            update.GameTime,
+            update.Metrics.Count);
         return Task.CompletedTask;
     }
 }

@@ -22,7 +22,10 @@ internal sealed class RoomHistoryPipeline : IDisposable
         _config.RoomHistorySaved += HandleRoomHistorySaved;
     }
 
-    private async void HandleRoomHistorySaved(object? sender, RoomHistorySavedEventArgs args)
+    private void HandleRoomHistorySaved(object? sender, RoomHistorySavedEventArgs args)
+        => _ = PublishArtifactsSafeAsync(args);
+
+    private async Task PublishArtifactsSafeAsync(RoomHistorySavedEventArgs args)
     {
         try
         {

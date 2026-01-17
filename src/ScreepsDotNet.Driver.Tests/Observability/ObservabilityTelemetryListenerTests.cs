@@ -4,6 +4,7 @@ using ScreepsDotNet.Driver.Abstractions;
 using ScreepsDotNet.Driver.Abstractions.Loops;
 using ScreepsDotNet.Driver.Abstractions.Observability;
 using ScreepsDotNet.Driver.Abstractions.Runtime;
+using ScreepsDotNet.Driver.Contracts;
 using ScreepsDotNet.Driver.Services.Observability;
 
 namespace ScreepsDotNet.Driver.Tests.Observability;
@@ -61,6 +62,7 @@ public sealed class ObservabilityTelemetryListenerTests
     {
         public List<RuntimeTelemetryPayload> Telemetry { get; } = [];
         public List<RuntimeWatchdogAlert> Alerts { get; } = [];
+        public List<RoomStatsUpdate> RoomStats { get; } = [];
 
         public Task ExportTelemetryAsync(RuntimeTelemetryPayload payload, CancellationToken token = default)
         {
@@ -71,6 +73,12 @@ public sealed class ObservabilityTelemetryListenerTests
         public Task ExportWatchdogAlertAsync(RuntimeWatchdogAlert alert, CancellationToken token = default)
         {
             Alerts.Add(alert);
+            return Task.CompletedTask;
+        }
+
+        public Task ExportRoomStatsAsync(RoomStatsUpdate update, CancellationToken token = default)
+        {
+            RoomStats.Add(update);
             return Task.CompletedTask;
         }
     }
