@@ -37,7 +37,7 @@ internal sealed class CreepBuildRepairStep(IStructureBlueprintProvider blueprint
                 if (!context.State.Objects.TryGetValue(objectId, out var creep))
                     continue;
 
-                if (!string.Equals(creep.Type, RoomObjectTypes.Creep, StringComparison.Ordinal))
+                if (!creep.IsCreep(includePowerCreep: false))
                     continue;
 
                 if (creep.IsSpawning == true)

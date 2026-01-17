@@ -2,7 +2,6 @@ namespace ScreepsDotNet.Engine.Processors.Helpers;
 
 using System;
 using System.Collections.Generic;
-using ScreepsDotNet.Common.Constants;
 using ScreepsDotNet.Common.Types;
 using ScreepsDotNet.Driver.Contracts;
 using ScreepsDotNet.Engine.Data.Models;
@@ -36,7 +35,7 @@ internal sealed class SpawnStateReader : ISpawnStateReader
 
         foreach (var obj in objects.Values)
         {
-            if (obj.Type != RoomObjectTypes.Creep)
+            if (!obj.IsCreep(includePowerCreep: false))
                 continue;
 
             if (!string.Equals(obj.Name, creepName, StringComparison.Ordinal))

@@ -369,7 +369,7 @@ internal sealed class SpawnIntentStep(
         if (!context.State.Objects.TryGetValue(objectId, out var candidate))
             return false;
 
-        if (!string.Equals(candidate.Type, RoomObjectTypes.Creep, StringComparison.Ordinal))
+        if (!candidate.IsCreep(includePowerCreep: false))
             return false;
 
         if (!string.Equals(candidate.UserId, userId, StringComparison.Ordinal))

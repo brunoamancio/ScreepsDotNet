@@ -61,7 +61,7 @@ internal sealed class CombatResolutionStep(ICreepDeathProcessor deathProcessor) 
                     continue;
                 }
 
-                if (IsCreep(obj))
+                if (obj.IsCreep())
                 {
                     deathProcessor.Process(
                         context,
@@ -85,8 +85,4 @@ internal sealed class CombatResolutionStep(ICreepDeathProcessor deathProcessor) 
         var damage = intent.Damage ?? 30;
         hitsUpdates[intent.TargetId!] = hitsUpdates.TryGetValue(intent.TargetId!, out var existing) ? existing + damage : damage;
     }
-
-    private static bool IsCreep(RoomObjectSnapshot obj)
-        => string.Equals(obj.Type, RoomObjectTypes.Creep, StringComparison.Ordinal) ||
-           string.Equals(obj.Type, RoomObjectTypes.PowerCreep, StringComparison.Ordinal);
 }

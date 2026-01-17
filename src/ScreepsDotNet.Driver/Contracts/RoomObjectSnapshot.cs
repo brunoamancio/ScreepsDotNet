@@ -1,5 +1,6 @@
 namespace ScreepsDotNet.Driver.Contracts;
 
+using System;
 using System.Collections.Generic;
 using ScreepsDotNet.Common;
 using ScreepsDotNet.Common.Constants;
@@ -59,6 +60,15 @@ public sealed record RoomObjectSnapshot(
     public int? MoveBodyParts => GetStoreValue(IntentKeys.Move);
     public int? ControllerDowngradeTimer => GetStoreValue(StoreKeys.DowngradeTimer);
     public int? SpawnCooldownTime => GetStoreValue(StoreKeys.SpawnCooldownTime);
+
+    public bool IsCreep(bool includePowerCreep = true)
+    {
+        if (string.Equals(Type, RoomObjectTypes.Creep, StringComparison.Ordinal))
+            return true;
+
+        return includePowerCreep &&
+               string.Equals(Type, RoomObjectTypes.PowerCreep, StringComparison.Ordinal);
+    }
 
     private int? GetStoreValue(string key)
         => Store.TryGetValue(key, out var value) ? value : null;

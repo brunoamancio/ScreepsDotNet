@@ -146,7 +146,7 @@ internal sealed class TowerIntentStep(ICreepDeathProcessor deathProcessor) : IRo
             return;
         }
 
-        if (IsCreep(target))
+        if (target.IsCreep())
             deathProcessor.Process(context, target, new CreepDeathOptions(ViolentDeath: true), deathEnergyLedger);
         else
             context.MutationWriter.Remove(target.Id);
@@ -222,13 +222,8 @@ internal sealed class TowerIntentStep(ICreepDeathProcessor deathProcessor) : IRo
         return target;
     }
 
-    private static bool IsCreep(RoomObjectSnapshot obj)
-        => string.Equals(obj.Type, RoomObjectTypes.Creep, StringComparison.Ordinal) ||
-           string.Equals(obj.Type, RoomObjectTypes.PowerCreep, StringComparison.Ordinal);
-
     private static bool IsHealingTarget(RoomObjectSnapshot obj)
-        => string.Equals(obj.Type, RoomObjectTypes.Creep, StringComparison.Ordinal) ||
-           string.Equals(obj.Type, RoomObjectTypes.PowerCreep, StringComparison.Ordinal);
+        => obj.IsCreep();
 
     private static bool HasStructureHits(RoomObjectSnapshot obj)
         => obj.Hits.HasValue && obj.HitsMax.GetValueOrDefault() > 0;
