@@ -6,7 +6,10 @@ using ScreepsDotNet.Engine.Data.Bulk;
 using ScreepsDotNet.Engine.Data.GlobalState;
 using ScreepsDotNet.Engine.Data.Memory;
 using ScreepsDotNet.Engine.Data.Rooms;
+using ScreepsDotNet.Driver.Abstractions.Engine;
+using ScreepsDotNet.Engine.Host;
 using ScreepsDotNet.Engine.Processors;
+using ScreepsDotNet.Engine.Processors.GlobalSteps;
 using ScreepsDotNet.Engine.Processors.Helpers;
 using ScreepsDotNet.Engine.Processors.Steps;
 
@@ -40,6 +43,9 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IStructureBlueprintProvider, StructureBlueprintProvider>();
         services.AddSingleton<IStructureSnapshotFactory, StructureSnapshotFactory>();
         services.AddSingleton<IRoomProcessor, RoomProcessor>();
+        services.AddSingleton<IGlobalProcessor, EngineGlobalProcessor>();
+        services.AddSingleton<IGlobalProcessorStep, InterRoomTransferStep>();
+        services.AddSingleton<IEngineHost, EngineHost>();
         return services;
     }
 }
