@@ -4,6 +4,6 @@ using ScreepsDotNet.Engine.Data.Models;
 
 public interface IGlobalStateProvider
 {
-    Task<GlobalState> GetGlobalStateAsync(CancellationToken token = default);
+    Task<GlobalState> GetGlobalStateAsync(int gameTime, CancellationToken token = default);
     void Invalidate();
 }

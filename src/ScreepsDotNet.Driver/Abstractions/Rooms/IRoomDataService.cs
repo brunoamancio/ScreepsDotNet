@@ -1,3 +1,4 @@
+using ScreepsDotNet.Driver.Contracts;
 using ScreepsDotNet.Storage.MongoRedis.Repositories.Documents;
 
 namespace ScreepsDotNet.Driver.Abstractions.Rooms;
@@ -35,6 +36,7 @@ public sealed record InterRoomSnapshot(
     int GameTime,
     IReadOnlyList<RoomObjectDocument> MovingCreeps,
     IReadOnlyDictionary<string, RoomDocument> AccessibleRooms,
+    IReadOnlyDictionary<string, RoomExitTopology> ExitTopology,
     IReadOnlyList<RoomObjectDocument> SpecialRoomObjects,
     InterRoomMarketSnapshot Market);
 

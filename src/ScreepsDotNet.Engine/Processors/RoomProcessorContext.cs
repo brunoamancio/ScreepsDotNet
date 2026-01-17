@@ -1,11 +1,16 @@
 namespace ScreepsDotNet.Engine.Processors;
 
+using ScreepsDotNet.Driver.Contracts;
 using ScreepsDotNet.Engine.Data.Bulk;
 using ScreepsDotNet.Engine.Data.Memory;
 using ScreepsDotNet.Engine.Data.Models;
 using ScreepsDotNet.Engine.Processors.Helpers;
 
-public sealed class RoomProcessorContext(RoomState state, IRoomMutationWriter mutationWriter, ICreepStatsSink statsSink)
+public sealed class RoomProcessorContext(
+    RoomState state,
+    IRoomMutationWriter mutationWriter,
+    ICreepStatsSink statsSink,
+    RoomExitTopology? exitTopology = null)
 {
     private readonly Dictionary<string, string> _rawMemory = new(StringComparer.Ordinal);
     private readonly Dictionary<string, IReadOnlyDictionary<int, string>> _memorySegments = new(StringComparer.Ordinal);
@@ -14,6 +19,7 @@ public sealed class RoomProcessorContext(RoomState state, IRoomMutationWriter mu
     public RoomState State { get; } = state;
     public IRoomMutationWriter MutationWriter { get; } = mutationWriter;
     public ICreepStatsSink Stats { get; } = statsSink;
+    public RoomExitTopology? ExitTopology { get; } = exitTopology;
 
     public void SetRawMemory(string userId, string memoryJson)
     {

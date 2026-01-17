@@ -17,7 +17,7 @@ internal sealed class InterRoomSnapshotBuilder(IRoomDataService roomDataService)
         var specialObjects = MapObjects(snapshot.SpecialRoomObjects);
         var market = MapMarket(snapshot.Market);
 
-        return new GlobalSnapshot(snapshot.GameTime, movingCreeps, accessibleRooms, specialObjects, market);
+        return new GlobalSnapshot(snapshot.GameTime, movingCreeps, accessibleRooms, snapshot.ExitTopology, specialObjects, market);
     }
 
     private static IReadOnlyList<RoomObjectSnapshot> MapObjects(IReadOnlyList<RoomObjectDocument> documents)
@@ -42,7 +42,7 @@ internal sealed class InterRoomSnapshotBuilder(IRoomDataService roomDataService)
         var result = new Dictionary<string, RoomInfoSnapshot>(documents.Count, StringComparer.Ordinal);
         foreach (var (id, document) in documents)
         {
-            if (document is null || string.IsNullOrWhiteSpace(id))
+            if (string.IsNullOrWhiteSpace(id))
                 continue;
 
             var info = RoomContractMapper.MapRoomInfo(document);
@@ -96,7 +96,7 @@ internal sealed class InterRoomSnapshotBuilder(IRoomDataService roomDataService)
         var dictionary = new Dictionary<string, UserDocument>(users.Count, StringComparer.Ordinal);
         foreach (var document in users)
         {
-            if (document is null || string.IsNullOrWhiteSpace(document.Id))
+            if (string.IsNullOrWhiteSpace(document.Id))
                 continue;
 
             dictionary[document.Id!] = document;
@@ -145,7 +145,7 @@ internal sealed class InterRoomSnapshotBuilder(IRoomDataService roomDataService)
         var result = new Dictionary<string, PowerCreepPowerSnapshot>(powers.Count, StringComparer.Ordinal);
         foreach (var (id, document) in powers)
         {
-            if (string.IsNullOrWhiteSpace(id) || document is null)
+            if (string.IsNullOrWhiteSpace(id))
                 continue;
 
             result[id] = new PowerCreepPowerSnapshot(document.Level);

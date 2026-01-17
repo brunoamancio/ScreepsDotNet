@@ -1,6 +1,7 @@
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using ScreepsDotNet.Driver.Abstractions.Rooms;
+using ScreepsDotNet.Driver.Contracts;
 using ScreepsDotNet.Driver.Services.Rooms;
 using ScreepsDotNet.Driver.Tests.TestDoubles;
 using ScreepsDotNet.Storage.MongoRedis.Repositories.Documents;
@@ -41,6 +42,8 @@ public sealed class InterRoomSnapshotBuilderTests
 
         Assert.True(snapshot.AccessibleRooms.ContainsKey("W0N0"));
         Assert.Equal("W0N0", snapshot.AccessibleRooms["W0N0"].RoomName);
+        Assert.True(snapshot.ExitTopology.TryGetValue("W0N0", out var exits));
+        Assert.Equal("W0N1", exits!.Top?.TargetRoomName);
 
         var special = Assert.Single(snapshot.SpecialRoomObjects);
         Assert.Equal(RoomObjectTypes.PowerBank, special.Type);
@@ -148,6 +151,14 @@ public sealed class InterRoomSnapshotBuilderTests
                 gameTime,
                 new List<RoomObjectDocument> { creep },
                 new Dictionary<string, RoomDocument>(StringComparer.Ordinal) { ["W0N0"] = room },
+                new Dictionary<string, RoomExitTopology>(StringComparer.Ordinal)
+                {
+                    ["W0N0"] = new(
+                                   new RoomExitDescriptor("W0N1", 50, true),
+                                   null,
+                                   null,
+                                   null)
+                },
                 new List<RoomObjectDocument> { special },
                 market);
 

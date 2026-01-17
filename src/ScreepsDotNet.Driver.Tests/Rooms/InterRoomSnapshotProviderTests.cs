@@ -71,6 +71,7 @@ public sealed class InterRoomSnapshotProviderTests
                 gameTime,
                 [],
                 new Dictionary<string, RoomInfoSnapshot>(0, StringComparer.Ordinal),
+                new Dictionary<string, RoomExitTopology>(0, StringComparer.Ordinal),
                 [],
                 new GlobalMarketSnapshot(
                     [],

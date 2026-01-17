@@ -1,6 +1,7 @@
 namespace ScreepsDotNet.Driver.Tests.TestDoubles;
 
 using ScreepsDotNet.Driver.Abstractions.Rooms;
+using ScreepsDotNet.Driver.Contracts;
 using ScreepsDotNet.Storage.MongoRedis.Repositories.Documents;
 
 internal class RoomDataServiceDouble : IRoomDataService
@@ -52,6 +53,7 @@ internal class RoomDataServiceDouble : IRoomDataService
             gameTime,
             [],
             new Dictionary<string, RoomDocument>(),
+            new Dictionary<string, RoomExitTopology>(),
             [],
             new InterRoomMarketSnapshot(
                 [],

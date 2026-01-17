@@ -10,6 +10,7 @@ public sealed record GlobalSnapshot(
     int GameTime,
     IReadOnlyList<RoomObjectSnapshot> MovingCreeps,
     IReadOnlyDictionary<string, RoomInfoSnapshot> AccessibleRooms,
+    IReadOnlyDictionary<string, RoomExitTopology> ExitTopology,
     IReadOnlyList<RoomObjectSnapshot> SpecialRoomObjects,
     GlobalMarketSnapshot Market);
 

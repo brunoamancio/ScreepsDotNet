@@ -4,12 +4,14 @@ using Microsoft.Extensions.Logging;
 using System.Linq;
 using ScreepsDotNet.Driver.Abstractions.History;
 using ScreepsDotNet.Engine.Data.Bulk;
+using ScreepsDotNet.Engine.Data.GlobalState;
 using ScreepsDotNet.Engine.Data.Rooms;
 using ScreepsDotNet.Engine.Data.Memory;
 using ScreepsDotNet.Engine.Processors.Helpers;
 
 internal sealed class RoomProcessor(
     IRoomStateProvider roomStateProvider,
+    IGlobalStateProvider globalStateProvider,
     IRoomMutationWriterFactory mutationWriterFactory,
     IUserMemorySink memorySink,
     IHistoryService historyService,
@@ -21,9 +23,11 @@ internal sealed class RoomProcessor(
         ArgumentException.ThrowIfNullOrWhiteSpace(roomName);
 
         var state = await roomStateProvider.GetRoomStateAsync(roomName, gameTime, token).ConfigureAwait(false);
+        var globalState = await globalStateProvider.GetGlobalStateAsync(state.GameTime, token).ConfigureAwait(false);
         var writer = mutationWriterFactory.Create(roomName);
         var statsSink = new RoomStatsSink(historyService.CreateRoomStatsUpdater(roomName));
-        var context = new RoomProcessorContext(state, writer, statsSink);
+        globalState.ExitTopology.TryGetValue(roomName, out var exitTopology);
+        var context = new RoomProcessorContext(state, writer, statsSink, exitTopology);
 
         try
         {

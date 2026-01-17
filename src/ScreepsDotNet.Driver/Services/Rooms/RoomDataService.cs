@@ -14,7 +14,8 @@ namespace ScreepsDotNet.Driver.Services.Rooms;
 internal sealed class RoomDataService(
     IMongoDatabaseProvider databaseProvider,
     IRedisConnectionProvider redisProvider,
-    IBulkWriterFactory bulkWriterFactory) : IRoomDataService
+    IBulkWriterFactory bulkWriterFactory,
+    IRoomExitTopologyProvider exitTopologyProvider) : IRoomDataService
 {
     private static readonly string[] MovingCreepTypes = [RoomObjectTypes.Creep, RoomObjectTypes.PowerCreep];
     private static readonly string[] SpecialObjectTypes = [RoomObjectTypes.Terminal, RoomObjectTypes.PowerSpawn, RoomObjectTypes.PowerCreep];
@@ -29,6 +30,7 @@ internal sealed class RoomDataService(
     private readonly IMongoCollection<PowerCreepDocument> _powerCreeps = databaseProvider.GetCollection<PowerCreepDocument>(databaseProvider.Settings.UsersPowerCreepsCollection);
     private readonly IMongoCollection<UserIntentDocument> _userIntents = databaseProvider.GetCollection<UserIntentDocument>(databaseProvider.Settings.UsersIntentsCollection);
     private readonly IDatabase _redis = redisProvider.GetConnection().GetDatabase();
+    private IRoomExitTopologyProvider ExitTopologyProvider => exitTopologyProvider;
 
     public async Task<IReadOnlyList<string>> DrainActiveRoomsAsync(CancellationToken token = default)
     {
@@ -161,6 +163,7 @@ internal sealed class RoomDataService(
 
         var payload = JsonSerializer.Serialize(accessible);
         await _redis.StringSetAsync(RedisKeys.AccessibleRooms, payload).ConfigureAwait(false);
+        ExitTopologyProvider.Invalidate();
     }
 
     public async Task UpdateRoomStatusDataAsync(CancellationToken token = default)
@@ -247,8 +250,10 @@ internal sealed class RoomDataService(
                                                           .ToListAsync(token)
                                                           .ConfigureAwait(false);
 
+        var exitTopology = await ExitTopologyProvider.GetTopologyAsync(token).ConfigureAwait(false);
+
         var marketSnapshot = new InterRoomMarketSnapshot(marketOrders, users, powerCreeps, userIntents, string.Empty);
-        return new InterRoomSnapshot(gameTime, movingCreepsTask.Result, accessibleRooms, specialObjectsTask.Result, marketSnapshot);
+        return new InterRoomSnapshot(gameTime, movingCreepsTask.Result, accessibleRooms, exitTopology, specialObjectsTask.Result, marketSnapshot);
     }
 
     private static IReadOnlyDictionary<string, TDocument> MapById<TDocument>(IEnumerable<TDocument> documents, Func<TDocument, string> selector)

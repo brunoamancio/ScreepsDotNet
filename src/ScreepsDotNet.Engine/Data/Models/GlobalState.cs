@@ -9,6 +9,7 @@ public sealed record GlobalState(
     int GameTime,
     IReadOnlyList<RoomObjectSnapshot> MovingCreeps,
     IReadOnlyDictionary<string, RoomInfoSnapshot> AccessibleRooms,
+    IReadOnlyDictionary<string, RoomExitTopology> ExitTopology,
     IReadOnlyList<RoomObjectSnapshot> SpecialRoomObjects,
     GlobalMarketSnapshot Market)
 {
@@ -17,6 +18,7 @@ public sealed record GlobalState(
             snapshot.GameTime,
             snapshot.MovingCreeps,
             snapshot.AccessibleRooms,
+            snapshot.ExitTopology,
             snapshot.SpecialRoomObjects,
             snapshot.Market);
 }

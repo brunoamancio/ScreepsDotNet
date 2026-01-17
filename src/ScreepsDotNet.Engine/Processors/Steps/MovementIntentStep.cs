@@ -48,7 +48,7 @@ internal sealed class MovementIntentStep(ICreepDeathProcessor deathProcessor) : 
         var terrain = BuildTerrainCache(context);
         var safeModeOwner = DetermineSafeModeOwner(context);
 
-        var (acceptedMoves, crashes) = ResolveMoves(requests, tiles, terrain, safeModeOwner);
+        var (acceptedMoves, crashes) = ResolveMoves(requests, tiles, terrain, safeModeOwner, context.ExitTopology);
 
         ApplyAcceptedMoves(context, acceptedMoves);
         ProcessCrashes(context, crashes);
@@ -89,7 +89,8 @@ internal sealed class MovementIntentStep(ICreepDeathProcessor deathProcessor) : 
         IReadOnlyList<MoveCandidate> candidates,
         Dictionary<TileCoord, TileInfo> tiles,
         TerrainCache terrain,
-        string? safeModeOwner)
+        string? safeModeOwner,
+        RoomExitTopology? exitTopology)
     {
         var matrix = BuildMatrix(candidates);
         if (matrix.Count == 0)
@@ -113,7 +114,11 @@ internal sealed class MovementIntentStep(ICreepDeathProcessor deathProcessor) : 
 
             if (candidate.IsOutOfBounds)
             {
-                RemoveAssignment(target, fatal: true);
+                var exitEvaluation = EvaluateExitAttempt(candidate, exitTopology);
+                if (exitEvaluation == ExitEvaluation.Fatal)
+                    RemoveAssignment(target, fatal: true);
+                else
+                    RemoveAssignment(target);
                 return;
             }
 
@@ -473,7 +478,9 @@ internal sealed class MovementIntentStep(ICreepDeathProcessor deathProcessor) : 
                     pullTarget is not null,
                     isOutOfBounds,
                     puller,
-                    pullTarget);
+                    pullTarget,
+                    targetX,
+                    targetY);
 
                 result.Add(candidate);
             }
@@ -591,6 +598,47 @@ internal sealed class MovementIntentStep(ICreepDeathProcessor deathProcessor) : 
         return false;
     }
 
+    private static ExitEvaluation EvaluateExitAttempt(MoveCandidate candidate, RoomExitTopology? topology)
+    {
+        if (topology is null)
+            return ExitEvaluation.Fatal;
+
+        var direction = DetermineExitDirection(candidate.RequestedX, candidate.RequestedY);
+        if (direction is null)
+            return ExitEvaluation.Fatal;
+
+        var descriptor = direction.Value switch
+        {
+            ExitDirection.Top => topology.Top,
+            ExitDirection.Right => topology.Right,
+            ExitDirection.Bottom => topology.Bottom,
+            ExitDirection.Left => topology.Left,
+            _ => null
+        };
+
+        if (descriptor is null || descriptor.ExitCount <= 0)
+            return ExitEvaluation.Fatal;
+
+        return descriptor.TargetAccessible ? ExitEvaluation.Transfer : ExitEvaluation.Fatal;
+    }
+
+    private static ExitDirection? DetermineExitDirection(int requestedX, int requestedY)
+    {
+        if (requestedX < 0)
+            return ExitDirection.Left;
+
+        if (requestedX > 49)
+            return ExitDirection.Right;
+
+        if (requestedY < 0)
+            return ExitDirection.Top;
+
+        if (requestedY > 49)
+            return ExitDirection.Bottom;
+
+        return null;
+    }
+
     private static int CountActiveMoveParts(RoomObjectSnapshot creep)
     {
         var count = 0;
@@ -657,6 +705,20 @@ internal sealed class MovementIntentStep(ICreepDeathProcessor deathProcessor) : 
         Fatal
     }
 
+    private enum ExitEvaluation
+    {
+        Transfer,
+        Fatal
+    }
+
+    private enum ExitDirection
+    {
+        Top,
+        Right,
+        Bottom,
+        Left
+    }
+
     private sealed record MoveCandidate(
         RoomObjectSnapshot Creep,
         TileCoord Origin,
@@ -665,7 +727,9 @@ internal sealed class MovementIntentStep(ICreepDeathProcessor deathProcessor) : 
         bool IsPulling,
         bool IsOutOfBounds,
         RoomObjectSnapshot? Puller,
-        RoomObjectSnapshot? PullTarget);
+        RoomObjectSnapshot? PullTarget,
+        int RequestedX,
+        int RequestedY);
 
     private sealed record MoveAssignment(MoveCandidate Candidate, TileCoord Target);
 

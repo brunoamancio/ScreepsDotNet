@@ -79,6 +79,50 @@ public sealed class MovementIntentStepTests
     }
 
     [Fact]
+    public async Task ExecuteAsync_OutOfBoundsWithAccessibleExitDoesNotCrash()
+    {
+        var mover = CreateCreep("creepA", 0, 0);
+        var intents = CreateIntentSnapshot([("user1", "creepA", new MoveIntent(-1, 0))]);
+        var state = CreateState([mover], intents);
+        var writer = new RecordingMutationWriter();
+        var death = new RecordingDeathProcessor();
+        var step = new MovementIntentStep(death);
+        var exitTopology = new RoomExitTopology(
+            null,
+            null,
+            null,
+            new RoomExitDescriptor("W0S0", 10, true));
+        var context = new RoomProcessorContext(state, writer, new NullCreepStatsSink(), exitTopology);
+
+        await step.ExecuteAsync(context, TestContext.Current.CancellationToken);
+
+        Assert.Empty(writer.Patches);
+        Assert.Empty(death.Creeps);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_OutOfBoundsCrashesWhenExitInaccessible()
+    {
+        var mover = CreateCreep("creepA", 49, 49);
+        var intents = CreateIntentSnapshot([("user1", "creepA", new MoveIntent(50, 49))]);
+        var state = CreateState([mover], intents);
+        var writer = new RecordingMutationWriter();
+        var death = new RecordingDeathProcessor();
+        var step = new MovementIntentStep(death);
+        var exitTopology = new RoomExitTopology(
+            null,
+            new RoomExitDescriptor("E1S0", 20, false),
+            null,
+            null);
+        var context = new RoomProcessorContext(state, writer, new NullCreepStatsSink(), exitTopology);
+
+        await step.ExecuteAsync(context, TestContext.Current.CancellationToken);
+
+        Assert.Empty(writer.Patches);
+        Assert.Contains(death.Creeps, c => c.Id == "creepA");
+    }
+
+    [Fact]
     public async Task ExecuteAsync_CrashesWhenBlockedByStructure()
     {
         var mover = CreateCreep("creepA", 10, 10);
