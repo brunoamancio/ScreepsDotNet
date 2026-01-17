@@ -199,11 +199,11 @@ internal static class IntentDocumentMapper
             IntentFieldValueKind.Number => new BsonInt32(value.NumberValue ?? 0),
             IntentFieldValueKind.Boolean => BsonValue.Create(value.BooleanValue.GetValueOrDefault()),
             IntentFieldValueKind.TextArray => value.TextValues is null
-                ? []
-                : [.. value.TextValues.Select(text => BsonValue.Create(text ?? string.Empty))],
+                ? new BsonArray()
+                : new BsonArray(value.TextValues.Select(text => BsonValue.Create(text ?? string.Empty))),
             IntentFieldValueKind.NumberArray => value.NumberValues is null
-                ? []
-                : [.. value.NumberValues.Select(n => new BsonInt32(n))],
+                ? new BsonArray()
+                : new BsonArray(value.NumberValues.Select(n => new BsonInt32(n))),
             IntentFieldValueKind.BodyPartArray => value.BodyParts is null
                 ? []
                 : new BsonArray(value.BodyParts.Select(part => part.ToDocumentValue())),

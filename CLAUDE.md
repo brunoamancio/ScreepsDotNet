@@ -607,6 +607,78 @@ namespace ScreepsDotNet.Backend.Http;  // ERROR: Doesn't match folder
 namespace ScreepsDotNet.Storage;  // ERROR: Incomplete namespace
 ```
 
+### Constant Organization in Endpoint Classes
+**✅ Good:**
+```csharp
+// Organization pattern for endpoint classes (e.g., UserEndpoints.cs, MarketEndpoints.cs)
+internal static class UserEndpoints
+{
+    // 1. Value constants (border enabled, special identifiers)
+    private const string BorderEnabledValue = "1";
+    private const string BorderEnabledAlternateValue = "true";
+
+    // 2. Validation/error messages
+    private const string MissingUserContextMessage = "User context is not available.";
+    private const string MissingUsernameMessage = "username is required.";
+    private const string UserNotFoundMessage = "user not found";
+
+    // 3. Endpoint names (route identifiers)
+    private const string GetUserProfileEndpointName = "GetUserProfile";
+    private const string PostUserBadgeEndpointName = "PostUserBadge";
+    private const string FindEndpointName = "GetUserFind";
+
+    // 4. Query parameter names
+    private const string UsernameQueryName = "username";
+    private const string UserIdQueryName = "id";
+    private const string BorderQueryName = "border";
+
+    // 5. Default string values
+    private const string DefaultOverviewStatName = "energyHarvested";
+
+    // 6. Numeric arrays
+    private static readonly int[] AllowedStatsIntervals = [8, 180, 1440];
+
+    // 7. Numeric limits/sizes
+    private const int MaxMemoryBytes = 1024 * 1024;
+    private const int MaxConsoleExpressionBytes = 1024;
+
+    // 8. Dictionary/complex defaults (last)
+    private static readonly IReadOnlyDictionary<string, object?> DefaultMemory = new Dictionary<string, object?>
+    {
+        ["settings"] = new Dictionary<string, object?> { }
+    };
+}
+```
+
+**❌ Bad:**
+```csharp
+// Don't mix constant types randomly
+internal static class UserEndpoints
+{
+    private const int MaxMemoryBytes = 1024 * 1024;  // ERROR: Numeric constant before messages
+    private const string GetUserProfileEndpointName = "GetUserProfile";
+    private const string UsernameQueryName = "username";  // ERROR: Query param before endpoint names
+    private const string MissingUserContextMessage = "User context is not available.";  // ERROR: Message after endpoint names
+}
+```
+
+**Organization Rules:**
+1. **Value constants** - Special values used for comparisons (e.g., "1", "true", "$activeWorld")
+2. **Validation messages** - Error messages, missing param messages, validation failures
+3. **Endpoint names** - Route identifiers for URL generation/testing
+4. **Query parameter names** - Names used in `[FromQuery(Name = ...)]` attributes
+5. **Default string values** - Default values for string properties
+6. **Numeric arrays** - Arrays of allowed values
+7. **Numeric limits** - Size limits, max values, min values
+8. **Complex defaults** - Dictionaries, complex objects (always last)
+
+**Exception:** Query parameter names like "segment", "respondent", "room", "shard" used only once inline can remain inline:
+```csharp
+// OK for one-off query parameters
+app.MapGet(ApiRoutes.User.MemorySegment,
+           async ([FromQuery(Name = "segment")] int? segment,
+```
+
 ## Code Quality Warnings
 
 **Rules defined in:**
@@ -1619,6 +1691,7 @@ This file provides **solution-wide** context. For subsystem-specific details:
 - Build while `dotnet run` is active
 - Create TODO comments instead of tracking in roadmaps
 - Duplicate documentation between files
+- Mix constant types randomly in endpoint classes (follow organization pattern: value constants → messages → endpoint names → query params → defaults → numeric arrays → limits → complex objects)
 
 ✅ **Do:**
 - Use `var` for ALL variable declarations
@@ -1646,6 +1719,7 @@ This file provides **solution-wide** context. For subsystem-specific details:
 - Follow repository patterns shown above
 - Stop `dotnet run` before `dotnet build`
 - Keep configuration in sync (appsettings.json, appsettings.Development.json)
+- Organize constants in endpoint classes by type (see "Constant Organization in Endpoint Classes" section)
 
 ## Documentation Map
 

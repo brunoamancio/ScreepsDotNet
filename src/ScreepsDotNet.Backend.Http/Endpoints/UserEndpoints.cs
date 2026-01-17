@@ -79,6 +79,9 @@ internal static class UserEndpoints
     private const string IndexUserMessagesEndpointName = "GetUserMessageIndex";
     private const string MarkUserMessageReadEndpointName = "PostUserMessageMarkRead";
     private const string UnreadMessageCountEndpointName = "GetUserMessageUnreadCount";
+    private const string UsernameQueryName = "username";
+    private const string UserIdQueryName = "id";
+    private const string BorderQueryName = "border";
     private const string DefaultOverviewStatName = "energyHarvested";
     private static readonly int[] AllowedStatsIntervals = [8, 180, 1440];
     private static readonly int[] AllowedNotifyIntervals = [5, 10, 30, 60, 180, 360, 720, 1440, 4320];
