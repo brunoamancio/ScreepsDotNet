@@ -3,10 +3,12 @@ namespace ScreepsDotNet.Engine.Processors.GlobalSteps;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Extensions.Logging;
+using ScreepsDotNet.Engine.Data.GlobalMutations;
 using ScreepsDotNet.Engine.Data.GlobalState;
 
 internal sealed class EngineGlobalProcessor(
     IGlobalStateProvider globalStateProvider,
+    IGlobalMutationWriterFactory mutationWriterFactory,
     IEnumerable<IGlobalProcessorStep> steps,
     ILogger<EngineGlobalProcessor>? logger = null) : IGlobalProcessor
 {
@@ -15,7 +17,8 @@ internal sealed class EngineGlobalProcessor(
     public async Task ExecuteAsync(int gameTime, CancellationToken token = default)
     {
         var state = await globalStateProvider.GetGlobalStateAsync(gameTime, token).ConfigureAwait(false);
-        var context = new GlobalProcessorContext(state);
+        var mutationWriter = mutationWriterFactory.Create();
+        var context = new GlobalProcessorContext(state, mutationWriter);
 
         if (_steps.Count == 0)
         {
@@ -25,6 +28,8 @@ internal sealed class EngineGlobalProcessor(
 
         foreach (var step in _steps)
             await step.ExecuteAsync(context, token).ConfigureAwait(false);
+
+        await mutationWriter.FlushAsync(token).ConfigureAwait(false);
 
         logger?.LogDebug("EngineGlobalProcessor tick {Tick}: executed {StepCount} steps.", gameTime, _steps.Count);
     }

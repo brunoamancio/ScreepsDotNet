@@ -239,7 +239,7 @@ internal sealed class ResourceDropHelper : IResourceDropHelper
             Structure: null,
             Effects: new Dictionary<string, object?>(0, Comparer),
             Spawning: null,
-            Body: Array.Empty<CreepBodyPartSnapshot>(),
+            Body: [],
             ResourceType: resourceType,
             ResourceAmount: amount);
 
@@ -316,12 +316,9 @@ internal sealed class ContainerLedgerEntry
     public Dictionary<string, int> Store { get; }
 }
 
-internal sealed class DropLedgerEntry
+internal sealed class DropLedgerEntry(RoomObjectSnapshot snapshot)
 {
-    public DropLedgerEntry(RoomObjectSnapshot snapshot)
-        => Snapshot = snapshot;
-
-    public RoomObjectSnapshot Snapshot { get; set; }
+    public RoomObjectSnapshot Snapshot { get; set; } = snapshot;
 }
 
 internal sealed record DropLedgerKey(string RoomName, string? Shard, int X, int Y, string ResourceType)

@@ -58,7 +58,7 @@ public sealed class CreepLifecycleStepTests
             new Dictionary<string, UserState>(StringComparer.Ordinal),
             null,
             new Dictionary<string, RoomTerrainSnapshot>(StringComparer.Ordinal),
-            Array.Empty<RoomFlagSnapshot>());
+            []);
 
         return new RoomProcessorContext(
             state,
@@ -190,5 +190,5 @@ public sealed class CreepLifecycleStepTests
             Structure: null,
             Effects: new Dictionary<string, object?>(StringComparer.Ordinal),
             Spawning: null,
-            Body: Array.Empty<CreepBodyPartSnapshot>());
+            Body: []);
 }

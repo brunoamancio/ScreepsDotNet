@@ -179,7 +179,7 @@ public sealed class CreepBuildRepairStepTests
             Structure: null,
             Effects: new Dictionary<string, object?>(StringComparer.Ordinal),
             Spawning: null,
-            Body: Array.Empty<CreepBodyPartSnapshot>(),
+            Body: [],
             IsSpawning: null,
             Progress: progress,
             ProgressTotal: progressTotal);
@@ -211,7 +211,7 @@ public sealed class CreepBuildRepairStepTests
             Structure: null,
             Effects: new Dictionary<string, object?>(StringComparer.Ordinal),
             Spawning: null,
-            Body: Array.Empty<CreepBodyPartSnapshot>(),
+            Body: [],
             IsSpawning: null);
 
     private sealed class FakeMutationWriter : IRoomMutationWriter

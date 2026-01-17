@@ -3,6 +3,7 @@ namespace ScreepsDotNet.Engine;
 using Microsoft.Extensions.DependencyInjection;
 using ScreepsDotNet.Common.Structures;
 using ScreepsDotNet.Engine.Data.Bulk;
+using ScreepsDotNet.Engine.Data.GlobalMutations;
 using ScreepsDotNet.Engine.Data.GlobalState;
 using ScreepsDotNet.Engine.Data.Memory;
 using ScreepsDotNet.Engine.Data.Rooms;
@@ -45,6 +46,8 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IRoomProcessor, RoomProcessor>();
         services.AddSingleton<IGlobalProcessor, EngineGlobalProcessor>();
         services.AddSingleton<IGlobalProcessorStep, InterRoomTransferStep>();
+        services.AddSingleton<IGlobalProcessorStep, PowerCreepIntentStep>();
+        services.AddSingleton<IGlobalMutationWriterFactory, GlobalMutationWriterFactory>();
         services.AddSingleton<IEngineHost, EngineHost>();
         return services;
     }

@@ -121,7 +121,7 @@ public sealed class SpawnEnergyChargerTests
             Structure: null,
             Effects: new Dictionary<string, object?>(),
             Spawning: null,
-            Body: Array.Empty<CreepBodyPartSnapshot>());
+            Body: []);
 
     private static RoomObjectSnapshot CreateExtension(string id, int energy)
         => new(

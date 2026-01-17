@@ -3,45 +3,47 @@
 using System.Collections.Generic;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
+using ScreepsDotNet.Common.Constants;
 using MongoDB.Bson.Serialization.Options;
 
 [BsonIgnoreExtraElements]
 public sealed class PowerCreepDocument
 {
     [BsonId]
+    [BsonElement(PowerCreepDocumentFields.Id)]
     public ObjectId Id { get; set; }
 
-    [BsonElement("user")]
+    [BsonElement(PowerCreepDocumentFields.UserId)]
     public string? UserId { get; set; }
 
-    [BsonElement("name")]
+    [BsonElement(PowerCreepDocumentFields.Name)]
     public string? Name { get; set; }
 
-    [BsonElement("className")]
+    [BsonElement(PowerCreepDocumentFields.ClassName)]
     public string? ClassName { get; set; }
 
-    [BsonElement("level")]
+    [BsonElement(PowerCreepDocumentFields.Level)]
     public int? Level { get; set; }
 
-    [BsonElement("hitsMax")]
+    [BsonElement(PowerCreepDocumentFields.HitsMax)]
     public int? HitsMax { get; set; }
 
-    [BsonElement("store")]
+    [BsonElement(PowerCreepDocumentFields.Store)]
     public Dictionary<string, int>? Store { get; set; }
 
-    [BsonElement("storeCapacity")]
+    [BsonElement(PowerCreepDocumentFields.StoreCapacity)]
     public int? StoreCapacity { get; set; }
 
-    [BsonElement("spawnCooldownTime")]
+    [BsonElement(PowerCreepDocumentFields.SpawnCooldownTime)]
     public long? SpawnCooldownTime { get; set; }
 
-    [BsonElement("deleteTime")]
+    [BsonElement(PowerCreepDocumentFields.DeleteTime)]
     public long? DeleteTime { get; set; }
 
-    [BsonElement("shard")]
+    [BsonElement(PowerCreepDocumentFields.Shard)]
     public string? Shard { get; set; }
 
-    [BsonElement("powers")]
+    [BsonElement(PowerCreepDocumentFields.Powers)]
     [BsonDictionaryOptions(DictionaryRepresentation.Document)]
     public Dictionary<string, PowerCreepPowerDocument>? Powers { get; set; }
 }

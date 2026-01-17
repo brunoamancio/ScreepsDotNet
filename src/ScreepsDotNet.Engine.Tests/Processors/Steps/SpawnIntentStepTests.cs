@@ -315,7 +315,7 @@ public sealed class SpawnIntentStepTests
             Structure: null,
             Effects: new Dictionary<string, object?>(),
             Spawning: spawning,
-            Body: Array.Empty<CreepBodyPartSnapshot>());
+            Body: []);
 
     private static RoomObjectSnapshot CreateExtension(string id, int energy, string userId = "user1")
         => new(
@@ -347,7 +347,7 @@ public sealed class SpawnIntentStepTests
             Structure: null,
             Effects: new Dictionary<string, object?>(),
             Spawning: null,
-            Body: Array.Empty<CreepBodyPartSnapshot>());
+            Body: []);
 
     private static RoomObjectSnapshot CreateCreep(
         string id,
@@ -411,13 +411,13 @@ public sealed class SpawnIntentStepTests
             Structure: null,
             Effects: new Dictionary<string, object?>(),
             Spawning: null,
-            Body: Array.Empty<CreepBodyPartSnapshot>(),
+            Body: [],
             IsSpawning: true);
 
     private static IReadOnlyList<CreepBodyPartSnapshot> CreateBodySnapshot(BodyPartType[] parts)
     {
         if (parts.Length == 0)
-            return Array.Empty<CreepBodyPartSnapshot>();
+            return [];
 
         var result = new CreepBodyPartSnapshot[parts.Length];
         for (var i = 0; i < parts.Length; i++)

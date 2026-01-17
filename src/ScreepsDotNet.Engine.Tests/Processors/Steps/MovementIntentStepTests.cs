@@ -403,7 +403,7 @@ public sealed class MovementIntentStepTests
             new Dictionary<string, UserState>(Comparer),
             intents,
             new Dictionary<string, RoomTerrainSnapshot>(Comparer),
-            Array.Empty<RoomFlagSnapshot>());
+            []);
     }
 
     private static RoomObjectSnapshot CreateCreep(string id, int x, int y, string userId = "user1")
@@ -497,7 +497,7 @@ public sealed class MovementIntentStepTests
             Structure: null,
             Effects: new Dictionary<string, object?>(Comparer),
             Spawning: null,
-            Body: Array.Empty<CreepBodyPartSnapshot>(),
+            Body: [],
             IsSpawning: null,
             UserSummoned: null,
             IsPublic: isPublic);
@@ -529,7 +529,7 @@ public sealed class MovementIntentStepTests
             Structure: null,
             Effects: new Dictionary<string, object?>(Comparer),
             Spawning: null,
-            Body: Array.Empty<CreepBodyPartSnapshot>(),
+            Body: [],
             PortalDestination: destination);
 
     private static RoomObjectSnapshot CreateStructure(string id, string type, int x, int y, string? owner = "system")
@@ -559,7 +559,7 @@ public sealed class MovementIntentStepTests
             Structure: null,
             Effects: new Dictionary<string, object?>(Comparer),
             Spawning: null,
-            Body: Array.Empty<CreepBodyPartSnapshot>());
+            Body: []);
 
     private static IntentRecord CreateTargetIntentRecord(string name, string targetId)
         => new(

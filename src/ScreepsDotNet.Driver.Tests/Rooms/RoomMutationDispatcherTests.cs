@@ -27,8 +27,8 @@ public sealed class RoomMutationDispatcherTests
             ObjectPatches: [new RoomObjectPatch("obj1", new RoomObjectPatchPayload { Hits = 100 })],
             ObjectDeletes: ["obj2"],
             RoomInfoPatch: null,
-            MapView: new RoomIntentMapView("W0N0", 1, Array.Empty<RoomIntentEvent>()),
-            EventLog: new RoomIntentEventLog("W0N0", 123, Array.Empty<RoomIntentEvent>()));
+            MapView: new RoomIntentMapView("W0N0", 1, []),
+            EventLog: new RoomIntentEventLog("W0N0", 123, []));
 
         await dispatcher.ApplyAsync(batch, CancellationToken.None);
 

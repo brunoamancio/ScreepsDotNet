@@ -67,7 +67,7 @@ public sealed class RoomObjectBlueprintEnricherTests
             Structure: null,
             Effects: new Dictionary<string, object?>(0, StringComparer.Ordinal),
             Spawning: null,
-            Body: Array.Empty<CreepBodyPartSnapshot>(),
+            Body: [],
             IsSpawning: null,
             UserSummoned: null,
             StrongholdId: null,

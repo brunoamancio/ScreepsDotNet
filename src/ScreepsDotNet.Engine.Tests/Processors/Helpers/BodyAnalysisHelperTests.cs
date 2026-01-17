@@ -1,6 +1,5 @@
 namespace ScreepsDotNet.Engine.Tests.Processors.Helpers;
 
-using System;
 using System.Linq;
 using ScreepsDotNet.Common.Constants;
 using ScreepsDotNet.Common.Types;
@@ -27,7 +26,7 @@ public sealed class BodyAnalysisHelperTests
     [Fact]
     public void Analyze_Fails_WhenBodyEmpty()
     {
-        var result = _helper.Analyze(Array.Empty<BodyPartType>());
+        var result = _helper.Analyze([]);
 
         Assert.False(result.Success);
         Assert.Contains("required", result.Error);

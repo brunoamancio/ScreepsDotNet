@@ -20,7 +20,7 @@ public sealed class SpawnSpawningStepTests
     [Fact]
     public async Task ExecuteAsync_CompletesSpawn_WhenOpenTileExists()
     {
-        var spawn = CreateSpawn("spawn1", 10, 10, new RoomSpawnSpawningSnapshot("worker1", 9, 101, Array.Empty<Direction>()));
+        var spawn = CreateSpawn("spawn1", 10, 10, new RoomSpawnSpawningSnapshot("worker1", 9, 101, []));
         var placeholder = CreateCreep("creep1", "worker1", "user1", spawn.X, spawn.Y, spawning: true);
 
         var state = CreateState(101, [spawn, placeholder]);
@@ -45,7 +45,7 @@ public sealed class SpawnSpawningStepTests
     [Fact]
     public async Task ExecuteAsync_DelaysSpawn_WhenAllTilesBlocked()
     {
-        var spawning = new RoomSpawnSpawningSnapshot("worker1", 9, 200, Array.Empty<Direction>());
+        var spawning = new RoomSpawnSpawningSnapshot("worker1", 9, 200, []);
         var spawn = CreateSpawn("spawn1", 10, 10, spawning);
         var placeholder = CreateCreep("creep1", "worker1", "user1", spawn.X, spawn.Y, spawning: true);
         var blockers = CreateRingOfWalls(spawn);
@@ -68,7 +68,7 @@ public sealed class SpawnSpawningStepTests
     [Fact]
     public async Task ExecuteAsync_PerformsSpawnStomp_WhenOnlyHostileBlocks()
     {
-        var spawn = CreateSpawn("spawn1", 10, 10, new RoomSpawnSpawningSnapshot("worker1", 9, 300, Array.Empty<Direction>()));
+        var spawn = CreateSpawn("spawn1", 10, 10, new RoomSpawnSpawningSnapshot("worker1", 9, 300, []));
         var placeholder = CreateCreep("creep1", "worker1", "user1", spawn.X, spawn.Y, spawning: true);
         var hostile = CreateCreep("hostile", "hostile", "user2", spawn.X, spawn.Y - 1);
         var blockers = CreateRingOfWalls(spawn, skip: hostile);
@@ -120,7 +120,7 @@ public sealed class SpawnSpawningStepTests
             Structure: null,
             Effects: new Dictionary<string, object?>(Comparer),
             Spawning: spawning,
-            Body: Array.Empty<CreepBodyPartSnapshot>());
+            Body: []);
 
     private static RoomObjectSnapshot CreateCreep(
         string id,
@@ -197,7 +197,7 @@ public sealed class SpawnSpawningStepTests
                 Structure: null,
                 Effects: new Dictionary<string, object?>(Comparer),
                 Spawning: null,
-                Body: Array.Empty<CreepBodyPartSnapshot>()));
+                Body: []));
         }
 
         return walls;
@@ -214,7 +214,7 @@ public sealed class SpawnSpawningStepTests
             new Dictionary<string, UserState>(Comparer),
             null,
             new Dictionary<string, RoomTerrainSnapshot>(Comparer),
-            Array.Empty<RoomFlagSnapshot>());
+            []);
     }
 
     private sealed class RecordingMutationWriter : IRoomMutationWriter

@@ -1,0 +1,209 @@
+namespace ScreepsDotNet.Engine.Tests.Processors.GlobalSteps;
+
+using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
+using ScreepsDotNet.Common.Constants;
+using ScreepsDotNet.Driver.Contracts;
+using ScreepsDotNet.Engine.Data.GlobalMutations;
+using ScreepsDotNet.Engine.Data.Models;
+using ScreepsDotNet.Engine.Processors.GlobalSteps;
+using Xunit;
+
+public sealed class PowerCreepIntentStepTests
+{
+    [Fact]
+    public async Task ExecuteAsync_RenameIntentStagesMutation()
+    {
+        var powerCreep = new PowerCreepSnapshot(
+            "64c5d5f7e4b07a2c1a000001",
+            "user1",
+            "old",
+            "operator",
+            10,
+            5000,
+            new Dictionary<string, int>(),
+            100,
+            0,
+            null,
+            null,
+            new Dictionary<string, PowerCreepPowerSnapshot>());
+
+        var intents = new[]
+        {
+            new IntentRecord(
+                GlobalIntentTypes.RenamePowerCreep,
+                [
+                    new IntentArgument(new Dictionary<string, IntentFieldValue>
+                    {
+                        [PowerCreepIntentFields.Id] = new(IntentFieldValueKind.Text, TextValue: powerCreep.Id),
+                        [PowerCreepIntentFields.Name] = new(IntentFieldValueKind.Text, TextValue: "NewPowerCreep")
+                    })
+                ])
+        };
+
+        var userIntentSnapshot = new GlobalUserIntentSnapshot("intentDoc", "user1", intents);
+        var state = CreateGlobalState(powerCreep, userIntentSnapshot);
+        var writer = new RecordingGlobalMutationWriter();
+        var context = new GlobalProcessorContext(state, writer);
+        var step = new PowerCreepIntentStep();
+
+        await step.ExecuteAsync(context, CancellationToken.None);
+
+        var patch = Assert.Single(writer.PowerCreepPatches);
+        Assert.Equal(powerCreep.Id, patch.Id);
+        Assert.Equal("NewPowerCreep", patch.Patch.Name);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_DeleteIntentSetsDeleteTime()
+    {
+        var powerCreep = CreatePowerCreep(spawnCooldownTime: 0);
+        var intents = new[]
+        {
+            new IntentRecord(
+                GlobalIntentTypes.DeletePowerCreep,
+                [
+                    new IntentArgument(new Dictionary<string, IntentFieldValue>
+                    {
+                        [PowerCreepIntentFields.Id] = new(IntentFieldValueKind.Text, TextValue: powerCreep.Id)
+                    })
+                ])
+        };
+
+        var timestamp = 1_000L;
+        var writer = new RecordingGlobalMutationWriter();
+        var context = new GlobalProcessorContext(
+            CreateGlobalState(powerCreep, new GlobalUserIntentSnapshot("doc", "user1", intents), 0),
+            writer);
+        var step = new PowerCreepIntentStep(() => timestamp);
+
+        await step.ExecuteAsync(context, CancellationToken.None);
+
+        var patch = Assert.Single(writer.PowerCreepPatches);
+        Assert.Equal(powerCreep.Id, patch.Id);
+        Assert.Equal(timestamp + ScreepsGameConstants.PowerCreepDeleteCooldownMilliseconds, patch.Patch.DeleteTime);
+        Assert.False(patch.Patch.ClearDeleteTime);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_DeleteIntentCancelsDeleteTime()
+    {
+        var powerCreep = CreatePowerCreep(spawnCooldownTime: 0, deleteTime: 5000);
+        var intents = new[]
+        {
+            new IntentRecord(
+                GlobalIntentTypes.DeletePowerCreep,
+                [
+                    new IntentArgument(new Dictionary<string, IntentFieldValue>
+                    {
+                        [PowerCreepIntentFields.Id] = new(IntentFieldValueKind.Text, TextValue: powerCreep.Id),
+                        [PowerCreepIntentFields.Cancel] = new(IntentFieldValueKind.Boolean, BooleanValue: true)
+                    })
+                ])
+        };
+
+        var writer = new RecordingGlobalMutationWriter();
+        var context = new GlobalProcessorContext(
+            CreateGlobalState(powerCreep, new GlobalUserIntentSnapshot("doc", "user1", intents), 0),
+            writer);
+        var step = new PowerCreepIntentStep(() => 10);
+
+        await step.ExecuteAsync(context, CancellationToken.None);
+
+        var patch = Assert.Single(writer.PowerCreepPatches);
+        Assert.True(patch.Patch.ClearDeleteTime);
+        Assert.Null(patch.Patch.DeleteTime);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_DeleteIntentDuringExperimentationRemoves()
+    {
+        var powerCreep = CreatePowerCreep(spawnCooldownTime: 0);
+        var intents = new[]
+        {
+            new IntentRecord(
+                GlobalIntentTypes.DeletePowerCreep,
+                [
+                    new IntentArgument(new Dictionary<string, IntentFieldValue>
+                    {
+                        [PowerCreepIntentFields.Id] = new(IntentFieldValueKind.Text, TextValue: powerCreep.Id)
+                    })
+                ])
+        };
+
+        var timestamp = 1_000L;
+        var writer = new RecordingGlobalMutationWriter();
+        var context = new GlobalProcessorContext(
+            CreateGlobalState(powerCreep, new GlobalUserIntentSnapshot("doc", "user1", intents), 2_000),
+            writer);
+        var step = new PowerCreepIntentStep(() => timestamp);
+
+        await step.ExecuteAsync(context, CancellationToken.None);
+
+        var removed = Assert.Single(writer.RemovedPowerCreeps);
+        Assert.Equal(powerCreep.Id, removed);
+    }
+
+    private static PowerCreepSnapshot CreatePowerCreep(long? spawnCooldownTime = 0, long? deleteTime = null)
+        => new(
+            "64c5d5f7e4b07a2c1a000001",
+            "user1",
+            "old",
+            "operator",
+            10,
+            5000,
+            new Dictionary<string, int>(),
+            100,
+            spawnCooldownTime,
+            deleteTime,
+            null,
+            new Dictionary<string, PowerCreepPowerSnapshot>());
+
+    private static GlobalState CreateGlobalState(
+        PowerCreepSnapshot powerCreep,
+        GlobalUserIntentSnapshot intentSnapshot,
+        double powerExperimentationTime = 0)
+    {
+        var market = new GlobalMarketSnapshot(
+            [],
+            new Dictionary<string, UserState>
+            {
+                ["user1"] = new("user1", "player", 0, 0, 0, true, powerExperimentationTime)
+            },
+            [powerCreep],
+            [intentSnapshot],
+            "shard0");
+
+        return new GlobalState(
+            12345,
+            [],
+            new Dictionary<string, RoomInfoSnapshot>(),
+            new Dictionary<string, RoomExitTopology>(),
+            [],
+            market);
+    }
+
+    private sealed class RecordingGlobalMutationWriter : IGlobalMutationWriter
+    {
+        public List<(string Id, PowerCreepMutationPatch Patch)> PowerCreepPatches { get; } = [];
+        public List<string> RemovedPowerCreeps { get; } = [];
+
+        public void PatchPowerCreep(string powerCreepId, PowerCreepMutationPatch patch)
+            => PowerCreepPatches.Add((powerCreepId, patch));
+
+        public void RemovePowerCreep(string powerCreepId) => RemovedPowerCreeps.Add(powerCreepId);
+
+        public void UpsertPowerCreep(PowerCreepSnapshot snapshot)
+        {
+        }
+
+        public Task FlushAsync(CancellationToken token = default) => Task.CompletedTask;
+
+        public void Reset()
+        {
+            PowerCreepPatches.Clear();
+            RemovedPowerCreeps.Clear();
+        }
+    }
+}

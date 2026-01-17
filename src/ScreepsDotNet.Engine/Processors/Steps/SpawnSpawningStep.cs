@@ -312,8 +312,8 @@ internal sealed class SpawnSpawningStep(ISpawnStateReader spawnStateReader, ICre
 
     private sealed record TileInfo
     {
-        public List<RoomObjectSnapshot> Structures { get; } = new();
-        public List<RoomObjectSnapshot> Creeps { get; } = new();
+        public List<RoomObjectSnapshot> Structures { get; } = [];
+        public List<RoomObjectSnapshot> Creeps { get; } = [];
         public bool HasRoad { get; set; }
     }
 

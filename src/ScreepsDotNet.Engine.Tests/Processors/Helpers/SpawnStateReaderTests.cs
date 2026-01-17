@@ -97,7 +97,7 @@ public sealed class SpawnStateReaderTests
             Structure: null,
             Effects: new Dictionary<string, object?>(),
             Spawning: spawnSnapshot,
-            Body: Array.Empty<CreepBodyPartSnapshot>());
+            Body: []);
 
     private static RoomObjectSnapshot CreateCreep(string name, string? userId, int x, int y)
         => new(
@@ -126,5 +126,5 @@ public sealed class SpawnStateReaderTests
             Structure: null,
             Effects: new Dictionary<string, object?>(),
             Spawning: null,
-            Body: Array.Empty<CreepBodyPartSnapshot>());
+            Body: []);
 }

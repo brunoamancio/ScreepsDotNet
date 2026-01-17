@@ -9,4 +9,5 @@ public sealed record UserState(
     double Cpu,
     double Power,
     double Money,
-    bool Active);
+    bool Active,
+    double PowerExperimentationTime);

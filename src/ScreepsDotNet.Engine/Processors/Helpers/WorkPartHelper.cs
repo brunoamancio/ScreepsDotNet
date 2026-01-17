@@ -21,7 +21,7 @@ internal static class WorkPartHelper
 
     public static bool TryGetActiveWorkParts(RoomObjectSnapshot creep, out List<CreepBodyPartSnapshot> parts)
     {
-        parts = new List<CreepBodyPartSnapshot>();
+        parts = [];
         foreach (var part in creep.Body)
         {
             if (part.Type == BodyPartType.Work && part.Hits > 0)

@@ -106,7 +106,8 @@ internal static class RoomContractMapper
                 document.Cpu ?? 0,
                 document.Power ?? 0,
                 document.Money ?? 0,
-                document.Active.GetValueOrDefault() != 0);
+                document.Active.GetValueOrDefault() != 0,
+                document.PowerExperimentationTime ?? 0);
         }
 
         return result;

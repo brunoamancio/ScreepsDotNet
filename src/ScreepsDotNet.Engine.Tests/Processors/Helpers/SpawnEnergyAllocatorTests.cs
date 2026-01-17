@@ -115,5 +115,5 @@ public sealed class SpawnEnergyAllocatorTests
             Structure: null,
             Effects: new Dictionary<string, object?>(),
             Spawning: null,
-            Body: Array.Empty<CreepBodyPartSnapshot>());
+            Body: []);
 }

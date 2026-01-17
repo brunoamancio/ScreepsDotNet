@@ -66,7 +66,7 @@ internal sealed class StructureSnapshotFactory : IStructureSnapshotFactory
             Structure: null,
             Effects: new Dictionary<string, object?>(0, Comparer),
             Spawning: null,
-            Body: Array.Empty<CreepBodyPartSnapshot>(),
+            Body: [],
             IsSpawning: null,
             UserSummoned: null,
             StrongholdId: null,

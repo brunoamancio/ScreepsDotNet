@@ -1,6 +1,5 @@
 namespace ScreepsDotNet.Engine.Tests.Processors.Helpers;
 
-using System;
 using ScreepsDotNet.Common.Types;
 using ScreepsDotNet.Engine.Processors.Helpers;
 using ScreepsDotNet.Driver.Contracts;
@@ -12,7 +11,7 @@ public sealed class SpawnIntentParserTests
     private static readonly BodyPartType[] ValidBody = [BodyPartType.Move, BodyPartType.Work];
     private static readonly Direction[] CreateDirections = [Direction.Top, Direction.TopLeft];
     private static readonly string[] EnergyStructureIds = ["spawn1", "spawn1", "ext1"];
-    private static readonly IReadOnlyList<BodyPartType> EmptyBody = Array.Empty<BodyPartType>();
+    private static readonly IReadOnlyList<BodyPartType> EmptyBody = [];
     private static readonly Direction[] MixedDirections = [Direction.Top, Direction.TopRight, Direction.TopRight, Direction.TopLeft];
     private static readonly Direction[] ExpectedDirections = [Direction.Top, Direction.TopRight, Direction.TopLeft];
     private static readonly Direction[] ExpectedCreateDirections = [Direction.Top, Direction.TopLeft];

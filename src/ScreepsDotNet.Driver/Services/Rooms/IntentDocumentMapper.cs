@@ -112,7 +112,7 @@ internal static class IntentDocumentMapper
     private static IntentFieldValue ConvertIntentArrayValue(BsonArray array)
     {
         if (array.Count == 0)
-            return new IntentFieldValue(IntentFieldValueKind.TextArray, TextValues: Array.Empty<string>());
+            return new IntentFieldValue(IntentFieldValueKind.TextArray, TextValues: []);
 
         if (array.All(v => v is BsonInt32 or BsonInt64 or BsonDouble or BsonDecimal128))
         {

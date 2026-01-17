@@ -205,7 +205,7 @@ public sealed class HarvestIntentStepTests
             Structure: null,
             Effects: new Dictionary<string, object?>(StringComparer.Ordinal),
             Spawning: null,
-            Body: Array.Empty<CreepBodyPartSnapshot>(),
+            Body: [],
             IsSpawning: null,
             StrongholdId: null,
             DeathTime: null,
@@ -249,7 +249,7 @@ public sealed class HarvestIntentStepTests
             Structure: null,
             Effects: new Dictionary<string, object?>(StringComparer.Ordinal),
             Spawning: null,
-            Body: Array.Empty<CreepBodyPartSnapshot>(),
+            Body: [],
             MineralAmount: amount);
 
     private static RoomObjectSnapshot CreateExtractor(string id, int x, int y, string userId)
@@ -279,7 +279,7 @@ public sealed class HarvestIntentStepTests
             Structure: null,
             Effects: new Dictionary<string, object?>(StringComparer.Ordinal),
             Spawning: null,
-            Body: Array.Empty<CreepBodyPartSnapshot>());
+            Body: []);
 
     private static RoomObjectSnapshot CreateController(string id, int x, int y, string userId, int level)
         => new(
@@ -308,7 +308,7 @@ public sealed class HarvestIntentStepTests
             Structure: null,
             Effects: new Dictionary<string, object?>(StringComparer.Ordinal),
             Spawning: null,
-            Body: Array.Empty<CreepBodyPartSnapshot>());
+            Body: []);
 
     private static RoomObjectSnapshot CreateDeposit(string id, int x, int y, string depositType, int harvested, int? cooldownTime)
         => new(
@@ -337,7 +337,7 @@ public sealed class HarvestIntentStepTests
             Structure: null,
             Effects: new Dictionary<string, object?>(StringComparer.Ordinal),
             Spawning: null,
-            Body: Array.Empty<CreepBodyPartSnapshot>(),
+            Body: [],
             Harvested: harvested,
             CooldownTime: cooldownTime);
 

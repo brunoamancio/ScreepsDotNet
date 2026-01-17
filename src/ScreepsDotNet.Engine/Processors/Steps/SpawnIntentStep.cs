@@ -433,7 +433,7 @@ internal sealed class SpawnIntentStep(
     private static IReadOnlyList<CreepBodyPartSnapshot> ClearBoosts(IReadOnlyList<CreepBodyPartSnapshot> body)
     {
         if (body.Count == 0)
-            return Array.Empty<CreepBodyPartSnapshot>();
+            return [];
 
         var result = new CreepBodyPartSnapshot[body.Count];
         for (var i = 0; i < body.Count; i++)

@@ -1,0 +1,170 @@
+namespace ScreepsDotNet.Engine.Processors.GlobalSteps;
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using ScreepsDotNet.Common.Constants;
+using ScreepsDotNet.Driver.Contracts;
+
+/// <summary>
+/// Handles player-issued power creep intents (rename/delete/etc.).
+/// </summary>
+internal sealed class PowerCreepIntentStep : IGlobalProcessorStep
+{
+    private const int MaxNameLength = 50;
+    private readonly Func<long> _timestampProvider;
+
+    public PowerCreepIntentStep()
+        : this(() => DateTimeOffset.UtcNow.ToUnixTimeMilliseconds())
+    {
+    }
+
+    internal PowerCreepIntentStep(Func<long> timestampProvider)
+        => _timestampProvider = timestampProvider ?? throw new ArgumentNullException(nameof(timestampProvider));
+
+    public Task ExecuteAsync(GlobalProcessorContext context, CancellationToken token = default)
+    {
+        foreach (var (userId, intents) in context.UserIntentsByUser)
+        {
+            if (string.IsNullOrWhiteSpace(userId))
+                continue;
+
+            if (!context.UsersById.TryGetValue(userId, out var user))
+                continue;
+
+            ProcessRenameIntents(context, userId, intents);
+            ProcessDeleteIntents(context, userId, user, intents);
+        }
+
+        return Task.CompletedTask;
+    }
+
+    private static void ProcessRenameIntents(GlobalProcessorContext context, string userId, GlobalUserIntentSnapshot snapshot)
+    {
+        foreach (var record in snapshot.Intents)
+        {
+            if (!string.Equals(record.Name, GlobalIntentTypes.RenamePowerCreep, StringComparison.Ordinal))
+                continue;
+
+            foreach (var argument in record.Arguments)
+            {
+                var requestedId = GetTextArgument(argument, PowerCreepIntentFields.Id);
+                var requestedName = NormalizeName(GetTextArgument(argument, PowerCreepIntentFields.Name));
+
+                if (string.IsNullOrWhiteSpace(requestedId) || string.IsNullOrWhiteSpace(requestedName))
+                    continue;
+
+                if (!context.PowerCreepsById.TryGetValue(requestedId, out var snapshotCreep))
+                    continue;
+
+                if (!string.Equals(snapshotCreep.UserId, userId, StringComparison.Ordinal))
+                    continue;
+
+                if (snapshotCreep.SpawnCooldownTime is null)
+                    continue;
+
+                if (HasDuplicateName(context.PowerCreepsById.Values, userId, requestedName))
+                    continue;
+
+                context.Mutations.PatchPowerCreep(requestedId, new PowerCreepMutationPatch(Name: requestedName));
+                var updated = snapshotCreep with { Name = requestedName };
+                context.UpdatePowerCreep(updated);
+            }
+        }
+    }
+
+    private void ProcessDeleteIntents(
+        GlobalProcessorContext context,
+        string userId,
+        UserState user,
+        GlobalUserIntentSnapshot snapshot)
+    {
+        foreach (var record in snapshot.Intents)
+        {
+            if (!string.Equals(record.Name, GlobalIntentTypes.DeletePowerCreep, StringComparison.Ordinal))
+                continue;
+
+            foreach (var argument in record.Arguments)
+            {
+                var creepId = GetTextArgument(argument, PowerCreepIntentFields.Id);
+                if (string.IsNullOrWhiteSpace(creepId))
+                    continue;
+
+                if (!context.PowerCreepsById.TryGetValue(creepId, out var creep))
+                    continue;
+
+                if (!string.Equals(creep.UserId, userId, StringComparison.Ordinal))
+                    continue;
+
+                if (creep.SpawnCooldownTime is null)
+                    continue;
+
+                var cancel = GetBooleanArgument(argument, PowerCreepIntentFields.Cancel);
+                if (cancel)
+                {
+                    context.Mutations.PatchPowerCreep(creepId, new PowerCreepMutationPatch(ClearDeleteTime: true));
+                    context.UpdatePowerCreep(creep with { DeleteTime = null });
+                    continue;
+                }
+
+                var now = _timestampProvider();
+                if (user.PowerExperimentationTime > now)
+                {
+                    context.Mutations.RemovePowerCreep(creepId);
+                    context.RemovePowerCreep(creepId);
+                    continue;
+                }
+
+                if (creep.DeleteTime.HasValue)
+                    continue;
+
+                var deleteTime = now + ScreepsGameConstants.PowerCreepDeleteCooldownMilliseconds;
+                context.Mutations.PatchPowerCreep(creepId, new PowerCreepMutationPatch(DeleteTime: deleteTime));
+                context.UpdatePowerCreep(creep with { DeleteTime = deleteTime });
+            }
+        }
+    }
+
+    private static bool HasDuplicateName(IEnumerable<PowerCreepSnapshot> creeps, string userId, string name)
+        => creeps.Any(creep =>
+            string.Equals(creep.UserId, userId, StringComparison.Ordinal) &&
+            string.Equals(creep.Name, name, StringComparison.Ordinal));
+
+    private static string? GetTextArgument(IntentArgument argument, string field)
+    {
+        if (!argument.Fields.TryGetValue(field, out var value))
+            return null;
+
+        return value.Kind switch
+        {
+            IntentFieldValueKind.Text => value.TextValue,
+            IntentFieldValueKind.Number => value.NumberValue?.ToString(),
+            _ => value.TextValue
+        };
+    }
+
+    private static bool GetBooleanArgument(IntentArgument argument, string field, bool defaultValue = false)
+    {
+        if (!argument.Fields.TryGetValue(field, out var value))
+            return defaultValue;
+
+        return value.Kind switch
+        {
+            IntentFieldValueKind.Boolean => value.BooleanValue ?? defaultValue,
+            IntentFieldValueKind.Number => value.NumberValue is { } number && number != 0,
+            IntentFieldValueKind.Text => bool.TryParse(value.TextValue, out var parsed) ? parsed : defaultValue,
+            _ => defaultValue
+        };
+    }
+
+    private static string? NormalizeName(string? source)
+    {
+        if (string.IsNullOrWhiteSpace(source))
+            return null;
+
+        var trimmed = source.Trim();
+        if (trimmed.Length > MaxNameLength)
+            trimmed = trimmed[..MaxNameLength];
+        return trimmed;
+    }
+}
