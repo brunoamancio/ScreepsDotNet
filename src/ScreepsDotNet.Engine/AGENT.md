@@ -34,8 +34,8 @@ Rebuild the legacy Screeps engine (simulation kernel + processor) in .NET so it 
 - For any experimentation that requires scripts or spikes, place them under `src/ScreepsDotNet.Engine/sandbox/` (gitignored) unless they become permanent.
 
 ## Immediate Next Steps
-1. Socialize [`docs/engine/legacy-surface.md`](../../docs/engine/legacy-surface.md) with driver/runtime owners to confirm the proposed abstractions.
-2. Continue **E2 – Data & Storage Model** work: snapshot providers plus the new mutation/memory wrappers are in place, and `RoomProcessor` now consumes `IRoomStateProvider`, `IRoomMutationWriterFactory`, and `IUserMemorySink` via the new `RoomProcessorContext`/step pipeline. The step suite now includes movement (`MovementIntentStep`), combat (`CombatResolutionStep`), creep lifecycle, structure decay, controller downgrade, power cooldown, and intent event logging—so each tick produces meaningful mutations. Next up is to port additional legacy handlers (spawn logic, lab reactions, notification fan-out) before closing E2.
-3. In parallel, spike **E3 – Intent Gathering & Validation** so the data contracts from E2 immediately flow into an `IIntentPipeline` prototype.
+1. Finish the **E2.3 handler backlog** documented in [`docs/engine/e2.3-plan.md`](../../docs/engine/e2.3-plan.md): next ports are controller intents (upgrade/reserve/attack), resource I/O (`transfer`/`withdraw`/`pickup`/`drop`), lab boosts/reactions, structure energy routing (links/terminals/factories/power-spawns), and power creep abilities. Each step must emit action-log/stats updates through `RoomStatsSink`.
+2. Keep extending the telemetry/observability flow: now that `RoomStatsPipeline` exports spawn/harvest/tombstone counters, verify new stats from the upcoming handlers arrive in the Mongo history + telemetry listeners before marking Step 5 complete.
+3. Start outlining **E3 – Intent Gathering & Validation** requirements (contracts, validator surfaces) so once the remaining E2.3 steps land we can immediately hook the managed validator into the driver runtime.
 
 Keep this AGENT log authoritative; other documentation should link back here for canonical status.***
