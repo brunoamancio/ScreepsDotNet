@@ -239,7 +239,8 @@ internal static class RoomContractMapper
             };
         }
 
-        return document.ElementCount == 0 ? null : document;
+        var result = document.ElementCount == 0 ? null : document;
+        return result;
     }
 
     private static RoomObjectActionLogSnapshot? MapActionLog(BsonDocument? actionLog)
@@ -455,7 +456,8 @@ internal static class RoomContractMapper
                 array.Add(BsonValue.Create(value));
         }
 
-        return array.Count == 0 ? null : array;
+        var result = array.Count == 0 ? null : array;
+        return result;
     }
 
     private static RoomSpawnSpawningSnapshot? MapSpawning(BsonValue? spawning)
@@ -560,7 +562,8 @@ internal static class RoomContractMapper
                 result.Add(direction);
         }
 
-        return result.Count == 0 ? Array.Empty<Direction>() : result;
+        var finalResult = result.Count == 0 ? Array.Empty<Direction>() : [.. result];
+        return finalResult;
     }
 
     public static BsonDocument CreateRoomObjectPatchDocument(RoomObjectPatchPayload patch)
@@ -752,7 +755,8 @@ internal static class RoomContractMapper
             result.Add(new CreepBodyPartSnapshot(type, hits, string.IsNullOrWhiteSpace(part.Boost) ? null : part.Boost));
         }
 
-        return result.Count == 0 ? Array.Empty<CreepBodyPartSnapshot>() : result;
+        var finalResult = result.Count == 0 ? Array.Empty<CreepBodyPartSnapshot>() : [.. result];
+        return finalResult;
     }
 
     private static List<RoomObjectBodyPartDocument>? MapBodyDocuments(IReadOnlyList<CreepBodyPartSnapshot> body)

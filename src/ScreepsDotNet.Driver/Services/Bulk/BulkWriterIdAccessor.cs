@@ -25,7 +25,8 @@ internal static class BulkWriterIdAccessors
         {
             GetId = entity => {
                 var id = getter(entity);
-                return id == ObjectId.Empty ? null : id.ToString();
+                var result = id == ObjectId.Empty ? null : id.ToString();
+                return result;
             },
             AssignId = setter is null
                 ? null

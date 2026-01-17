@@ -23,6 +23,7 @@ internal static class NotificationThrottler
             return string.Empty;
 
         var trimmed = message.Trim();
-        return trimmed.Length <= MessageLimit ? trimmed : trimmed[..MessageLimit];
+        var result = trimmed.Length <= MessageLimit ? trimmed : trimmed[..MessageLimit];
+        return result;
     }
 }

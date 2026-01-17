@@ -89,7 +89,8 @@ internal sealed class RedisWorkQueue(IRedisConnectionProvider redisProvider, str
     public async Task<int> GetPendingCountAsync(CancellationToken token = default)
     {
         var length = await Database.ListLengthAsync(PendingKey).ConfigureAwait(false);
-        return length > int.MaxValue ? int.MaxValue : (int)length;
+        var result = length > int.MaxValue ? int.MaxValue : (int)length;
+        return result;
     }
 
     private Task<RedisValue> MovePendingToProcessingAsync()
@@ -98,7 +99,8 @@ internal sealed class RedisWorkQueue(IRedisConnectionProvider redisProvider, str
     private async Task<string?> PopAsync()
     {
         var value = await MovePendingToProcessingAsync().ConfigureAwait(false);
-        return value.IsNull ? null : value.ToString();
+        var result = value.IsNull ? null : value.ToString();
+        return result;
     }
 
     private void EnsureWriteAccess()

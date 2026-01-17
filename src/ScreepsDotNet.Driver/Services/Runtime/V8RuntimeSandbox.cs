@@ -131,7 +131,8 @@ internal sealed class V8RuntimeSandbox(RuntimeSandboxOptions options, ILogger<V8
                 dict[name] = code;
             }
 
-            return dict.Count == 0 ? null : dict;
+            var result = dict.Count == 0 ? null : dict;
+            return result;
         }
 
         return value switch
@@ -210,7 +211,8 @@ if (__driverMainModule && typeof __driverMainModule.loop === "function") {
             if (string.IsNullOrWhiteSpace(name))
                 return null;
 
-            return modules.TryGetValue(name, out var code) ? code : null;
+            var result = modules.TryGetValue(name, out var code) ? code : null;
+            return result;
         }
     }
 
@@ -490,7 +492,8 @@ const RawMemory = (() => {
             string? Resolve(object? candidate)
             {
                 var text = candidate?.ToString()?.Trim();
-                return string.IsNullOrWhiteSpace(text) ? null : text;
+                var result = string.IsNullOrWhiteSpace(text) ? null : text;
+                return result;
             }
 
             return payload switch

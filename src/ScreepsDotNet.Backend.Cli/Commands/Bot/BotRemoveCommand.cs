@@ -37,7 +37,8 @@ internal sealed class BotRemoveCommand(IBotControlService botControlService, ILo
                 Removed = removed
             };
             OutputFormatter.WriteLine(JsonSerializer.Serialize(payload, JsonOptions));
-            return removed ? 0 : 1;
+            var jsonExitCode = removed ? 0 : 1;
+            return jsonExitCode;
         }
 
         OutputFormatter.WriteKeyValueTable([
@@ -45,6 +46,7 @@ internal sealed class BotRemoveCommand(IBotControlService botControlService, ILo
                                                ("Removed", removed ? "yes" : "no")
                                            ],
                                            "Bot removal");
-        return removed ? 0 : 1;
+        var exitCode = removed ? 0 : 1;
+        return exitCode;
     }
 }

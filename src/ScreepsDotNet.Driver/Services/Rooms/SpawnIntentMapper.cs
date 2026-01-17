@@ -79,7 +79,8 @@ internal static class SpawnIntentMapper
             return null;
 
         var directions = ExtractDirectionArray(directionsArray);
-        return directions.Count == 0 ? null : new SetSpawnDirectionsIntent(directions);
+        var result = directions.Count == 0 ? null : new SetSpawnDirectionsIntent(directions);
+        return result;
     }
 
     private static List<string> ExtractStringArray(BsonArray array)

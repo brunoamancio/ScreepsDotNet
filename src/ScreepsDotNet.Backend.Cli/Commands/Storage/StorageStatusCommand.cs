@@ -28,7 +28,8 @@ internal sealed class StorageStatusCommand(IStorageAdapter storageAdapter, ILogg
                 status.Details
             };
             OutputFormatter.WriteLine(JsonSerializer.Serialize(payload, JsonOptions));
-            return status.IsConnected ? 0 : 1;
+            var jsonExitCode = status.IsConnected ? 0 : 1;
+            return jsonExitCode;
         }
 
         OutputFormatter.WriteKeyValueTable([
@@ -41,6 +42,7 @@ internal sealed class StorageStatusCommand(IStorageAdapter storageAdapter, ILogg
         if (!status.IsConnected)
             Logger.LogWarning("Storage status reported disconnected: {Details}", status.Details);
 
-        return status.IsConnected ? 0 : 1;
+        var exitCode = status.IsConnected ? 0 : 1;
+        return exitCode;
     }
 }

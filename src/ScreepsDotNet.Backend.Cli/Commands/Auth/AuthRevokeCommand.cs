@@ -40,7 +40,8 @@ internal sealed class AuthRevokeCommand(
 
         if (settings.OutputJson) {
             OutputFormatter.WriteJson(new { revoked = success, settings.Token });
-            return success ? 0 : 1;
+            var jsonExitCode = success ? 0 : 1;
+            return jsonExitCode;
         }
 
         var state = success ? "revoked" : "not found";
@@ -50,6 +51,7 @@ internal sealed class AuthRevokeCommand(
                                            ],
                                            "Auth revoke");
 
-        return success ? 0 : 1;
+        var exitCode = success ? 0 : 1;
+        return exitCode;
     }
 }

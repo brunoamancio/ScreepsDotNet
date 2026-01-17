@@ -18,6 +18,7 @@ Modern .NET rewrite of the Screeps private server backend. Exposes legacy HTTP +
 - ✅ **ALWAYS** use trailing commas in multi-line collections/arrays
 - ✅ **ALWAYS** keep lines under 185 characters (don't wrap unnecessarily)
 - ✅ **ALWAYS** use positive conditions in ternary operators (never negate: use `condition ? true : false` not `!condition ? false : true`)
+- ✅ **ALWAYS** assign ternary expressions to a variable before returning (never `return x ? a : b;` always `var result = x ? a : b; return result;`)
 - ✅ **ALWAYS** run `dotnet format style --exclude-diagnostics IDE0051 IDE0052 IDE0060` before committing
 - ✅ **ALWAYS** run `git status` from `ScreepsDotNet/` directory (not repo root)
 - ✅ **ALWAYS** use Testcontainers for integration tests (never local Docker state)
@@ -862,9 +863,9 @@ var result = success ? "Success" : "Failed";
 var value = isValid ? trueValue : falseValue;
 var interval = string.IsNullOrWhiteSpace(userId) ? null : ownedInterval;
 
-// Return statements
-return success ? Results.Ok() : Results.BadRequest();
-return isEnabled ? enabledValue : disabledValue;
+// Assign to variable, then return
+var result = success ? Results.Ok() : Results.BadRequest();
+return result;
 ```
 
 **❌ Bad:**
@@ -874,9 +875,31 @@ var result = !success ? "Failed" : "Success";  // ❌ Negated condition
 var value = !isValid ? falseValue : trueValue;  // ❌ Negated condition
 var interval = !string.IsNullOrWhiteSpace(userId) ? ownedInterval : null;  // ❌ Negated condition
 
-// Return statements
-return !success ? Results.BadRequest() : Results.Ok();  // ❌ Negated condition
-return !isEnabled ? disabledValue : enabledValue;  // ❌ Negated condition
+// Don't return ternary directly - assign to variable first
+return !success ? Results.BadRequest() : Results.Ok();  // ❌ Negated condition AND direct return
+return success ? Results.Ok() : Results.BadRequest();  // ❌ Direct return of ternary
+```
+
+### Ternary Return Statements
+**✅ Good:**
+```csharp
+// Always assign ternary result to variable first, then return
+var result = success ? Results.Ok(UserResponseFactory.CreateEmpty()) : Results.BadRequest(new ErrorResponse(UserNotFoundMessage));
+return result;
+
+var intent = directions.Count == 0 ? null : new SetSpawnDirectionsIntent(directions);
+return intent;
+
+var exitCode = status.IsConnected ? 0 : 1;
+return exitCode;
+```
+
+**❌ Bad:**
+```csharp
+// Don't return ternary expressions directly
+return success ? Results.Ok(UserResponseFactory.CreateEmpty()) : Results.BadRequest(new ErrorResponse(UserNotFoundMessage));  // ❌
+return directions.Count == 0 ? null : new SetSpawnDirectionsIntent(directions);  // ❌
+return status.IsConnected ? 0 : 1;  // ❌
 ```
 
 ### Inferred Member Names
@@ -1783,6 +1806,7 @@ This file provides **solution-wide** context. For subsystem-specific details:
 - Declare variables before `out` parameters (use inline: `out var value`)
 - Repeat type when evident (`UserService service = new UserService()` use `new()`)
 - Use negated conditions in ternary operators (flip condition and swap values: `success ? a : b` not `!success ? b : a`)
+- Return ternary expressions directly (assign to variable first: `var x = a ? b : c; return x;` not `return a ? b : c;`)
 - Add `using System;` or other implicit usings manually
 - Use `object` for locks (use `Lock`)
 - Use `BsonDocument` in repositories (use typed POCOs)
@@ -1816,6 +1840,7 @@ This file provides **solution-wide** context. For subsystem-specific details:
 - Use target-typed `new()` when type is evident
 - Use expression-bodied members with `=>` on new line
 - Use positive conditions in ternary operators (not negated)
+- Assign ternary expressions to variables before returning them
 - Use Context7 MCP for library documentation proactively
 - Run `dotnet format style --exclude-diagnostics IDE0051 IDE0052 IDE0060` before committing
 - Use Testcontainers for integration tests

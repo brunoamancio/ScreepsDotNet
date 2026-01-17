@@ -85,7 +85,8 @@ internal sealed class EnvironmentService(IRedisConnectionProvider redisProvider)
     {
         if (!value.HasValue) return 0;
 
-        return int.TryParse(value.ToString(), out var result) ? result : 0;
+        var parsedValue = int.TryParse(value.ToString(), out var result) ? result : 0;
+        return parsedValue;
     }
 
     private static bool IsTruthy(RedisValue value)
@@ -100,7 +101,8 @@ internal sealed class EnvironmentService(IRedisConnectionProvider redisProvider)
     {
         var value = await Database.StringGetAsync(key).ConfigureAwait(false);
         if (!value.HasValue) return null;
-        return int.TryParse(value.ToString(), out var result) ? result : null;
+        var parsedValue = int.TryParse(value.ToString(), out var result) ? (int?)result : null;
+        return parsedValue;
     }
 
     private Task SetIntValueAsync(string key, int value)

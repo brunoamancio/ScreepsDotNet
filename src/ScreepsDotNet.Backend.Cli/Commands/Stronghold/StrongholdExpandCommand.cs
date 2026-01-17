@@ -52,7 +52,8 @@ internal sealed class StrongholdExpandCommand(IStrongholdControlService strongho
                 Expanded = expanded
             };
             OutputFormatter.WriteLine(JsonSerializer.Serialize(payload, JsonOptions));
-            return expanded ? 0 : 1;
+            var jsonExitCode = expanded ? 0 : 1;
+            return jsonExitCode;
         }
 
         var displayRoom = string.IsNullOrWhiteSpace(reference.ShardName) ? reference.RoomName : $"{reference.ShardName}/{reference.RoomName}";
@@ -61,6 +62,7 @@ internal sealed class StrongholdExpandCommand(IStrongholdControlService strongho
                                                ("Expanded", expanded ? "yes" : "no")
                                            ],
                                            "Stronghold expand");
-        return expanded ? 0 : 1;
+        var exitCode = expanded ? 0 : 1;
+        return exitCode;
     }
 }

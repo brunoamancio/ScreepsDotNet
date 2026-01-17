@@ -31,6 +31,7 @@ internal abstract class FormattableCommandSettings : CommandSettings, IFormattab
             return Format;
 
         var envValue = Environment.GetEnvironmentVariable(FormatEnvironmentVariableName);
-        return string.IsNullOrWhiteSpace(envValue) ? null : envValue;
+        var result = string.IsNullOrWhiteSpace(envValue) ? null : envValue;
+        return result;
     }
 }

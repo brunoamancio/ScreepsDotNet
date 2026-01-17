@@ -20,6 +20,7 @@ public static class TerminalMath
 
         var decay = 1 - Math.Exp(-range * TransferFalloffFactor);
         var cost = amount * decay;
-        return cost <= 0 ? 0 : (int)Math.Ceiling(cost);
+        var result = cost <= 0 ? 0 : (int)Math.Ceiling(cost);
+        return result;
     }
 }

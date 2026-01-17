@@ -172,7 +172,8 @@ internal sealed class RuntimeCoordinator(
     private async Task<string?> LoadInterShardSegmentAsync(string userId)
     {
         var value = await _redis.StringGetAsync($"{RedisKeys.PublicMemorySegments}{userId}").ConfigureAwait(false);
-        return value.HasValue ? value.ToString() : null;
+        var result = value.HasValue ? value.ToString() : null;
+        return result;
     }
 
     private async Task PersistResultsAsync(string userId, RuntimeExecutionResult result, CancellationToken token)
@@ -208,6 +209,7 @@ internal sealed class RuntimeCoordinator(
     {
         var cpu = user.Cpu ?? config.CpuMaxPerTick;
         var limit = (int)Math.Ceiling(cpu);
-        return limit > 0 ? limit : config.CpuMaxPerTick;
+        var result = limit > 0 ? limit : config.CpuMaxPerTick;
+        return result;
     }
 }
