@@ -120,6 +120,9 @@ public sealed class RoomObjectDocument
     [BsonElement("nextExpandTime")]
     public int? NextExpandTime { get; set; }
 
+    [BsonElement("interRoom")]
+    public BsonDocument? InterRoom { get; set; }
+
     [BsonElement("effects")]
     public BsonArray? Effects { get; set; }
 

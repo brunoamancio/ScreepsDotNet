@@ -111,10 +111,7 @@ internal sealed class MovementIntentStep(ICreepDeathProcessor deathProcessor) : 
     {
         var matrix = BuildMatrix(candidates);
         if (matrix.Count == 0)
-            return (
-                new Dictionary<string, TileCoord>(Comparer),
-                new List<RoomObjectSnapshot>(0),
-                new List<InterRoomTransfer>(0));
+            return (new Dictionary<string, TileCoord>(Comparer), [], []);
 
         var resolved = BuildResolvedMatrix(matrix);
         var plannedMoves = resolved.Values.ToDictionary(a => a.Candidate.Creep.Id, a => a.Target, Comparer);

@@ -8,6 +8,7 @@ namespace ScreepsDotNet.Driver.Services.Loops;
 internal sealed class MainLoopGlobalProcessor(
     IUserDataService userDataService,
     IInterRoomSnapshotProvider snapshotProvider,
+    IInterRoomTransferProcessor transferProcessor,
     ILogger<MainLoopGlobalProcessor>? logger = null)
     : IMainLoopGlobalProcessor
 {
@@ -16,7 +17,16 @@ internal sealed class MainLoopGlobalProcessor(
         await userDataService.ClearGlobalIntentsAsync(token).ConfigureAwait(false);
 
         var snapshot = await snapshotProvider.GetSnapshotAsync(token).ConfigureAwait(false);
-        logger?.LogDebug("Inter-room snapshot captured {Rooms} accessible rooms and {Creeps} moving creeps at tick {GameTime}.",
-            snapshot.AccessibleRooms.Count, snapshot.MovingCreeps.Count, snapshot.GameTime);
+        var moved = await transferProcessor.ProcessTransfersAsync(snapshot.AccessibleRooms, token).ConfigureAwait(false);
+
+        if (moved > 0)
+            snapshotProvider.Invalidate();
+
+        logger?.LogDebug(
+            "Inter-room snapshot captured {Rooms} accessible rooms, {Creeps} moving creeps; processed {Moved} transfers at tick {GameTime}.",
+            snapshot.AccessibleRooms.Count,
+            snapshot.MovingCreeps.Count,
+            moved,
+            snapshot.GameTime);
     }
 }

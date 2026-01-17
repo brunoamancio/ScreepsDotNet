@@ -41,6 +41,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IRoomSnapshotProvider, RoomSnapshotProvider>();
         services.AddSingleton<IRoomExitTopologyProvider, RoomExitTopologyProvider>();
         services.AddSingleton<IInterRoomSnapshotProvider, InterRoomSnapshotProvider>();
+        services.AddSingleton<IInterRoomTransferProcessor, InterRoomTransferProcessor>();
         services.AddSingleton<IRoomMutationDispatcher, RoomMutationDispatcher>();
         services.AddSingleton<IRoomObjectBlueprintEnricher, RoomObjectBlueprintEnricher>();
         services.AddSingleton<IUserDataService, UserDataService>();
