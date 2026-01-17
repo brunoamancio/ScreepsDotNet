@@ -1,0 +1,795 @@
+# ScreepsDotNet.Engine - Claude Context
+
+## Purpose
+
+Rebuild the legacy Screeps simulation kernel (processor) in managed .NET. Ports all game mechanics (creep actions, structure logic, combat, market, etc.) from the Node.js engine while maintaining API compatibility with the Driver layer. The Engine consumes Driver abstractions and NEVER accesses Mongo/Redis directly.
+
+## Dependencies
+
+### This Subsystem Depends On
+- `ScreepsDotNet.Driver` - **ALL data access goes through Driver abstractions**
+  - `IRoomStateProvider` - Read room state snapshots
+  - `IGlobalStateProvider` - Read global/inter-room state
+  - `IRoomMutationWriterFactory` - Write room mutations
+  - `IUserMemorySink` - Write user memory
+- `ScreepsDotNet.Backend.Core` - Shared DTOs, constants
+- External: None (Engine is isolated from external dependencies)
+
+### These Depend On This Subsystem
+- Future: Main/runner/processor loops will invoke Engine instead of Node.js engine
+- Tests: `ScreepsDotNet.Engine.Tests` validates parity with legacy engine
+
+## Critical Rules
+
+- 🚨 **NEVER EVER call Mongo/Redis directly** - This is the #1 rule for Engine code
+- 🚨 **NEVER import MongoDB.Driver or StackExchange.Redis** - If you see these imports in Engine code, it's a bug
+- ✅ **ALWAYS consume data via Driver providers** (`IRoomStateProvider`, `IGlobalStateProvider`)
+- ✅ **ALWAYS write mutations via Driver writers** (`IRoomMutationWriterFactory`, `IUserMemorySink`)
+- ✅ **ALWAYS emit stats/actions through `RoomStatsSink`** for telemetry
+- ✅ **ALWAYS follow solution-wide conventions** (implicit usings, primary constructors, `Lock` type, `[]` collections)
+- ✅ **ALWAYS test parity against Node.js engine** (E7 validation suite)
+- ✅ **ALWAYS update `docs/engine/` when changing mechanics** (data-model.md, e2.3-plan.md, etc.)
+
+## Code Structure
+
+```
+src/ScreepsDotNet.Engine/
+├── CLAUDE.md                                    # This file
+├── docs/
+│   ├── engine/
+│   │   ├── legacy-surface.md                   # Node engine API inventory (E1)
+│   │   ├── data-model.md                       # Engine data contracts (E2)
+│   │   └── e2.3-plan.md                        # Handler backlog tracking
+├── Services/
+│   ├── RoomStateProvider.cs                    # Read room snapshots (wraps Driver)
+│   ├── GlobalStateProvider.cs                  # Read global state (wraps Driver)
+│   ├── RoomMutationWriterFactory.cs            # Write room mutations (wraps Driver)
+│   ├── UserMemorySink.cs                       # Write user memory (wraps Driver)
+│   └── Processors/                             # Intent handlers
+│       ├── CreepProcessor.cs                   # Creep action handlers
+│       ├── StructureProcessor.cs               # Structure logic
+│       ├── ControllerProcessor.cs              # Controller upgrade/attack/reserve
+│       └── ...
+├── Models/
+│   ├── RoomSnapshot.cs                         # In-memory room state
+│   ├── GlobalSnapshot.cs                       # In-memory global state
+│   └── ...
+└── ScreepsDotNet.Engine.Tests/
+    ├── Parity/                                 # Node.js engine comparison tests
+    └── Processors/                             # Intent handler unit tests
+```
+
+## Coding Patterns
+
+### Data Access (NEVER Direct DB)
+
+**✅ CORRECT - Always use Driver abstractions:**
+```csharp
+// Engine service consuming Driver provider
+public class CreepProcessor(IRoomStateProvider stateProvider, IRoomMutationWriterFactory mutationFactory)
+{
+    public async Task ProcessMoveIntentAsync(string roomId, MoveIntent intent)
+    {
+        // ✅ Read state through Driver
+        var roomState = await stateProvider.GetRoomStateAsync(roomId);
+
+        // Process intent using in-memory state
+        var creep = roomState.Objects[intent.CreepId];
+        var newPosition = CalculateNewPosition(creep.Position, intent.Direction);
+
+        // ✅ Write mutations through Driver
+        var writer = mutationFactory.Create(roomId);
+        writer.UpdateCreepPosition(intent.CreepId, newPosition);
+        await writer.FlushAsync();
+    }
+}
+```
+
+**❌ WRONG - NEVER access storage directly:**
+```csharp
+// ❌❌❌ NEVER DO THIS ❌❌❌
+using MongoDB.Driver;  // ❌ Engine should NEVER import Mongo
+
+public class CreepProcessor(IMongoDatabase database)  // ❌ NEVER inject Mongo
+{
+    public async Task ProcessMoveIntentAsync(string roomId, MoveIntent intent)
+    {
+        // ❌ Direct DB access bypasses Driver layer
+        var collection = database.GetCollection<RoomObject>("rooms.objects");
+        var creep = await collection.Find(o => o.Id == intent.CreepId).FirstOrDefaultAsync();
+
+        // ❌ This breaks the abstraction and coupling
+        await collection.UpdateOneAsync(
+            Builders<RoomObject>.Filter.Eq(o => o.Id, intent.CreepId),
+            Builders<RoomObject>.Update.Set(o => o.Position, newPosition)
+        );
+    }
+}
+```
+
+### Reading Room State
+
+**✅ CORRECT:**
+```csharp
+public class HarvestProcessor(IRoomStateProvider stateProvider, IRoomMutationWriterFactory mutationFactory)
+{
+    public async Task ProcessHarvestAsync(string roomId, HarvestIntent intent)
+    {
+        // ✅ Get snapshot from Driver
+        var state = await stateProvider.GetRoomStateAsync(roomId);
+
+        // Work with in-memory snapshot
+        var creep = state.Objects[intent.CreepId];
+        var source = state.Objects[intent.SourceId];
+
+        var harvestAmount = CalculateHarvest(creep, source);
+
+        // ✅ Write through Driver
+        var writer = mutationFactory.Create(roomId);
+        writer.UpdateSourceEnergy(intent.SourceId, source.Energy - harvestAmount);
+        writer.UpdateCreepStore(intent.CreepId, "energy", creep.Store["energy"] + harvestAmount);
+        await writer.FlushAsync();
+    }
+}
+```
+
+**❌ WRONG:**
+```csharp
+// ❌ NEVER inject repositories directly
+public class HarvestProcessor(IRoomObjectRepository repository)  // ❌ NO!
+{
+    public async Task ProcessHarvestAsync(string roomId, HarvestIntent intent)
+    {
+        // ❌ Direct repository access
+        var creep = await repository.GetByIdAsync(intent.CreepId);
+        var source = await repository.GetByIdAsync(intent.SourceId);
+
+        // ❌ Bypasses Driver mutation batching
+        await repository.UpdateAsync(intent.SourceId, ...);
+        await repository.UpdateAsync(intent.CreepId, ...);
+    }
+}
+```
+
+### Reading Global State
+
+**✅ CORRECT:**
+```csharp
+public class MarketProcessor(IGlobalStateProvider globalStateProvider)
+{
+    public async Task ProcessMarketOrderAsync(MarketOrder order)
+    {
+        // ✅ Get global snapshot through Driver
+        var globalState = await globalStateProvider.GetGlobalStateAsync();
+
+        // Access inter-room data from snapshot
+        var buyOrders = globalState.Market.GetBuyOrders(order.ResourceType);
+        var seller = globalState.Users[order.SellerId];
+
+        // Process market logic...
+    }
+}
+```
+
+**❌ WRONG:**
+```csharp
+// ❌ NEVER inject market repository directly
+public class MarketProcessor(IMarketOrderRepository marketRepo, IUserRepository userRepo)  // ❌ NO!
+{
+    public async Task ProcessMarketOrderAsync(MarketOrder order)
+    {
+        // ❌ Direct DB queries from Engine
+        var buyOrders = await marketRepo.GetBuyOrdersAsync(order.ResourceType);
+        var seller = await userRepo.GetByIdAsync(order.SellerId);
+    }
+}
+```
+
+### Emitting Stats/Telemetry
+
+**✅ CORRECT:**
+```csharp
+public class SpawnProcessor(
+    IRoomStateProvider stateProvider,
+    IRoomMutationWriterFactory mutationFactory,
+    RoomStatsSink statsSink)  // ✅ Inject stats sink
+{
+    public async Task ProcessSpawnAsync(string roomId, SpawnIntent intent)
+    {
+        var state = await stateProvider.GetRoomStateAsync(roomId);
+        var spawn = state.Objects[intent.SpawnId];
+
+        // Create creep...
+        var writer = mutationFactory.Create(roomId);
+        writer.CreateCreep(newCreep);
+        await writer.FlushAsync();
+
+        // ✅ Emit stats through sink
+        statsSink.RecordSpawn(roomId, intent.SpawnId, newCreep.Id, intent.Body.Length);
+    }
+}
+```
+
+**❌ WRONG:**
+```csharp
+// ❌ Don't skip telemetry
+public class SpawnProcessor(IRoomStateProvider stateProvider, IRoomMutationWriterFactory mutationFactory)
+{
+    public async Task ProcessSpawnAsync(string roomId, SpawnIntent intent)
+    {
+        // Create creep...
+        await writer.FlushAsync();
+
+        // ❌ No stats emitted - observers can't track spawns
+    }
+}
+```
+
+### Dependency Injection (Primary Constructors)
+
+**✅ CORRECT:**
+```csharp
+// Use primary constructors for DI
+public class ControllerProcessor(
+    IRoomStateProvider stateProvider,
+    IRoomMutationWriterFactory mutationFactory,
+    RoomStatsSink statsSink)
+{
+    public async Task ProcessUpgradeAsync(string roomId, UpgradeIntent intent)
+    {
+        var state = await stateProvider.GetRoomStateAsync(roomId);
+        // ... process upgrade
+    }
+}
+```
+
+**❌ WRONG:**
+```csharp
+// Don't use old constructor syntax
+public class ControllerProcessor
+{
+    private readonly IRoomStateProvider _stateProvider;
+    private readonly IRoomMutationWriterFactory _mutationFactory;
+
+    public ControllerProcessor(
+        IRoomStateProvider stateProvider,
+        IRoomMutationWriterFactory mutationFactory)
+    {
+        _stateProvider = stateProvider;
+        _mutationFactory = mutationFactory;
+    }
+}
+```
+
+## Current Status
+
+### ✅ Completed
+- **E1: Map Legacy Engine Surface** - Node engine API inventory documented in `docs/engine/legacy-surface.md`
+- **E2 (partial): Data & Storage Model**
+  - ✅ `RoomStateProvider` / `GlobalStateProvider` abstractions created
+  - ✅ `RoomMutationWriterFactory` / `UserMemorySink` abstractions created
+  - ✅ `ServiceCollectionExtensions.AddEngineCore()` wires all providers
+  - ✅ Several intent handlers ported (creep move, harvest, spawn, tower, link, lab basics)
+
+### 🔄 In Progress (E2.3 Handler Backlog)
+Active work on porting remaining intent handlers (see `docs/engine/e2.3-plan.md`):
+
+**Next ports:**
+1. **Controller intents** - upgrade, reserve, attack controller
+2. **Resource I/O** - transfer, withdraw, pickup, drop
+3. **Lab reactions** - boost creeps, run reactions
+4. **Structure energy routing** - links, terminals, factories, power spawns
+5. **Power creep abilities** - power creep intent handlers
+
+**Each handler must:**
+- Consume state via `IRoomStateProvider`
+- Write mutations via `IRoomMutationWriterFactory`
+- Emit stats/actions via `RoomStatsSink`
+- Include unit tests + parity validation
+
+### 📋 Pending
+- **E3: Intent Gathering & Validation** - Intent pipeline, validators
+- **E4: Simulation Kernel** - Complete room processor (all mechanics)
+- **E5: Global Systems** - Market, NPC spawns, shard messaging
+- **E6: Engine Loop Orchestration** - `EngineHost` tick coordination
+- **E7: Parity Validation** - Lockstep testing vs. Node engine
+- **E8: Observability & Tooling** - Engine metrics, diagnostics
+
+## Roadmap (E1-E8)
+
+| ID | Status | Title | Exit Criteria | Dependencies |
+|----|--------|-------|---------------|--------------|
+| E1 | ✅ | Map Legacy Engine Surface | Node engine API inventory documented (`docs/engine/legacy-surface.md`) | Node engine repo, driver notes |
+| E2 | 🔄 | Data & Storage Model | Driver snapshot/mutation contracts in place, Engine consuming them. Handlers for all intent types. | Driver contracts, Screeps schemas |
+| E3 | 📋 | Intent Gathering & Validation | `IIntentPipeline` + validators with unit tests mirroring Node fixtures | Driver runtime outputs, constants |
+| E4 | 📋 | Simulation Kernel (Room Processor) | Managed processor produces identical room diffs vs. Node baseline | E2, E3, Pathfinder service |
+| E5 | 📋 | Global Systems | Market, NPC spawns, shard messaging hooked into processor loop | E4 foundation |
+| E6 | 📋 | Engine Loop Orchestration | `EngineHost` coordinates ticks; main/runner/processor loops call managed engine | Driver queue service, telemetry sink |
+| E7 | 📋 | Compatibility & Parity Validation | Lockstep testing vs. Node engine, automated divergence detection | Prior steps, legacy engine repo |
+| E8 | 📋 | Observability & Tooling | Engine metrics flow to telemetry, diagnostics commands, operator playbooks | D8 logging stack, scheduler hooks |
+
+**Detailed status:** See `docs/engine/e2.3-plan.md` for current handler backlog
+
+## Common Tasks
+
+### Add a New Intent Handler
+
+```bash
+# 1. Define the handler
+# Location: src/ScreepsDotNet.Engine/Services/Processors/
+```
+
+```csharp
+// Example: Controller upgrade intent
+public class ControllerUpgradeHandler(
+    IRoomStateProvider stateProvider,
+    IRoomMutationWriterFactory mutationFactory,
+    RoomStatsSink statsSink)
+{
+    public async Task ProcessAsync(string roomId, UpgradeIntent intent)
+    {
+        // ✅ 1. Read state through Driver
+        var state = await stateProvider.GetRoomStateAsync(roomId);
+
+        var creep = state.Objects[intent.CreepId];
+        var controller = state.Objects[intent.ControllerId];
+
+        // 2. Calculate upgrade amount
+        var upgradeAmount = CalculateUpgrade(creep, controller);
+
+        // ✅ 3. Write mutations through Driver
+        var writer = mutationFactory.Create(roomId);
+
+        // Deduct energy from creep
+        writer.UpdateCreepStore(
+            intent.CreepId,
+            "energy",
+            creep.Store["energy"] - upgradeAmount
+        );
+
+        // Add progress to controller
+        writer.UpdateControllerProgress(
+            intent.ControllerId,
+            controller.Progress + upgradeAmount
+        );
+
+        await writer.FlushAsync();
+
+        // ✅ 4. Emit stats
+        statsSink.RecordControllerUpgrade(roomId, intent.ControllerId, upgradeAmount);
+    }
+
+    private int CalculateUpgrade(RoomObject creep, RoomObject controller)
+    {
+        var workParts = creep.Body.Count(p => p.Type == "work");
+        var energyAvailable = creep.Store["energy"];
+        return Math.Min(workParts * 1, energyAvailable);  // 1 energy per work part
+    }
+}
+```
+
+```bash
+# 2. Register in DI
+# Location: src/ScreepsDotNet.Engine/ServiceCollectionExtensions.cs
+```
+
+```csharp
+public static class ServiceCollectionExtensions
+{
+    public static IServiceCollection AddEngineCore(this IServiceCollection services)
+    {
+        // ... existing registrations
+
+        // Add new handler
+        services.AddSingleton<ControllerUpgradeHandler>();
+
+        return services;
+    }
+}
+```
+
+```bash
+# 3. Add unit tests
+# Location: src/ScreepsDotNet.Engine.Tests/Processors/ControllerUpgradeHandlerTests.cs
+```
+
+```csharp
+public class ControllerUpgradeHandlerTests
+{
+    [Fact]
+    public async Task ProcessAsync_CreepUpgradesController_UpdatesProgress()
+    {
+        // Arrange
+        var stateProvider = new FakeRoomStateProvider();
+        var mutationFactory = new FakeRoomMutationWriterFactory();
+        var statsSink = new FakeRoomStatsSink();
+
+        stateProvider.SetRoomState("W1N1", new RoomSnapshot
+        {
+            Objects = new Dictionary<string, RoomObject>
+            {
+                ["creep1"] = new()
+                {
+                    Id = "creep1",
+                    Body = [new() { Type = "work" }, new() { Type = "work" }],
+                    Store = new() { ["energy"] = 10 }
+                },
+                ["controller1"] = new()
+                {
+                    Id = "controller1",
+                    Progress = 100
+                }
+            }
+        });
+
+        var handler = new ControllerUpgradeHandler(stateProvider, mutationFactory, statsSink);
+
+        var intent = new UpgradeIntent
+        {
+            CreepId = "creep1",
+            ControllerId = "controller1"
+        };
+
+        // Act
+        await handler.ProcessAsync("W1N1", intent);
+
+        // Assert
+        var writer = mutationFactory.LastWriter;
+        Assert.Equal(2, writer.Mutations.Count);  // Creep energy + controller progress
+        Assert.Equal(1, statsSink.UpgradeEvents.Count);  // Stats emitted
+    }
+}
+```
+
+```bash
+# 4. Add parity test (E7)
+# Location: src/ScreepsDotNet.Engine.Tests/Parity/ControllerUpgradeParityTests.cs
+```
+
+```csharp
+public class ControllerUpgradeParityTests
+{
+    [Fact]
+    public async Task ControllerUpgrade_MatchesNodeEngine()
+    {
+        // Arrange - same fixture for both engines
+        var fixture = new RoomFixture
+        {
+            Objects = [/* creep + controller */]
+        };
+
+        // Act - run Node engine
+        var nodeResult = await LegacyEngineRunner.RunTickAsync(fixture);
+
+        // Act - run .NET engine
+        var dotnetResult = await ManagedEngineRunner.RunTickAsync(fixture);
+
+        // Assert - outputs match
+        Assert.Equal(nodeResult.ControllerProgress, dotnetResult.ControllerProgress);
+        Assert.Equal(nodeResult.CreepEnergy, dotnetResult.CreepEnergy);
+    }
+}
+```
+
+```bash
+# 5. Update tracking
+# - Update docs/engine/e2.3-plan.md (mark handler as complete)
+# - Update this CLAUDE.md if pattern changes
+```
+
+### Test Parity with Node.js Engine
+
+```bash
+# 1. Set up Node.js engine fixture
+# Location: scripts/engine-parity/ (future)
+
+# 2. Run same fixture through both engines
+# .NET engine:
+dotnet test --filter "FullyQualifiedName~ParityTests"
+
+# Node engine (future):
+node scripts/engine-parity/run-fixture.js <fixture-name>
+
+# 3. Compare outputs
+# - Room object states (positions, energy, store)
+# - Global state changes (market, NPCs)
+# - Stats/telemetry (CPU, actions)
+# - User memory mutations
+
+# 4. Fix divergences
+# - Debug .NET handler logic
+# - Verify Driver abstraction parity
+# - Check calculation formulas vs. Node
+```
+
+### Debug Engine Data Flow
+
+**Problem: Mutations not persisting**
+
+```bash
+# 1. Check mutation writer is created
+var writer = mutationFactory.Create(roomId);  // ✅ Should return writer
+
+# 2. Verify mutations are queued
+writer.UpdateCreepPosition(creepId, newPos);  // ✅ Should queue mutation
+
+# 3. Ensure flush is called
+await writer.FlushAsync();  // ✅ CRITICAL - without this, nothing persists
+
+# 4. Check Driver layer received mutations
+# Look at Driver logs for bulk writer flush events
+```
+
+**Problem: State reads return stale data**
+
+```bash
+# 1. Verify state provider is called
+var state = await stateProvider.GetRoomStateAsync(roomId);
+
+# 2. Check if Driver cache is invalidated
+# Driver should invalidate cache after mutations flush
+
+# 3. Force fresh read
+# (Implementation detail - Driver may cache snapshots per tick)
+```
+
+**Problem: Stats not showing up**
+
+```bash
+# 1. Check stats sink is injected
+public class Handler(... RoomStatsSink statsSink)  // ✅ Must inject
+
+# 2. Verify stats are emitted
+statsSink.RecordHarvest(roomId, sourceId, amount);  // ✅ Call sink
+
+# 3. Check stats pipeline configuration
+# Ensure RoomStatsPipeline is wired in DI
+```
+
+### Run Engine Tests
+
+```bash
+# All engine tests
+dotnet test --filter "FullyQualifiedName~ScreepsDotNet.Engine.Tests"
+
+# Specific handler
+dotnet test --filter "FullyQualifiedName~ControllerUpgradeHandlerTests"
+
+# Parity tests only (future)
+dotnet test --filter "Category=Parity"
+
+# With verbose output
+dotnet test --filter "FullyQualifiedName~ScreepsDotNet.Engine.Tests" --logger "console;verbosity=detailed"
+```
+
+## Integration Points
+
+### Consuming Driver Layer
+
+**Engine MUST consume Driver abstractions, NEVER storage directly:**
+
+```csharp
+// ✅ CORRECT - Engine service registration
+public static class ServiceCollectionExtensions
+{
+    public static IServiceCollection AddEngineCore(this IServiceCollection services)
+    {
+        // Engine services
+        services.AddSingleton<RoomStateProvider>();      // Wraps Driver's IRoomSnapshotProvider
+        services.AddSingleton<GlobalStateProvider>();    // Wraps Driver's IGlobalSnapshotProvider
+        services.AddSingleton<RoomMutationWriterFactory>(); // Wraps Driver's mutation dispatcher
+        services.AddSingleton<UserMemorySink>();         // Wraps Driver's memory writer
+
+        // Intent handlers
+        services.AddSingleton<CreepMoveHandler>();
+        services.AddSingleton<CreepHarvestHandler>();
+        // ... more handlers
+
+        // Stats/telemetry
+        services.AddSingleton<RoomStatsSink>();
+        services.AddSingleton<RoomStatsPipeline>();
+
+        return services;
+    }
+}
+```
+
+**Engine wrappers delegate to Driver:**
+
+```csharp
+// ✅ Engine wrapper around Driver provider
+public class RoomStateProvider(IDriverRoomSnapshotProvider driverProvider)
+{
+    public async Task<RoomSnapshot> GetRoomStateAsync(string roomId)
+    {
+        // Delegate to Driver, convert to Engine's in-memory model
+        var driverSnapshot = await driverProvider.GetSnapshotAsync(roomId);
+        return ConvertToEngineModel(driverSnapshot);
+    }
+
+    private RoomSnapshot ConvertToEngineModel(DriverRoomSnapshot driverSnapshot)
+    {
+        // Map Driver DTOs → Engine in-memory objects
+        return new RoomSnapshot
+        {
+            RoomId = driverSnapshot.RoomId,
+            Objects = driverSnapshot.Objects.ToDictionary(
+                o => o.Id,
+                o => MapToEngineObject(o)
+            )
+        };
+    }
+}
+```
+
+### Providing Parity Data (Future E7)
+
+```csharp
+// E7: Engine will expose parity validation hooks
+public interface IEngineParityHooks
+{
+    Task<RoomDiff> GetRoomDiffAsync(string roomId);  // Compare states
+    Task<List<ActionLog>> GetActionLogsAsync(string roomId);  // Compare actions
+}
+```
+
+## Testing Strategy
+
+### Unit Tests
+- **Location:** `src/ScreepsDotNet.Engine.Tests/Processors/`
+- **Pattern:** Use fake providers/writers, no Driver/storage dependencies
+- **Coverage:** All intent handlers, calculation logic, edge cases
+
+**Example:**
+```csharp
+public class FakeRoomStateProvider : IRoomStateProvider
+{
+    private readonly Dictionary<string, RoomSnapshot> _states = [];
+
+    public void SetRoomState(string roomId, RoomSnapshot state)
+    {
+        _states[roomId] = state;
+    }
+
+    public Task<RoomSnapshot> GetRoomStateAsync(string roomId)
+    {
+        return Task.FromResult(_states[roomId]);
+    }
+}
+```
+
+### Parity Tests (E7 - Future)
+- **Location:** `src/ScreepsDotNet.Engine.Tests/Parity/`
+- **Dependencies:** Node.js engine runner, shared fixtures
+- **Coverage:** All mechanics vs. Node baseline
+
+### Integration Tests (E6 - Future)
+- **Location:** `src/ScreepsDotNet.Engine.Tests/Integration/`
+- **Dependencies:** Full Driver + Engine stack, Testcontainers
+- **Coverage:** End-to-end tick execution
+
+## Performance Considerations
+
+- **Snapshot caching:** Driver may cache room snapshots per tick (avoid redundant DB reads)
+- **Mutation batching:** Driver batches all mutations, flushes once per tick
+- **In-memory processing:** Engine works with in-memory snapshots, not DB queries
+- **Stats aggregation:** `RoomStatsSink` batches stats before writing to Mongo
+
+## Known Issues & Workarounds
+
+### Issue: "Cannot access database from Engine"
+**Symptom:** Trying to inject `IMongoDatabase` or repository in Engine service
+**Cause:** Engine must not access storage directly
+**Fix:** Use Driver abstractions (`IRoomStateProvider`, etc.)
+
+### Issue: Mutations not visible in next tick
+**Symptom:** Updates made in tick N don't appear in tick N+1
+**Cause:** `writer.FlushAsync()` not called
+**Fix:** Always call `await writer.FlushAsync()` after queueing mutations
+
+### Issue: Stats missing from history
+**Symptom:** Room stats not appearing in Mongo history
+**Cause:** `RoomStatsSink` not emitting events
+**Fix:** Ensure all handlers inject and call `statsSink.Record*()`
+
+## Reference Documentation
+
+### Design Docs (Engine-Specific)
+- `docs/engine/legacy-surface.md` - Node engine API inventory (E1)
+- `docs/engine/data-model.md` - Engine data contracts (E2)
+- `docs/engine/e2.3-plan.md` - Handler backlog tracking
+
+### Related Subsystems
+- `../ScreepsDotNet.Driver/CLAUDE.md` - Driver abstractions Engine consumes
+- `../../CLAUDE.md` - Solution-wide patterns
+
+### External References
+- [Screeps Game Constants](https://docs.screeps.com/api/#Game) - Official API reference
+- Legacy Node engine source - For parity validation
+
+## Debugging Tips
+
+**Problem: Can't find intent handler for type X**
+- **Check:** Intent handler registration in `ServiceCollectionExtensions.AddEngineCore()`
+- **Check:** Intent type constant matches (`IntentKeys.Upgrade` vs `"upgrade"`)
+
+**Problem: Handler throws "key not found" on state access**
+- **Check:** Object ID exists in room snapshot
+- **Check:** Driver snapshot provider is returning correct data
+- **Verify:** Room state has been seeded/initialized
+
+**Problem: Calculation differs from Node engine**
+- **Check:** Game constants (work power, energy costs, etc.)
+- **Compare:** Node implementation side-by-side
+- **Add:** Parity test for this specific calculation
+
+**Problem: Stats/telemetry not flowing**
+- **Check:** `RoomStatsSink` is injected in handler constructor
+- **Check:** `statsSink.Record*()` is called after successful operation
+- **Verify:** `RoomStatsPipeline` is registered in DI
+
+## Active Work (Immediate Next Steps)
+
+### E2.3 Handler Backlog
+
+**Tracked in:** `docs/engine/e2.3-plan.md`
+
+**Next handlers to port:**
+
+1. **Controller intents** (upgrade, reserve, attack)
+   - `ControllerUpgradeHandler`
+   - `ControllerReserveHandler`
+   - `ControllerAttackHandler`
+
+2. **Resource I/O** (transfer, withdraw, pickup, drop)
+   - `TransferHandler`
+   - `WithdrawHandler`
+   - `PickupHandler`
+   - `DropHandler`
+
+3. **Lab reactions** (boost, runReaction)
+   - `LabBoostHandler`
+   - `LabReactionHandler`
+
+4. **Structure energy routing**
+   - `LinkTransferHandler`
+   - `TerminalSendHandler`
+   - `FactoryProduceHandler`
+   - `PowerSpawnProcessHandler`
+
+5. **Power creep abilities**
+   - Various power intent handlers
+
+**Each handler checklist:**
+- [ ] Read state via `IRoomStateProvider`
+- [ ] Write mutations via `IRoomMutationWriterFactory`
+- [ ] Emit stats via `RoomStatsSink`
+- [ ] Unit tests with fake providers
+- [ ] Update `docs/engine/e2.3-plan.md`
+
+### E3 Planning (Next Milestone)
+
+**Outline intent validation pipeline:**
+- Intent schema validation
+- Range checks (creep near target?)
+- Resource availability checks
+- Permission checks (ownership, etc.)
+
+**Goal:** Define `IIntentPipeline` contract before E2 completes
+
+## Maintenance
+
+**Update this file when:**
+- Adding new intent handlers (update Active Work)
+- Changing data access patterns (update Coding Patterns)
+- Discovering parity issues (update Known Issues)
+- Roadmap milestones shift (update Current Status)
+- Integration contracts change (update Integration Points)
+
+**Keep it focused:**
+- This is for Engine simulation logic, not Driver infrastructure
+- Driver details belong in `../ScreepsDotNet.Driver/CLAUDE.md`
+- Solution-wide patterns belong in `../../CLAUDE.md`
+- Detailed mechanics design belongs in `docs/engine/*.md`
+
+**Last Updated:** 2026-01-17

@@ -35,7 +35,7 @@ Status legend: ✔ done, ◐ in progress, ☐ not started. See the driver AGENT 
 
 ## Hand-off Reference
 
-- Day-to-day instructions and style expectations live in [src/ScreepsDotNet.Driver/AGENT.md](../src/ScreepsDotNet.Driver/AGENT.md). Link to this guide from status updates so other agents know where plan docs live.
-- Native pathfinder build/deployment details live in [src/native/pathfinder/AGENT.md](../src/native/pathfinder/AGENT.md). The driver build automatically downloads matching binaries unless `NativePathfinderSkipDownload=true` is set.
+- **AI context:** [src/ScreepsDotNet.Driver/CLAUDE.md](../src/ScreepsDotNet.Driver/CLAUDE.md) - Code patterns, common tasks, roadmap status (recommended)
+- **Native pathfinder:** [src/native/pathfinder/CLAUDE.md](../src/native/pathfinder/CLAUDE.md) - Build/deployment details (binaries auto-download unless `NativePathfinderSkipDownload=true`)
 
 When updating any subsystem, revise both the relevant plan doc and the AGENT snapshot so future agents can see what changed without re-reading the entire codebase.

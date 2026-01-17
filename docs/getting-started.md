@@ -68,7 +68,7 @@ dotnet test src/ScreepsDotNet.slnx
 2. `dotnet run --project src/ScreepsDotNet.Backend.Http/ScreepsDotNet.Backend.Http.csproj` – start the HTTP host when working on endpoints.
 3. `dotnet run --project src/ScreepsDotNet.Backend.Cli/ScreepsDotNet.Backend.Cli.csproj -- --help` – explore CLI verbs (details in [docs/cli.md](cli.md)).
 4. `dotnet test src/ScreepsDotNet.slnx` – run before sending PRs; integration suites rely on the dockerized services.
-5. Keep `dotnet format` handy for IDE warnings: `dotnet format style --severity error --diagnostics IDE0005,IDE0011,IDE0007`.
+5. Keep `dotnet format` handy for IDE warnings: `dotnet format style`.
 
 ## Resetting or updating seed data
 

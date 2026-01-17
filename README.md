@@ -10,7 +10,7 @@ Modern .NET rewrite of the Screeps private server backend. The solution exposes 
 | --- | --- |
 | `src/` | All .NET projects, docker assets, CLI scripts, and shared props. |
 | `docs/` | Specs, badges, and the new developer guides (`getting-started.md`, `cli.md`, plus existing specs). |
-| `AGENT.md` | High-level orientation + coding conventions for new contributors. |
+| `CLAUDE.md` | AI agent context - solution-wide patterns, standards, and workflows. |
 | `ScreepsNodeJs/` | The legacy server (kept for parity checks). |
 
 ## Quick start (TL;DR)
@@ -30,13 +30,19 @@ Modern .NET rewrite of the Screeps private server backend. The solution exposes 
 
 ## Documentation map
 
+### For AI Agents
+- [CLAUDE.md](CLAUDE.md) – AI-optimized context with code patterns, common tasks, and self-contained workflows.
+
+### For Human Developers
 - [docs/getting-started.md](docs/getting-started.md) – requirements, infra setup, auth flow, tests, seed reset instructions.
 - [docs/cli.md](docs/cli.md) – CLI usage, command reference, formatting rules.
-- [docs/backend.md](docs/backend.md) – architecture notes, storage/seeding details, dev workflow, coding standards.
+- [docs/backend.md](docs/backend.md) – HTTP API feature coverage and smoke tests.
 - [docs/http-endpoints.md](docs/http-endpoints.md) – route coverage tables + `.http` scratch file index.
-- [docs/driver.md](docs/driver.md) – driver rewrite overview with links to subsystem plan docs and AGENT notes.
-- [docs/README.md](docs/README.md) – documentation/AGENT ownership map (who updates what).
-- [src/ScreepsDotNet.Engine/AGENT.md](src/ScreepsDotNet.Engine/AGENT.md) – engine rewrite execution plan (E1–E8) and current status.
+- [docs/driver.md](docs/driver.md) – driver rewrite overview with links to subsystem plan docs.
+- [src/ScreepsDotNet.Driver/CLAUDE.md](src/ScreepsDotNet.Driver/CLAUDE.md) – driver AI context (code patterns, common tasks, D1-D10 roadmap).
+- [src/ScreepsDotNet.Engine/CLAUDE.md](src/ScreepsDotNet.Engine/CLAUDE.md) – engine AI context (E1-E8 roadmap, NEVER direct DB patterns, intent handlers, E2.3 backlog).
+- [src/native/pathfinder/CLAUDE.md](src/native/pathfinder/CLAUDE.md) – pathfinder AI context (cross-platform builds, parity testing, CI/CD, P/Invoke).
+- [docs/README.md](docs/README.md) – documentation ownership map (who updates what).
 - `docs/specs/*` – market/world API specs and driver design notes.
 - `docs/badges/BadgeGallery.md` – generated badge samples.
 
@@ -57,10 +63,10 @@ For detailed progress per subsystem, see the driver’s `AGENT.md` plus the docs
 
 ## Contributing
 
-- Read `AGENT.md` for repo conventions (implicit usings, lock types, collection expressions, etc.).
+- Read `CLAUDE.md` for repo conventions (implicit usings, lock types, collection expressions, etc.).
 - Before filing PRs, run the doc ownership checklist in `docs/README.md` so the right files get updated.
 - Keep new documentation in `docs/`; link to it from this README when relevant.
 - Prefer Testcontainers-backed integration tests when touching storage-heavy routes; update docker seed scripts so local + CI data stay aligned.
 - Before sending PRs, run `dotnet format` for touched files and `dotnet test src/ScreepsDotNet.slnx`.
 
-Need more context? Ping the latest `AGENT.md` entries (root and subsystem-specific) to see active plans and TODOs.
+Need more context? Check `CLAUDE.md` entries (root and subsystem-specific) to see active plans and TODOs.

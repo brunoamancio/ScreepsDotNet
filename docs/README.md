@@ -4,17 +4,17 @@ Use this index to understand which file owns which slice of project knowledge. W
 
 | Location | Scope / Purpose | Notes |
 | --- | --- | --- |
-| `README.md` | High-level overview, repo layout, quick-start pointers, links into `docs/` + AGENT files. | Keep concise; defer details to the docs below. |
+| `README.md` | High-level overview, repo layout, quick-start pointers, links into `docs/` + context files. | Keep concise; defer details to the docs below. |
+| `CLAUDE.md` | AI agent context - solution-wide patterns, coding standards (with ✅/❌ examples), common tasks, storage architecture, workflows. | AI-optimized with inline examples and self-contained context. Primary reference for AI agents. |
 | `docs/getting-started.md` | Environment requirements, Docker bootstrap, auth flow, test commands, seed reset instructions. | Update when setup steps or prerequisites change. |
-| `docs/backend.md` | Architecture/storage notes, dev workflow, restoring data, coding standards, feature snapshot. | Primary reference for backend internals replacing the old README sections. |
+| `docs/backend.md` | HTTP API endpoint feature coverage and smoke tests. | Solution-wide architecture/storage/workflow now lives in root `CLAUDE.md`. |
 | `docs/http-endpoints.md` | Tables of HTTP routes, behaviors, and `.http` scratch files. | Update whenever you add/modify routes or scratch samples. |
 | `docs/cli.md` | CLI usage, global switches, command reference, automation tips. | Update when commands/flags change. |
 | `docs/driver.md` | Driver rewrite overview + links to per-step plan docs (`src/ScreepsDotNet.Driver/docs/*.md`). | Mirrors the status table from the driver AGENT; update when milestones move. |
 | `docs/specs/*` | Deep specs (e.g., market/world APIs). | Keep authoritative descriptions here; cross-reference from backend docs as needed. |
-| `AGENT.md` (root) | Repo-wide conventions, orientation, and links to all docs. | Keep short; link to the docs above instead of repeating content. |
-| `src/ScreepsDotNet.Driver/AGENT.md` | Day-to-day driver tasks, coding conventions (locks, primary constructors), current TODOs. | Reference `docs/driver.md` for plan context; list actionable items here. |
-| `src/native/pathfinder/AGENT.md` | Native build instructions, CI workflow notes, release process for pathfinder binaries. | Mention hash/download requirements covered in driver docs. |
-| `src/ScreepsDotNet.Engine/AGENT.md` | Engine rewrite roadmap (E1–E8), legacy surface mapping, and work logs. | Link from high-level docs (README, driver/engine notes) whenever engine progress changes. |
+| `src/ScreepsDotNet.Driver/CLAUDE.md` | Driver subsystem AI context - D1-D10 roadmap, code patterns (✅/❌), common tasks (add processor, wire telemetry), integration contracts. | AI-optimized with inline examples. |
+| `src/ScreepsDotNet.Engine/CLAUDE.md` | Engine subsystem AI context - E1-E8 roadmap, 🚨 NEVER direct DB patterns, intent handler examples, parity testing, E2.3 active work. | AI-optimized. Critical: Engine NEVER accesses Mongo/Redis directly (use Driver). |
+| `src/native/pathfinder/CLAUDE.md` | Native pathfinder AI context - cross-platform builds (all RIDs), parity testing (100% Node.js match), baseline refresh, CI/CD, P/Invoke patterns. | AI-optimized with build/test workflows. |
 
 ## Update checklist
 
