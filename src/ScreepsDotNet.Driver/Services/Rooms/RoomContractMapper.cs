@@ -13,7 +13,6 @@ using ScreepsDotNet.Storage.MongoRedis.Repositories.Documents;
 internal static class RoomContractMapper
 {
     private static readonly IReadOnlyDictionary<string, int> EmptyIntDictionary = new Dictionary<string, int>(0);
-    private static readonly IReadOnlyDictionary<string, object?> EmptyObjectDictionary = new Dictionary<string, object?>(0);
 
     public static IReadOnlyDictionary<string, RoomObjectSnapshot> MapRoomObjects(IReadOnlyDictionary<string, RoomObjectDocument> objects)
     {
@@ -90,7 +89,8 @@ internal static class RoomContractMapper
             document.Cooldown,
             document.CooldownTime,
             document.SafeMode,
-            MapPortalDestination(document.Destination));
+            MapPortalDestination(document.Destination),
+            MapSend(document.Send));
     }
 
     public static IReadOnlyDictionary<string, UserState> MapUsers(IReadOnlyDictionary<string, UserDocument> users)
@@ -180,17 +180,58 @@ internal static class RoomContractMapper
         return document;
     }
 
-    private static IReadOnlyDictionary<string, object?> MapEffects(BsonArray? effects)
+    private static IReadOnlyDictionary<string, PowerEffectSnapshot> MapEffects(BsonArray? effects)
     {
         if (effects is null || effects.Count == 0)
-            return EmptyObjectDictionary;
+            return new Dictionary<string, PowerEffectSnapshot>();
 
-        var result = new Dictionary<string, object?>(effects.Count, StringComparer.Ordinal);
+        var result = new Dictionary<string, PowerEffectSnapshot>(effects.Count, StringComparer.Ordinal);
         for (var i = 0; i < effects.Count; i++) {
-            var effect = effects[i];
-            result[i.ToString()] = effect;
+            if (effects[i] is not BsonDocument effectDoc)
+                continue;
+
+            if (!effectDoc.TryGetValue(RoomDocumentFields.RoomObject.EffectFields.Power, out var powerValue))
+                continue;
+
+            if (!effectDoc.TryGetValue(RoomDocumentFields.RoomObject.EffectFields.Level, out var levelValue))
+                continue;
+
+            if (!effectDoc.TryGetValue(RoomDocumentFields.RoomObject.EffectFields.EndTime, out var endTimeValue))
+                continue;
+
+            result[i.ToString()] = new PowerEffectSnapshot(
+                Power: powerValue.AsInt32,
+                Level: levelValue.AsInt32,
+                EndTime: endTimeValue.AsInt32
+            );
         }
 
+        return result;
+    }
+
+    private static TerminalSendSnapshot? MapSend(BsonDocument? send)
+    {
+        if (send is null || send.ElementCount == 0)
+            return null;
+
+        if (!send.TryGetValue(RoomDocumentFields.RoomObject.SendFields.TargetRoomName, out var targetRoomValue) || !targetRoomValue.IsString)
+            return null;
+
+        if (!send.TryGetValue(RoomDocumentFields.RoomObject.SendFields.ResourceType, out var resourceValue) || !resourceValue.IsString)
+            return null;
+
+        if (!send.TryGetValue(RoomDocumentFields.RoomObject.SendFields.Amount, out var amountValue) || !amountValue.IsInt32)
+            return null;
+
+        var targetRoomName = targetRoomValue.AsString;
+        var resourceType = resourceValue.AsString;
+        var amount = amountValue.AsInt32;
+
+        var description = send.TryGetValue(RoomDocumentFields.RoomObject.SendFields.Description, out var descValue) && descValue.IsString
+            ? descValue.AsString
+            : null;
+
+        var result = new TerminalSendSnapshot(targetRoomName, resourceType, amount, description);
         return result;
     }
 
@@ -432,13 +473,14 @@ internal static class RoomContractMapper
             Harvested = snapshot.Harvested,
             Cooldown = snapshot.Cooldown,
             CooldownTime = snapshot.CooldownTime,
-            Destination = MapPortalDestination(snapshot.PortalDestination)
+            Destination = MapPortalDestination(snapshot.PortalDestination),
+            Send = MapSendToBson(snapshot.Send)
         };
 
         return document;
     }
 
-    private static BsonArray? MapEffectsToBson(IReadOnlyDictionary<string, object?>? effects)
+    private static BsonArray? MapEffectsToBson(IReadOnlyDictionary<string, PowerEffectSnapshot>? effects)
     {
         if (effects is null || effects.Count == 0)
             return null;
@@ -449,15 +491,35 @@ internal static class RoomContractMapper
             .ToArray();
 
         var array = new BsonArray(ordered.Length);
-        foreach (var (_, value) in ordered) {
-            if (value is BsonValue bsonValue)
-                array.Add(bsonValue);
-            else
-                array.Add(BsonValue.Create(value));
+        foreach (var (_, effect) in ordered) {
+            array.Add(new BsonDocument
+            {
+                [RoomDocumentFields.RoomObject.EffectFields.Power] = effect.Power,
+                [RoomDocumentFields.RoomObject.EffectFields.Level] = effect.Level,
+                [RoomDocumentFields.RoomObject.EffectFields.EndTime] = effect.EndTime
+            });
         }
 
         var result = array.Count == 0 ? null : array;
         return result;
+    }
+
+    private static BsonDocument? MapSendToBson(TerminalSendSnapshot? send)
+    {
+        if (send is null)
+            return null;
+
+        var document = new BsonDocument
+        {
+            [RoomDocumentFields.RoomObject.SendFields.TargetRoomName] = send.TargetRoomName,
+            [RoomDocumentFields.RoomObject.SendFields.ResourceType] = send.ResourceType,
+            [RoomDocumentFields.RoomObject.SendFields.Amount] = send.Amount
+        };
+
+        if (send.Description is not null)
+            document[RoomDocumentFields.RoomObject.SendFields.Description] = send.Description;
+
+        return document;
     }
 
     private static RoomSpawnSpawningSnapshot? MapSpawning(BsonValue? spawning)

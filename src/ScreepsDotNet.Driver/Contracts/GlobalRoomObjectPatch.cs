@@ -11,4 +11,5 @@ public sealed record GlobalRoomObjectPatch(
     int? EnergyCapacity = null,
     int? CooldownTime = null,
     Dictionary<string, int>? Store = null,
-    string? Shard = null);
+    string? Shard = null,
+    bool ClearSend = false);

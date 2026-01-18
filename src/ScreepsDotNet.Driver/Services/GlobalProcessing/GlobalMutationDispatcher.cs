@@ -327,6 +327,8 @@ internal sealed class GlobalMutationDispatcher(IBulkWriterFactory bulkWriterFact
             document[RoomObject.Store.Root] = new BsonDocument(patch.Store.Select(kvp => new BsonElement(kvp.Key, kvp.Value)));
         if (!string.IsNullOrWhiteSpace(patch.Shard))
             document[RoomObject.Shard] = patch.Shard;
+        if (patch.ClearSend)
+            document[RoomObject.Send] = BsonNull.Value;
         return document;
     }
 

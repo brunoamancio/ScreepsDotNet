@@ -426,7 +426,7 @@ public sealed class MovementIntentStepTests
             Reservation: null,
             Sign: null,
             Structure: null,
-            Effects: new Dictionary<string, object?>(Comparer),
+            Effects: new Dictionary<string, PowerEffectSnapshot>(Comparer),
             Spawning: null,
             Body:
             [
@@ -458,7 +458,7 @@ public sealed class MovementIntentStepTests
             Reservation: null,
             Sign: null,
             Structure: null,
-            Effects: new Dictionary<string, object?>(Comparer),
+            Effects: new Dictionary<string, PowerEffectSnapshot>(Comparer),
             Spawning: null,
             Body:
             [
@@ -490,7 +490,7 @@ public sealed class MovementIntentStepTests
             Reservation: null,
             Sign: null,
             Structure: null,
-            Effects: new Dictionary<string, object?>(Comparer),
+            Effects: new Dictionary<string, PowerEffectSnapshot>(Comparer),
             Spawning: null,
             Body: [],
             IsSpawning: null,
@@ -522,7 +522,7 @@ public sealed class MovementIntentStepTests
             Reservation: null,
             Sign: null,
             Structure: null,
-            Effects: new Dictionary<string, object?>(Comparer),
+            Effects: new Dictionary<string, PowerEffectSnapshot>(Comparer),
             Spawning: null,
             Body: [],
             PortalDestination: destination);
@@ -552,7 +552,7 @@ public sealed class MovementIntentStepTests
             Reservation: null,
             Sign: null,
             Structure: null,
-            Effects: new Dictionary<string, object?>(Comparer),
+            Effects: new Dictionary<string, PowerEffectSnapshot>(Comparer),
             Spawning: null,
             Body: []);
 

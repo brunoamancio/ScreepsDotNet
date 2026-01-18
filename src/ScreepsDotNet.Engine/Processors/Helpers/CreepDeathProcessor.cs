@@ -81,7 +81,7 @@ internal sealed class CreepDeathProcessor : ICreepDeathProcessor
             Reservation: null,
             Sign: null,
             Structure: null,
-            Effects: new Dictionary<string, object?>(0, Comparer),
+            Effects: new Dictionary<string, PowerEffectSnapshot>(0, Comparer),
             Spawning: null,
             Body: creep.Body,
             UserSummoned: creep.UserSummoned,

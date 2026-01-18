@@ -158,7 +158,7 @@ internal sealed class SpawnIntentStep(
             Reservation: null,
             Sign: null,
             Structure: null,
-            Effects: new Dictionary<string, object?>(0, StringComparer.Ordinal),
+            Effects: new Dictionary<string, PowerEffectSnapshot>(0, StringComparer.Ordinal),
             Spawning: null,
             Body: body,
             IsSpawning: true,

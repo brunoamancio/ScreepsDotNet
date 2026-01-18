@@ -32,7 +32,7 @@ public sealed record RoomObjectSnapshot(
     RoomReservationSnapshot? Reservation,
     RoomSignSnapshot? Sign,
     RoomObjectStructureSnapshot? Structure,
-    IReadOnlyDictionary<string, object?> Effects,
+    IReadOnlyDictionary<string, PowerEffectSnapshot> Effects,
     RoomSpawnSpawningSnapshot? Spawning,
     IReadOnlyList<CreepBodyPartSnapshot> Body,
     bool? IsSpawning = null,
@@ -57,7 +57,8 @@ public sealed record RoomObjectSnapshot(
     int? Cooldown = null,
     int? CooldownTime = null,
     int? SafeMode = null,
-    RoomPortalDestinationSnapshot? PortalDestination = null)
+    RoomPortalDestinationSnapshot? PortalDestination = null,
+    TerminalSendSnapshot? Send = null)
 {
     public int? MoveBodyParts => GetStoreValue(IntentKeys.Move);
     public int? ControllerDowngradeTimer => GetStoreValue(StoreKeys.DowngradeTimer);

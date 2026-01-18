@@ -1,6 +1,8 @@
 namespace ScreepsDotNet.Engine.Processors.GlobalSteps;
 
+using System.Text.RegularExpressions;
 using ScreepsDotNet.Common.Constants;
+using ScreepsDotNet.Common.Types;
 using ScreepsDotNet.Driver.Constants;
 using ScreepsDotNet.Driver.Contracts;
 using static ScreepsDotNet.Common.Constants.MarketIntentFields;
@@ -8,7 +10,7 @@ using static ScreepsDotNet.Common.Constants.MarketIntentFields;
 /// <summary>
 /// Handles market-related global intents (create/cancel/extend/change price).
 /// </summary>
-internal sealed class MarketIntentStep : IGlobalProcessorStep
+internal sealed partial class MarketIntentStep : IGlobalProcessorStep
 {
     private static readonly StringComparer Comparer = StringComparer.Ordinal;
     private static readonly HashSet<string> IntershardResources = new(ScreepsGameConstants.IntershardResources, Comparer);
@@ -54,6 +56,8 @@ internal sealed class MarketIntentStep : IGlobalProcessorStep
                 }
             }
         }
+
+        ProcessTerminalSends(context, terminalsByRoom);
 
         return Task.CompletedTask;
     }
@@ -358,6 +362,229 @@ internal sealed class MarketIntentStep : IGlobalProcessorStep
 
         return false;
     }
+
+    private void ProcessTerminalSends(GlobalProcessorContext context, IReadOnlyDictionary<string, RoomObjectSnapshot> terminalsByRoom)
+    {
+        var terminals = context.GetObjectsOfType(RoomObjectTypes.Terminal);
+        foreach (var terminal in terminals) {
+            var sendIntent = TryExtractSendIntent(terminal);
+            if (sendIntent is null)
+                continue;
+
+            var patch = new GlobalRoomObjectPatch(ClearSend: true);
+            context.Mutations.PatchRoomObject(terminal.Id, patch);
+
+            var cooldownTime = terminal.CooldownTime ?? 0;
+            if (cooldownTime > context.GameTime)
+                continue;
+
+            if (string.IsNullOrWhiteSpace(sendIntent.TargetRoomName))
+                continue;
+
+            if (!terminalsByRoom.TryGetValue(sendIntent.TargetRoomName, out var targetTerminal))
+                continue;
+
+            if (string.IsNullOrWhiteSpace(targetTerminal.UserId))
+                continue;
+
+            var cooldown = ScreepsGameConstants.TerminalCooldown;
+            var operateEffect = GetPowerEffect(terminal, PowerTypes.OperateTerminal, context.GameTime);
+            if (operateEffect.HasValue) {
+                var effectMultiplier = GetPowerEffectMultiplier(PowerTypes.OperateTerminal, operateEffect.Value.Level);
+                var result = Math.Round(cooldown * effectMultiplier);
+                cooldown = (int)result;
+            }
+
+            var transferSuccess = ExecuteTerminalTransfer(
+                terminal,
+                targetTerminal,
+                sendIntent.ResourceType,
+                sendIntent.Amount,
+                terminal,
+                sendIntent.Description,
+                context,
+                terminalsByRoom);
+
+            if (transferSuccess) {
+                var newCooldownTime = context.GameTime + cooldown;
+                var cooldownPatch = new GlobalRoomObjectPatch(CooldownTime: newCooldownTime);
+                context.Mutations.PatchRoomObject(terminal.Id, cooldownPatch);
+            }
+        }
+    }
+
+    private bool ExecuteTerminalTransfer(
+        RoomObjectSnapshot fromTerminal,
+        RoomObjectSnapshot toTerminal,
+        string resourceType,
+        int amount,
+        RoomObjectSnapshot transferFeeTerminal,
+        string? description,
+        GlobalProcessorContext context,
+        IReadOnlyDictionary<string, RoomObjectSnapshot> terminalsByRoom)
+    {
+        if (!string.IsNullOrWhiteSpace(fromTerminal.UserId)) {
+            if (!fromTerminal.Store.TryGetValue(resourceType, out var available) || available < amount)
+                return false;
+        }
+
+        if (!string.IsNullOrWhiteSpace(toTerminal.UserId)) {
+            var targetResourceTotal = CalculateResourceTotal(toTerminal);
+            var freeSpace = Math.Max(0, toTerminal.StoreCapacity.GetValueOrDefault() - targetResourceTotal);
+            amount = Math.Min(amount, freeSpace);
+        }
+
+        if (amount <= 0)
+            return false;
+
+        var range = CalculateRoomDistance(fromTerminal.RoomName, toTerminal.RoomName, continuous: true);
+        var transferCost = CalculateTerminalEnergyCost(amount, range);
+
+        var operateEffect = GetPowerEffect(transferFeeTerminal, PowerTypes.OperateTerminal, context.GameTime);
+        if (operateEffect.HasValue) {
+            var effectMultiplier = GetPowerEffectMultiplier(PowerTypes.OperateTerminal, operateEffect.Value.Level);
+            var result = Math.Ceiling(transferCost * effectMultiplier);
+            transferCost = (int)result;
+        }
+
+        var energyAvailable = fromTerminal.Store.GetValueOrDefault(ResourceTypes.Energy, 0);
+        var isEnergyTransfer = string.Equals(resourceType, ResourceTypes.Energy, StringComparison.Ordinal);
+        var hasSufficientEnergy = transferFeeTerminal == fromTerminal
+            ? (isEnergyTransfer ? energyAvailable >= amount + transferCost : energyAvailable >= transferCost)
+            : toTerminal.Store.TryGetValue(ResourceTypes.Energy, out var targetEnergy) && targetEnergy >= transferCost;
+
+        if (!hasSufficientEnergy)
+            return false;
+
+        if (!string.IsNullOrWhiteSpace(toTerminal.UserId)) {
+            var newTargetAmount = toTerminal.Store.TryGetValue(resourceType, out var current) ? current + amount : amount;
+            var targetPatch = new GlobalRoomObjectPatch(Store: new Dictionary<string, int> { [resourceType] = newTargetAmount });
+            context.Mutations.PatchRoomObject(toTerminal.Id, targetPatch);
+        }
+
+        var newSourceAmount = fromTerminal.Store.TryGetValue(resourceType, out var sourceAmount) ? sourceAmount - amount : 0;
+        var sourcePatch = new GlobalRoomObjectPatch(Store: new Dictionary<string, int> { [resourceType] = newSourceAmount });
+        context.Mutations.PatchRoomObject(fromTerminal.Id, sourcePatch);
+
+        var newFeeEnergy = fromTerminal.Store.TryGetValue(ResourceTypes.Energy, out var feeEnergy) ? feeEnergy - transferCost : 0;
+        var feePatch = new GlobalRoomObjectPatch(Store: new Dictionary<string, int> { [ResourceTypes.Energy] = newFeeEnergy });
+        context.Mutations.PatchRoomObject(transferFeeTerminal.Id, feePatch);
+
+        var sanitizedDescription = description?.Replace("<", "&lt;");
+        var timestamp = _timestampProvider();
+        var transaction = new TransactionLogEntry(
+            DateTimeOffset.FromUnixTimeMilliseconds(timestamp).UtcDateTime,
+            context.GameTime,
+            !string.IsNullOrWhiteSpace(fromTerminal.UserId) ? fromTerminal.UserId : null,
+            !string.IsNullOrWhiteSpace(toTerminal.UserId) ? toTerminal.UserId : null,
+            resourceType,
+            amount,
+            fromTerminal.RoomName,
+            toTerminal.RoomName,
+            OrderId: null,
+            sanitizedDescription);
+
+        context.Mutations.InsertTransaction(transaction);
+        return true;
+    }
+
+    private static int CalculateResourceTotal(RoomObjectSnapshot terminal)
+    {
+        var total = 0;
+        foreach (var kvp in terminal.Store)
+            total += kvp.Value;
+        return total;
+    }
+
+    private static int CalculateRoomDistance(string roomName1, string roomName2, bool continuous)
+    {
+        var coords1 = ParseRoomCoordinates(roomName1);
+        var coords2 = ParseRoomCoordinates(roomName2);
+
+        if (!coords1.HasValue || !coords2.HasValue)
+            return 0;
+
+        var dx = Math.Abs(coords2.Value.X - coords1.Value.X);
+        var dy = Math.Abs(coords2.Value.Y - coords1.Value.Y);
+
+        if (continuous) {
+            const int worldSize = 255;
+            dx = Math.Min(worldSize - dx, dx);
+            dy = Math.Min(worldSize - dy, dy);
+        }
+
+        var distance = Math.Max(dx, dy);
+        return distance;
+    }
+
+    private static (int X, int Y)? ParseRoomCoordinates(string roomName)
+    {
+        if (string.IsNullOrWhiteSpace(roomName))
+            return null;
+
+        var match = RoomNameRegex().Match(roomName);
+        if (!match.Success)
+            return null;
+
+        var xDir = match.Groups[1].Value;
+        var xValue = int.Parse(match.Groups[2].Value);
+        var yDir = match.Groups[3].Value;
+        var yValue = int.Parse(match.Groups[4].Value);
+
+        var x = string.Equals(xDir, "W", StringComparison.Ordinal) ? -xValue - 1 : xValue;
+        var y = string.Equals(yDir, "N", StringComparison.Ordinal) ? -yValue - 1 : yValue;
+
+        return (x, y);
+    }
+
+    private static int CalculateTerminalEnergyCost(int amount, int range)
+    {
+        var cost = amount * (1 - Math.Exp(-range / 30.0));
+        var result = (int)Math.Ceiling(cost);
+        return result;
+    }
+
+    private static (int Level, int EndTime)? GetPowerEffect(RoomObjectSnapshot obj, PowerTypes powerType, int gameTime)
+    {
+        if (obj.Effects.Count == 0)
+            return null;
+
+        foreach (var kvp in obj.Effects) {
+            var effect = kvp.Value;
+
+            if (effect.Power != (int)powerType)
+                continue;
+
+            if (effect.EndTime <= gameTime)
+                continue;
+
+            return (effect.Level, effect.EndTime);
+        }
+
+        return null;
+    }
+
+    private static double GetPowerEffectMultiplier(PowerTypes powerType, int level)
+    {
+        if (!PowerInfo.Abilities.TryGetValue(powerType, out var abilityInfo))
+            return 1.0;
+
+        if (abilityInfo.EffectMultipliers is null)
+            return 1.0;
+
+        var index = level - 1;
+        if (index < 0 || index >= abilityInfo.EffectMultipliers.Length)
+            return 1.0;
+
+        var multiplier = abilityInfo.EffectMultipliers[index];
+        return multiplier;
+    }
+
+    private static TerminalSendSnapshot? TryExtractSendIntent(RoomObjectSnapshot terminal)
+        => terminal.Send;
+
+    [GeneratedRegex(@"^([WE])(\d+)([NS])(\d+)$")]
+    private static partial Regex RoomNameRegex();
 
     private sealed record OrderState(MarketOrderSnapshot Snapshot, bool IsInterShard);
 }

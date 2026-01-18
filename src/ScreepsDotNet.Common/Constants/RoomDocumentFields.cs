@@ -43,6 +43,7 @@ public static class RoomDocumentFields
         public const string NotifyWhenAttacked = "notifyWhenAttacked";
         public const string InterRoom = "interRoom";
         public const string InvaderHarvested = "invaderHarvested";
+        public const string Send = "send";
         public const string ActionLog = "_actionLog";
         public const string Body = "body";
         public const string UserSummoned = "userSummoned";
@@ -125,8 +126,17 @@ public static class RoomDocumentFields
         {
             public const string Effect = "effect";
             public const string Power = "power";
+            public const string Level = "level";
             public const string EndTime = "endTime";
             public const string Duration = "duration";
+        }
+
+        public static class SendFields
+        {
+            public const string TargetRoomName = "targetRoomName";
+            public const string ResourceType = "resourceType";
+            public const string Amount = "amount";
+            public const string Description = "description";
         }
     }
 

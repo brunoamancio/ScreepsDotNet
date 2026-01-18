@@ -108,7 +108,7 @@ public sealed class CombatResolutionStepTests
                Reservation: null,
                Sign: null,
                Structure: null,
-               Effects: new Dictionary<string, object?>(),
+               Effects: new Dictionary<string, PowerEffectSnapshot>(),
                Spawning: null,
                Body: []);
 
@@ -136,7 +136,7 @@ public sealed class CombatResolutionStepTests
                Reservation: null,
                Sign: null,
                Structure: null,
-               Effects: new Dictionary<string, object?>(),
+               Effects: new Dictionary<string, PowerEffectSnapshot>(),
                Spawning: null,
                Body: []);
 

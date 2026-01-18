@@ -23,7 +23,7 @@ internal static class RoomObjectSnapshotMapper
             Name = snapshot.Name,
             Level = snapshot.Level,
             MineralType = snapshot.MineralType,
-            Density = snapshot.Density,
+            Density = snapshot.Density
         };
 
         if (snapshot.Store.Count > 0)
@@ -36,7 +36,7 @@ internal static class RoomObjectSnapshotMapper
             document.Reservation = new RoomReservationDocument
             {
                 UserId = snapshot.Reservation.UserId,
-                EndTime = snapshot.Reservation.EndTime,
+                EndTime = snapshot.Reservation.EndTime
             };
         }
 
@@ -45,7 +45,7 @@ internal static class RoomObjectSnapshotMapper
             {
                 UserId = snapshot.Sign.UserId,
                 Text = snapshot.Sign.Text,
-                Time = snapshot.Sign.Time,
+                Time = snapshot.Sign.Time
             };
         }
 

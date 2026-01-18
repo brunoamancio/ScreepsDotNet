@@ -169,7 +169,7 @@ public sealed class MarketIntentStepTests
             null,
             null,
             null,
-            new Dictionary<string, object?>(StringComparer.Ordinal),
+            new Dictionary<string, PowerEffectSnapshot>(StringComparer.Ordinal),
             null,
             Array.Empty<CreepBodyPartSnapshot>(),
             IsSpawning: false,

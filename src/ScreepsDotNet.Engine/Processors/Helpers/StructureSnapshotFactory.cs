@@ -62,7 +62,7 @@ internal sealed class StructureSnapshotFactory : IStructureSnapshotFactory
             Reservation: null,
             Sign: null,
             Structure: null,
-            Effects: new Dictionary<string, object?>(0, Comparer),
+            Effects: new Dictionary<string, PowerEffectSnapshot>(0, Comparer),
             Spawning: null,
             Body: [],
             IsSpawning: null,

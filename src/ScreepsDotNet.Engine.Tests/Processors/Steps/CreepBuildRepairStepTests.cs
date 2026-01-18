@@ -142,7 +142,7 @@ public sealed class CreepBuildRepairStepTests
             Reservation: null,
             Sign: null,
             Structure: null,
-            Effects: new Dictionary<string, object?>(StringComparer.Ordinal),
+            Effects: new Dictionary<string, PowerEffectSnapshot>(StringComparer.Ordinal),
             Spawning: null,
             Body:
             [
@@ -175,7 +175,7 @@ public sealed class CreepBuildRepairStepTests
             Reservation: null,
             Sign: null,
             Structure: null,
-            Effects: new Dictionary<string, object?>(StringComparer.Ordinal),
+            Effects: new Dictionary<string, PowerEffectSnapshot>(StringComparer.Ordinal),
             Spawning: null,
             Body: [],
             IsSpawning: null,
@@ -207,7 +207,7 @@ public sealed class CreepBuildRepairStepTests
             Reservation: null,
             Sign: null,
             Structure: null,
-            Effects: new Dictionary<string, object?>(StringComparer.Ordinal),
+            Effects: new Dictionary<string, PowerEffectSnapshot>(StringComparer.Ordinal),
             Spawning: null,
             Body: [],
             IsSpawning: null);

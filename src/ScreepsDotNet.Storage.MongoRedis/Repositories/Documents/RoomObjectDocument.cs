@@ -2,6 +2,7 @@
 
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
+using ScreepsDotNet.Common.Constants;
 
 /// <summary>
 /// Represents the MongoDB document stored in the <c>rooms.objects</c> collection.
@@ -181,6 +182,9 @@ public sealed class RoomObjectDocument
 
     [BsonElement("shard")]
     public string? Shard { get; set; }
+
+    [BsonElement(RoomDocumentFields.RoomObject.Send)]
+    public BsonDocument? Send { get; set; }
 }
 
 [BsonIgnoreExtraElements]

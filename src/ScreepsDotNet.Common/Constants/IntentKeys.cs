@@ -32,5 +32,6 @@ public static class IntentKeys
     public const string Pickup = "pickup";
     public const string Drop = "drop";
     public const string Say = "say";
+    public const string Send = "send";
     public const string Power = "power";
 }

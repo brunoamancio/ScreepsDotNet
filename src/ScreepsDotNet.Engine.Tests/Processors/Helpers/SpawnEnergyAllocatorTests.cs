@@ -111,7 +111,7 @@ public sealed class SpawnEnergyAllocatorTests
             Reservation: null,
             Sign: null,
             Structure: null,
-            Effects: new Dictionary<string, object?>(),
+            Effects: new Dictionary<string, PowerEffectSnapshot>(),
             Spawning: null,
             Body: []);
 }

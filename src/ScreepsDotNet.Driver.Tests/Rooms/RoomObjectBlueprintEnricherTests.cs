@@ -65,7 +65,7 @@ public sealed class RoomObjectBlueprintEnricherTests
             Reservation: null,
             Sign: null,
             Structure: null,
-            Effects: new Dictionary<string, object?>(0, StringComparer.Ordinal),
+            Effects: new Dictionary<string, PowerEffectSnapshot>(0, StringComparer.Ordinal),
             Spawning: null,
             Body: [],
             IsSpawning: null,

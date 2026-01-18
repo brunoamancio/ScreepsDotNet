@@ -1,5 +1,7 @@
 ﻿namespace ScreepsDotNet.Backend.Core.Intents;
 
+using ScreepsDotNet.Common.Constants;
+
 public enum IntentFieldType
 {
     ScalarString,
@@ -168,7 +170,7 @@ public static class IntentSchemas
             ["say"] = Create("say",
                 ("message", IntentFieldType.UserString),
                 ("isPublic", IntentFieldType.ScalarBoolean)),
-            ["send"] = Create("send",
+            [IntentKeys.Send] = Create(IntentKeys.Send,
                 ("targetRoomName", IntentFieldType.ScalarString),
                 ("resourceType", IntentFieldType.ScalarString),
                 ("amount", IntentFieldType.ScalarNumber),
