@@ -17,11 +17,11 @@ public sealed class MarketIntentStepTests
             [
                 new IntentArgument(new Dictionary<string, IntentFieldValue>
                 {
-                    ["type"] = new(IntentFieldValueKind.Text, TextValue: MarketOrderTypes.Sell),
-                    ["resourceType"] = new(IntentFieldValueKind.Text, TextValue: ResourceTypes.Energy),
-                    ["price"] = new(IntentFieldValueKind.Number, NumberValue: 5000),
-                    ["totalAmount"] = new(IntentFieldValueKind.Number, NumberValue: 100),
-                    ["roomName"] = new(IntentFieldValueKind.Text, TextValue: "W1N1")
+                    [MarketIntentFields.Type] = new(IntentFieldValueKind.Text, TextValue: MarketOrderTypes.Sell),
+                    [MarketIntentFields.ResourceType] = new(IntentFieldValueKind.Text, TextValue: ResourceTypes.Energy),
+                    [MarketIntentFields.Price] = new(IntentFieldValueKind.Number, NumberValue: 5000),
+                    [MarketIntentFields.TotalAmount] = new(IntentFieldValueKind.Number, NumberValue: 100),
+                    [MarketIntentFields.RoomName] = new(IntentFieldValueKind.Text, TextValue: "W1N1")
                 })
             ]);
 
@@ -81,8 +81,8 @@ public sealed class MarketIntentStepTests
             [
                 new IntentArgument(new Dictionary<string, IntentFieldValue>
                 {
-                    ["orderId"] = new(IntentFieldValueKind.Text, TextValue: existingOrder.Id),
-                    ["newPrice"] = new(IntentFieldValueKind.Number, NumberValue: 6_000)
+                    [MarketIntentFields.OrderId] = new(IntentFieldValueKind.Text, TextValue: existingOrder.Id),
+                    [MarketIntentFields.NewPrice] = new(IntentFieldValueKind.Number, NumberValue: 6_000)
                 })
             ]);
 

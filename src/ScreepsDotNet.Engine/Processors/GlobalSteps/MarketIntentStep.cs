@@ -4,6 +4,7 @@ using MongoDB.Bson;
 using ScreepsDotNet.Common.Constants;
 using ScreepsDotNet.Driver.Constants;
 using ScreepsDotNet.Driver.Contracts;
+using static ScreepsDotNet.Common.Constants.MarketIntentFields;
 
 /// <summary>
 /// Handles market-related global intents (create/cancel/extend/change price).
@@ -66,21 +67,21 @@ internal sealed class MarketIntentStep : IGlobalProcessorStep
         Dictionary<string, OrderState> orderMap)
     {
         foreach (var argument in arguments) {
-            var orderType = GetText(argument, "type");
+            var orderType = GetText(argument, Type);
             if (!IsValidOrderType(orderType))
                 continue;
 
-            var resourceType = GetText(argument, "resourceType");
+            var resourceType = GetText(argument, ResourceType);
             if (!IsValidResource(resourceType))
                 continue;
 
-            if (!TryGetInt(argument, "totalAmount", out var totalAmount) || totalAmount <= 0)
+            if (!TryGetInt(argument, TotalAmount, out var totalAmount) || totalAmount <= 0)
                 continue;
 
-            if (!TryGetLong(argument, "price", out var price) || price <= 0)
+            if (!TryGetLong(argument, Price, out var price) || price <= 0)
                 continue;
 
-            var roomName = GetText(argument, "roomName");
+            var roomName = GetText(argument, RoomName);
             var isIntershard = IntershardResources.Contains(resourceType!);
             if (!isIntershard && string.IsNullOrWhiteSpace(roomName))
                 continue;
@@ -110,13 +111,13 @@ internal sealed class MarketIntentStep : IGlobalProcessorStep
             context.Mutations.UpsertMarketOrder(snapshot, isIntershard);
             context.Mutations.InsertUserMoneyLog(CreateMoneyLogEntry(userId, context.GameTime, newBalance, -fee, MoneyLogTypes.MarketFee, new Dictionary<string, object?>(Comparer)
             {
-                ["order"] = new Dictionary<string, object?>
+                [Order] = new Dictionary<string, object?>
                 {
-                    ["resourceType"] = resourceType,
-                    ["roomName"] = roomName,
-                    ["type"] = snapshot.Type,
-                    ["price"] = price / 1000.0,
-                    ["amount"] = totalAmount
+                    [ResourceType] = resourceType,
+                    [RoomName] = roomName,
+                    [Type] = snapshot.Type,
+                    [Price] = price / 1000.0,
+                    [Amount] = totalAmount
                 }
             }));
 
@@ -131,7 +132,7 @@ internal sealed class MarketIntentStep : IGlobalProcessorStep
         Dictionary<string, OrderState> orderMap)
     {
         foreach (var argument in arguments) {
-            var orderId = GetText(argument, "orderId");
+            var orderId = GetText(argument, OrderId);
             if (string.IsNullOrWhiteSpace(orderId))
                 continue;
 
@@ -153,7 +154,7 @@ internal sealed class MarketIntentStep : IGlobalProcessorStep
         Dictionary<string, OrderState> orderMap)
     {
         foreach (var argument in arguments) {
-            var orderId = GetText(argument, "orderId");
+            var orderId = GetText(argument, OrderId);
             if (string.IsNullOrWhiteSpace(orderId))
                 continue;
 
@@ -163,7 +164,7 @@ internal sealed class MarketIntentStep : IGlobalProcessorStep
             if (!string.Equals(state.Snapshot.UserId, userId, StringComparison.Ordinal))
                 continue;
 
-            if (!TryGetLong(argument, "newPrice", out var newPrice) || newPrice <= 0)
+            if (!TryGetLong(argument, NewPrice, out var newPrice) || newPrice <= 0)
                 continue;
 
             var currentOrder = state.Snapshot;
@@ -175,11 +176,11 @@ internal sealed class MarketIntentStep : IGlobalProcessorStep
 
                 context.Mutations.InsertUserMoneyLog(CreateMoneyLogEntry(userId, context.GameTime, newBalance, -fee, MoneyLogTypes.MarketFee, new Dictionary<string, object?>(Comparer)
                 {
-                    ["changeOrderPrice"] = new Dictionary<string, object?>
+                    [ChangeOrderPrice] = new Dictionary<string, object?>
                     {
-                        ["orderId"] = orderId,
-                        ["oldPrice"] = currentOrder.Price / 1000.0,
-                        ["newPrice"] = newPrice / 1000.0
+                        [OrderId] = orderId,
+                        [OldPrice] = currentOrder.Price / 1000.0,
+                        [NewPrice] = newPrice / 1000.0
                     }
                 }));
             }
@@ -197,7 +198,7 @@ internal sealed class MarketIntentStep : IGlobalProcessorStep
         Dictionary<string, OrderState> orderMap)
     {
         foreach (var argument in arguments) {
-            var orderId = GetText(argument, "orderId");
+            var orderId = GetText(argument, OrderId);
             if (string.IsNullOrWhiteSpace(orderId))
                 continue;
 
@@ -207,7 +208,7 @@ internal sealed class MarketIntentStep : IGlobalProcessorStep
             if (!string.Equals(state.Snapshot.UserId, userId, StringComparison.Ordinal))
                 continue;
 
-            if (!TryGetInt(argument, "addAmount", out var addAmount) || addAmount <= 0)
+            if (!TryGetInt(argument, AddAmount, out var addAmount) || addAmount <= 0)
                 continue;
 
             var currentOrder = state.Snapshot;
@@ -222,10 +223,10 @@ internal sealed class MarketIntentStep : IGlobalProcessorStep
             context.Mutations.PatchMarketOrder(orderId!, patch, state.IsInterShard);
             context.Mutations.InsertUserMoneyLog(CreateMoneyLogEntry(userId, context.GameTime, newBalance, -fee, MoneyLogTypes.MarketFee, new Dictionary<string, object?>(Comparer)
             {
-                ["extendOrder"] = new Dictionary<string, object?>
+                [ExtendOrder] = new Dictionary<string, object?>
                 {
-                    ["orderId"] = orderId,
-                    ["addAmount"] = addAmount
+                    [OrderId] = orderId,
+                    [AddAmount] = addAmount
                 }
             }));
 
