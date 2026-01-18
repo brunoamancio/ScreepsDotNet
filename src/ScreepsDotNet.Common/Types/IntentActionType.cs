@@ -1,4 +1,4 @@
-namespace ScreepsDotNet.Common;
+namespace ScreepsDotNet.Common.Types;
 
 public enum IntentActionType
 {

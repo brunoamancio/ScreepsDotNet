@@ -1,4 +1,4 @@
-namespace ScreepsDotNet.Common;
+namespace ScreepsDotNet.Common.Constants;
 
 public static class IntentPayloadFields
 {
