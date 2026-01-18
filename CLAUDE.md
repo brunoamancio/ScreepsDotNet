@@ -214,6 +214,54 @@ git status  # Verify ScreepsNodeJs/ is not included
 **Tests:** `dotnet test src/ScreepsDotNet.slnx` or `--filter "FullyQualifiedName~TestName"`
 **Docker logs:** `docker compose -f src/docker-compose.yml logs -f mongo`
 
+### Code Navigation (Serena Plugin)
+
+**If Serena plugin is available,** use it for semantic code navigation instead of text-based search (Grep/Glob).
+
+**Activate project (if not already active):**
+```typescript
+mcp__plugin_serena_serena__activate_project({ project: "screeps-rewrite" })
+// Or use full path: { project: "/home/th3b0y/screeps-rewrite/ScreepsDotNet" }
+```
+
+**Common operations:**
+```typescript
+// Find all references to a symbol
+mcp__plugin_serena_serena__find_referencing_symbols({
+  name_path: "TryGetBooleanProperty",
+  relative_path: "src/ScreepsDotNet.Driver/Extensions/JsonElementExtensions.cs"
+})
+
+// Find symbol definition (with or without body)
+mcp__plugin_serena_serena__find_symbol({
+  name_path_pattern: "UserService/GetUserAsync",
+  include_body: true
+})
+
+// Get symbol overview of a file
+mcp__plugin_serena_serena__get_symbols_overview({
+  relative_path: "src/ScreepsDotNet.Backend.Http/Endpoints/UserEndpoints.cs",
+  depth: 1
+})
+
+// Search for pattern in codebase
+mcp__plugin_serena_serena__search_for_pattern({
+  substring_pattern: "IMongoCollection",
+  relative_path: "src/ScreepsDotNet.Storage.MongoRedis"
+})
+```
+
+**When to use Serena:**
+- Finding all references to a method/class
+- Understanding symbol relationships and dependencies
+- Navigating large codebases semantically
+- Refactoring (find all usages before changing)
+
+**When to use Grep/Glob instead:**
+- Simple text search across files
+- Searching for strings/comments (non-code)
+- Pattern matching that doesn't require semantic understanding
+
 ### Common Tasks
 See `docs/common-tasks.md` for step-by-step guides:
 - Add HTTP endpoint
