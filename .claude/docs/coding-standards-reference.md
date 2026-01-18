@@ -1,6 +1,6 @@
 # Coding Standards Reference
 
-Condensed examples for the 15 most critical coding standards. For full rule documentation, see `src/.editorconfig` and `src/ScreepsDotNet.slnx.DotSettings`.
+Condensed examples for the 16 most critical coding standards. For full rule documentation, see `src/.editorconfig` and `src/ScreepsDotNet.slnx.DotSettings`.
 
 ## 1. Variable Declarations (IDE0007)
 
@@ -318,6 +318,32 @@ internal static class UserEndpoints
     private const string UsernameQueryName = "username";  // Wrong order
     private const string UserNotFoundMessage = "user not found";  // Wrong order
 }
+```
+
+## 16. Target-Typed New Expression (IDE0090)
+
+**✅ Good:**
+```csharp
+private readonly Lock _lock = new();
+
+var items = new Dictionary<string, int> { ["key"] = 42 };
+
+var powers = new Dictionary<string, PowerCreepPowerSnapshot>(creep.Powers)
+{
+    [powerKey] = new (Level: 0)
+};
+```
+
+**❌ Bad:**
+```csharp
+private readonly Lock _lock = new Lock();  // Explicit type
+
+var items = new Dictionary<string, int> { ["key"] = 42 };
+
+var powers = new Dictionary<string, PowerCreepPowerSnapshot>(creep.Powers)
+{
+    [powerKey] = new PowerCreepPowerSnapshot(Level: 0)  // Explicit type when context is clear
+};
 ```
 
 ## Summary

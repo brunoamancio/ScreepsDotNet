@@ -121,6 +121,7 @@ ScreepsDotNet/
 | Repository POCOs | - | `IMongoCollection<UserDocument>` not `BsonDocument` |
 | Testing | - | Testcontainers, not local Docker state |
 | Lock primitives | - | `Lock _lock = new();` not `object` |
+| Target-typed new | IDE0090 | `new()` not `new Type()` when type is clear from context |
 | IDE0051/52 pragma | - | Add pragma for constants in attribute params |
 
 **Implicit usings** (configured in `Directory.Build.props` - never add manually):
@@ -376,4 +377,4 @@ This file provides **solution-wide** context. For subsystem-specific details:
 - Subsystem details belong in subsystem CLAUDE.md
 - Target: Under 500 lines total
 
-**Last Updated:** 2026-01-18
+**Last Updated:** 2026-01-19
