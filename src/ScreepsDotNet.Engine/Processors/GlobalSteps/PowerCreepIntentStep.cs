@@ -1,6 +1,7 @@
 namespace ScreepsDotNet.Engine.Processors.GlobalSteps;
 
 using ScreepsDotNet.Common.Constants;
+using ScreepsDotNet.Common.Types;
 using ScreepsDotNet.Driver.Contracts;
 
 /// <summary>
@@ -31,6 +32,9 @@ internal sealed class PowerCreepIntentStep : IGlobalProcessorStep
             ProcessCreateIntents(context, userId, user, intents);
             ProcessRenameIntents(context, userId, intents);
             ProcessDeleteIntents(context, userId, user, intents);
+            ProcessSuicideIntents(context, userId, intents);
+            ProcessSpawnIntents(context, userId, intents);
+            ProcessUpgradeIntents(context, userId, intents);
         }
 
         return Task.CompletedTask;
@@ -157,6 +161,176 @@ internal sealed class PowerCreepIntentStep : IGlobalProcessorStep
                 var deleteTime = now + ScreepsGameConstants.PowerCreepDeleteCooldownMilliseconds;
                 context.Mutations.PatchPowerCreep(creepId, new PowerCreepMutationPatch(DeleteTime: deleteTime));
                 context.UpdatePowerCreep(creep with { DeleteTime = deleteTime });
+            }
+        }
+    }
+
+    private static void ProcessSuicideIntents(GlobalProcessorContext context, string userId, GlobalUserIntentSnapshot snapshot)
+    {
+        foreach (var record in snapshot.Intents) {
+            if (!string.Equals(record.Name, GlobalIntentTypes.SuicidePowerCreep, StringComparison.Ordinal))
+                continue;
+
+            foreach (var argument in record.Arguments) {
+                var creepId = GetTextArgument(argument, PowerCreepIntentFields.Id);
+                if (string.IsNullOrWhiteSpace(creepId))
+                    continue;
+
+                if (!context.PowerCreepsById.TryGetValue(creepId, out var creep))
+                    continue;
+
+                if (!string.Equals(creep.UserId, userId, StringComparison.Ordinal))
+                    continue;
+
+                if (creep.Shard is null)
+                    continue;
+
+                var roomObjects = context.GetObjectsOfType(RoomObjectTypes.PowerCreep);
+                var roomObject = roomObjects.FirstOrDefault(obj => string.Equals(obj.Id, creepId, StringComparison.Ordinal));
+                if (roomObject is not null) {
+                    context.Mutations.RemoveRoomObject(roomObject.Id);
+                }
+
+                context.Mutations.PatchPowerCreep(creepId, new PowerCreepMutationPatch(Shard: null));
+                context.UpdatePowerCreep(creep with { Shard = null });
+            }
+        }
+    }
+
+    private static void ProcessSpawnIntents(GlobalProcessorContext context, string userId, GlobalUserIntentSnapshot snapshot)
+    {
+        foreach (var record in snapshot.Intents) {
+            if (!string.Equals(record.Name, GlobalIntentTypes.SpawnPowerCreep, StringComparison.Ordinal))
+                continue;
+
+            foreach (var argument in record.Arguments) {
+                var creepId = GetTextArgument(argument, PowerCreepIntentFields.Id);
+                var spawnId = GetTextArgument(argument, PowerCreepIntentFields.SpawnId);
+
+                if (string.IsNullOrWhiteSpace(creepId) || string.IsNullOrWhiteSpace(spawnId))
+                    continue;
+
+                if (!context.PowerCreepsById.TryGetValue(creepId, out var creep))
+                    continue;
+
+                if (!string.Equals(creep.UserId, userId, StringComparison.Ordinal))
+                    continue;
+
+                if (creep.Shard is not null)
+                    continue;
+
+                var spawns = context.GetObjectsOfType(RoomObjectTypes.Spawn);
+                var spawn = spawns.FirstOrDefault(obj => string.Equals(obj.Id, spawnId, StringComparison.Ordinal));
+                if (spawn is null || string.IsNullOrWhiteSpace(spawn.RoomName))
+                    continue;
+
+                if (!string.Equals(spawn.UserId, userId, StringComparison.Ordinal))
+                    continue;
+
+                var newRoomObject = new RoomObjectSnapshot(
+                    creepId,
+                    RoomObjectTypes.PowerCreep,
+                    spawn.RoomName,
+                    spawn.Shard,
+                    userId,
+                    spawn.X,
+                    spawn.Y,
+                    creep.HitsMax,
+                    creep.HitsMax,
+                    Fatigue: null,
+                    TicksToLive: null,
+                    Name: creep.Name,
+                    Level: creep.Level,
+                    Density: null,
+                    MineralType: null,
+                    DepositType: null,
+                    StructureType: null,
+                    Store: new Dictionary<string, int>(creep.Store),
+                    StoreCapacity: creep.StoreCapacity,
+                    StoreCapacityResource: new Dictionary<string, int>(0, StringComparer.Ordinal),
+                    Reservation: null,
+                    Sign: null,
+                    Structure: null,
+                    Effects: new Dictionary<string, PowerEffectSnapshot>(0, StringComparer.Ordinal),
+                    Spawning: null,
+                    Body: [],
+                    IsSpawning: null,
+                    UserSummoned: null,
+                    IsPublic: null,
+                    StrongholdId: null,
+                    DeathTime: null,
+                    DecayTime: null,
+                    CreepId: null,
+                    CreepName: null,
+                    CreepTicksToLive: null,
+                    CreepSaying: null,
+                    ResourceType: null,
+                    ResourceAmount: null,
+                    Progress: null,
+                    ProgressTotal: null,
+                    ActionLog: null,
+                    Energy: null,
+                    MineralAmount: null,
+                    InvaderHarvested: null,
+                    Harvested: null,
+                    Cooldown: null,
+                    CooldownTime: null,
+                    SafeMode: null,
+                    PortalDestination: null,
+                    Send: null);
+
+                context.Mutations.UpsertRoomObject(newRoomObject);
+                context.Mutations.PatchPowerCreep(creepId, new PowerCreepMutationPatch(Shard: spawn.RoomName));
+                context.UpdatePowerCreep(creep with { Shard = spawn.RoomName });
+            }
+        }
+    }
+
+    private static void ProcessUpgradeIntents(GlobalProcessorContext context, string userId, GlobalUserIntentSnapshot snapshot)
+    {
+        foreach (var record in snapshot.Intents) {
+            if (!string.Equals(record.Name, GlobalIntentTypes.UpgradePowerCreep, StringComparison.Ordinal))
+                continue;
+
+            foreach (var argument in record.Arguments) {
+                var creepId = GetTextArgument(argument, PowerCreepIntentFields.Id);
+                var powerField = GetTextArgument(argument, PowerCreepIntentFields.Power);
+
+                if (string.IsNullOrWhiteSpace(creepId) || string.IsNullOrWhiteSpace(powerField))
+                    continue;
+
+                if (!int.TryParse(powerField, out var powerInt) || !Enum.IsDefined(typeof(PowerTypes), powerInt))
+                    continue;
+
+                var powerType = (PowerTypes)powerInt;
+
+                if (!context.PowerCreepsById.TryGetValue(creepId, out var creep))
+                    continue;
+
+                if (!string.Equals(creep.UserId, userId, StringComparison.Ordinal))
+                    continue;
+
+                if (creep.Shard is not null)
+                    continue;
+
+                if (!PowerInfo.Abilities.TryGetValue(powerType, out var abilityInfo))
+                    continue;
+
+                var requiredLevel = abilityInfo.Level[0];
+                if (creep.Level < requiredLevel)
+                    continue;
+
+                var powerKey = powerInt.ToString();
+                if (creep.Powers.ContainsKey(powerKey))
+                    continue;
+
+                var newPowers = new Dictionary<string, PowerCreepPowerSnapshot>(creep.Powers, StringComparer.Ordinal)
+                {
+                    [powerKey] = new(Level: 0)
+                };
+
+                context.Mutations.PatchPowerCreep(creepId, new PowerCreepMutationPatch(Powers: newPowers));
+                context.UpdatePowerCreep(creep with { Powers = newPowers });
             }
         }
     }
