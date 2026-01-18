@@ -289,12 +289,16 @@ if (energy < cost)
 - **D8: Runtime Lifecycle** - Runtime coordinator, sandbox pooling, watchdog, throttling
 - **D9: History & Notifications** - Room history pipeline, notification throttling
 
-### 🔄 In Progress (D10)
+### 🔄 In Progress (D10 - ~98% Complete)
 - **D10: Engine Contracts** - Room/global snapshot providers, mutation dispatcher wiring
   - ✅ `RoomStateProvider` / `GlobalStateProvider` expose read-only snapshots
   - ✅ `RoomMutationWriterFactory` / `UserMemorySink` handle write operations
-  - 🔄 Regression tests for parity validation
-  - 📋 Final integration with Engine subsystem
+  - ✅ `EngineHost` / `IEngineHost` contract wired into `MainLoopGlobalProcessor`
+  - ✅ Engine (`ScreepsDotNet.Engine`) consumes all D10 abstractions correctly
+  - ✅ Regression tests for snapshot/mutation dispatch
+  - 📋 **Pending:** E6 (Engine Loop Orchestration) to deploy in production
+  - 📋 **Pending:** End-to-end integration test (Snapshot → Engine → Mutations → Storage)
+  - **Note:** D10 implementation complete, marked "In Progress" until E6 enables Engine in production
 
 ### 📋 Next Steps
 - Complete D10 engine contract validation

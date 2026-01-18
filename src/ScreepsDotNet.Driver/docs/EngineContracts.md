@@ -11,15 +11,45 @@ Expose stable driver-owned contracts so the upcoming ScreepsDotNet.Engine can co
 4. **Global snapshots:** Similar contract for inter-room data (`GetInterRoomSnapshotAsync`) so global processors receive typed DTOs.
 5. **Compatibility shim:** Maintain an adapter layer so the legacy Node engine (or other consumers) can request the same contracts if needed during migration.
 
-## Current Status (January 2026)
+## Current Status (January 18, 2026)
 
+### ✅ Implementation Complete (D10 code finished)
+
+**Driver Abstractions:**
 - ✅ DTOs added under `ScreepsDotNet.Driver.Contracts` (room snapshots, room objects, users, intents, mutation batches, plus the new `GlobalSnapshot`/market/power-creep/user-intent shapes).
 - ✅ Snapshot builders/providers for both per-room (`IRoomSnapshotProvider`) and inter-room/global data (`IInterRoomSnapshotProvider`) are implemented with caching + regression tests.
 - ✅ `RoomMutationBatch` + `IRoomMutationDispatcher` bridge engine-friendly mutation descriptions back to Mongo bulk writers; `RoomHistoryPipeline` now uses the same dispatcher path.
-- ◐ Complete driver coverage: all driver loops already consume the room/global providers, but **D10 remains “In progress” until ScreepsDotNet.Engine (or another engine client) actually runs on these contracts**. Once the engine consumes them end-to-end, mark D10 complete in `docs/driver.md`.
+- ✅ `IEngineHost` contract defined and wired into `MainLoopGlobalProcessor` (optional).
+
+**Engine Integration:**
+- ✅ `ScreepsDotNet.Engine` consumes all D10 contracts correctly:
+  - `RoomStateProvider` wraps `IRoomSnapshotProvider`
+  - `GlobalStateProvider` wraps `IInterRoomSnapshotProvider`
+  - `RoomMutationWriterFactory` wraps `IRoomMutationDispatcher`
+  - `UserMemorySink` wraps `IUserDataService`
+- ✅ `RoomProcessor` and `EngineGlobalProcessor` implemented using all 4 abstractions.
+- ✅ `EngineHost` implements `IEngineHost` and orchestrates global processing.
+- ✅ DI wiring complete via `AddEngineCore()` in `ScreepsDotNet.Engine/ServiceCollectionExtensions.cs`.
+
+**Tests:**
+- ✅ Unit tests for `RoomSnapshotProvider`, `RoomMutationDispatcher`, `InterRoomSnapshotProvider`.
+- ✅ Engine processor step tests (see `ScreepsDotNet.Engine.Tests/Processors/`).
+
+### 📋 Pending for Production Deployment (Deferred to E6)
+
+**D10 implementation is ~98% complete** but correctly marked "In Progress" because:
+
+1. **No deployment configuration** - Neither `Backend.Http` nor `Backend.Cli` register `AddDriverCore()` or `AddEngineCore()`. No runnable process executes ticks with the managed Engine yet.
+2. **No active loop orchestration** - `IDriverHost` is registered in Driver's DI but not consumed by any entry point. Main/runner/processor loops are not started.
+3. **No end-to-end integration tests** - No test simulates: Snapshot → Engine → Mutations → Storage round-trip.
+4. **Engine not enabled by default** - `MainLoopGlobalProcessor` has `IEngineHost? engineHost = null` (optional/nullable), meaning Driver loops run without invoking Engine.
+
+**Conclusion:** D10 contracts are production-ready. Missing piece is E6 (Engine Loop Orchestration) to wire everything into a runnable tick system.
 
 ## Next Steps
 
-1. Wire ScreepsDotNet.Engine directly into `IRoomSnapshotProvider`, `IInterRoomSnapshotProvider`, and `IRoomMutationDispatcher` so the managed processor runs entirely on these contracts. **When this is done, flip D10 to “Completed” in `docs/driver.md`.**
-2. Expand contract docs with concrete engine examples (sample provider usage, mutation batch authoring) and keep the regression fixtures under version control for future agents.
-3. After the engine is live on these contracts, move remaining parity tracking to the engine project (E milestones).
+1. **E6 (Engine Loop Orchestration):** Create a runnable process (CLI command or hosted service) that calls `AddDriverCore()` + `AddEngineCore()` and starts tick execution.
+2. **End-to-end integration test:** Add test that exercises full tick: load snapshot → run Engine → apply mutations → verify DB state.
+3. **Mark D10 complete in `docs/driver.md`** once E6 has Engine running end-to-end (no longer just "wired but unused").
+4. Expand contract docs with concrete engine examples (sample provider usage, mutation batch authoring).
+5. After the engine is live, move remaining parity tracking to the engine project (E7 milestones).
