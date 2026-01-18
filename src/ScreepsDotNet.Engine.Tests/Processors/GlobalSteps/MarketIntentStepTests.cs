@@ -1,4 +1,5 @@
 using ScreepsDotNet.Common.Constants;
+using ScreepsDotNet.Driver.Constants;
 using ScreepsDotNet.Driver.Contracts;
 using ScreepsDotNet.Engine.Data.Models;
 using ScreepsDotNet.Engine.Processors.GlobalSteps;
@@ -53,7 +54,7 @@ public sealed class MarketIntentStepTests
         Assert.Equal(75_000, context.UsersById[userId].Money);
 
         var log = Assert.Single(writer.UserMoneyLogs);
-        Assert.Equal("market.fee", log.Type);
+        Assert.Equal(MoneyLogTypes.MarketFee, log.Type);
         Assert.Equal(-25, log.Change); // fee converted to credits
     }
 
@@ -108,7 +109,7 @@ public sealed class MarketIntentStepTests
         Assert.Equal(48_750, context.UsersById[userId].Money);
 
         var log = Assert.Single(writer.UserMoneyLogs);
-        Assert.Equal("market.fee", log.Type);
+        Assert.Equal(MoneyLogTypes.MarketFee, log.Type);
         Assert.Equal(-1.25, log.Change);
     }
 
@@ -132,7 +133,7 @@ public sealed class MarketIntentStepTests
             [
                 new GlobalUserIntentSnapshot("intentDoc", userId, intentRecords)
             ],
-            "shard0");
+            TestConstants.DefaultShardName);
 
         return new GlobalState(
             12345,
@@ -148,7 +149,7 @@ public sealed class MarketIntentStepTests
             id,
             RoomObjectTypes.Terminal,
             roomName,
-            "shard0",
+            TestConstants.DefaultShardName,
             userId,
             0,
             0,

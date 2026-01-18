@@ -2,6 +2,7 @@ namespace ScreepsDotNet.Engine.Processors.GlobalSteps;
 
 using MongoDB.Bson;
 using ScreepsDotNet.Common.Constants;
+using ScreepsDotNet.Driver.Constants;
 using ScreepsDotNet.Driver.Contracts;
 
 /// <summary>
@@ -107,7 +108,7 @@ internal sealed class MarketIntentStep : IGlobalProcessorStep
                 false);
 
             context.Mutations.UpsertMarketOrder(snapshot, isIntershard);
-            context.Mutations.InsertUserMoneyLog(CreateMoneyLogEntry(userId, context.GameTime, newBalance, -fee, "market.fee", new Dictionary<string, object?>(Comparer)
+            context.Mutations.InsertUserMoneyLog(CreateMoneyLogEntry(userId, context.GameTime, newBalance, -fee, MoneyLogTypes.MarketFee, new Dictionary<string, object?>(Comparer)
             {
                 ["order"] = new Dictionary<string, object?>
                 {
@@ -172,7 +173,7 @@ internal sealed class MarketIntentStep : IGlobalProcessorStep
                 if (!TryDebitUser(context, userId, fee, out var newBalance))
                     continue;
 
-                context.Mutations.InsertUserMoneyLog(CreateMoneyLogEntry(userId, context.GameTime, newBalance, -fee, "market.fee", new Dictionary<string, object?>(Comparer)
+                context.Mutations.InsertUserMoneyLog(CreateMoneyLogEntry(userId, context.GameTime, newBalance, -fee, MoneyLogTypes.MarketFee, new Dictionary<string, object?>(Comparer)
                 {
                     ["changeOrderPrice"] = new Dictionary<string, object?>
                     {
@@ -219,7 +220,7 @@ internal sealed class MarketIntentStep : IGlobalProcessorStep
 
             var patch = new MarketOrderPatch(RemainingAmount: newRemaining, TotalAmount: newTotal);
             context.Mutations.PatchMarketOrder(orderId!, patch, state.IsInterShard);
-            context.Mutations.InsertUserMoneyLog(CreateMoneyLogEntry(userId, context.GameTime, newBalance, -fee, "market.fee", new Dictionary<string, object?>(Comparer)
+            context.Mutations.InsertUserMoneyLog(CreateMoneyLogEntry(userId, context.GameTime, newBalance, -fee, MoneyLogTypes.MarketFee, new Dictionary<string, object?>(Comparer)
             {
                 ["extendOrder"] = new Dictionary<string, object?>
                 {
