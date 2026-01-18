@@ -12,6 +12,12 @@ public interface IGlobalMutationWriter
     void RemoveMarketOrder(string orderId, bool isInterShard);
     void AdjustUserMoney(string userId, double newBalance);
     void InsertUserMoneyLog(UserMoneyLogEntry entry);
+    void UpsertRoomObject(RoomObjectSnapshot snapshot);
+    void PatchRoomObject(string objectId, GlobalRoomObjectPatch patch);
+    void RemoveRoomObject(string objectId);
+    void InsertTransaction(TransactionLogEntry entry);
+    void AdjustUserResource(string userId, string resourceType, int newBalance);
+    void InsertUserResourceLog(UserResourceLogEntry entry);
     Task FlushAsync(CancellationToken token = default);
     void Reset();
 }

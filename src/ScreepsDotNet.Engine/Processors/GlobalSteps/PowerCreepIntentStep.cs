@@ -28,11 +28,61 @@ internal sealed class PowerCreepIntentStep : IGlobalProcessorStep
             if (!context.UsersById.TryGetValue(userId, out var user))
                 continue;
 
+            ProcessCreateIntents(context, userId, user, intents);
             ProcessRenameIntents(context, userId, intents);
             ProcessDeleteIntents(context, userId, user, intents);
         }
 
         return Task.CompletedTask;
+    }
+
+    private static void ProcessCreateIntents(GlobalProcessorContext context, string userId, UserState user, GlobalUserIntentSnapshot snapshot)
+    {
+        foreach (var record in snapshot.Intents) {
+            if (!string.Equals(record.Name, GlobalIntentTypes.CreatePowerCreep, StringComparison.Ordinal))
+                continue;
+
+            foreach (var argument in record.Arguments) {
+                var requestedName = NormalizeName(GetTextArgument(argument, PowerCreepIntentFields.Name));
+                if (string.IsNullOrWhiteSpace(requestedName))
+                    continue;
+
+                var className = GetTextArgument(argument, PowerCreepIntentFields.ClassName);
+                if (!string.Equals(className, PowerClass.Operator, StringComparison.Ordinal))
+                    continue;
+
+                var userPowerCreeps = context.PowerCreepsById.Values
+                    .Where(pc => string.Equals(pc.UserId, userId, StringComparison.Ordinal))
+                    .ToList();
+
+                if (HasDuplicateName(userPowerCreeps, userId, requestedName))
+                    continue;
+
+                var powerLevel = Math.Floor(Math.Pow(user.Power / ScreepsGameConstants.PowerLevelMultiply, 1.0 / ScreepsGameConstants.PowerLevelPow));
+                var usedLevels = userPowerCreeps.Count + userPowerCreeps.Sum(pc => pc.Level ?? 0);
+
+                if (usedLevels >= powerLevel)
+                    continue;
+
+                var newId = Guid.NewGuid().ToString("N");
+                var newPowerCreep = new PowerCreepSnapshot(
+                    newId,
+                    userId,
+                    requestedName,
+                    className,
+                    0,
+                    1000,
+                    new Dictionary<string, int>(),
+                    100,
+                    0,
+                    null,
+                    null,
+                    new Dictionary<string, PowerCreepPowerSnapshot>());
+
+                context.Mutations.UpsertPowerCreep(newPowerCreep);
+                context.UpdatePowerCreep(newPowerCreep);
+            }
+        }
     }
 
     private static void ProcessRenameIntents(GlobalProcessorContext context, string userId, GlobalUserIntentSnapshot snapshot)
@@ -67,11 +117,7 @@ internal sealed class PowerCreepIntentStep : IGlobalProcessorStep
         }
     }
 
-    private void ProcessDeleteIntents(
-        GlobalProcessorContext context,
-        string userId,
-        UserState user,
-        GlobalUserIntentSnapshot snapshot)
+    private void ProcessDeleteIntents(GlobalProcessorContext context, string userId, UserState user, GlobalUserIntentSnapshot snapshot)
     {
         foreach (var record in snapshot.Intents) {
             if (!string.Equals(record.Name, GlobalIntentTypes.DeletePowerCreep, StringComparison.Ordinal))

@@ -10,6 +10,10 @@ internal sealed class RecordingGlobalMutationWriter : IGlobalMutationWriter
     public List<MarketOrderMutation> MarketOrderMutations { get; } = [];
     public List<UserMoneyMutation> UserMoneyMutations { get; } = [];
     public List<UserMoneyLogEntry> UserMoneyLogs { get; } = [];
+    public List<RoomObjectMutation> RoomObjectMutations { get; } = [];
+    public List<TransactionLogEntry> TransactionLogs { get; } = [];
+    public List<UserResourceMutation> UserResourceMutations { get; } = [];
+    public List<UserResourceLogEntry> UserResourceLogs { get; } = [];
 
     public void PatchPowerCreep(string powerCreepId, PowerCreepMutationPatch patch)
         => PowerCreepPatches.Add((powerCreepId, patch));
@@ -36,6 +40,27 @@ internal sealed class RecordingGlobalMutationWriter : IGlobalMutationWriter
     public void InsertUserMoneyLog(UserMoneyLogEntry entry)
         => UserMoneyLogs.Add(entry);
 
+    public void UpsertRoomObject(RoomObjectSnapshot snapshot)
+        => RoomObjectMutations.Add(new RoomObjectMutation(snapshot.Id, RoomObjectMutationType.Upsert, snapshot));
+
+    public void PatchRoomObject(string objectId, GlobalRoomObjectPatch patch)
+    {
+        // Test implementation - just record that a patch was requested
+        // In real implementation, this would convert to BsonDocument
+    }
+
+    public void RemoveRoomObject(string objectId)
+        => RoomObjectMutations.Add(new RoomObjectMutation(objectId, RoomObjectMutationType.Remove));
+
+    public void InsertTransaction(TransactionLogEntry entry)
+        => TransactionLogs.Add(entry);
+
+    public void AdjustUserResource(string userId, string resourceType, int newBalance)
+        => UserResourceMutations.Add(new UserResourceMutation(userId, resourceType, newBalance));
+
+    public void InsertUserResourceLog(UserResourceLogEntry entry)
+        => UserResourceLogs.Add(entry);
+
     public Task FlushAsync(CancellationToken token = default) => Task.CompletedTask;
 
     public void Reset()
@@ -45,5 +70,9 @@ internal sealed class RecordingGlobalMutationWriter : IGlobalMutationWriter
         MarketOrderMutations.Clear();
         UserMoneyMutations.Clear();
         UserMoneyLogs.Clear();
+        RoomObjectMutations.Clear();
+        TransactionLogs.Clear();
+        UserResourceMutations.Clear();
+        UserResourceLogs.Clear();
     }
 }

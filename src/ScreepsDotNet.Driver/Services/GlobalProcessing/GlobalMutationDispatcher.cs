@@ -7,6 +7,9 @@ using ScreepsDotNet.Driver.Abstractions.Bulk;
 using ScreepsDotNet.Driver.Abstractions.GlobalProcessing;
 using ScreepsDotNet.Driver.Contracts;
 using ScreepsDotNet.Storage.MongoRedis.Repositories.Documents;
+using static ScreepsDotNet.Common.Constants.RoomDocumentFields;
+using static ScreepsDotNet.Common.Constants.TransactionLogFields;
+using static ScreepsDotNet.Common.Constants.UserResourceLogFields;
 
 internal sealed class GlobalMutationDispatcher(IBulkWriterFactory bulkWriterFactory) : IGlobalMutationDispatcher
 {
@@ -23,9 +26,19 @@ internal sealed class GlobalMutationDispatcher(IBulkWriterFactory bulkWriterFact
 
         var usersWriter = bulkWriterFactory.CreateUsersWriter();
         var hasUserMoneyOps = ApplyUserMoneyMutations(usersWriter, batch.UserMoneyMutations);
+        var hasUserResourceOps = ApplyUserResourceMutations(usersWriter, batch.UserResourceMutations);
 
         var userMoneyWriter = bulkWriterFactory.CreateUsersMoneyWriter();
         var hasMoneyEntryOps = ApplyUserMoneyLogEntries(userMoneyWriter, batch.UserMoneyLogEntries);
+
+        var roomObjectWriter = bulkWriterFactory.CreateRoomObjectsWriter();
+        var hasRoomObjectOps = ApplyRoomObjectMutations(roomObjectWriter, batch.RoomObjectMutations);
+
+        var transactionWriter = bulkWriterFactory.CreateTransactionsWriter();
+        var hasTransactionOps = ApplyTransactionLogEntries(transactionWriter, batch.TransactionLogEntries);
+
+        var userResourceWriter = bulkWriterFactory.CreateUsersResourcesWriter();
+        var hasUserResourceEntryOps = ApplyUserResourceLogEntries(userResourceWriter, batch.UserResourceLogEntries);
 
         if (hasPowerOps)
             await powerWriter.ExecuteAsync(token).ConfigureAwait(false);
@@ -35,10 +48,16 @@ internal sealed class GlobalMutationDispatcher(IBulkWriterFactory bulkWriterFact
             if (interShardWriter.HasPendingOperations)
                 await interShardWriter.ExecuteAsync(token).ConfigureAwait(false);
         }
-        if (hasUserMoneyOps)
+        if (hasUserMoneyOps || hasUserResourceOps)
             await usersWriter.ExecuteAsync(token).ConfigureAwait(false);
         if (hasMoneyEntryOps)
             await userMoneyWriter.ExecuteAsync(token).ConfigureAwait(false);
+        if (hasRoomObjectOps)
+            await roomObjectWriter.ExecuteAsync(token).ConfigureAwait(false);
+        if (hasTransactionOps)
+            await transactionWriter.ExecuteAsync(token).ConfigureAwait(false);
+        if (hasUserResourceEntryOps)
+            await userResourceWriter.ExecuteAsync(token).ConfigureAwait(false);
     }
 
     private static bool ApplyPowerCreepMutations(IBulkWriter<PowerCreepDocument> writer, IReadOnlyList<PowerCreepMutation> mutations)
@@ -180,6 +199,135 @@ internal sealed class GlobalMutationDispatcher(IBulkWriterFactory bulkWriterFact
         }
 
         return writer.HasPendingOperations;
+    }
+
+    private static bool ApplyRoomObjectMutations(IBulkWriter<RoomObjectDocument> writer, IReadOnlyList<RoomObjectMutation> mutations)
+    {
+        if (mutations.Count == 0)
+            return false;
+
+        foreach (var mutation in mutations) {
+            if (string.IsNullOrWhiteSpace(mutation.Id))
+                continue;
+
+            switch (mutation.Type) {
+                case RoomObjectMutationType.Upsert:
+                    if (mutation.Snapshot is null)
+                        continue;
+                    var document = RoomObjectSnapshotMapper.ToDocument(mutation.Snapshot);
+                    writer.Insert(document, NormalizeId(mutation.Id));
+                    break;
+
+                case RoomObjectMutationType.Patch:
+                    if (mutation.Patch is null)
+                        continue;
+                    var bsonPatch = BuildRoomObjectPatchDocument(mutation.Patch);
+                    if (bsonPatch.ElementCount == 0)
+                        continue;
+                    writer.Update(NormalizeId(mutation.Id), bsonPatch);
+                    break;
+
+                case RoomObjectMutationType.Remove:
+                    writer.Remove(NormalizeId(mutation.Id));
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        return writer.HasPendingOperations;
+    }
+
+    private static bool ApplyTransactionLogEntries(IBulkWriter<BsonDocument> writer, IReadOnlyList<TransactionLogEntry> entries)
+    {
+        if (entries.Count == 0)
+            return false;
+
+        foreach (var entry in entries) {
+            var document = new BsonDocument
+            {
+                [Time] = entry.Tick,
+                [Sender] = !string.IsNullOrWhiteSpace(entry.SenderId) ? entry.SenderId : BsonNull.Value,
+                [Recipient] = !string.IsNullOrWhiteSpace(entry.RecipientId) ? entry.RecipientId : BsonNull.Value,
+                [TransactionLogFields.ResourceType] = entry.ResourceType,
+                [Amount] = entry.Amount,
+                [From] = entry.FromRoom,
+                [To] = entry.ToRoom
+            };
+
+            if (!string.IsNullOrWhiteSpace(entry.OrderId))
+                document[Order] = entry.OrderId;
+            if (!string.IsNullOrWhiteSpace(entry.Description))
+                document[Description] = entry.Description;
+
+            writer.Insert(document);
+        }
+
+        return writer.HasPendingOperations;
+    }
+
+    private static bool ApplyUserResourceMutations(IBulkWriter<UserDocument> writer, IReadOnlyList<UserResourceMutation> mutations)
+    {
+        if (mutations.Count == 0)
+            return false;
+
+        foreach (var mutation in mutations) {
+            if (string.IsNullOrWhiteSpace(mutation.UserId) || string.IsNullOrWhiteSpace(mutation.ResourceType))
+                continue;
+
+            var update = new BsonDocument($"{UserDocumentFields.Resources}.{mutation.ResourceType}", mutation.NewBalance);
+            writer.Update(mutation.UserId, update);
+        }
+
+        return writer.HasPendingOperations;
+    }
+
+    private static bool ApplyUserResourceLogEntries(IBulkWriter<BsonDocument> writer, IReadOnlyList<UserResourceLogEntry> entries)
+    {
+        if (entries.Count == 0)
+            return false;
+
+        foreach (var entry in entries) {
+            var document = new BsonDocument
+            {
+                [Date] = entry.TimestampUtc,
+                [UserResourceLogFields.ResourceType] = entry.ResourceType,
+                [User] = entry.UserId,
+                [Change] = entry.Change,
+                [Balance] = entry.Balance
+            };
+
+            if (!string.IsNullOrWhiteSpace(entry.MarketOrderId))
+                document[MarketOrderId] = entry.MarketOrderId;
+            if (entry.Metadata is not null && entry.Metadata.Count > 0)
+                document[Market] = BsonDocument.Create(entry.Metadata);
+
+            writer.Insert(document);
+        }
+
+        return writer.HasPendingOperations;
+    }
+
+    private static BsonDocument BuildRoomObjectPatchDocument(GlobalRoomObjectPatch patch)
+    {
+        var document = new BsonDocument();
+        if (patch.X.HasValue)
+            document[RoomObject.X] = patch.X.Value;
+        if (patch.Y.HasValue)
+            document[RoomObject.Y] = patch.Y.Value;
+        if (patch.Hits.HasValue)
+            document[RoomObject.Hits] = patch.Hits.Value;
+        if (patch.Energy.HasValue)
+            document[RoomObject.Energy] = patch.Energy.Value;
+        if (patch.EnergyCapacity.HasValue)
+            document[RoomObject.EnergyCapacity] = patch.EnergyCapacity.Value;
+        if (patch.CooldownTime.HasValue)
+            document[RoomObject.CooldownTime] = patch.CooldownTime.Value;
+        if (patch.Store is not null && patch.Store.Count > 0)
+            document[RoomObject.Store.Root] = new BsonDocument(patch.Store.Select(kvp => new BsonElement(kvp.Key, kvp.Value)));
+        if (!string.IsNullOrWhiteSpace(patch.Shard))
+            document[RoomObject.Shard] = patch.Shard;
+        return document;
     }
 
     private static string NormalizeId(string id)

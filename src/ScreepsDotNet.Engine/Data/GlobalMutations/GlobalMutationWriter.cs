@@ -9,6 +9,10 @@ internal sealed class GlobalMutationWriter(IGlobalMutationDispatcher dispatcher)
     private readonly List<MarketOrderMutation> _marketOrderMutations = [];
     private readonly List<UserMoneyMutation> _userMoneyMutations = [];
     private readonly List<UserMoneyLogEntry> _userMoneyEntries = [];
+    private readonly List<RoomObjectMutation> _roomObjectMutations = [];
+    private readonly List<TransactionLogEntry> _transactionEntries = [];
+    private readonly List<UserResourceMutation> _userResourceMutations = [];
+    private readonly List<UserResourceLogEntry> _userResourceEntries = [];
 
     public void PatchPowerCreep(string powerCreepId, PowerCreepMutationPatch patch)
     {
@@ -68,12 +72,58 @@ internal sealed class GlobalMutationWriter(IGlobalMutationDispatcher dispatcher)
         _userMoneyEntries.Add(entry);
     }
 
+    public void UpsertRoomObject(RoomObjectSnapshot snapshot)
+    {
+        ArgumentNullException.ThrowIfNull(snapshot);
+        _roomObjectMutations.Add(new RoomObjectMutation(snapshot.Id, RoomObjectMutationType.Upsert, Snapshot: snapshot));
+    }
+
+    public void PatchRoomObject(string objectId, GlobalRoomObjectPatch patch)
+    {
+        if (string.IsNullOrWhiteSpace(objectId) || patch is null)
+            return;
+
+        _roomObjectMutations.Add(new RoomObjectMutation(objectId, RoomObjectMutationType.Patch, Patch: patch));
+    }
+
+    public void RemoveRoomObject(string objectId)
+    {
+        if (string.IsNullOrWhiteSpace(objectId))
+            return;
+
+        _roomObjectMutations.Add(new RoomObjectMutation(objectId, RoomObjectMutationType.Remove));
+    }
+
+    public void InsertTransaction(TransactionLogEntry entry)
+    {
+        ArgumentNullException.ThrowIfNull(entry);
+        _transactionEntries.Add(entry);
+    }
+
+    public void AdjustUserResource(string userId, string resourceType, int newBalance)
+    {
+        if (string.IsNullOrWhiteSpace(userId) || string.IsNullOrWhiteSpace(resourceType))
+            return;
+
+        _userResourceMutations.Add(new UserResourceMutation(userId, resourceType, newBalance));
+    }
+
+    public void InsertUserResourceLog(UserResourceLogEntry entry)
+    {
+        ArgumentNullException.ThrowIfNull(entry);
+        _userResourceEntries.Add(entry);
+    }
+
     public async Task FlushAsync(CancellationToken token = default)
     {
         if (_powerCreepMutations.Count == 0 &&
             _marketOrderMutations.Count == 0 &&
             _userMoneyMutations.Count == 0 &&
-            _userMoneyEntries.Count == 0) {
+            _userMoneyEntries.Count == 0 &&
+            _roomObjectMutations.Count == 0 &&
+            _transactionEntries.Count == 0 &&
+            _userResourceMutations.Count == 0 &&
+            _userResourceEntries.Count == 0) {
             return;
         }
 
@@ -81,7 +131,11 @@ internal sealed class GlobalMutationWriter(IGlobalMutationDispatcher dispatcher)
             [.. _powerCreepMutations],
             [.. _marketOrderMutations],
             [.. _userMoneyMutations],
-            [.. _userMoneyEntries]);
+            [.. _userMoneyEntries],
+            [.. _roomObjectMutations],
+            [.. _transactionEntries],
+            [.. _userResourceMutations],
+            [.. _userResourceEntries]);
         await dispatcher.ApplyAsync(batch, token).ConfigureAwait(false);
         Reset();
     }
@@ -92,5 +146,9 @@ internal sealed class GlobalMutationWriter(IGlobalMutationDispatcher dispatcher)
         _marketOrderMutations.Clear();
         _userMoneyMutations.Clear();
         _userMoneyEntries.Clear();
+        _roomObjectMutations.Clear();
+        _transactionEntries.Clear();
+        _userResourceMutations.Clear();
+        _userResourceEntries.Clear();
     }
 }

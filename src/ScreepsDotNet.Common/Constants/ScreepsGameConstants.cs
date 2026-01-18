@@ -170,6 +170,10 @@ public static class ScreepsGameConstants
     public const int TerminalCapacity = 300_000;
     public const int TerminalCooldown = 10;
     public const double MarketFee = 0.05;
+    public const int PowerLevelMultiply = 1000;
+    public const double PowerLevelPow = 2.0;
+    public const int PowerCreepMaxLevel = 25;
+    public const int PowerCreepLifeTime = 5000;
     public const int PowerCreepDeleteCooldownMilliseconds = 24 * 60 * 60 * 1000;
     public const int PowerExperimentationCooldownMilliseconds = 24 * 60 * 60 * 1000;
     public const int ContainerHits = 250_000;

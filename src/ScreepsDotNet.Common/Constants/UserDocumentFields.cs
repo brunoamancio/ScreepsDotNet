@@ -21,6 +21,7 @@ public static class UserDocumentFields
     public const string Rooms = "rooms";
     public const string Power = "power";
     public const string Money = "money";
+    public const string Resources = "resources";
     public const string CustomBadge = "customBadge";
     public const string PowerExperimentations = "powerExperimentations";
     public const string PowerExperimentationTime = "powerExperimentationTime";

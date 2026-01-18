@@ -9,7 +9,11 @@ public sealed record GlobalMutationBatch(
     IReadOnlyList<PowerCreepMutation> PowerCreepMutations,
     IReadOnlyList<MarketOrderMutation> MarketOrderMutations,
     IReadOnlyList<UserMoneyMutation> UserMoneyMutations,
-    IReadOnlyList<UserMoneyLogEntry> UserMoneyLogEntries)
+    IReadOnlyList<UserMoneyLogEntry> UserMoneyLogEntries,
+    IReadOnlyList<RoomObjectMutation> RoomObjectMutations,
+    IReadOnlyList<TransactionLogEntry> TransactionLogEntries,
+    IReadOnlyList<UserResourceMutation> UserResourceMutations,
+    IReadOnlyList<UserResourceLogEntry> UserResourceLogEntries)
 {
-    public static readonly GlobalMutationBatch Empty = new([], [], [], []);
+    public static readonly GlobalMutationBatch Empty = new([], [], [], [], [], [], [], []);
 }

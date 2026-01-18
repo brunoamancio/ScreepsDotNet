@@ -1,6 +1,5 @@
 namespace ScreepsDotNet.Engine.Processors.GlobalSteps;
 
-using MongoDB.Bson;
 using ScreepsDotNet.Common.Constants;
 using ScreepsDotNet.Driver.Constants;
 using ScreepsDotNet.Driver.Contracts;
@@ -93,7 +92,7 @@ internal sealed class MarketIntentStep : IGlobalProcessorStep
             if (!TryDebitUser(context, userId, fee, out var newBalance))
                 continue;
 
-            var orderId = ObjectId.GenerateNewId().ToString();
+            var orderId = Guid.NewGuid().ToString("N");
             var snapshot = new MarketOrderSnapshot(
                 orderId,
                 userId,
