@@ -164,7 +164,7 @@ public sealed class PowerCreepIntentStepTests
             [],
             new Dictionary<string, UserState>
             {
-                ["user1"] = new("user1", "player", 0, 0, 0, true, powerExperimentationTime)
+                ["user1"] = new("user1", "player", 0, 0, 0, true, powerExperimentationTime, new Dictionary<string, int>())
             },
             [powerCreep],
             [intentSnapshot],

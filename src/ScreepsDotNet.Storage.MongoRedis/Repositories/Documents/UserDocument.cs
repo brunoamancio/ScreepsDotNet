@@ -68,6 +68,9 @@ public sealed class UserDocument
 
     [BsonElement("usernameLower")]
     public string? UsernameLower { get; set; }
+
+    [BsonElement("resources")]
+    public Dictionary<string, int>? Resources { get; set; }
 }
 
 [BsonIgnoreExtraElements]

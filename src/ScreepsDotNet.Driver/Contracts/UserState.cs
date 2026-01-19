@@ -10,4 +10,5 @@ public sealed record UserState(
     double Power,
     double Money,
     bool Active,
-    double PowerExperimentationTime);
+    double PowerExperimentationTime,
+    IReadOnlyDictionary<string, int> Resources);

@@ -127,7 +127,7 @@ public sealed class MarketIntentStepTests
             orders,
             new Dictionary<string, UserState>(StringComparer.Ordinal)
             {
-                [userId] = new(userId, "user", 0, 0, money, true, 0)
+                [userId] = new(userId, "user", 0, 0, money, true, 0, new Dictionary<string, int>())
             },
             [],
             [

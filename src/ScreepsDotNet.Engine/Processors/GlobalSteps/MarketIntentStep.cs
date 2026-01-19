@@ -30,6 +30,9 @@ internal sealed partial class MarketIntentStep : IGlobalProcessorStep
         var orderMap = BuildOrderMap(context.State.Market.Orders);
         var terminalsByRoom = BuildTerminalMap(context);
 
+        var terminalDeals = new List<DealIntent>();
+        var directDeals = new List<DealIntent>();
+
         foreach (var (userId, intentSnapshot) in context.UserIntentsByUser) {
             if (string.IsNullOrWhiteSpace(userId))
                 continue;
@@ -51,6 +54,9 @@ internal sealed partial class MarketIntentStep : IGlobalProcessorStep
                     case GlobalIntentTypes.ExtendOrder:
                         ProcessExtendOrders(record.Arguments, context, userId, orderMap);
                         break;
+                    case GlobalIntentTypes.Deal:
+                        ProcessDealIntents(record.Arguments, userId, orderMap, terminalsByRoom, terminalDeals, directDeals);
+                        break;
                     default:
                         break;
                 }
@@ -58,6 +64,8 @@ internal sealed partial class MarketIntentStep : IGlobalProcessorStep
         }
 
         ProcessTerminalSends(context, terminalsByRoom);
+        ProcessTerminalDeals(context, terminalDeals, terminalsByRoom, orderMap);
+        ProcessDirectDeals(context, directDeals, orderMap);
 
         return Task.CompletedTask;
     }
@@ -303,6 +311,24 @@ internal sealed partial class MarketIntentStep : IGlobalProcessorStep
             type,
             balance / 1000.0,
             change / 1000.0,
+            metadata);
+    }
+
+    private UserResourceLogEntry CreateResourceLogEntry(
+        string resourceType,
+        string userId,
+        int change,
+        int balance,
+        IReadOnlyDictionary<string, object?>? metadata = null)
+    {
+        var timestamp = _timestampProvider();
+        return new UserResourceLogEntry(
+            DateTimeOffset.FromUnixTimeMilliseconds(timestamp).UtcDateTime,
+            userId,
+            resourceType,
+            change,
+            balance,
+            null,
             metadata);
     }
 
@@ -583,8 +609,340 @@ internal sealed partial class MarketIntentStep : IGlobalProcessorStep
     private static TerminalSendSnapshot? TryExtractSendIntent(RoomObjectSnapshot terminal)
         => terminal.Send;
 
+    private static void ProcessDealIntents(
+        IReadOnlyList<IntentArgument> arguments,
+        string userId,
+        Dictionary<string, OrderState> orderMap,
+        IReadOnlyDictionary<string, RoomObjectSnapshot> terminalsByRoom,
+        List<DealIntent> terminalDeals,
+        List<DealIntent> directDeals)
+    {
+        foreach (var argument in arguments) {
+            var orderId = GetText(argument, OrderId);
+            if (string.IsNullOrWhiteSpace(orderId) || !orderMap.TryGetValue(orderId, out var orderState))
+                continue;
+
+            if (!TryGetInt(argument, Amount, out var amount) || amount <= 0)
+                continue;
+
+            var order = orderState.Snapshot;
+            if (order.ResourceType is null)
+                continue;
+
+            var deal = new DealIntent(
+                UserId: userId,
+                OrderId: orderId!,
+                Amount: amount,
+                TargetRoomName: GetText(argument, TargetRoomName) ?? string.Empty);
+
+            if (IntershardResources.Contains(order.ResourceType)) {
+                directDeals.Add(deal);
+            }
+            else {
+                if (!terminalsByRoom.TryGetValue(deal.TargetRoomName, out var terminal))
+                    continue;
+
+                if (!string.Equals(terminal.UserId, userId, StringComparison.Ordinal))
+                    continue;
+
+                terminalDeals.Add(deal);
+            }
+        }
+    }
+
+    private void ProcessTerminalDeals(
+        GlobalProcessorContext context,
+        List<DealIntent> terminalDeals,
+        IReadOnlyDictionary<string, RoomObjectSnapshot> terminalsByRoom,
+        Dictionary<string, OrderState> orderMap)
+    {
+        terminalDeals.Sort((a, b) => {
+            if (!orderMap.TryGetValue(a.OrderId, out var orderA) || string.IsNullOrWhiteSpace(orderA.Snapshot.RoomName))
+                return 1;
+            if (!orderMap.TryGetValue(b.OrderId, out var orderB) || string.IsNullOrWhiteSpace(orderB.Snapshot.RoomName))
+                return -1;
+
+            var distanceA = CalculateRoomDistance(a.TargetRoomName, orderA.Snapshot.RoomName, continuous: true);
+            var distanceB = CalculateRoomDistance(b.TargetRoomName, orderB.Snapshot.RoomName, continuous: true);
+            return distanceA.CompareTo(distanceB);
+        });
+
+        foreach (var deal in terminalDeals) {
+            if (!orderMap.TryGetValue(deal.OrderId, out var orderState))
+                continue;
+
+            var order = orderState.Snapshot;
+            if (!terminalsByRoom.TryGetValue(order.RoomName ?? string.Empty, out var orderTerminal))
+                continue;
+
+            if (!terminalsByRoom.TryGetValue(deal.TargetRoomName, out var targetTerminal))
+                continue;
+
+            if (targetTerminal.CooldownTime > context.GameTime)
+                continue;
+
+            var isSellOrder = string.Equals(order.Type, MarketOrderTypes.Sell, StringComparison.Ordinal);
+            var buyer = isSellOrder ? targetTerminal : orderTerminal;
+            var seller = isSellOrder ? orderTerminal : targetTerminal;
+
+            var amount = Math.Min(deal.Amount, order.RemainingAmount);
+
+            if (!string.IsNullOrWhiteSpace(seller.UserId)) {
+                var sellerResource = seller.Store.GetValueOrDefault(order.ResourceType!, 0);
+                amount = Math.Min(amount, sellerResource);
+            }
+
+            if (!string.IsNullOrWhiteSpace(buyer.UserId)) {
+                var buyerTotal = CalculateResourceTotal(buyer);
+                var buyerFreeSpace = Math.Max(0, buyer.StoreCapacity.GetValueOrDefault() - buyerTotal);
+                amount = Math.Min(amount, buyerFreeSpace);
+            }
+
+            if (amount <= 0)
+                continue;
+
+            var dealCost = amount * order.Price;
+
+            if (!string.IsNullOrWhiteSpace(buyer.UserId)) {
+                if (!context.UsersById.TryGetValue(buyer.UserId, out var buyerUser))
+                    continue;
+
+                dealCost = Math.Min(dealCost, (long)buyerUser.Money);
+                amount = (int)Math.Floor((double)dealCost / order.Price);
+                dealCost = amount * order.Price;
+
+                if (amount <= 0)
+                    continue;
+            }
+
+            var orderDescription = $"{{\"order\":{{\"id\":\"{order.Id}\",\"type\":\"{order.Type}\",\"price\":{order.Price / 1000.0}}}}}";
+
+            var transferSuccess = ExecuteTerminalTransfer(
+                seller,
+                buyer,
+                order.ResourceType!,
+                amount,
+                targetTerminal,
+                orderDescription,
+                context,
+                terminalsByRoom);
+
+            if (!transferSuccess)
+                continue;
+
+            if (!string.IsNullOrWhiteSpace(seller.UserId)) {
+                var newBalance = context.UsersById[seller.UserId].Money + dealCost;
+                context.Mutations.AdjustUserMoney(seller.UserId, newBalance);
+
+                context.Mutations.InsertUserMoneyLog(CreateMoneyLogEntry(
+                    seller.UserId,
+                    context.GameTime,
+                    newBalance,
+                    dealCost,
+                    MoneyLogTypes.MarketSell,
+                    new Dictionary<string, object?>(Comparer)
+                    {
+                        [Market] = new Dictionary<string, object?>
+                        {
+                            [ResourceType] = order.ResourceType!,
+                            [RoomName] = order.RoomName,
+                            [TargetRoomName] = deal.TargetRoomName,
+                            [Price] = order.Price / 1000.0,
+                            [Npc] = string.IsNullOrWhiteSpace(buyer.UserId),
+                            [Owner] = order.UserId,
+                            [Dealer] = deal.UserId,
+                            [Amount] = amount
+                        }
+                    }));
+
+                context.UsersById[seller.UserId] = context.UsersById[seller.UserId] with { Money = newBalance };
+            }
+
+            if (!string.IsNullOrWhiteSpace(buyer.UserId)) {
+                var newBalance = context.UsersById[buyer.UserId].Money - dealCost;
+                context.Mutations.AdjustUserMoney(buyer.UserId, newBalance);
+
+                context.Mutations.InsertUserMoneyLog(CreateMoneyLogEntry(
+                    buyer.UserId,
+                    context.GameTime,
+                    newBalance,
+                    -dealCost,
+                    MoneyLogTypes.MarketBuy,
+                    new Dictionary<string, object?>(Comparer)
+                    {
+                        [Market] = new Dictionary<string, object?>
+                        {
+                            [ResourceType] = order.ResourceType!,
+                            [RoomName] = order.RoomName,
+                            [TargetRoomName] = deal.TargetRoomName,
+                            [Price] = order.Price / 1000.0,
+                            [Npc] = string.IsNullOrWhiteSpace(seller.UserId),
+                            [Owner] = order.UserId,
+                            [Dealer] = deal.UserId,
+                            [Amount] = amount
+                        }
+                    }));
+
+                context.UsersById[buyer.UserId] = context.UsersById[buyer.UserId] with { Money = newBalance };
+            }
+
+            var newAmount = order.Amount - amount;
+            var newRemainingAmount = order.RemainingAmount - amount;
+            var patch = new MarketOrderPatch(Amount: newAmount, RemainingAmount: newRemainingAmount);
+            context.Mutations.PatchMarketOrder(order.Id, patch, orderState.IsInterShard);
+
+            orderMap[order.Id] = orderState with { Snapshot = orderState.Snapshot with { Amount = newAmount, RemainingAmount = newRemainingAmount } };
+
+            var cooldown = ScreepsGameConstants.TerminalCooldown;
+            var operateEffect = GetPowerEffect(targetTerminal, PowerTypes.OperateTerminal, context.GameTime);
+            if (operateEffect.HasValue) {
+                var effectMultiplier = GetPowerEffectMultiplier(PowerTypes.OperateTerminal, operateEffect.Value.Level);
+                var result = Math.Round(cooldown * effectMultiplier);
+                cooldown = (int)result;
+            }
+
+            var newCooldownTime = context.GameTime + cooldown;
+            context.Mutations.PatchRoomObject(targetTerminal.Id, new GlobalRoomObjectPatch(CooldownTime: newCooldownTime));
+        }
+    }
+
+    private void ProcessDirectDeals(
+        GlobalProcessorContext context,
+        List<DealIntent> directDeals,
+        Dictionary<string, OrderState> orderMap)
+    {
+        var random = new Random();
+        var shuffled = directDeals.OrderBy(_ => random.Next()).ToList();
+
+        foreach (var deal in shuffled) {
+            if (!orderMap.TryGetValue(deal.OrderId, out var orderState))
+                continue;
+
+            var order = orderState.Snapshot;
+
+            if (!context.UsersById.TryGetValue(deal.UserId, out var dealerUser))
+                continue;
+
+            if (!context.UsersById.TryGetValue(order.UserId ?? string.Empty, out var orderOwnerUser))
+                continue;
+
+            var isSellOrder = string.Equals(order.Type, MarketOrderTypes.Sell, StringComparison.Ordinal);
+            var buyer = isSellOrder ? dealerUser : orderOwnerUser;
+            var seller = isSellOrder ? orderOwnerUser : dealerUser;
+            var buyerId = isSellOrder ? deal.UserId : order.UserId ?? string.Empty;
+            var sellerId = isSellOrder ? order.UserId ?? string.Empty : deal.UserId;
+
+            var sellerResource = seller.Resources.GetValueOrDefault(order.ResourceType!, 0);
+            var amount = Math.Min(deal.Amount, Math.Min(order.Amount, Math.Min(order.RemainingAmount, sellerResource)));
+
+            if (amount <= 0)
+                continue;
+
+            var dealCost = amount * order.Price;
+
+            if (buyer.Money < dealCost)
+                continue;
+
+            var sellerNewMoney = seller.Money + dealCost;
+            var sellerNewResource = seller.Resources.GetValueOrDefault(order.ResourceType!, 0) - amount;
+            context.Mutations.AdjustUserMoney(sellerId, sellerNewMoney);
+            context.Mutations.AdjustUserResource(sellerId, order.ResourceType!, sellerNewResource);
+
+            context.Mutations.InsertUserMoneyLog(CreateMoneyLogEntry(
+                sellerId,
+                context.GameTime,
+                sellerNewMoney,
+                dealCost,
+                MoneyLogTypes.MarketSell,
+                new Dictionary<string, object?>(Comparer)
+                {
+                    [Market] = new Dictionary<string, object?>
+                    {
+                        [ResourceType] = order.ResourceType!,
+                        [Price] = order.Price / 1000.0,
+                        [Amount] = amount
+                    }
+                }));
+
+            context.Mutations.InsertUserResourceLog(CreateResourceLogEntry(
+                order.ResourceType!,
+                sellerId,
+                -amount,
+                sellerNewResource,
+                new Dictionary<string, object?>(Comparer)
+                {
+                    [Market] = new Dictionary<string, object?>
+                    {
+                        [OrderId] = order.Id,
+                        [AnotherUser] = buyerId
+                    }
+                }));
+
+            var buyerNewMoney = buyer.Money - dealCost;
+            var buyerNewResource = buyer.Resources.GetValueOrDefault(order.ResourceType!, 0) + amount;
+            context.Mutations.AdjustUserMoney(buyerId, buyerNewMoney);
+            context.Mutations.AdjustUserResource(buyerId, order.ResourceType!, buyerNewResource);
+
+            context.Mutations.InsertUserMoneyLog(CreateMoneyLogEntry(
+                buyerId,
+                context.GameTime,
+                buyerNewMoney,
+                -dealCost,
+                MoneyLogTypes.MarketBuy,
+                new Dictionary<string, object?>(Comparer)
+                {
+                    [Market] = new Dictionary<string, object?>
+                    {
+                        [ResourceType] = order.ResourceType!,
+                        [Price] = order.Price / 1000.0,
+                        [Amount] = amount
+                    }
+                }));
+
+            context.Mutations.InsertUserResourceLog(CreateResourceLogEntry(
+                order.ResourceType!,
+                buyerId,
+                amount,
+                buyerNewResource,
+                new Dictionary<string, object?>(Comparer)
+                {
+                    [Market] = new Dictionary<string, object?>
+                    {
+                        [OrderId] = order.Id,
+                        [AnotherUser] = sellerId
+                    }
+                }));
+
+            var newAmount = order.Amount - amount;
+            var newRemainingAmount = order.RemainingAmount - amount;
+            var patch = new MarketOrderPatch(Amount: newAmount, RemainingAmount: newRemainingAmount);
+            context.Mutations.PatchMarketOrder(order.Id, patch, orderState.IsInterShard);
+
+            orderMap[order.Id] = orderState with { Snapshot = orderState.Snapshot with { Amount = newAmount, RemainingAmount = newRemainingAmount } };
+
+            context.UsersById[sellerId] = context.UsersById[sellerId] with
+            {
+                Money = sellerNewMoney,
+                Resources = new Dictionary<string, int>(seller.Resources, Comparer)
+                {
+                    [order.ResourceType!] = sellerNewResource
+                }
+            };
+
+            context.UsersById[buyerId] = context.UsersById[buyerId] with
+            {
+                Money = buyerNewMoney,
+                Resources = new Dictionary<string, int>(buyer.Resources, Comparer)
+                {
+                    [order.ResourceType!] = buyerNewResource
+                }
+            };
+        }
+    }
+
     [GeneratedRegex(@"^([WE])(\d+)([NS])(\d+)$")]
     private static partial Regex RoomNameRegex();
 
     private sealed record OrderState(MarketOrderSnapshot Snapshot, bool IsInterShard);
+    private sealed record DealIntent(string UserId, string OrderId, int Amount, string TargetRoomName);
 }

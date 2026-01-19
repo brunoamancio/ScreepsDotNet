@@ -105,7 +105,8 @@ internal static class RoomContractMapper
                 document.Power ?? 0,
                 document.Money ?? 0,
                 document.Active.GetValueOrDefault() != 0,
-                document.PowerExperimentationTime ?? 0);
+                document.PowerExperimentationTime ?? 0,
+                document.Resources ?? new Dictionary<string, int>(StringComparer.Ordinal));
         }
 
         return result;

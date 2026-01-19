@@ -6,4 +6,6 @@ namespace ScreepsDotNet.Driver.Constants;
 public static class MoneyLogTypes
 {
     public const string MarketFee = "market.fee";
+    public const string MarketSell = "market.sell";
+    public const string MarketBuy = "market.buy";
 }

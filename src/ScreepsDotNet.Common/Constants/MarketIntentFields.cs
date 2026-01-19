@@ -11,6 +11,7 @@ public static class MarketIntentFields
     public const string TotalAmount = "totalAmount";
     public const string Amount = "amount";
     public const string RoomName = "roomName";
+    public const string TargetRoomName = "targetRoomName";
     public const string OrderId = "orderId";
     public const string NewPrice = "newPrice";
     public const string OldPrice = "oldPrice";
@@ -18,4 +19,9 @@ public static class MarketIntentFields
     public const string AddAmount = "addAmount";
     public const string ExtendOrder = "extendOrder";
     public const string Order = "order";
+    public const string Market = "market";
+    public const string Npc = "npc";
+    public const string Owner = "owner";
+    public const string Dealer = "dealer";
+    public const string AnotherUser = "anotherUser";
 }
