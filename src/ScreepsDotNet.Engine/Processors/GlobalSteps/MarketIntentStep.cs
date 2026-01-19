@@ -15,6 +15,7 @@ internal sealed partial class MarketIntentStep : IGlobalProcessorStep
     private static readonly StringComparer Comparer = StringComparer.Ordinal;
     private static readonly HashSet<string> IntershardResources = new(ScreepsGameConstants.IntershardResources, Comparer);
     private static readonly HashSet<string> ValidResources = new(ScreepsGameConstants.ResourceOrder, Comparer);
+    private const long MarketOrderLifeTimeMs = 1000L * 60 * 60 * 24 * 30; // 30 days
     private readonly Func<long> _timestampProvider;
 
     public MarketIntentStep()
@@ -66,6 +67,7 @@ internal sealed partial class MarketIntentStep : IGlobalProcessorStep
         ProcessTerminalSends(context, terminalsByRoom);
         ProcessTerminalDeals(context, terminalDeals, terminalsByRoom, orderMap);
         ProcessDirectDeals(context, directDeals, orderMap);
+        ProcessOrderMaintenance(context, orderMap, terminalsByRoom);
 
         return Task.CompletedTask;
     }
@@ -937,6 +939,107 @@ internal sealed partial class MarketIntentStep : IGlobalProcessorStep
                     [order.ResourceType!] = buyerNewResource
                 }
             };
+        }
+    }
+
+    private void ProcessOrderMaintenance(
+        GlobalProcessorContext context,
+        Dictionary<string, OrderState> orderMap,
+        IReadOnlyDictionary<string, RoomObjectSnapshot> terminalsByRoom)
+    {
+        foreach (var (orderId, orderState) in orderMap) {
+            var order = orderState.Snapshot;
+
+            if (string.IsNullOrWhiteSpace(order.UserId))
+                continue;
+
+            if (order.CreatedTimestamp.HasValue) {
+                var currentTimestamp = _timestampProvider();
+                var age = currentTimestamp - order.CreatedTimestamp.Value;
+
+                if (age > MarketOrderLifeTimeMs) {
+                    var feeRefund = order.RemainingAmount * order.Price * ScreepsGameConstants.MarketFee;
+
+                    var user = context.UsersById[order.UserId];
+                    var newBalance = user.Money + feeRefund;
+                    context.Mutations.AdjustUserMoney(order.UserId, newBalance);
+
+                    context.Mutations.InsertUserMoneyLog(CreateMoneyLogEntry(
+                        order.UserId,
+                        context.GameTime,
+                        newBalance,
+                        feeRefund,
+                        MoneyLogTypes.MarketFee,
+                        new Dictionary<string, object?>(Comparer)
+                        {
+                            [Market] = new Dictionary<string, object?>
+                            {
+                                [Order] = new Dictionary<string, object?>
+                                {
+                                    [Type] = order.Type,
+                                    [ResourceType] = order.ResourceType,
+                                    [Price] = order.Price / 1000.0,
+                                    [TotalAmount] = order.TotalAmount,
+                                    [RoomName] = order.RoomName
+                                }
+                            }
+                        }));
+
+                    context.Mutations.RemoveMarketOrder(order.Id, orderState.IsInterShard);
+
+                    context.UsersById[order.UserId] = user with { Money = newBalance };
+
+                    continue;
+                }
+            }
+
+            if (string.Equals(order.Type, MarketOrderTypes.Sell, StringComparison.Ordinal)) {
+                int availableAmount;
+
+                if (IntershardResources.Contains(order.ResourceType!)) {
+                    var user = context.UsersById[order.UserId];
+                    var result = user.Resources.TryGetValue(order.ResourceType!, out var amount);
+                    availableAmount = result ? amount : 0;
+                }
+                else {
+                    var hasTerminal = terminalsByRoom.TryGetValue(order.RoomName!, out var terminal);
+                    var ownsTerminal = hasTerminal && terminal is not null && string.Equals(terminal.UserId, order.UserId, StringComparison.Ordinal);
+
+                    availableAmount = ownsTerminal && terminal!.Store.TryGetValue(order.ResourceType!, out var storeAmount) ? storeAmount : 0;
+                }
+
+                var newActive = availableAmount > 0;
+                var newAmount = availableAmount;
+
+                if (order.Active != newActive || order.Amount != newAmount) {
+                    var patch = new MarketOrderPatch(Active: newActive, Amount: newAmount);
+                    context.Mutations.PatchMarketOrder(order.Id, patch, orderState.IsInterShard);
+                }
+            }
+
+            if (string.Equals(order.Type, MarketOrderTypes.Buy, StringComparison.Ordinal)) {
+                var user = context.UsersById[order.UserId];
+
+                var affordableAmount = (int)Math.Floor(user.Money / order.Price);
+
+                var newAmount = Math.Min(affordableAmount, order.RemainingAmount);
+
+                var hasTerminal = terminalsByRoom.TryGetValue(order.RoomName!, out var terminal);
+                var ownsTerminal = hasTerminal && terminal is not null && string.Equals(terminal.UserId, order.UserId, StringComparison.Ordinal);
+
+                if (ownsTerminal) {
+                    var storeTotal = terminal!.Store.Values.Sum();
+                    var freeSpace = Math.Max(0, terminal.StoreCapacity.GetValueOrDefault() - storeTotal);
+                    newAmount = Math.Min(newAmount, freeSpace);
+                }
+
+                var newActive = ownsTerminal && newAmount > 0;
+
+                if (order.Active != newActive || order.Amount != newAmount) {
+                    var patch = new MarketOrderPatch(Active: newActive, Amount: newAmount);
+                    context.Mutations.PatchMarketOrder(order.Id, patch, orderState.IsInterShard);
+                }
+            }
         }
     }
 
