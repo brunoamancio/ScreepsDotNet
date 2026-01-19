@@ -192,15 +192,15 @@ public sealed class PathfinderNativeIntegrationTests
             ? new (int X, int Y, int Radius)[] { (20, 20, 5), (35, 15, 4) }
             : [(10, 30, 4), (25, 25, 5)];
 
-        foreach (var (X, Y, Radius) in hotZones) {
-            for (var dy = -Radius; dy <= Radius; dy++) {
-                for (var dx = -Radius; dx <= Radius; dx++) {
-                    var x = X + dx;
-                    var y = Y + dy;
-                    if (x < 0 || x >= 50 || y < 0 || y >= 50)
+        foreach (var (x, y, radius) in hotZones) {
+            for (var dy = -radius; dy <= radius; dy++) {
+                for (var dx = -radius; dx <= radius; dx++) {
+                    var posX = x + dx;
+                    var posY = y + dy;
+                    if (posX < 0 || posX >= 50 || posY < 0 || posY >= 50)
                         continue;
 
-                    var idx = (y * 50) + x;
+                    var idx = (posY * 50) + posX;
                     var dist = Math.Max(Math.Abs(dx), Math.Abs(dy));
                     matrix[idx] = (byte)(dist <= 2 ? byte.MaxValue : 180);
                 }

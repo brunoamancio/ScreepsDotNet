@@ -123,6 +123,9 @@ ScreepsDotNet/
 | Lock primitives | - | `Lock _lock = new();` not `object` |
 | Target-typed new | IDE0090 | `new()` not `new Type()` when type is clear from context |
 | IDE0051/52 pragma | - | Add pragma for constants in attribute params |
+| Dictionary access | - | Use `GetValueOrDefault(key, default)` not `TryGetValue` ternary |
+| Tuple variable naming | - | Use camelCase: `var (id, name)`, discard unused: `var (_, name)` |
+| Method signature length | - | Keep on one line unless exceeds 185 characters |
 
 **Implicit usings** (configured in `Directory.Build.props` - never add manually):
 1. `System`

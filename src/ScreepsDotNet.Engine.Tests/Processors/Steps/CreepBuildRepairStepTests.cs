@@ -252,7 +252,7 @@ public sealed class CreepBuildRepairStepTests
         public void IncrementSpawnCreates(string userId) { }
         public void IncrementTombstonesCreated(string userId) { }
         public void IncrementEnergyConstruction(string userId, int amount)
-            => EnergyConstruction[userId] = EnergyConstruction.TryGetValue(userId, out var existing) ? existing + amount : amount;
+            => EnergyConstruction[userId] = EnergyConstruction.GetValueOrDefault(userId, 0) + amount;
         public void IncrementEnergyHarvested(string userId, int amount) { }
         public Task FlushAsync(int gameTime, CancellationToken token = default) => Task.CompletedTask;
     }

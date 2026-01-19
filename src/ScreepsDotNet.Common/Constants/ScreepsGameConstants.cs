@@ -135,6 +135,8 @@ public static class ScreepsGameConstants
         ResourceTypes.AccessKey
     ];
 
+    public static IReadOnlySet<string> ResourcesAll { get; } = new HashSet<string>(ResourceOrder.Concat(IntershardResources), StringComparer.Ordinal);
+
     public static IReadOnlyDictionary<int, int> ExtensionEnergyCapacityByControllerLevel { get; } =
         new Dictionary<int, int>
         {

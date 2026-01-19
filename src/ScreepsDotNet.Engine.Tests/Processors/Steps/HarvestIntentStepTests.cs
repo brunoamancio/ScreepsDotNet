@@ -370,7 +370,7 @@ public sealed class HarvestIntentStepTests
         public Dictionary<string, int> EnergyHarvested { get; } = new(StringComparer.Ordinal);
 
         public void IncrementEnergyHarvested(string userId, int amount)
-            => EnergyHarvested[userId] = EnergyHarvested.TryGetValue(userId, out var existing) ? existing + amount : amount;
+            => EnergyHarvested[userId] = EnergyHarvested.GetValueOrDefault(userId, 0) + amount;
 
         public void IncrementEnergyConstruction(string userId, int amount) { }
         public void IncrementEnergyCreeps(string userId, int amount) { }

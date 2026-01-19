@@ -29,6 +29,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IRoomProcessorStep, TowerIntentStep>();
         services.AddSingleton<IRoomProcessorStep, CreepBuildRepairStep>();
         services.AddSingleton<IRoomProcessorStep, HarvestIntentStep>();
+        services.AddSingleton<IRoomProcessorStep, ResourceTransferIntentStep>();
         services.AddSingleton<IRoomProcessorStep, CombatResolutionStep>();
         services.AddSingleton<IRoomProcessorStep, StructureDecayStep>();
         services.AddSingleton<IRoomProcessorStep, ControllerDowngradeStep>();

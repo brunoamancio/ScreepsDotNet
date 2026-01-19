@@ -1,6 +1,6 @@
 # Coding Standards Reference
 
-Condensed examples for the 16 most critical coding standards. For full rule documentation, see `src/.editorconfig` and `src/ScreepsDotNet.slnx.DotSettings`.
+Condensed examples for the 19 most critical coding standards. For full rule documentation, see `src/.editorconfig` and `src/ScreepsDotNet.slnx.DotSettings`.
 
 ## 1. Variable Declarations (IDE0007)
 
@@ -377,6 +377,104 @@ var powers = new Dictionary<string, PowerCreepPowerSnapshot>(creep.Powers)
 {
     [powerKey] = new PowerCreepPowerSnapshot(Level: 0)  // Explicit type when context is clear
 };
+```
+
+## 17. Tuple Variable Naming (camelCase)
+
+**Rule:** Tuple deconstruction variables must use camelCase, not PascalCase. Use the discard pattern `_` for unused tuple elements.
+
+**✅ Good:**
+```csharp
+// All variables used
+var (objectId, payload) = writer.Patches.Single(p => p.ObjectId == creep.Id);
+Assert.Equal(20, payload.Store![ResourceTypes.Energy]);
+Console.WriteLine(objectId);  // Both used
+
+// Discard unused variables
+var (_, payload) = writer.Patches.Single(p => p.ObjectId == creep.Id && p.Payload.Store is not null);
+Assert.Equal(20, payload.Store![ResourceTypes.Energy]);  // Only payload used
+
+var (id, _) = Assert.Single(writer.PowerCreepPatches);
+Assert.Equal("user1", id);  // Only id used
+
+foreach (var (x, y, _) in hotZones) {  // radius not used
+    var posX = x + dx;
+    var posY = y + dy;
+}
+```
+
+**❌ Bad:**
+```csharp
+var (ObjectId, Payload) = writer.Patches.Single(p => p.ObjectId == creep.Id);  // PascalCase
+Assert.Equal(20, Payload.Store![ResourceTypes.Energy]);
+
+var (objectId, payload) = writer.Patches.Single(...);  // Declared but objectId never used
+Assert.Equal(20, payload.Store![ResourceTypes.Energy]);  // Should use _ instead
+
+foreach (var (X, Y, Radius) in hotZones) {  // PascalCase
+    var posX = X + dx;
+}
+```
+
+## 18. Dictionary GetValueOrDefault
+
+**✅ Good:**
+```csharp
+var targetCurrent = targetStore.GetValueOrDefault(resourceType, 0);
+var userName = userCache.GetValueOrDefault(userId, "Unknown");
+```
+
+**❌ Bad:**
+```csharp
+var targetCurrent = targetStore.TryGetValue(resourceType, out var tc) ? tc : 0;  // Verbose
+var userName = userCache.TryGetValue(userId, out var name) ? name : "Unknown";  // Use GetValueOrDefault instead
+```
+
+## 19. Method Signature Line Length
+
+**Rule:** Method signatures should remain on a single line unless they exceed 185 characters. Only wrap when the line is actually too long, not based on parameter count.
+
+**✅ Good:**
+```csharp
+// 174 characters - keep on one line
+private static void ProcessTransfer(RoomProcessorContext context, RoomObjectSnapshot creep, IntentRecord record, Dictionary<string, Dictionary<string, int>> storeLedger)
+{
+    // ...
+}
+
+// 120 characters - keep on one line
+private static bool IsBlockedByRampart(RoomProcessorContext context, RoomObjectSnapshot creep, RoomObjectSnapshot target)
+{
+    // ...
+}
+
+// Over 185 characters - wrap is acceptable
+private static void SomeLongMethodName(VeryLongParameterTypeName firstParameter, AnotherLongTypeName secondParameter, YetAnotherLongType thirdParameter, FinallyAVeryLongTypeName fourthParameter)
+{
+    // ...
+}
+```
+
+**❌ Bad:**
+```csharp
+// 174 characters - DO NOT wrap unnecessarily
+private static void ProcessTransfer(
+    RoomProcessorContext context,
+    RoomObjectSnapshot creep,
+    IntentRecord record,
+    Dictionary<string, Dictionary<string, int>> storeLedger)  // ❌ Wrapped even though under 185 chars
+{
+    // ...
+}
+
+// 120 characters - DO NOT wrap unnecessarily
+private static bool IsBlockedByRampart(
+    RoomProcessorContext context,
+    RoomObjectSnapshot creep,
+    RoomObjectSnapshot target)  // ❌ Wrapped even though under 185 chars
+{
+    // ...
+}
 ```
 
 ## Summary
