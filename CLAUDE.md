@@ -16,7 +16,7 @@ Modern .NET rewrite of the Screeps private server backend. Exposes legacy HTTP +
 - Specify accessibility modifiers explicitly (public/private/internal/etc)
 - Use `is null` not `== null` for null checks
 - Use pattern matching (`if (obj is User user)` not `as` + null check)
-- Use trailing commas in multi-line collections/arrays
+- Use trailing commas in multi-line collections (NOT on last item or closing braces)
 - Keep lines under 185 characters (don't wrap unnecessarily)
 - Use positive conditions in ternary operators (never negate: `condition ? true : false` not `!condition ? false : true`)
 - Assign ternary expressions to a variable before returning - applies to ALL ternaries (simple, multi-line, nested, complex)
@@ -115,7 +115,7 @@ ScreepsDotNet/
 | Pattern matching | IDE0019/20 | `if (obj is User user)` not `as` + null check |
 | Null checks | IDE0041 | `is null` not `== null` |
 | Expression-bodied members | IDE0022 | `=> expr` on new line, not block syntax |
-| Trailing commas | IDE0260 | Multi-line: yes, single-line: no |
+| Trailing commas | IDE0260 | Arrays/enums: yes; dictionaries/objects: not on last item or braces |
 | Positive ternary conditions | - | `success ? a : b` not `!success ? b : a` |
 | Assign ternary before return | - | `var r = x ? a : b; return r;` not `return x ? a : b;` |
 | Repository POCOs | - | `IMongoCollection<UserDocument>` not `BsonDocument` |

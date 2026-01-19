@@ -159,28 +159,61 @@ public string GetUserName() => _user.Name;  // => on same line
 
 ## 10. Trailing Commas
 
+**Rule:** In top-level arrays and enums, use trailing commas between items. In dictionary/object initializers, NO trailing commas on last item or closing braces.
+
 **✅ Good:**
 ```csharp
+// Top-level array: trailing commas between items
 var items = new[]
 {
     "a",
     "b",
-    "c",  // Trailing comma
+    "c",  // ✅ Trailing comma
 };
 
-var single = new[] { "a", "b", "c" };  // No trailing comma
+// Enum: trailing comma after last value
+public enum Status
+{
+    Active,
+    Inactive,
+    Pending,  // ✅ Trailing comma
+}
+
+// Dictionary initializers: NO trailing comma on last item
+var metadata = new Dictionary<string, object?>
+{
+    [Market] = new Dictionary<string, object?>
+    {
+        [Order] = new Dictionary<string, object?>
+        {
+            [Type] = order.Type,
+            [Price] = order.Price,
+            [Amount] = order.Amount  // ✅ No trailing comma (last item)
+        }  // ✅ No trailing comma on closing brace
+    }  // ✅ No trailing comma on closing brace
+};
+
+// Single-line: no trailing comma
+var single = new[] { "a", "b", "c" };
 ```
 
 **❌ Bad:**
 ```csharp
-var items = new[]
+// Dictionary initializers: trailing commas on last item or closing braces
+var metadata = new Dictionary<string, object?>
 {
-    "a",
-    "b",
-    "c"  // Missing trailing comma
+    [Market] = new Dictionary<string, object?>
+    {
+        [Order] = new Dictionary<string, object?>
+        {
+            [Type] = order.Type,
+            [Amount] = order.Amount,  // ❌ Trailing comma on last item
+        },  // ❌ Trailing comma on closing brace
+    },  // ❌ Trailing comma on closing brace
 };
 
-var single = new[] { "a", "b", "c", };  // Unnecessary trailing comma
+// Single-line: unnecessary trailing comma
+var single = new[] { "a", "b", "c", };  // ❌
 ```
 
 ## 11. Repository Patterns
