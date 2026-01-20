@@ -81,7 +81,7 @@ internal sealed class PowerCreepIntentStep : IGlobalProcessorStep
                     0,
                     null,
                     null,
-                    new Dictionary<string, PowerCreepPowerSnapshot>());
+                    new Dictionary<PowerTypes, PowerCreepPowerSnapshot>());
 
                 context.Mutations.UpsertPowerCreep(newPowerCreep);
                 context.UpdatePowerCreep(newPowerCreep);
@@ -251,7 +251,7 @@ internal sealed class PowerCreepIntentStep : IGlobalProcessorStep
                     Reservation: null,
                     Sign: null,
                     Structure: null,
-                    Effects: new Dictionary<string, PowerEffectSnapshot>(0, StringComparer.Ordinal),
+                    Effects: new Dictionary<PowerTypes, PowerEffectSnapshot>(),
                     Spawning: null,
                     Body: [],
                     IsSpawning: null,
@@ -320,13 +320,12 @@ internal sealed class PowerCreepIntentStep : IGlobalProcessorStep
                 if (creep.Level < requiredLevel)
                     continue;
 
-                var powerKey = powerInt.ToString();
-                if (creep.Powers.ContainsKey(powerKey))
+                if (creep.Powers.ContainsKey(powerType))
                     continue;
 
-                var newPowers = new Dictionary<string, PowerCreepPowerSnapshot>(creep.Powers, StringComparer.Ordinal)
+                var newPowers = new Dictionary<PowerTypes, PowerCreepPowerSnapshot>()
                 {
-                    [powerKey] = new(Level: 0)
+                    [powerType] = new(Level: 0)
                 };
 
                 context.Mutations.PatchPowerCreep(creepId, new PowerCreepMutationPatch(Powers: newPowers));

@@ -1,6 +1,7 @@
 namespace ScreepsDotNet.Engine.Processors.Helpers;
 
 using ScreepsDotNet.Common.Constants;
+using ScreepsDotNet.Common.Types;
 using ScreepsDotNet.Driver.Contracts;
 
 internal interface IResourceDropHelper
@@ -228,7 +229,7 @@ internal sealed class ResourceDropHelper : IResourceDropHelper
             Reservation: null,
             Sign: null,
             Structure: null,
-            Effects: new Dictionary<string, PowerEffectSnapshot>(0, Comparer),
+            Effects: new Dictionary<PowerTypes, PowerEffectSnapshot>(),
             Spawning: null,
             Body: [],
             ResourceType: resourceType,

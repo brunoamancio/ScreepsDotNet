@@ -1,6 +1,7 @@
 namespace ScreepsDotNet.Driver.Contracts;
 
 using System.Collections.Generic;
+using ScreepsDotNet.Common.Types;
 
 public sealed record RoomMutationBatch(
     string RoomName,
@@ -32,6 +33,7 @@ public sealed record RoomObjectPatchPayload : IRoomObjectPatchPayload
     public RoomObjectActionLogPatch? ActionLog { get; init; }
     public IReadOnlyDictionary<string, int>? Store { get; init; }
     public int? StoreCapacity { get; init; }
+    public IReadOnlyDictionary<string, int>? StoreCapacityResource { get; init; }
     public RoomSpawnSpawningSnapshot? Spawning { get; init; }
     public bool ClearSpawning { get; init; }
     public RoomObjectInterRoomPatch? InterRoom { get; init; }
@@ -57,6 +59,7 @@ public sealed record RoomObjectPatchPayload : IRoomObjectPatchPayload
         (ActionLog?.HasEntries ?? false) ||
         (Store is { Count: > 0 }) ||
         StoreCapacity.HasValue ||
+        (StoreCapacityResource is { Count: > 0 }) ||
         (Body is { Count: > 0 }) ||
         InterRoom is not null ||
         Energy.HasValue ||
@@ -113,7 +116,7 @@ public sealed record RoomInfoPatchPayload
     public bool? IsRespawnArea { get; init; }
     public long? OpenTime { get; init; }
     public string? OwnerUserId { get; init; }
-    public int? ControllerLevel { get; init; }
+    public ControllerLevel? ControllerLevel { get; init; }
     public int? EnergyAvailable { get; init; }
     public long? NextNpcMarketOrder { get; init; }
     public long? PowerBankTime { get; init; }

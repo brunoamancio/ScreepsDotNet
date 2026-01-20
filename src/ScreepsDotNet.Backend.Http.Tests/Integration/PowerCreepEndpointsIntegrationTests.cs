@@ -111,8 +111,15 @@ public sealed class PowerCreepEndpointsIntegrationTests(IntegrationTestHarness h
 
         var doc = await GetPowerCreepDocumentAsync(SeedDataDefaults.PowerCreeps.DormantId);
         Assert.Equal(2, doc["level"].AsInt32);
-        Assert.Equal(1, doc["powers"]["1"]["level"].AsInt32);
-        Assert.Equal(1, doc["powers"]["2"]["level"].AsInt32);
+
+        // Powers are stored as ArrayOfDocuments: [{ k: 1, v: { level: 1 } }, ...]
+        var powers = doc["powers"].AsBsonArray;
+        var power1 = powers.FirstOrDefault(p => p["k"].AsInt32 == 1);
+        var power2 = powers.FirstOrDefault(p => p["k"].AsInt32 == 2);
+        Assert.NotNull(power1);
+        Assert.NotNull(power2);
+        Assert.Equal(1, power1["v"]["level"].AsInt32);
+        Assert.Equal(1, power2["v"]["level"].AsInt32);
     }
 
     [Fact]

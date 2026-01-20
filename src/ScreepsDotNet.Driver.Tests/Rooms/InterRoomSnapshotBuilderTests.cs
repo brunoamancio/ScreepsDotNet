@@ -1,6 +1,7 @@
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using ScreepsDotNet.Common.Constants;
+using ScreepsDotNet.Common.Types;
 using ScreepsDotNet.Driver.Abstractions.Rooms;
 using ScreepsDotNet.Driver.Contracts;
 using ScreepsDotNet.Driver.Services.Rooms;
@@ -127,9 +128,9 @@ public sealed class InterRoomSnapshotBuilderTests
                 Name = "PowerAlpha",
                 ClassName = "operator",
                 Level = 5,
-                Powers = new Dictionary<string, PowerCreepPowerDocument>
+                Powers = new Dictionary<PowerTypes, PowerCreepPowerDocument>
                 {
-                    ["1"] = new() { Level = 2 }
+                    [PowerTypes.GenerateOps] = new() { Level = 2 }
                 }
             };
 

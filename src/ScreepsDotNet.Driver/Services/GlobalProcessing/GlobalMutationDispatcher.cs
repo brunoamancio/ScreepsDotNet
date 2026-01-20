@@ -118,10 +118,9 @@ internal sealed class GlobalMutationDispatcher(IBulkWriterFactory bulkWriterFact
             document[PowerCreepDocumentFields.Shard] = patch.Shard;
         if (patch.Powers is not null && patch.Powers.Count > 0) {
             var powers = new BsonDocument();
-            foreach (var (powerId, powerSnapshot) in patch.Powers) {
-                if (string.IsNullOrWhiteSpace(powerId))
-                    continue;
-                powers[powerId] = new BsonDocument(PowerCreepDocumentFields.Level, powerSnapshot.Level);
+            foreach (var (powerType, powerSnapshot) in patch.Powers) {
+                var powerKey = ((int)powerType).ToString();
+                powers[powerKey] = new BsonDocument(PowerCreepDocumentFields.Level, powerSnapshot.Level);
             }
             if (powers.ElementCount > 0)
                 document[PowerCreepDocumentFields.Powers] = powers;

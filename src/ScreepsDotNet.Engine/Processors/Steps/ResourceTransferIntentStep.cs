@@ -1,7 +1,8 @@
+using ScreepsDotNet.Common.Types;
+
 namespace ScreepsDotNet.Engine.Processors.Steps;
 
 using ScreepsDotNet.Common.Constants;
-using ScreepsDotNet.Common.Types;
 using ScreepsDotNet.Driver.Contracts;
 using ScreepsDotNet.Engine.Processors.Helpers;
 
@@ -118,6 +119,18 @@ internal sealed class ResourceTransferIntentStep(IResourceDropHelper resourceDro
 
         modifiedObjects.Add(creep.Id);
         modifiedObjects.Add(target.Id);
+
+        if (!IsLab(target) || string.Equals(resourceType, ResourceTypes.Energy, StringComparison.Ordinal)) return;
+
+        if (targetCurrent == 0) {
+            context.MutationWriter.Patch(target.Id, new RoomObjectPatchPayload
+            {
+                StoreCapacityResource = new Dictionary<string, int>(Comparer)
+                {
+                    [resourceType] = ScreepsGameConstants.LabMineralCapacity
+                }
+            });
+        }
     }
 
     private static void ProcessWithdraw(RoomProcessorContext context, RoomObjectSnapshot creep, IntentRecord record, Dictionary<string, Dictionary<string, int>> storeLedger, HashSet<string> modifiedObjects)
@@ -176,6 +189,16 @@ internal sealed class ResourceTransferIntentStep(IResourceDropHelper resourceDro
 
         modifiedObjects.Add(creep.Id);
         modifiedObjects.Add(target.Id);
+
+        if (!IsLab(target) || string.Equals(resourceType, ResourceTypes.Energy, StringComparison.Ordinal)) return;
+
+        var remainingAmount = targetAvailable - actualAmount;
+        if (remainingAmount == 0) {
+            context.MutationWriter.Patch(target.Id, new RoomObjectPatchPayload
+            {
+                StoreCapacityResource = new Dictionary<string, int>(0, Comparer)
+            });
+        }
     }
 
     private static void ProcessPickup(RoomProcessorContext context, RoomObjectSnapshot creep, IntentRecord record, Dictionary<string, Dictionary<string, int>> storeLedger, HashSet<string> modifiedObjects)
@@ -345,10 +368,7 @@ internal sealed class ResourceTransferIntentStep(IResourceDropHelper resourceDro
     }
 
     private static bool HasTerminalDisruption(RoomObjectSnapshot terminal)
-    {
-        var effectKey = ((int)PowerTypes.DisruptTerminal).ToString();
-        return terminal.Effects.ContainsKey(effectKey);
-    }
+        => terminal.Effects.ContainsKey(PowerTypes.DisruptTerminal);
 
     private static RoomObjectSnapshot? ResolveRoomController(IReadOnlyDictionary<string, RoomObjectSnapshot> objects)
     {

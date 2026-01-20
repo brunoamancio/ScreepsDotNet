@@ -170,7 +170,7 @@ public sealed class HarvestIntentStepTests
             Reservation: null,
             Sign: null,
             Structure: null,
-            Effects: new Dictionary<string, PowerEffectSnapshot>(StringComparer.Ordinal),
+            Effects: new Dictionary<PowerTypes, PowerEffectSnapshot>(),
             Spawning: null,
             Body: body.Select(part => new CreepBodyPartSnapshot(part, ScreepsGameConstants.BodyPartHitPoints, null)).ToArray());
 
@@ -199,7 +199,7 @@ public sealed class HarvestIntentStepTests
             Reservation: null,
             Sign: null,
             Structure: null,
-            Effects: new Dictionary<string, PowerEffectSnapshot>(StringComparer.Ordinal),
+            Effects: new Dictionary<PowerTypes, PowerEffectSnapshot>(),
             Spawning: null,
             Body: [],
             IsSpawning: null,
@@ -243,7 +243,7 @@ public sealed class HarvestIntentStepTests
             Reservation: null,
             Sign: null,
             Structure: null,
-            Effects: new Dictionary<string, PowerEffectSnapshot>(StringComparer.Ordinal),
+            Effects: new Dictionary<PowerTypes, PowerEffectSnapshot>(),
             Spawning: null,
             Body: [],
             MineralAmount: amount);
@@ -273,7 +273,7 @@ public sealed class HarvestIntentStepTests
             Reservation: null,
             Sign: null,
             Structure: null,
-            Effects: new Dictionary<string, PowerEffectSnapshot>(StringComparer.Ordinal),
+            Effects: new Dictionary<PowerTypes, PowerEffectSnapshot>(),
             Spawning: null,
             Body: []);
 
@@ -302,7 +302,7 @@ public sealed class HarvestIntentStepTests
             Reservation: null,
             Sign: null,
             Structure: null,
-            Effects: new Dictionary<string, PowerEffectSnapshot>(StringComparer.Ordinal),
+            Effects: new Dictionary<PowerTypes, PowerEffectSnapshot>(),
             Spawning: null,
             Body: []);
 
@@ -331,7 +331,7 @@ public sealed class HarvestIntentStepTests
             Reservation: null,
             Sign: null,
             Structure: null,
-            Effects: new Dictionary<string, PowerEffectSnapshot>(StringComparer.Ordinal),
+            Effects: new Dictionary<PowerTypes, PowerEffectSnapshot>(),
             Spawning: null,
             Body: [],
             Harvested: harvested,

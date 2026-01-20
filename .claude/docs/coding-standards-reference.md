@@ -1,6 +1,6 @@
 # Coding Standards Reference
 
-Condensed examples for the 19 most critical coding standards. For full rule documentation, see `src/.editorconfig` and `src/ScreepsDotNet.slnx.DotSettings`.
+Condensed examples for the 20 most critical coding standards. For full rule documentation, see `src/.editorconfig` and `src/ScreepsDotNet.slnx.DotSettings`.
 
 ## 1. Variable Declarations (IDE0007)
 
@@ -476,6 +476,63 @@ private static bool IsBlockedByRampart(
     // ...
 }
 ```
+
+## 20. Enums vs Constants for Integer Sets
+
+**Rule:** When defining a related set of integer values, use an `enum` instead of a static class with `const int` fields. Enums should be placed in the `Types/` directory, while string/complex constants belong in `Constants/`.
+
+**✅ Good:**
+```csharp
+// Location: ScreepsDotNet.Common/Types/PowerTypes.cs
+namespace ScreepsDotNet.Common.Types;
+
+// Use enum for related integer values
+public enum PowerTypes
+{
+    GenerateOps = 1,
+    OperateSpawn = 2,
+    DisruptTerminal = 15,
+    // ...
+}
+
+// Usage - cast to int when needed as key
+var effectKey = ((int)PowerTypes.DisruptTerminal).ToString();
+effects[effectKey] = new PowerEffect(Power: PowerTypes.DisruptTerminal, Level: 1, EndTime: 200);
+```
+
+**❌ Bad:**
+```csharp
+// Location: ScreepsDotNet.Common/Constants/PowerTypes.cs  ❌ Wrong directory
+namespace ScreepsDotNet.Common.Constants;
+
+// Don't use static class with constants for integer sets
+public static class PowerTypes  // ❌ Should be enum in Types/
+{
+    public const int GenerateOps = 1;
+    public const int OperateSpawn = 2;
+    public const int DisruptTerminal = 15;
+    // ...
+}
+
+// Usage is the same but lacks type safety
+var effectKey = PowerTypes.DisruptTerminal.ToString();  // ❌ Loses type safety
+effects[effectKey] = new PowerEffect();
+```
+
+**File location:**
+- **Enums** → `*/Types/` directory (e.g., `ScreepsDotNet.Common/Types/PowerTypes.cs`)
+- **String/complex constants** → `*/Constants/` directory (e.g., `ScreepsDotNet.Common/Constants/ResourceTypes.cs`)
+
+**When to use enum:**
+- Set of related integer values (status codes, type IDs, effect types)
+- Values are mutually exclusive
+- Values have semantic meaning (not arbitrary magic numbers)
+
+**When to use constants:**
+- Unrelated values that happen to be the same type
+- String constants (ResourceTypes, IntentKeys, RoomObjectTypes)
+- Complex values (arrays, objects, computed values)
+- Values used in attribute parameters (enums work here too, but constants are clearer)
 
 ## Summary
 

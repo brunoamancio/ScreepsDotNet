@@ -23,9 +23,7 @@ internal static class PowerCreepDocumentMapper
             SpawnCooldownTime = snapshot.SpawnCooldownTime,
             DeleteTime = snapshot.DeleteTime,
             Shard = snapshot.Shard,
-            Powers = snapshot.Powers.ToDictionary(pair => pair.Key,
-                                                  pair => new PowerCreepPowerDocument { Level = pair.Value.Level },
-                                                  StringComparer.Ordinal)
+            Powers = snapshot.Powers.ToDictionary(pair => pair.Key, pair => new PowerCreepPowerDocument { Level = pair.Value.Level })
         };
 
         return document;

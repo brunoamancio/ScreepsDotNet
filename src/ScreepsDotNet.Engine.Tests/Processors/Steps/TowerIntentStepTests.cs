@@ -1,6 +1,7 @@
 namespace ScreepsDotNet.Engine.Tests.Processors.Steps;
 
 using ScreepsDotNet.Common.Constants;
+using ScreepsDotNet.Common.Types;
 using ScreepsDotNet.Driver.Contracts;
 using ScreepsDotNet.Engine.Data.Bulk;
 using ScreepsDotNet.Engine.Data.Models;
@@ -119,7 +120,7 @@ public sealed class TowerIntentStepTests
             Reservation: null,
             Sign: null,
             Structure: null,
-            Effects: new Dictionary<string, PowerEffectSnapshot>(),
+            Effects: new Dictionary<PowerTypes, PowerEffectSnapshot>(),
             Spawning: null,
             Body: []);
 
@@ -148,7 +149,7 @@ public sealed class TowerIntentStepTests
             Reservation: null,
             Sign: null,
             Structure: null,
-            Effects: new Dictionary<string, PowerEffectSnapshot>(),
+            Effects: new Dictionary<PowerTypes, PowerEffectSnapshot>(),
             Spawning: null,
             Body: []);
 
@@ -177,7 +178,7 @@ public sealed class TowerIntentStepTests
             Reservation: null,
             Sign: null,
             Structure: null,
-            Effects: new Dictionary<string, PowerEffectSnapshot>(),
+            Effects: new Dictionary<PowerTypes, PowerEffectSnapshot>(),
             Spawning: null,
             Body: []);
 

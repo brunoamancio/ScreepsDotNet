@@ -7,6 +7,7 @@ using ScreepsDotNet.Backend.Core.Models.Strongholds;
 using ScreepsDotNet.Backend.Core.Repositories;
 using ScreepsDotNet.Backend.Core.Services;
 using ScreepsDotNet.Common.Constants;
+using ScreepsDotNet.Common.Types;
 using ScreepsDotNet.Common.Utilities;
 using ScreepsDotNet.Storage.MongoRedis.Providers;
 using ScreepsDotNet.Storage.MongoRedis.Repositories.Documents;
@@ -22,13 +23,13 @@ public sealed class MongoStrongholdControlService(IMongoDatabaseProvider databas
     private const int DefaultDeployDelay = 1;
     private const int StrongholdDeployDuration = 5_000;
     private const int InvulnerabilityEffectId = 1_001;
-    private static readonly IReadOnlyDictionary<int, int> ExpandCooldownByLevel = new Dictionary<int, int>
+    private static readonly IReadOnlyDictionary<StrongholdLevel, int> ExpandCooldownByLevel = new Dictionary<StrongholdLevel, int>
     {
-        [1] = 4_000,
-        [2] = 3_500,
-        [3] = 3_000,
-        [4] = 2_500,
-        [5] = 2_000
+        [StrongholdLevel.Level1] = 4_000,
+        [StrongholdLevel.Level2] = 3_500,
+        [StrongholdLevel.Level3] = 3_000,
+        [StrongholdLevel.Level4] = 2_500,
+        [StrongholdLevel.Level5] = 2_000
     };
 
     private readonly IMongoCollection<RoomTerrainDocument> _terrainCollection = databaseProvider.GetCollection<RoomTerrainDocument>(databaseProvider.Settings.RoomTerrainCollection);
@@ -170,9 +171,13 @@ public sealed class MongoStrongholdControlService(IMongoDatabaseProvider databas
     }
 
     private static int ResolveExpandCooldown(int level)
-        => ExpandCooldownByLevel.TryGetValue(level, out var cooldown)
+    {
+        var strongholdLevel = (StrongholdLevel)level;
+        var result = ExpandCooldownByLevel.TryGetValue(strongholdLevel, out var cooldown)
             ? cooldown
-            : ExpandCooldownByLevel[1];
+            : ExpandCooldownByLevel[StrongholdLevel.Level1];
+        return result;
+    }
 
     private static RoomObjectDocument BuildInvaderCoreDocument(
         string roomName,

@@ -2,6 +2,7 @@ namespace ScreepsDotNet.Driver.Services.Rooms;
 
 using System;
 using System.Collections.Generic;
+using ScreepsDotNet.Common.Types;
 using ScreepsDotNet.Driver.Abstractions.Rooms;
 using ScreepsDotNet.Driver.Contracts;
 using ScreepsDotNet.Storage.MongoRedis.Repositories.Documents;
@@ -132,18 +133,14 @@ internal sealed class InterRoomSnapshotBuilder(IRoomDataService roomDataService)
             ? []
             : new Dictionary<string, int>(source, StringComparer.Ordinal);
 
-    private static IReadOnlyDictionary<string, PowerCreepPowerSnapshot> MapPowers(Dictionary<string, PowerCreepPowerDocument>? powers)
+    private static IReadOnlyDictionary<PowerTypes, PowerCreepPowerSnapshot> MapPowers(Dictionary<PowerTypes, PowerCreepPowerDocument>? powers)
     {
         if (powers is null || powers.Count == 0)
-            return new Dictionary<string, PowerCreepPowerSnapshot>(0, StringComparer.Ordinal);
+            return new Dictionary<PowerTypes, PowerCreepPowerSnapshot>();
 
-        var result = new Dictionary<string, PowerCreepPowerSnapshot>(powers.Count, StringComparer.Ordinal);
-        foreach (var (id, document) in powers) {
-            if (string.IsNullOrWhiteSpace(id))
-                continue;
-
-            result[id] = new PowerCreepPowerSnapshot(document.Level);
-        }
+        var result = new Dictionary<PowerTypes, PowerCreepPowerSnapshot>(powers.Count);
+        foreach (var (powerType, document) in powers)
+            result[powerType] = new PowerCreepPowerSnapshot(document.Level);
 
         return result;
     }

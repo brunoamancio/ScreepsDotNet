@@ -50,7 +50,7 @@ public sealed record PowerCreepSnapshot(
     long? SpawnCooldownTime,
     long? DeleteTime,
     string? Shard,
-    IReadOnlyDictionary<string, PowerCreepPowerSnapshot> Powers);
+    IReadOnlyDictionary<PowerTypes, PowerCreepPowerSnapshot> Powers);
 
 public sealed record PowerCreepPowerSnapshot(int Level);
 

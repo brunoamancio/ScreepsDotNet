@@ -2,6 +2,7 @@
 using System.Text;
 using System.Text.Json;
 using ScreepsDotNet.Backend.Core.Services;
+using ScreepsDotNet.Backend.Http.Constants;
 
 namespace ScreepsDotNet.Backend.Http.Rendering;
 
@@ -15,7 +16,7 @@ internal sealed class BadgeSvgGenerator : IBadgeSvgGenerator
     private const string ClipId = "clip";
 
     private static readonly IReadOnlyList<string> Palette = BuildPalette();
-    private static readonly IReadOnlyDictionary<int, BadgePathDefinition> PathDefinitions = BuildPathDefinitions();
+    private static readonly IReadOnlyDictionary<BadgeType, BadgePathDefinition> PathDefinitions = BuildPathDefinitions();
 
     public string GenerateSvg(object? badgeData, bool includeBorder)
     {
@@ -30,7 +31,8 @@ internal sealed class BadgeSvgGenerator : IBadgeSvgGenerator
         double rotation = 0;
 
         if (descriptor.NumericType is { } type) {
-            if (!PathDefinitions.TryGetValue(type, out var definition))
+            var badgeType = (BadgeType)type;
+            if (!PathDefinitions.TryGetValue(badgeType, out var definition))
                 return EmptySvg;
 
             pathResult = definition.Calculator(descriptor.Param);
@@ -222,34 +224,34 @@ internal sealed class BadgeSvgGenerator : IBadgeSvgGenerator
         return colors;
     }
 
-    private static IReadOnlyDictionary<int, BadgePathDefinition> BuildPathDefinitions()
+    private static IReadOnlyDictionary<BadgeType, BadgePathDefinition> BuildPathDefinitions()
     {
-        return new Dictionary<int, BadgePathDefinition>
+        return new Dictionary<BadgeType, BadgePathDefinition>
         {
-            [1] = new(CalcType1),
-            [2] = new(CalcType2),
-            [3] = new(CalcType3, 180),
-            [4] = new(CalcType4, 90),
-            [5] = new(CalcType5, 45),
-            [6] = new(CalcType6, 90),
-            [7] = new(CalcType7, 90),
-            [8] = new(CalcType8, 90),
-            [9] = new(CalcType9, 180),
-            [10] = new(CalcType10, 90),
-            [11] = new(CalcType11, 90),
-            [12] = new(CalcType12, 180),
-            [13] = new(CalcType13, 180),
-            [14] = new(CalcType14, 180),
-            [15] = new(CalcType15, 180),
-            [16] = new(CalcType16),
-            [17] = new(CalcType17),
-            [18] = new(CalcType18, 180),
-            [19] = new(CalcType19, 180),
-            [20] = new(CalcType20, 90),
-            [21] = new(CalcType21, 45),
-            [22] = new(CalcType22, 45),
-            [23] = new(CalcType23, 90),
-            [24] = new(CalcType24, 180)
+            [BadgeType.Type1] = new(CalcType1),
+            [BadgeType.Type2] = new(CalcType2),
+            [BadgeType.Type3] = new(CalcType3, 180),
+            [BadgeType.Type4] = new(CalcType4, 90),
+            [BadgeType.Type5] = new(CalcType5, 45),
+            [BadgeType.Type6] = new(CalcType6, 90),
+            [BadgeType.Type7] = new(CalcType7, 90),
+            [BadgeType.Type8] = new(CalcType8, 90),
+            [BadgeType.Type9] = new(CalcType9, 180),
+            [BadgeType.Type10] = new(CalcType10, 90),
+            [BadgeType.Type11] = new(CalcType11, 90),
+            [BadgeType.Type12] = new(CalcType12, 180),
+            [BadgeType.Type13] = new(CalcType13, 180),
+            [BadgeType.Type14] = new(CalcType14, 180),
+            [BadgeType.Type15] = new(CalcType15, 180),
+            [BadgeType.Type16] = new(CalcType16),
+            [BadgeType.Type17] = new(CalcType17),
+            [BadgeType.Type18] = new(CalcType18, 180),
+            [BadgeType.Type19] = new(CalcType19, 180),
+            [BadgeType.Type20] = new(CalcType20, 90),
+            [BadgeType.Type21] = new(CalcType21, 45),
+            [BadgeType.Type22] = new(CalcType22, 45),
+            [BadgeType.Type23] = new(CalcType23, 90),
+            [BadgeType.Type24] = new(CalcType24, 180)
         };
     }
 

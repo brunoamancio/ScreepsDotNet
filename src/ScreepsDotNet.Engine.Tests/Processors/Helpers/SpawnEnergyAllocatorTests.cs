@@ -1,6 +1,7 @@
 namespace ScreepsDotNet.Engine.Tests.Processors.Helpers;
 
 using ScreepsDotNet.Common.Constants;
+using ScreepsDotNet.Common.Types;
 using ScreepsDotNet.Driver.Contracts;
 using ScreepsDotNet.Engine.Processors.Helpers;
 
@@ -111,7 +112,7 @@ public sealed class SpawnEnergyAllocatorTests
             Reservation: null,
             Sign: null,
             Structure: null,
-            Effects: new Dictionary<string, PowerEffectSnapshot>(),
+            Effects: new Dictionary<PowerTypes, PowerEffectSnapshot>(),
             Spawning: null,
             Body: []);
 }

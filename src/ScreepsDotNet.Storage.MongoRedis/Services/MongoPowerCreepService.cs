@@ -8,6 +8,7 @@ using MongoDB.Driver;
 using ScreepsDotNet.Backend.Core.Constants;
 using ScreepsDotNet.Backend.Core.Models;
 using ScreepsDotNet.Backend.Core.Services;
+using ScreepsDotNet.Common.Types;
 using ScreepsDotNet.Storage.MongoRedis.Providers;
 using ScreepsDotNet.Storage.MongoRedis.Repositories.Documents;
 
@@ -77,7 +78,7 @@ public sealed class MongoPowerCreepService : IPowerCreepService
             Store = new Dictionary<string, int>(StringComparer.Ordinal),
             StoreCapacity = 100,
             SpawnCooldownTime = 0,
-            Powers = new Dictionary<string, PowerCreepPowerDocument>(StringComparer.Ordinal)
+            Powers = []
         };
 
         await _powerCreeps.InsertOneAsync(document, cancellationToken: cancellationToken).ConfigureAwait(false);
@@ -174,7 +175,7 @@ public sealed class MongoPowerCreepService : IPowerCreepService
         if (newLevel > PowerConstants.PowerCreepMaxLevel)
             throw new PowerCreepValidationException("max level");
 
-        var creepPowers = creep.Powers?.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.Level, StringComparer.Ordinal)
+        var creepPowers = creep.Powers?.ToDictionary(kvp => ((int)kvp.Key).ToString(), kvp => kvp.Value.Level, StringComparer.Ordinal)
                           ?? new Dictionary<string, int>(StringComparer.Ordinal);
 
         foreach (var kvp in normalizedPowers) {
@@ -310,7 +311,7 @@ public sealed class MongoPowerCreepService : IPowerCreepService
 
         var powers = document.Powers is null
             ? new Dictionary<string, int>(StringComparer.Ordinal)
-            : document.Powers.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.Level, StringComparer.Ordinal);
+            : document.Powers.ToDictionary(kvp => ((int)kvp.Key).ToString(), kvp => kvp.Value.Level, StringComparer.Ordinal);
 
         var storeCapacity = roomDoc?.StoreCapacity ?? document.StoreCapacity ?? 0;
         var hitsMax = roomDoc?.HitsMax ?? document.HitsMax ?? 0;
@@ -362,14 +363,15 @@ public sealed class MongoPowerCreepService : IPowerCreepService
         return true;
     }
 
-    private static Dictionary<string, PowerCreepPowerDocument> BuildPowerDocuments(IReadOnlyDictionary<string, int> requestedPowers)
+    private static Dictionary<PowerTypes, PowerCreepPowerDocument> BuildPowerDocuments(IReadOnlyDictionary<string, int> requestedPowers)
     {
-        var result = new Dictionary<string, PowerCreepPowerDocument>(StringComparer.Ordinal);
+        var result = new Dictionary<PowerTypes, PowerCreepPowerDocument>();
         foreach (var kvp in requestedPowers) {
             if (kvp.Value <= 0)
                 continue;
 
-            result[NormalizePowerKey(kvp.Key)] = new PowerCreepPowerDocument { Level = kvp.Value };
+            if (int.TryParse(NormalizePowerKey(kvp.Key), out var powerTypeInt))
+                result[(PowerTypes)powerTypeInt] = new PowerCreepPowerDocument { Level = kvp.Value };
         }
         return result;
     }

@@ -32,7 +32,7 @@ public sealed record RoomObjectSnapshot(
     RoomReservationSnapshot? Reservation,
     RoomSignSnapshot? Sign,
     RoomObjectStructureSnapshot? Structure,
-    IReadOnlyDictionary<string, PowerEffectSnapshot> Effects,
+    IReadOnlyDictionary<PowerTypes, PowerEffectSnapshot> Effects,
     RoomSpawnSpawningSnapshot? Spawning,
     IReadOnlyList<CreepBodyPartSnapshot> Body,
     bool? IsSpawning = null,

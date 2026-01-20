@@ -1,6 +1,7 @@
 namespace ScreepsDotNet.Driver.Contracts;
 
 using System.Collections.Generic;
+using ScreepsDotNet.Common.Types;
 
 public sealed record PowerCreepMutation(
     string Id,
@@ -24,4 +25,4 @@ public sealed record PowerCreepMutationPatch(
     long? DeleteTime = null,
     bool ClearDeleteTime = false,
     string? Shard = null,
-    IReadOnlyDictionary<string, PowerCreepPowerSnapshot>? Powers = null);
+    IReadOnlyDictionary<PowerTypes, PowerCreepPowerSnapshot>? Powers = null);

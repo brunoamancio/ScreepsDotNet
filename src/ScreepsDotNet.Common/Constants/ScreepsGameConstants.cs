@@ -137,18 +137,18 @@ public static class ScreepsGameConstants
 
     public static IReadOnlySet<string> ResourcesAll { get; } = new HashSet<string>(ResourceOrder.Concat(IntershardResources), StringComparer.Ordinal);
 
-    public static IReadOnlyDictionary<int, int> ExtensionEnergyCapacityByControllerLevel { get; } =
-        new Dictionary<int, int>
+    public static IReadOnlyDictionary<ControllerLevel, int> ExtensionEnergyCapacityByControllerLevel { get; } =
+        new Dictionary<ControllerLevel, int>
         {
-            [0] = 50,
-            [1] = 50,
-            [2] = 50,
-            [3] = 50,
-            [4] = 50,
-            [5] = 50,
-            [6] = 50,
-            [7] = 100,
-            [8] = 200
+            [ControllerLevel.Level0] = 50,
+            [ControllerLevel.Level1] = 50,
+            [ControllerLevel.Level2] = 50,
+            [ControllerLevel.Level3] = 50,
+            [ControllerLevel.Level4] = 50,
+            [ControllerLevel.Level5] = 50,
+            [ControllerLevel.Level6] = 50,
+            [ControllerLevel.Level7] = 100,
+            [ControllerLevel.Level8] = 200
         };
 
     public const int TowerHits = 3000;
@@ -191,16 +191,16 @@ public static class ScreepsGameConstants
     public const int RampartHits = 1;
     public const int RampartDecayAmount = 300;
     public const int RampartDecayInterval = 100;
-    public static IReadOnlyDictionary<int, int> RampartHitsMaxByControllerLevel { get; } =
-        new Dictionary<int, int>
+    public static IReadOnlyDictionary<ControllerLevel, int> RampartHitsMaxByControllerLevel { get; } =
+        new Dictionary<ControllerLevel, int>
         {
-            [2] = 300_000,
-            [3] = 1_000_000,
-            [4] = 3_000_000,
-            [5] = 10_000_000,
-            [6] = 30_000_000,
-            [7] = 100_000_000,
-            [8] = 300_000_000
+            [ControllerLevel.Level2] = 300_000,
+            [ControllerLevel.Level3] = 1_000_000,
+            [ControllerLevel.Level4] = 3_000_000,
+            [ControllerLevel.Level5] = 10_000_000,
+            [ControllerLevel.Level6] = 30_000_000,
+            [ControllerLevel.Level7] = 100_000_000,
+            [ControllerLevel.Level8] = 300_000_000
         };
     public const int WallHits = 1;
     public const int WallHitsMax = 300_000_000;

@@ -1,5 +1,7 @@
 namespace ScreepsDotNet.Driver.Contracts;
 
+using ScreepsDotNet.Common.Types;
+
 /// <summary>
 /// Metadata about a room (status, controller level, NPC timers) serialized from the rooms collection.
 /// </summary>
@@ -11,7 +13,7 @@ public sealed record RoomInfoSnapshot(
     bool? IsRespawnArea,
     long? OpenTime,
     string? OwnerUserId,
-    int? ControllerLevel,
+    ControllerLevel? ControllerLevel,
     int? EnergyAvailable,
     long? NextNpcMarketOrder,
     long? PowerBankTime,

@@ -93,7 +93,7 @@ public sealed class SpawnStateReaderTests
             Reservation: null,
             Sign: null,
             Structure: null,
-            Effects: new Dictionary<string, PowerEffectSnapshot>(),
+            Effects: new Dictionary<PowerTypes, PowerEffectSnapshot>(),
             Spawning: spawnSnapshot,
             Body: []);
 
@@ -122,7 +122,7 @@ public sealed class SpawnStateReaderTests
             Reservation: null,
             Sign: null,
             Structure: null,
-            Effects: new Dictionary<string, PowerEffectSnapshot>(),
+            Effects: new Dictionary<PowerTypes, PowerEffectSnapshot>(),
             Spawning: null,
             Body: []);
 }

@@ -126,6 +126,7 @@ ScreepsDotNet/
 | Dictionary access | - | Use `GetValueOrDefault(key, default)` not `TryGetValue` ternary |
 | Tuple variable naming | - | Use camelCase: `var (id, name)`, discard unused: `var (_, name)` |
 | Method signature length | - | Keep on one line unless exceeds 185 characters |
+| Enums vs constants | - | Use `enum` for integer sets (place in `Types/`), not `static class` with `const int` |
 
 **Implicit usings** (configured in `Directory.Build.props` - never add manually):
 1. `System`

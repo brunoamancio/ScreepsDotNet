@@ -574,22 +574,14 @@ internal sealed partial class MarketIntentStep : IGlobalProcessorStep
 
     private static (int Level, int EndTime)? GetPowerEffect(RoomObjectSnapshot obj, PowerTypes powerType, int gameTime)
     {
-        if (obj.Effects.Count == 0)
+        if (!obj.Effects.TryGetValue(powerType, out var effect))
             return null;
 
-        foreach (var kvp in obj.Effects) {
-            var effect = kvp.Value;
+        if (effect.EndTime <= gameTime)
+            return null;
 
-            if (effect.Power != (int)powerType)
-                continue;
-
-            if (effect.EndTime <= gameTime)
-                continue;
-
-            return (effect.Level, effect.EndTime);
-        }
-
-        return null;
+        var result = (effect.Level, effect.EndTime);
+        return result;
     }
 
     private static double GetPowerEffectMultiplier(PowerTypes powerType, int level)

@@ -1,3 +1,5 @@
 ﻿namespace ScreepsDotNet.Backend.Core.Models;
 
-public sealed record RoomSummary(string Name, string? Owner, int ControllerLevel, int EnergyAvailable);
+using ScreepsDotNet.Common.Types;
+
+public sealed record RoomSummary(string Name, string? Owner, ControllerLevel ControllerLevel, int EnergyAvailable);

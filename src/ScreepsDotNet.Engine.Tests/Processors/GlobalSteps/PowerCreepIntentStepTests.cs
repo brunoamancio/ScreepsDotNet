@@ -1,6 +1,7 @@
 namespace ScreepsDotNet.Engine.Tests.Processors.GlobalSteps;
 
 using ScreepsDotNet.Common.Constants;
+using ScreepsDotNet.Common.Types;
 using ScreepsDotNet.Driver.Contracts;
 using ScreepsDotNet.Engine.Data.Models;
 using ScreepsDotNet.Engine.Processors.GlobalSteps;
@@ -22,7 +23,7 @@ public sealed class PowerCreepIntentStepTests
             0,
             null,
             null,
-            new Dictionary<string, PowerCreepPowerSnapshot>());
+            new Dictionary<PowerTypes, PowerCreepPowerSnapshot>());
 
         var intents = new[]
         {
@@ -153,7 +154,7 @@ public sealed class PowerCreepIntentStepTests
             spawnCooldownTime,
             deleteTime,
             null,
-            new Dictionary<string, PowerCreepPowerSnapshot>());
+            new Dictionary<PowerTypes, PowerCreepPowerSnapshot>());
 
     private static GlobalState CreateGlobalState(
         PowerCreepSnapshot powerCreep,

@@ -1,8 +1,8 @@
 namespace ScreepsDotNet.Common.Structures;
 
 using System;
-using System.Collections.Generic;
 using ScreepsDotNet.Common.Constants;
+using ScreepsDotNet.Common.Types;
 
 /// <summary>
 /// Canonical contract describing the default state of structures when inserted or updated by the engine.
@@ -27,7 +27,7 @@ public sealed record StructureStoreProfile(
     IReadOnlyDictionary<string, int> InitialStore,
     int? StoreCapacity,
     IReadOnlyDictionary<string, int> StoreCapacityResource,
-    IReadOnlyDictionary<int, int>? ControllerLevelCapacity = null)
+    IReadOnlyDictionary<ControllerLevel, int>? ControllerLevelCapacity = null)
 {
     public static StructureStoreProfile Empty { get; } = new(new Dictionary<string, int>(0, StringComparer.Ordinal), null, new Dictionary<string, int>(0, StringComparer.Ordinal));
 }
@@ -43,7 +43,7 @@ public sealed record StructureDecayProfile(int? Amount, int? IntervalTicks, int?
 
 public sealed record StructureCooldownProfile(int? InitialCooldown, int? CooldownTimeOffset);
 
-public sealed record StructureRampartProfile(IReadOnlyDictionary<int, int> HitsMaxByControllerLevel);
+public sealed record StructureRampartProfile(IReadOnlyDictionary<ControllerLevel, int> HitsMaxByControllerLevel);
 
 public sealed record StructureRoadProfile(int BaseHits, int SwampMultiplier, int WallMultiplier, int DecayTime, int DecayAmount);
 

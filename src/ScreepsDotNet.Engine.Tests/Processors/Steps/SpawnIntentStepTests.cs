@@ -309,7 +309,7 @@ public sealed class SpawnIntentStepTests
             Reservation: null,
             Sign: null,
             Structure: null,
-            Effects: new Dictionary<string, PowerEffectSnapshot>(),
+            Effects: new Dictionary<PowerTypes, PowerEffectSnapshot>(),
             Spawning: spawning,
             Body: []);
 
@@ -341,7 +341,7 @@ public sealed class SpawnIntentStepTests
             Reservation: null,
             Sign: null,
             Structure: null,
-            Effects: new Dictionary<string, PowerEffectSnapshot>(),
+            Effects: new Dictionary<PowerTypes, PowerEffectSnapshot>(),
             Spawning: null,
             Body: []);
 
@@ -376,7 +376,7 @@ public sealed class SpawnIntentStepTests
             Reservation: null,
             Sign: null,
             Structure: null,
-            Effects: new Dictionary<string, PowerEffectSnapshot>(),
+            Effects: new Dictionary<PowerTypes, PowerEffectSnapshot>(),
             Spawning: null,
             Body: CreateBodySnapshot(body));
 
@@ -405,7 +405,7 @@ public sealed class SpawnIntentStepTests
             Reservation: null,
             Sign: null,
             Structure: null,
-            Effects: new Dictionary<string, PowerEffectSnapshot>(),
+            Effects: new Dictionary<PowerTypes, PowerEffectSnapshot>(),
             Spawning: null,
             Body: [],
             IsSpawning: true);

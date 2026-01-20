@@ -43,8 +43,8 @@ public sealed class PowerCreepDocument
     public string? Shard { get; set; }
 
     [BsonElement(PowerCreepDocumentFields.Powers)]
-    [BsonDictionaryOptions(DictionaryRepresentation.Document)]
-    public Dictionary<string, PowerCreepPowerDocument>? Powers { get; set; }
+    [BsonDictionaryOptions(DictionaryRepresentation.ArrayOfDocuments)]
+    public Dictionary<PowerTypes, PowerCreepPowerDocument>? Powers { get; set; }
 }
 
 [BsonIgnoreExtraElements]

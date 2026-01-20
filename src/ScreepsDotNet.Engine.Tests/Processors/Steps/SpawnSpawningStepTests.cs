@@ -115,7 +115,7 @@ public sealed class SpawnSpawningStepTests
             Reservation: null,
             Sign: null,
             Structure: null,
-            Effects: new Dictionary<string, PowerEffectSnapshot>(Comparer),
+            Effects: new Dictionary<PowerTypes, PowerEffectSnapshot>(),
             Spawning: spawning,
             Body: []);
 
@@ -150,7 +150,7 @@ public sealed class SpawnSpawningStepTests
             Reservation: null,
             Sign: null,
             Structure: null,
-            Effects: new Dictionary<string, PowerEffectSnapshot>(Comparer),
+            Effects: new Dictionary<PowerTypes, PowerEffectSnapshot>(),
             Spawning: null,
             Body:
             [
@@ -191,7 +191,7 @@ public sealed class SpawnSpawningStepTests
                 Reservation: null,
                 Sign: null,
                 Structure: null,
-                Effects: new Dictionary<string, PowerEffectSnapshot>(Comparer),
+                Effects: new Dictionary<PowerTypes, PowerEffectSnapshot>(),
                 Spawning: null,
                 Body: []));
         }

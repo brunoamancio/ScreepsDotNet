@@ -181,12 +181,12 @@ internal static class RoomContractMapper
         return document;
     }
 
-    private static IReadOnlyDictionary<string, PowerEffectSnapshot> MapEffects(BsonArray? effects)
+    private static IReadOnlyDictionary<PowerTypes, PowerEffectSnapshot> MapEffects(BsonArray? effects)
     {
         if (effects is null || effects.Count == 0)
-            return new Dictionary<string, PowerEffectSnapshot>();
+            return new Dictionary<PowerTypes, PowerEffectSnapshot>();
 
-        var result = new Dictionary<string, PowerEffectSnapshot>(effects.Count, StringComparer.Ordinal);
+        var result = new Dictionary<PowerTypes, PowerEffectSnapshot>(effects.Count);
         for (var i = 0; i < effects.Count; i++) {
             if (effects[i] is not BsonDocument effectDoc)
                 continue;
@@ -200,8 +200,9 @@ internal static class RoomContractMapper
             if (!effectDoc.TryGetValue(RoomDocumentFields.RoomObject.EffectFields.EndTime, out var endTimeValue))
                 continue;
 
-            result[i.ToString()] = new PowerEffectSnapshot(
-                Power: powerValue.AsInt32,
+            var powerType = (PowerTypes)powerValue.AsInt32;
+            result[powerType] = new PowerEffectSnapshot(
+                Power: powerType,
                 Level: levelValue.AsInt32,
                 EndTime: endTimeValue.AsInt32
             );
@@ -481,21 +482,16 @@ internal static class RoomContractMapper
         return document;
     }
 
-    private static BsonArray? MapEffectsToBson(IReadOnlyDictionary<string, PowerEffectSnapshot>? effects)
+    private static BsonArray? MapEffectsToBson(IReadOnlyDictionary<PowerTypes, PowerEffectSnapshot>? effects)
     {
         if (effects is null || effects.Count == 0)
             return null;
 
-        var ordered = effects
-            .Select(kvp => (kvp.Key, kvp.Value))
-            .OrderBy(pair => int.TryParse(pair.Key, out var index) ? index : int.MaxValue)
-            .ToArray();
-
-        var array = new BsonArray(ordered.Length);
-        foreach (var (_, effect) in ordered) {
+        var array = new BsonArray(effects.Count);
+        foreach (var effect in effects.Values) {
             array.Add(new BsonDocument
             {
-                [RoomDocumentFields.RoomObject.EffectFields.Power] = effect.Power,
+                [RoomDocumentFields.RoomObject.EffectFields.Power] = (int)effect.Power,
                 [RoomDocumentFields.RoomObject.EffectFields.Level] = effect.Level,
                 [RoomDocumentFields.RoomObject.EffectFields.EndTime] = effect.EndTime
             });
@@ -728,6 +724,19 @@ internal static class RoomContractMapper
         if (patch.StoreCapacity.HasValue)
             document[RoomDocumentFields.RoomObject.Store.Capacity] = patch.StoreCapacity.Value;
 
+        if (patch.StoreCapacityResource is { Count: > 0 }) {
+            var capacityDocument = new BsonDocument();
+            foreach (var (resourceType, capacity) in patch.StoreCapacityResource) {
+                if (string.IsNullOrWhiteSpace(resourceType))
+                    continue;
+
+                capacityDocument[resourceType] = capacity;
+            }
+
+            if (capacityDocument.ElementCount > 0)
+                document[RoomDocumentFields.RoomObject.Store.CapacityResource] = capacityDocument;
+        }
+
         if (patch.Body is { Count: > 0 }) {
             var bodyArray = CreateBodyArray(patch.Body);
             if (bodyArray is not null)
@@ -782,7 +791,7 @@ internal static class RoomContractMapper
         if (patch.ControllerLevel.HasValue) {
             document[RoomDocumentFields.Info.Controller] = new BsonDocument
             {
-                [RoomDocumentFields.Info.ControllerLevel] = patch.ControllerLevel.Value
+                [RoomDocumentFields.Info.ControllerLevel] = (int)patch.ControllerLevel.Value
             };
         }
 

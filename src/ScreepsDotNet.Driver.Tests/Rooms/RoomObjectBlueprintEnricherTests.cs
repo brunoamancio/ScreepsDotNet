@@ -3,6 +3,7 @@ namespace ScreepsDotNet.Driver.Tests.Rooms;
 using System.Collections.Generic;
 using ScreepsDotNet.Common.Constants;
 using ScreepsDotNet.Common.Structures;
+using ScreepsDotNet.Common.Types;
 using ScreepsDotNet.Driver.Contracts;
 using ScreepsDotNet.Driver.Services.Rooms;
 
@@ -65,7 +66,7 @@ public sealed class RoomObjectBlueprintEnricherTests
             Reservation: null,
             Sign: null,
             Structure: null,
-            Effects: new Dictionary<string, PowerEffectSnapshot>(0, StringComparer.Ordinal),
+            Effects: new Dictionary<PowerTypes, PowerEffectSnapshot>(),
             Spawning: null,
             Body: [],
             IsSpawning: null,

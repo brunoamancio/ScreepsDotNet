@@ -6,6 +6,7 @@ using MongoDB.Driver;
 using ScreepsDotNet.Backend.Core.Constants;
 using ScreepsDotNet.Backend.Core.Seeding;
 using ScreepsDotNet.Common.Constants;
+using ScreepsDotNet.Common.Types;
 using ScreepsDotNet.Storage.MongoRedis.Repositories.Documents;
 
 public sealed class SeedDataService : ISeedDataService
@@ -33,7 +34,7 @@ public sealed class SeedDataService : ISeedDataService
     private const int ActiveFlagValue = 1;
     private const int BadgeTypeValue = 1;
     private const int BadgeParamValue = 0;
-    private const int ControllerLevel = 3;
+    private const ControllerLevel DefaultControllerLevel = ControllerLevel.Level3;
     private const string BadgePrimaryColor = "#ffffff";
     private const string BadgeSecondaryColor = "#000000";
     private const string BadgeTertiaryColor = "#888888";
@@ -148,7 +149,7 @@ public sealed class SeedDataService : ISeedDataService
                 UserId = SeedDataDefaults.User.Id,
                 Type = RoomObjectType.Controller.ToDocumentValue(),
                 Room = SeedDataDefaults.World.StartRoom,
-                Level = ControllerLevel,
+                Level = (int)DefaultControllerLevel,
                 SafeMode = SeedDataDefaults.World.SafeModeExpiry,
                 Sign = new RoomSignDocument
                 {
@@ -320,7 +321,7 @@ public sealed class SeedDataService : ISeedDataService
             Owner = SeedDataDefaults.User.Username,
             Controller = new RoomControllerDocument
             {
-                Level = ControllerLevel
+                Level = (int)DefaultControllerLevel
             },
             EnergyAvailable = 500
         };
@@ -712,10 +713,10 @@ public sealed class SeedDataService : ISeedDataService
                 StoreCapacity = SeedDataDefaults.PowerCreeps.ActiveStoreCapacity,
                 SpawnCooldownTime = null,
                 Shard = SeedDataDefaults.PowerCreeps.ActiveShardName,
-                Powers = new Dictionary<string, PowerCreepPowerDocument>(StringComparer.Ordinal)
+                Powers = new Dictionary<PowerTypes, PowerCreepPowerDocument>
                 {
-                    ["1"] = new() { Level = 2 },
-                    ["2"] = new() { Level = 1 }
+                    [PowerTypes.GenerateOps] = new() { Level = 2 },
+                    [PowerTypes.OperateSpawn] = new() { Level = 1 }
                 }
             },
             new PowerCreepDocument
@@ -729,9 +730,9 @@ public sealed class SeedDataService : ISeedDataService
                 Store = new Dictionary<string, int>(StringComparer.Ordinal),
                 StoreCapacity = 200,
                 SpawnCooldownTime = 0,
-                Powers = new Dictionary<string, PowerCreepPowerDocument>(StringComparer.Ordinal)
+                Powers = new Dictionary<PowerTypes, PowerCreepPowerDocument>
                 {
-                    ["1"] = new() { Level = 1 }
+                    [PowerTypes.GenerateOps] = new() { Level = 1 }
                 }
             }
         };

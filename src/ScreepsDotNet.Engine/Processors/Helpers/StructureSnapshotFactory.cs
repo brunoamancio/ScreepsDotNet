@@ -2,6 +2,7 @@ namespace ScreepsDotNet.Engine.Processors.Helpers;
 
 using ScreepsDotNet.Common.Constants;
 using ScreepsDotNet.Common.Structures;
+using ScreepsDotNet.Common.Types;
 using ScreepsDotNet.Driver.Contracts;
 
 internal interface IStructureSnapshotFactory
@@ -62,7 +63,7 @@ internal sealed class StructureSnapshotFactory : IStructureSnapshotFactory
             Reservation: null,
             Sign: null,
             Structure: null,
-            Effects: new Dictionary<string, PowerEffectSnapshot>(0, Comparer),
+            Effects: new Dictionary<PowerTypes, PowerEffectSnapshot>(),
             Spawning: null,
             Body: [],
             IsSpawning: null,

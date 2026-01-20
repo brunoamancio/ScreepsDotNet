@@ -2,6 +2,7 @@ namespace ScreepsDotNet.Engine.Tests.Structures;
 
 using ScreepsDotNet.Common.Constants;
 using ScreepsDotNet.Common.Structures;
+using ScreepsDotNet.Common.Types;
 
 public sealed class StructureBlueprintRegistryTests
 {
@@ -12,7 +13,7 @@ public sealed class StructureBlueprintRegistryTests
         Assert.True(found);
         Assert.NotNull(blueprint);
         Assert.Equal(0, blueprint!.Store.InitialStore[RoomDocumentFields.RoomObject.Store.Energy]);
-        Assert.Equal(ScreepsGameConstants.ExtensionEnergyCapacityByControllerLevel[8], blueprint.Store.ControllerLevelCapacity![8]);
+        Assert.Equal(ScreepsGameConstants.ExtensionEnergyCapacityByControllerLevel[ControllerLevel.Level8], blueprint.Store.ControllerLevelCapacity![ControllerLevel.Level8]);
     }
 
     [Fact]
@@ -49,7 +50,7 @@ public sealed class StructureBlueprintRegistryTests
         Assert.True(found);
         Assert.NotNull(blueprint);
         Assert.NotNull(blueprint!.Rampart);
-        Assert.Equal(ScreepsGameConstants.RampartHitsMaxByControllerLevel[8], blueprint.Rampart!.HitsMaxByControllerLevel[8]);
+        Assert.Equal(ScreepsGameConstants.RampartHitsMaxByControllerLevel[ControllerLevel.Level8], blueprint.Rampart!.HitsMaxByControllerLevel[ControllerLevel.Level8]);
         Assert.NotNull(blueprint.Decay);
         Assert.Equal(ScreepsGameConstants.RampartDecayAmount, blueprint.Decay!.Amount);
         Assert.Equal(ScreepsGameConstants.RampartDecayInterval, blueprint.Decay.IntervalTicks);

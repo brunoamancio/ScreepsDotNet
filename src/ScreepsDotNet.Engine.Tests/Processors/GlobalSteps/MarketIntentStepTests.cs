@@ -1,4 +1,5 @@
 using ScreepsDotNet.Common.Constants;
+using ScreepsDotNet.Common.Types;
 using ScreepsDotNet.Driver.Constants;
 using ScreepsDotNet.Driver.Contracts;
 using ScreepsDotNet.Engine.Data.Models;
@@ -436,7 +437,7 @@ public sealed class MarketIntentStepTests
             null,
             null,
             null,
-            new Dictionary<string, PowerEffectSnapshot>(StringComparer.Ordinal),
+            new Dictionary<PowerTypes, PowerEffectSnapshot>(),
             null,
             Array.Empty<CreepBodyPartSnapshot>(),
             IsSpawning: false,
@@ -482,7 +483,7 @@ public sealed class MarketIntentStepTests
             null,
             null,
             null,
-            new Dictionary<string, PowerEffectSnapshot>(StringComparer.Ordinal),
+            new Dictionary<PowerTypes, PowerEffectSnapshot>(),
             null,
             Array.Empty<CreepBodyPartSnapshot>(),
             IsSpawning: false,

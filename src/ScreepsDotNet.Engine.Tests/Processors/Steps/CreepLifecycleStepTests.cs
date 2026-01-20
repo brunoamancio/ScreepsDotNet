@@ -1,4 +1,5 @@
 using ScreepsDotNet.Common.Constants;
+using ScreepsDotNet.Common.Types;
 using ScreepsDotNet.Driver.Contracts;
 using ScreepsDotNet.Engine.Data.Bulk;
 using ScreepsDotNet.Engine.Data.Models;
@@ -91,7 +92,7 @@ public sealed class CreepLifecycleStepTests
             Reservation: null,
             Sign: null,
             Structure: null,
-            Effects: new Dictionary<string, PowerEffectSnapshot>(StringComparer.Ordinal),
+            Effects: new Dictionary<PowerTypes, PowerEffectSnapshot>(),
             Spawning: null,
             Body: [],
             UserSummoned: userSummoned);
@@ -188,7 +189,7 @@ public sealed class CreepLifecycleStepTests
             Reservation: null,
             Sign: null,
             Structure: null,
-            Effects: new Dictionary<string, PowerEffectSnapshot>(StringComparer.Ordinal),
+            Effects: new Dictionary<PowerTypes, PowerEffectSnapshot>(),
             Spawning: null,
             Body: []);
 }
