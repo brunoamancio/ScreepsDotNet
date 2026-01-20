@@ -33,6 +33,9 @@ public sealed class RoomObjectDocument
     [BsonElement("safeMode")]
     public int? SafeMode { get; set; }
 
+    [BsonElement("safeModeAvailable")]
+    public int? SafeModeAvailable { get; set; }
+
     [BsonElement("mineralType")]
     public string? MineralType { get; set; }
 

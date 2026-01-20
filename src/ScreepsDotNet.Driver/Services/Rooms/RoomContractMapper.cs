@@ -89,6 +89,7 @@ internal static class RoomContractMapper
             document.Cooldown,
             document.CooldownTime,
             document.SafeMode,
+            document.SafeModeAvailable,
             MapPortalDestination(document.Destination),
             MapSend(document.Send));
     }
@@ -689,6 +690,9 @@ internal static class RoomContractMapper
                 [RoomDocumentFields.RoomObject.ReservationFields.EndTime] = reservation.EndTime
             };
         }
+
+        if (patch.SafeModeAvailable.HasValue)
+            document[RoomDocumentFields.Controller.SafeModeAvailable] = patch.SafeModeAvailable.Value;
 
         if (patch.ActionLog is { HasEntries: true } actionLog) {
             var logDocument = new BsonDocument();

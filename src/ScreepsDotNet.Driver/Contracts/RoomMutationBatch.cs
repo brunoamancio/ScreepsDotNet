@@ -45,6 +45,7 @@ public sealed record RoomObjectPatchPayload : IRoomObjectPatchPayload
     public int? Cooldown { get; init; }
     public int? CooldownTime { get; init; }
     public RoomReservationSnapshot? Reservation { get; init; }
+    public int? SafeModeAvailable { get; init; }
 
     public bool HasChanges =>
         Hits.HasValue ||
@@ -71,7 +72,8 @@ public sealed record RoomObjectPatchPayload : IRoomObjectPatchPayload
         CooldownTime.HasValue ||
         Spawning is not null ||
         ClearSpawning ||
-        Reservation is not null;
+        Reservation is not null ||
+        SafeModeAvailable.HasValue;
 }
 
 public sealed record RoomObjectPositionPatch(int? X = null, int? Y = null)

@@ -206,8 +206,8 @@ docker compose -f src/docker-compose.yml up -d
 dotnet run --project src/ScreepsDotNet.Backend.Http/ScreepsDotNet.Backend.Http.csproj
 
 # Before committing
-dotnet format style --exclude-diagnostics IDE0051 IDE0052 IDE0060
-dotnet test src/ScreepsDotNet.slnx
+cd src && dotnet format style --exclude-diagnostics IDE0051 IDE0052 IDE0060 ScreepsDotNet.slnx
+cd src && dotnet test ScreepsDotNet.slnx
 git status  # Verify ScreepsNodeJs/ is not included
 ```
 

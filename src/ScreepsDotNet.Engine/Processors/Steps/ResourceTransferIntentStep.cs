@@ -6,10 +6,22 @@ using ScreepsDotNet.Common.Constants;
 using ScreepsDotNet.Driver.Contracts;
 using ScreepsDotNet.Engine.Processors.Helpers;
 
+/// <summary>
+/// Processes resource transfer intents (transfer, withdraw, pickup, drop) for creeps.
+/// Implements Screeps resource I/O mechanics including store capacity tracking, lab mineral capacity,
+/// rampart blocking, terminal disruption, and resource drop creation.
+/// </summary>
 internal sealed class ResourceTransferIntentStep(IResourceDropHelper resourceDropHelper) : IRoomProcessorStep
 {
     private static readonly StringComparer Comparer = StringComparer.Ordinal;
 
+    /// <summary>
+    /// Processes all resource transfer intents for the current tick.
+    /// Uses a ledger pattern to accumulate multiple store changes per object before emitting patches.
+    /// </summary>
+    /// <param name="context">The room processor context containing state, intents, and mutation writer.</param>
+    /// <param name="token">Cancellation token for async operations.</param>
+    /// <returns>A completed task.</returns>
     public Task ExecuteAsync(RoomProcessorContext context, CancellationToken token = default)
     {
         var intents = context.State.Intents;
@@ -71,6 +83,16 @@ internal sealed class ResourceTransferIntentStep(IResourceDropHelper resourceDro
         return Task.CompletedTask;
     }
 
+    /// <summary>
+    /// Processes a transfer intent (creep → target).
+    /// Validates adjacency, capacity, and special cases (ramparts, labs, etc.).
+    /// Updates lab capacity tracking when transferring non-energy resources to labs.
+    /// </summary>
+    /// <param name="context">The room processor context.</param>
+    /// <param name="creep">The creep initiating the transfer.</param>
+    /// <param name="record">The intent record containing targetId, resourceType, and amount.</param>
+    /// <param name="storeLedger">Ledger tracking accumulated store changes across all intents.</param>
+    /// <param name="modifiedObjects">Set of object IDs that have been modified this tick.</param>
     private static void ProcessTransfer(RoomProcessorContext context, RoomObjectSnapshot creep, IntentRecord record, Dictionary<string, Dictionary<string, int>> storeLedger, HashSet<string> modifiedObjects)
     {
         if (!TryGetTargetId(record, out var targetId))
@@ -133,6 +155,16 @@ internal sealed class ResourceTransferIntentStep(IResourceDropHelper resourceDro
         }
     }
 
+    /// <summary>
+    /// Processes a withdraw intent (target → creep).
+    /// Validates safe mode, rampart blocking, terminal disruption, and capacity constraints.
+    /// Clears lab capacity tracking when withdrawing the last non-energy resource from a lab.
+    /// </summary>
+    /// <param name="context">The room processor context.</param>
+    /// <param name="creep">The creep initiating the withdrawal.</param>
+    /// <param name="record">The intent record containing targetId, resourceType, and amount.</param>
+    /// <param name="storeLedger">Ledger tracking accumulated store changes across all intents.</param>
+    /// <param name="modifiedObjects">Set of object IDs that have been modified this tick.</param>
     private static void ProcessWithdraw(RoomProcessorContext context, RoomObjectSnapshot creep, IntentRecord record, Dictionary<string, Dictionary<string, int>> storeLedger, HashSet<string> modifiedObjects)
     {
         if (!TryGetTargetId(record, out var targetId))
@@ -201,6 +233,15 @@ internal sealed class ResourceTransferIntentStep(IResourceDropHelper resourceDro
         }
     }
 
+    /// <summary>
+    /// Processes a pickup intent (creep picks up resource drop from ground).
+    /// Validates adjacency and capacity. Removes the resource drop if fully picked up.
+    /// </summary>
+    /// <param name="context">The room processor context.</param>
+    /// <param name="creep">The creep initiating the pickup.</param>
+    /// <param name="record">The intent record containing targetId (resource drop object ID).</param>
+    /// <param name="storeLedger">Ledger tracking accumulated store changes across all intents.</param>
+    /// <param name="modifiedObjects">Set of object IDs that have been modified this tick.</param>
     private static void ProcessPickup(RoomProcessorContext context, RoomObjectSnapshot creep, IntentRecord record, Dictionary<string, Dictionary<string, int>> storeLedger, HashSet<string> modifiedObjects)
     {
         if (!TryGetTargetId(record, out var targetId))
@@ -247,6 +288,16 @@ internal sealed class ResourceTransferIntentStep(IResourceDropHelper resourceDro
         }
     }
 
+    /// <summary>
+    /// Processes a drop intent (creep drops resource to ground).
+    /// Creates or consolidates resource drop objects at the creep's position.
+    /// </summary>
+    /// <param name="context">The room processor context.</param>
+    /// <param name="creep">The creep initiating the drop.</param>
+    /// <param name="record">The intent record containing resourceType and amount.</param>
+    /// <param name="storeLedger">Ledger tracking accumulated store changes across all intents.</param>
+    /// <param name="modifiedObjects">Set of object IDs that have been modified this tick.</param>
+    /// <param name="dropContext">Context for resource drop helper to track drops created/updated this tick.</param>
     private void ProcessDrop(RoomProcessorContext context, RoomObjectSnapshot creep, IntentRecord record, Dictionary<string, Dictionary<string, int>> storeLedger, HashSet<string> modifiedObjects, ResourceDropContext dropContext)
     {
         if (!TryGetResourceType(record, out var resourceType))

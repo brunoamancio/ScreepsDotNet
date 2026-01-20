@@ -111,6 +111,7 @@ public sealed class ControllerIntentStepTests
         Assert.NotNull(patch);
         Assert.Equal(0, patch.Progress);
         Assert.True(patch.DowngradeTimer > 0);
+        Assert.Equal(1, patch.SafeModeAvailable);
 
         Assert.NotNull(writer.RoomInfoPatch);
         Assert.Equal(ControllerLevel.Level2, writer.RoomInfoPatch!.ControllerLevel);
@@ -300,6 +301,88 @@ public sealed class ControllerIntentStepTests
         var blockPatch = patches.FirstOrDefault(p => p.Payload.UpgradeBlocked.HasValue);
         Assert.NotNull(blockPatch.ObjectId);
         Assert.True(blockPatch.Payload.UpgradeBlocked);
+    }
+
+    [Fact]
+    public async Task Upgrade_NoBoost_AppliesNormalPower()
+    {
+        var creep = CreateCreep("creep1", 10, 10, "user1",
+            body: [new CreepBodyPartSnapshot(BodyPartType.Work, 100, null)],
+            energy: 10);
+        var controller = CreateController("ctrl1", 11, 11, "user1",
+            level: 1, progress: 100, downgradeTime: 50000);
+        var context = CreateContext([creep, controller],
+            CreateUpgradeIntent("user1", creep.Id, controller.Id));
+        var writer = (FakeMutationWriter)context.MutationWriter;
+
+        await _step.ExecuteAsync(context, TestContext.Current.CancellationToken);
+
+        var (ObjectId, Payload) = writer.Patches.Single(p => p.ObjectId == controller.Id && p.Payload.Progress.HasValue);
+        Assert.Equal(101, Payload.Progress);
+    }
+
+    [Fact]
+    public async Task Upgrade_WithGHBoost_AppliesBoostMultiplier()
+    {
+        var creep = CreateCreep("creep1", 10, 10, "user1",
+            body: [new CreepBodyPartSnapshot(BodyPartType.Work, 100, ResourceTypes.GhodiumHydride)],
+            energy: 10);
+        var controller = CreateController("ctrl1", 11, 11, "user1",
+            level: 1, progress: 100, downgradeTime: 50000);
+        var context = CreateContext([creep, controller],
+            CreateUpgradeIntent("user1", creep.Id, controller.Id));
+        var writer = (FakeMutationWriter)context.MutationWriter;
+
+        await _step.ExecuteAsync(context, TestContext.Current.CancellationToken);
+
+        var (ObjectId, Payload) = writer.Patches.Single(p => p.ObjectId == controller.Id && p.Payload.Progress.HasValue);
+        Assert.Equal(100 + 1, Payload.Progress);
+    }
+
+    [Fact]
+    public async Task Upgrade_MultipleBoosts_SortsAndAppliesHighestFirst()
+    {
+        var creep = CreateCreep("creep1", 10, 10, "user1",
+            body:
+            [
+                new CreepBodyPartSnapshot(BodyPartType.Work, 100, ResourceTypes.GhodiumHydride),
+                new CreepBodyPartSnapshot(BodyPartType.Work, 100, ResourceTypes.CatalyzedGhodiumAcid),
+                new CreepBodyPartSnapshot(BodyPartType.Work, 100, ResourceTypes.GhodiumAcid)
+            ],
+            energy: 2);
+        var controller = CreateController("ctrl1", 11, 11, "user1",
+            level: 1, progress: 100, downgradeTime: 50000);
+        var context = CreateContext([creep, controller],
+            CreateUpgradeIntent("user1", creep.Id, controller.Id));
+        var writer = (FakeMutationWriter)context.MutationWriter;
+
+        await _step.ExecuteAsync(context, TestContext.Current.CancellationToken);
+
+        var (ObjectId, Payload) = writer.Patches.Single(p => p.ObjectId == controller.Id && p.Payload.Progress.HasValue);
+        Assert.Equal(100 + 2 + 1, Payload.Progress);
+    }
+
+    [Fact]
+    public async Task Upgrade_MixedParts_OnlyUsesBoostForWorkParts()
+    {
+        var creep = CreateCreep("creep1", 10, 10, "user1",
+            body:
+            [
+                new CreepBodyPartSnapshot(BodyPartType.Work, 100, ResourceTypes.CatalyzedGhodiumAcid),
+                new CreepBodyPartSnapshot(BodyPartType.Move, 100, null),
+                new CreepBodyPartSnapshot(BodyPartType.Work, 100, null)
+            ],
+            energy: 10);
+        var controller = CreateController("ctrl1", 11, 11, "user1",
+            level: 1, progress: 100, downgradeTime: 50000);
+        var context = CreateContext([creep, controller],
+            CreateUpgradeIntent("user1", creep.Id, controller.Id));
+        var writer = (FakeMutationWriter)context.MutationWriter;
+
+        await _step.ExecuteAsync(context, TestContext.Current.CancellationToken);
+
+        var (ObjectId, Payload) = writer.Patches.Single(p => p.ObjectId == controller.Id && p.Payload.Progress.HasValue);
+        Assert.Equal(100 + 2 + 1, Payload.Progress);
     }
 
     #endregion

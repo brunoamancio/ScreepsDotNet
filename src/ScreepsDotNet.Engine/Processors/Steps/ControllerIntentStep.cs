@@ -101,7 +101,7 @@ internal sealed class ControllerIntentStep : IRoomProcessorStep
         if (upgradeBlocked > 0)
             return;
 
-        var workParts = CalculateUpgradePower(creep);
+        var workParts = CalculateBaseWorkParts(creep);
         if (workParts <= 0)
             return;
 
@@ -114,22 +114,25 @@ internal sealed class ControllerIntentStep : IRoomProcessorStep
 
         var level = controller.Level ?? 0;
         var maxPerTick = level == 8 ? ScreepsGameConstants.ControllerMaxUpgradePerTick : workParts;
-        var upgradeAmount = Math.Min(workParts, Math.Min(availableEnergy, maxPerTick));
+        var energyToConsume = Math.Min(workParts, Math.Min(availableEnergy, maxPerTick));
 
-        if (upgradeAmount <= 0)
+        if (energyToConsume <= 0)
             return;
 
-        var newEnergy = availableEnergy - upgradeAmount;
+        var boostEffect = CalculateBoostEffect(creep, energyToConsume);
+        var progressGain = energyToConsume + boostEffect;
+
+        var newEnergy = availableEnergy - energyToConsume;
         energyLedger[creep.Id] = newEnergy;
 
         var currentProgress = controllerProgressLedger.TryGetValue(controllerId, out var ledgerProgress)
             ? ledgerProgress
             : controller.Progress ?? 0;
 
-        var newProgress = currentProgress + upgradeAmount;
+        var newProgress = currentProgress + progressGain;
         controllerProgressLedger[controllerId] = newProgress;
 
-        context.Stats.IncrementEnergyControl(creep.UserId!, upgradeAmount);
+        context.Stats.IncrementEnergyControl(creep.UserId!, energyToConsume);
     }
 
     private static void ProcessReserve(RoomProcessorContext context, RoomObjectSnapshot creep, IntentRecord record)
@@ -260,7 +263,7 @@ internal sealed class ControllerIntentStep : IRoomProcessorStep
         return true;
     }
 
-    private static int CalculateUpgradePower(RoomObjectSnapshot creep)
+    private static int CalculateBaseWorkParts(RoomObjectSnapshot creep)
     {
         var workParts = 0;
 
@@ -275,6 +278,37 @@ internal sealed class ControllerIntentStep : IRoomProcessorStep
         }
 
         return workParts;
+    }
+
+    private static int CalculateBoostEffect(RoomObjectSnapshot creep, int energyToConsume)
+    {
+        var boostEffects = new List<double>();
+
+        foreach (var part in creep.Body) {
+            if (part.Type != BodyPartType.Work)
+                continue;
+
+            if (part.Hits <= 0)
+                continue;
+
+            if (string.IsNullOrWhiteSpace(part.Boost))
+                continue;
+
+            if (!ScreepsGameConstants.WorkBoostUpgradeMultipliers.TryGetValue(part.Boost, out var multiplier))
+                continue;
+
+            var extraPower = multiplier - 1.0;
+            boostEffects.Add(extraPower);
+        }
+
+        if (boostEffects.Count == 0)
+            return 0;
+
+        boostEffects.Sort((a, b) => b.CompareTo(a));
+
+        var boostedParts = boostEffects.Take(energyToConsume).Sum();
+        var result = (int)Math.Floor(boostedParts);
+        return result;
     }
 
     private static bool IsInRange(RoomObjectSnapshot source, RoomObjectSnapshot target, int maxRange)
@@ -328,10 +362,14 @@ internal sealed class ControllerIntentStep : IRoomProcessorStep
         var remainingProgress = newProgress - threshold;
         var newDowngradeTime = gameTime + (nextLevelDowngradeMax / 2);
 
+        var currentSafeModeAvailable = controller.SafeModeAvailable ?? 0;
+        var newSafeModeAvailable = currentSafeModeAvailable + 1;
+
         patch = new RoomObjectPatchPayload
         {
             Progress = nextLevel == ControllerLevel.Level8 ? 0 : remainingProgress,
             DowngradeTimer = newDowngradeTime,
+            SafeModeAvailable = newSafeModeAvailable,
             ActionLog = new RoomObjectActionLogPatch()
         };
 

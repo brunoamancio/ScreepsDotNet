@@ -252,6 +252,15 @@ public static class ScreepsGameConstants
             [ControllerLevel.Level8] = 200_000
         };
 
+    // Boost multipliers for WORK parts upgrading controller
+    public static IReadOnlyDictionary<string, double> WorkBoostUpgradeMultipliers { get; } =
+        new Dictionary<string, double>(StringComparer.Ordinal)
+        {
+            [ResourceTypes.GhodiumHydride] = 1.5,           // GH: +50% upgrade power
+            [ResourceTypes.GhodiumAcid] = 1.8,              // GH2O: +80% upgrade power
+            [ResourceTypes.CatalyzedGhodiumAcid] = 2.0      // XGH2O: +100% upgrade power
+        };
+
     public static IReadOnlyDictionary<BodyPartType, int> BodyPartEnergyCost { get; } = new Dictionary<BodyPartType, int>
     {
         [BodyPartType.Move] = 50,

@@ -57,6 +57,7 @@ public sealed record RoomObjectSnapshot(
     int? Cooldown = null,
     int? CooldownTime = null,
     int? SafeMode = null,
+    int? SafeModeAvailable = null,
     RoomPortalDestinationSnapshot? PortalDestination = null,
     TerminalSendSnapshot? Send = null)
 {
