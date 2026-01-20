@@ -21,6 +21,9 @@ public static class ScreepsGameConstants
     public const int ExtensionHits = 1000;
     public const int LabBoostEnergy = 20;
     public const int LabBoostMineral = 30;
+    public const int LabReactionAmount = 5;
+    public const int LabUnboostEnergy = 0;
+    public const int LabUnboostMineral = 15;
     public const int RepairPower = 100;
     public const int BuildPower = 5;
     public const double RepairEnergyCost = 0.01;

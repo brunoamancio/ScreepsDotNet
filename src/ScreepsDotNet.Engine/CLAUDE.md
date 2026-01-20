@@ -274,12 +274,14 @@ public class ControllerProcessor
 ### 🔄 In Progress (E2.3 Handler Backlog)
 Active work on porting remaining intent handlers (see `docs/engine/e2.3-plan.md`):
 
-**Next ports:**
-1. **Controller intents** - upgrade, reserve, attack controller
-2. **Resource I/O** - transfer, withdraw, pickup, drop
-3. **Lab reactions** - boost creeps, run reactions
-4. **Structure energy routing** - links, terminals, factories, power spawns
-5. **Power creep abilities** - power creep intent handlers
+**Recently completed (Jan 2026):**
+1. ✅ **Controller intents** - upgrade, reserve, attack (12/12 tests, SafeMode tracking, boost effects partial)
+2. ✅ **Resource I/O** - transfer, withdraw, pickup, drop (31/31 tests, lab capacity tracking)
+3. ✅ **Lab reactions** - boost/unboost creeps, run reactions (24/24 tests, action log recording)
+
+**Remaining ports:**
+4. **Structure energy routing** - links, terminals, factories, power spawns (~20 tests estimated)
+5. **Power creep abilities** - 19 power abilities (~40+ tests estimated)
 
 **Each handler must:**
 - Consume state via `IRoomStateProvider`
@@ -290,7 +292,7 @@ Active work on porting remaining intent handlers (see `docs/engine/e2.3-plan.md`
 ### 📋 Pending
 - **E3: Intent Gathering & Validation** - Intent pipeline, validators
 - **E4: Simulation Kernel** - Complete room processor (all mechanics)
-- **E5: Global Systems** - Market, NPC spawns, shard messaging
+- **E5: Global Systems** - Global mutations (`IGlobalMutationWriter`), power effect tracking, market/NPC/shard systems (see `docs/engine/e5-plan.md`)
 - **E6: Engine Loop Orchestration** - `EngineHost` tick coordination
 - **E7: Parity Validation** - Lockstep testing vs. Node engine
 - **E8: Observability & Tooling** - Engine metrics, diagnostics
@@ -303,12 +305,14 @@ Active work on porting remaining intent handlers (see `docs/engine/e2.3-plan.md`
 | E2 | 🔄 | Data & Storage Model | Driver snapshot/mutation contracts in place, Engine consuming them. Handlers for all intent types. | Driver contracts, Screeps schemas |
 | E3 | 📋 | Intent Gathering & Validation | `IIntentPipeline` + validators with unit tests mirroring Node fixtures | Driver runtime outputs, constants |
 | E4 | 📋 | Simulation Kernel (Room Processor) | Managed processor produces identical room diffs vs. Node baseline | E2, E3, Pathfinder service |
-| E5 | 📋 | Global Systems | Market, NPC spawns, shard messaging hooked into processor loop | E4 foundation |
+| E5 | 📋 | Global Systems | Market, NPC spawns, shard messaging hooked into processor loop. Global mutations (`IGlobalMutationWriter`), power effect tracking. | E4 foundation |
 | E6 | 📋 | Engine Loop Orchestration | `EngineHost` coordinates ticks; main/runner/processor loops call managed engine | Driver queue service, telemetry sink |
 | E7 | 📋 | Compatibility & Parity Validation | Lockstep testing vs. Node engine, automated divergence detection | Prior steps, legacy engine repo |
 | E8 | 📋 | Observability & Tooling | Engine metrics flow to telemetry, diagnostics commands, operator playbooks | D8 logging stack, scheduler hooks |
 
-**Detailed status:** See `docs/engine/e2.3-plan.md` for current handler backlog
+**Detailed status:**
+- E2.3 handler backlog: `docs/engine/e2.3-plan.md`
+- E5 blockers & implementation plan: `docs/engine/e5-plan.md`
 
 ## Common Tasks
 

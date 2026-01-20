@@ -14,10 +14,15 @@ public static class IntentKeys
 
     public const string TransferEnergy = "transferEnergy";
     public const string RunReaction = "runReaction";
+    public const string BoostCreep = "boostCreep";
+    public const string UnboostCreep = "unboostCreep";
 
     public const string TargetId = "id";
     public const string Amount = "amount";
     public const string ResourceType = "resourceType";
+    public const string Lab1 = "lab1";
+    public const string Lab2 = "lab2";
+    public const string BodyPartsCount = "bodyPartsCount";
 
     public const string Move = "move";
     public const string UpgradeController = "upgradeController";
