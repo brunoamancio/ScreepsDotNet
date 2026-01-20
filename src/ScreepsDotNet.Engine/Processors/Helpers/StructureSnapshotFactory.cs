@@ -17,7 +17,7 @@ internal sealed record StructureCreationOptions(
     int X,
     int Y,
     int GameTime,
-    int? ControllerLevel,
+    ControllerLevel? ControllerLevel,
     bool OnSwamp,
     bool OnWall,
     string? ObjectId = null,
@@ -95,8 +95,7 @@ internal sealed class StructureSnapshotFactory : IStructureSnapshotFactory
         }
 
         if (blueprint.Rampart is not null && options.ControllerLevel.HasValue) {
-            var level = options.ControllerLevel.Value;
-            if (blueprint.Rampart.HitsMaxByControllerLevel.TryGetValue(level, out var rampartHitsMax) && rampartHitsMax > 0)
+            if (blueprint.Rampart.HitsMaxByControllerLevel.TryGetValue(options.ControllerLevel.Value, out var rampartHitsMax) && rampartHitsMax > 0)
                 hitsMax = rampartHitsMax;
         }
 
@@ -116,8 +115,7 @@ internal sealed class StructureSnapshotFactory : IStructureSnapshotFactory
             : new Dictionary<string, int>(blueprint.Store.StoreCapacityResource, Comparer);
 
         if (blueprint.Store.ControllerLevelCapacity is not null && options.ControllerLevel.HasValue) {
-            var level = options.ControllerLevel.Value;
-            if (blueprint.Store.ControllerLevelCapacity.TryGetValue(level, out var capacity))
+            if (blueprint.Store.ControllerLevelCapacity.TryGetValue(options.ControllerLevel.Value, out var capacity))
                 storeCapacityResource[RoomDocumentFields.RoomObject.Store.Energy] = capacity;
         }
 

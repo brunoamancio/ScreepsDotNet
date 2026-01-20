@@ -321,7 +321,7 @@ public sealed class SeedDataService : ISeedDataService
             Owner = SeedDataDefaults.User.Username,
             Controller = new RoomControllerDocument
             {
-                Level = (int)DefaultControllerLevel
+                Level = DefaultControllerLevel
             },
             EnergyAvailable = 500
         };

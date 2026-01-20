@@ -2,6 +2,7 @@
 
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
+using ScreepsDotNet.Common.Types;
 
 [BsonIgnoreExtraElements]
 public sealed class RoomDocument
@@ -55,5 +56,6 @@ public sealed class RoomDocument
 public sealed class RoomControllerDocument
 {
     [BsonElement("level")]
-    public int? Level { get; set; }
+    [BsonRepresentation(BsonType.Int32)]
+    public ControllerLevel? Level { get; set; }
 }

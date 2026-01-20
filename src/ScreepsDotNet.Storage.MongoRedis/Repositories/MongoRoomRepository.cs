@@ -20,7 +20,7 @@ public sealed class MongoRoomRepository(IMongoDatabaseProvider databaseProvider)
                                          .ConfigureAwait(false);
 
         return documents.Select(document => {
-            var controllerLevel = (ControllerLevel)(document.Controller?.Level ?? 0);
+            var controllerLevel = document.Controller?.Level ?? ControllerLevel.Level0;
             var energy = document.EnergyAvailable ?? 0;
             return new RoomSummary(document.Name ?? UnknownRoomName,
                                     document.Owner,

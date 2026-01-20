@@ -7,6 +7,7 @@ using ScreepsDotNet.Backend.Core.Constants;
 using ScreepsDotNet.Backend.Core.Models;
 using ScreepsDotNet.Backend.Core.Services;
 using ScreepsDotNet.Common.Constants;
+using ScreepsDotNet.Common.Types;
 using ScreepsDotNet.Storage.MongoRedis.Providers;
 using ScreepsDotNet.Storage.MongoRedis.Repositories.Documents;
 
@@ -209,7 +210,7 @@ public sealed class MongoConstructionService(IMongoDatabaseProvider databaseProv
             return new PlaceConstructionResult(PlaceConstructionResultStatus.NotControllerOwner);
 
         // Check RCL limits
-        var rcl = controller.GetValue(RoomDocumentFields.Controller.Level, 0).AsInt32;
+        var rcl = (ControllerLevel)controller.GetValue(RoomDocumentFields.Controller.Level, 0).AsInt32;
         if (!GameConstants.ControllerStructures.TryGetValue(structureType, out var limits))
             return new PlaceConstructionResult(PlaceConstructionResultStatus.Success);
 
@@ -224,7 +225,7 @@ public sealed class MongoConstructionService(IMongoDatabaseProvider databaseProv
 
         var existingCount = await _roomObjectsCollection.CountDocumentsAsync(countFilter, cancellationToken: cancellationToken).ConfigureAwait(false);
 
-        if (existingCount >= limits[rcl])
+        if (existingCount >= limits[(int)rcl])
             return new PlaceConstructionResult(PlaceConstructionResultStatus.RclNotEnough);
 
         return new PlaceConstructionResult(PlaceConstructionResultStatus.Success);

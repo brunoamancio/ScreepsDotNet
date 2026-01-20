@@ -2,6 +2,7 @@ namespace ScreepsDotNet.Engine.Tests.Processors.Helpers;
 
 using ScreepsDotNet.Common.Constants;
 using ScreepsDotNet.Common.Structures;
+using ScreepsDotNet.Common.Types;
 using ScreepsDotNet.Engine.Processors.Helpers;
 
 public sealed class StructureSnapshotFactoryTests
@@ -13,7 +14,7 @@ public sealed class StructureSnapshotFactoryTests
     public void CreateStructureSnapshot_Spawn_UsesBlueprintDefaults()
     {
         var blueprint = _provider.GetRequired(RoomObjectTypes.Spawn);
-        var options = new StructureCreationOptions("W1N1", "shard0", "user1", 10, 20, 100, ControllerLevel: 8, OnSwamp: false, OnWall: false);
+        var options = new StructureCreationOptions("W1N1", "shard0", "user1", 10, 20, 100, ControllerLevel: ControllerLevel.Level8, OnSwamp: false, OnWall: false);
 
         var snapshot = _factory.CreateStructureSnapshot(blueprint, options);
 

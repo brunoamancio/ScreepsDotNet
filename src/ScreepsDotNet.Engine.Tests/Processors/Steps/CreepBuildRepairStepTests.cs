@@ -73,7 +73,7 @@ public sealed class CreepBuildRepairStepTests
         var state = new RoomState(
             "W1N1",
             1000,
-            new RoomInfoSnapshot("room", null, null, false, false, null, null, 3, null, null, null, null),
+            new RoomInfoSnapshot("room", null, null, false, false, null, null, ControllerLevel.Level3, null, null, null, null),
             map,
             new Dictionary<string, UserState>(StringComparer.Ordinal),
             intents,

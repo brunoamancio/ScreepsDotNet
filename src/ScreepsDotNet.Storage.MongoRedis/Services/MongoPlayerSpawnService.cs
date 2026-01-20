@@ -9,6 +9,7 @@ using ScreepsDotNet.Backend.Core.Repositories;
 using ScreepsDotNet.Backend.Core.Services;
 using ScreepsDotNet.Common.Constants;
 using ScreepsDotNet.Common.Structures;
+using ScreepsDotNet.Common.Types;
 using ScreepsDotNet.Storage.MongoRedis.Providers;
 using ScreepsDotNet.Storage.MongoRedis.Repositories.Documents;
 
@@ -110,7 +111,7 @@ public sealed class MongoPlayerSpawnService(
         var safeModeExpiry = gameTime + DefaultSafeModeDuration;
         var controllerUpdate = Builders<BsonDocument>.Update
             .Set(RoomDocumentFields.RoomObject.User, userId)
-            .Set(RoomDocumentFields.Controller.Level, 1)
+            .Set(RoomDocumentFields.Controller.Level, (int)ControllerLevel.Level1)
             .Set(RoomDocumentFields.Controller.Progress, 0)
             .Set(RoomDocumentFields.Controller.DowngradeTime, (long?)null)
             .Set(RoomDocumentFields.Controller.SafeMode, safeModeExpiry);

@@ -26,8 +26,8 @@ public sealed class ResourceTransferIntentStepTests
         var (_, payload) = writer.Patches.Single(p => p.ObjectId == creep.Id && p.Payload.Store is not null);
         Assert.Equal(20, payload.Store![ResourceTypes.Energy]);
 
-        var terminalPatch = writer.Patches.Single(p => p.ObjectId == terminal.Id && p.Payload.Store is not null);
-        Assert.Equal(30, terminalPatch.Payload.Store![ResourceTypes.Energy]);
+        var (ObjectId, Payload) = writer.Patches.Single(p => p.ObjectId == terminal.Id && p.Payload.Store is not null);
+        Assert.Equal(30, Payload.Store![ResourceTypes.Energy]);
     }
 
     [Fact]
@@ -43,8 +43,8 @@ public sealed class ResourceTransferIntentStepTests
         var (_, payload) = writer.Patches.Single(p => p.ObjectId == creep.Id && p.Payload.Store is not null);
         Assert.Equal(0, payload.Store![ResourceTypes.Energy]);
 
-        var terminalPatch = writer.Patches.Single(p => p.ObjectId == terminal.Id && p.Payload.Store is not null);
-        Assert.Equal(10, terminalPatch.Payload.Store![ResourceTypes.Energy]);
+        var (ObjectId, Payload) = writer.Patches.Single(p => p.ObjectId == terminal.Id && p.Payload.Store is not null);
+        Assert.Equal(10, Payload.Store![ResourceTypes.Energy]);
     }
 
 
@@ -62,8 +62,8 @@ public sealed class ResourceTransferIntentStepTests
         var (_, payload) = writer.Patches.Single(p => p.ObjectId == creep.Id && p.Payload.Store is not null);
         Assert.Equal(30, payload.Store![ResourceTypes.Energy]);
 
-        var terminalPatch = writer.Patches.Single(p => p.ObjectId == terminal.Id && p.Payload.Store is not null);
-        Assert.Equal(70, terminalPatch.Payload.Store![ResourceTypes.Energy]);
+        var (ObjectId, Payload) = writer.Patches.Single(p => p.ObjectId == terminal.Id && p.Payload.Store is not null);
+        Assert.Equal(70, Payload.Store![ResourceTypes.Energy]);
     }
 
     [Fact]
@@ -180,8 +180,8 @@ public sealed class ResourceTransferIntentStepTests
         var (_, payload) = writer.Patches.Single(p => p.ObjectId == creep.Id && p.Payload.Store is not null);
         Assert.Equal(20, payload.Store![ResourceTypes.Energy]);
 
-        var containerPatch = writer.Patches.Single(p => p.ObjectId == container.Id && p.Payload.Store is not null);
-        Assert.Equal(30, containerPatch.Payload.Store![ResourceTypes.Energy]);
+        var (ObjectId, Payload) = writer.Patches.Single(p => p.ObjectId == container.Id && p.Payload.Store is not null);
+        Assert.Equal(30, Payload.Store![ResourceTypes.Energy]);
 
         Assert.Empty(writer.Upserts);
     }
