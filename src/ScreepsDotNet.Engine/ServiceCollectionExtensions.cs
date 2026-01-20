@@ -31,6 +31,9 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IRoomProcessorStep, HarvestIntentStep>();
         services.AddSingleton<IRoomProcessorStep, ResourceTransferIntentStep>();
         services.AddSingleton<IRoomProcessorStep, LabIntentStep>();
+        services.AddSingleton<IRoomProcessorStep, LinkIntentStep>();
+        services.AddSingleton<IRoomProcessorStep, PowerSpawnIntentStep>();
+        services.AddSingleton<IRoomProcessorStep, FactoryIntentStep>();
         services.AddSingleton<IRoomProcessorStep, CombatResolutionStep>();
         services.AddSingleton<IRoomProcessorStep, StructureDecayStep>();
         services.AddSingleton<IRoomProcessorStep, ControllerDowngradeStep>();

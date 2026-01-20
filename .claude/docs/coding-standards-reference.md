@@ -432,21 +432,24 @@ var userName = userCache.TryGetValue(userId, out var name) ? name : "Unknown";  
 
 ## 19. Method Signature Line Length
 
-**Rule:** Method signatures should remain on a single line unless they exceed 185 characters. Only wrap when the line is actually too long, not based on parameter count.
+**Rule:** Method signatures and record primary constructors should remain on a single line unless they exceed 185 characters. Only wrap when the line is actually too long, not based on parameter count.
 
 **✅ Good:**
 ```csharp
-// 174 characters - keep on one line
+// Method signature: 174 characters - keep on one line
 private static void ProcessTransfer(RoomProcessorContext context, RoomObjectSnapshot creep, IntentRecord record, Dictionary<string, Dictionary<string, int>> storeLedger)
 {
     // ...
 }
 
-// 120 characters - keep on one line
+// Method signature: 120 characters - keep on one line
 private static bool IsBlockedByRampart(RoomProcessorContext context, RoomObjectSnapshot creep, RoomObjectSnapshot target)
 {
     // ...
 }
+
+// Record primary constructor: 139 characters - keep on one line
+public sealed record CommodityRecipe(int Amount, int Cooldown, IReadOnlyDictionary<string, int> Components, int? Level = null);
 
 // Over 185 characters - wrap is acceptable
 private static void SomeLongMethodName(VeryLongParameterTypeName firstParameter, AnotherLongTypeName secondParameter, YetAnotherLongType thirdParameter, FinallyAVeryLongTypeName fourthParameter)
@@ -457,7 +460,7 @@ private static void SomeLongMethodName(VeryLongParameterTypeName firstParameter,
 
 **❌ Bad:**
 ```csharp
-// 174 characters - DO NOT wrap unnecessarily
+// Method signature: 174 characters - DO NOT wrap unnecessarily
 private static void ProcessTransfer(
     RoomProcessorContext context,
     RoomObjectSnapshot creep,
@@ -467,7 +470,7 @@ private static void ProcessTransfer(
     // ...
 }
 
-// 120 characters - DO NOT wrap unnecessarily
+// Method signature: 120 characters - DO NOT wrap unnecessarily
 private static bool IsBlockedByRampart(
     RoomProcessorContext context,
     RoomObjectSnapshot creep,
@@ -475,6 +478,13 @@ private static bool IsBlockedByRampart(
 {
     // ...
 }
+
+// Record primary constructor: 139 characters - DO NOT wrap unnecessarily
+public sealed record CommodityRecipe(
+    int Amount,
+    int Cooldown,
+    IReadOnlyDictionary<string, int> Components,
+    int? Level = null);  // ❌ Wrapped even though under 185 chars
 ```
 
 ## 20. Enums vs Constants for Integer Sets

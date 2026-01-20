@@ -160,6 +160,7 @@ public static class ScreepsGameConstants
     public const int PowerSpawnHits = 5000;
     public const int PowerSpawnEnergyCapacity = 5000;
     public const int PowerSpawnPowerCapacity = 100;
+    public const int PowerSpawnEnergyRatio = 50;
     public const int ExtractorHits = 500;
     public const int ExtractorCooldown = 5;
     public const int LabHits = 500;
@@ -169,6 +170,7 @@ public static class ScreepsGameConstants
     public const int LinkHitsMax = 1000;
     public const int LinkCapacity = 800;
     public const int LinkCooldown = 1;
+    public const double LinkLossRatio = 0.03;
     public const int StorageHits = 10000;
     public const int StorageCapacity = 1_000_000;
     public const int TerminalHits = 3000;

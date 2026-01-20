@@ -1,0 +1,353 @@
+namespace ScreepsDotNet.Engine.Tests.Processors.Steps;
+
+using ScreepsDotNet.Common.Constants;
+using ScreepsDotNet.Common.Types;
+using ScreepsDotNet.Driver.Contracts;
+using ScreepsDotNet.Engine.Data.Bulk;
+using ScreepsDotNet.Engine.Data.Models;
+using ScreepsDotNet.Engine.Processors;
+using ScreepsDotNet.Engine.Processors.Helpers;
+using ScreepsDotNet.Engine.Processors.Steps;
+
+public sealed class FactoryIntentStepTests
+{
+    private readonly FactoryIntentStep _step = new();
+
+    [Fact]
+    public async Task BasicProduction_ProducesBattery()
+    {
+        // Arrange
+        var factory = CreateFactory("f1", 10, 10, "user1", level: 0, energy: 600);
+        var context = CreateContext([factory],
+            CreateProduceIntent("user1", factory.Id, ResourceTypes.Battery), gameTime: 100);
+        var writer = (FakeMutationWriter)context.MutationWriter;
+
+        // Act
+        await _step.ExecuteAsync(context, TestContext.Current.CancellationToken);
+
+        // Assert
+        var patch = writer.Patches.Single(p => p.ObjectId == factory.Id);
+        Assert.Equal(50, patch.Payload.Store![ResourceTypes.Battery]);
+        Assert.Equal(0, patch.Payload.Store!.GetValueOrDefault(ResourceTypes.Energy, 0));
+        Assert.Equal(110, patch.Payload.Cooldown);
+    }
+
+    [Fact]
+    public async Task ComplexProduction_ProducesUtriumBar()
+    {
+        // Arrange
+        var factory = CreateFactory("f1", 10, 10, "user1", level: 0,
+            utrium: 500, energy: 200);
+        var context = CreateContext([factory],
+            CreateProduceIntent("user1", factory.Id, ResourceTypes.UtriumBar), gameTime: 100);
+        var writer = (FakeMutationWriter)context.MutationWriter;
+
+        // Act
+        await _step.ExecuteAsync(context, TestContext.Current.CancellationToken);
+
+        // Assert
+        var patch = writer.Patches.Single(p => p.ObjectId == factory.Id);
+        Assert.Equal(100, patch.Payload.Store![ResourceTypes.UtriumBar]);
+        Assert.Equal(0, patch.Payload.Store!.GetValueOrDefault(ResourceTypes.Utrium, 0));
+        Assert.Equal(0, patch.Payload.Store!.GetValueOrDefault(ResourceTypes.Energy, 0));
+        Assert.Equal(120, patch.Payload.Cooldown);
+    }
+
+    [Fact]
+    public async Task InsufficientComponents_DoesNothing()
+    {
+        // Arrange
+        var factory = CreateFactory("f1", 10, 10, "user1", level: 0, energy: 100);
+        var context = CreateContext([factory],
+            CreateProduceIntent("user1", factory.Id, ResourceTypes.Battery), gameTime: 100);
+        var writer = (FakeMutationWriter)context.MutationWriter;
+
+        // Act
+        await _step.ExecuteAsync(context, TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.Empty(writer.Patches);
+    }
+
+    [Fact]
+    public async Task FactoryOnCooldown_DoesNothing()
+    {
+        // Arrange
+        var factory = CreateFactory("f1", 10, 10, "user1", level: 0, energy: 600, cooldown: 200);
+        var context = CreateContext([factory],
+            CreateProduceIntent("user1", factory.Id, ResourceTypes.Battery), gameTime: 100);
+        var writer = (FakeMutationWriter)context.MutationWriter;
+
+        // Act
+        await _step.ExecuteAsync(context, TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.Empty(writer.Patches);
+    }
+
+    [Fact]
+    public async Task InsufficientCapacity_DoesNothing()
+    {
+        // Arrange - Factory has resources but store is full
+        var factory = CreateFactory("f1", 10, 10, "user1", level: 0,
+            energy: 600, battery: ScreepsGameConstants.FactoryCapacity);
+        var context = CreateContext([factory],
+            CreateProduceIntent("user1", factory.Id, ResourceTypes.Battery), gameTime: 100);
+        var writer = (FakeMutationWriter)context.MutationWriter;
+
+        // Act
+        await _step.ExecuteAsync(context, TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.Empty(writer.Patches);
+    }
+
+    [Fact]
+    public async Task UnknownCommodity_DoesNothing()
+    {
+        // Arrange
+        var factory = CreateFactory("f1", 10, 10, "user1", level: 0, energy: 600);
+        var context = CreateContext([factory],
+            CreateProduceIntent("user1", factory.Id, "invalid_commodity"), gameTime: 100);
+        var writer = (FakeMutationWriter)context.MutationWriter;
+
+        // Act
+        await _step.ExecuteAsync(context, TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.Empty(writer.Patches);
+    }
+
+    [Fact]
+    public async Task MultipleProductions_AccumulatesCorrectly()
+    {
+        // Arrange
+        var factory = CreateFactory("f1", 10, 10, "user1", level: 0, energy: 1800);
+        var context = CreateContext([factory],
+            CreateMultipleProduceIntents("user1", factory.Id, ResourceTypes.Battery, count: 3), gameTime: 100);
+        var writer = (FakeMutationWriter)context.MutationWriter;
+
+        // Act
+        await _step.ExecuteAsync(context, TestContext.Current.CancellationToken);
+
+        // Assert
+        var patch = writer.Patches.Single(p => p.ObjectId == factory.Id);
+        Assert.Equal(150, patch.Payload.Store![ResourceTypes.Battery]);
+        Assert.Equal(0, patch.Payload.Store!.GetValueOrDefault(ResourceTypes.Energy, 0));
+        Assert.Equal(130, patch.Payload.Cooldown);
+    }
+
+    [Fact]
+    public async Task ActionLog_RecordsProduction()
+    {
+        // Arrange
+        var factory = CreateFactory("f1", 10, 10, "user1", level: 0, energy: 600);
+        var context = CreateContext([factory],
+            CreateProduceIntent("user1", factory.Id, ResourceTypes.Battery), gameTime: 100);
+        var writer = (FakeMutationWriter)context.MutationWriter;
+
+        // Act
+        await _step.ExecuteAsync(context, TestContext.Current.CancellationToken);
+
+        // Assert
+        var patch = writer.Patches.Single(p => p.ObjectId == factory.Id);
+        Assert.NotNull(patch.Payload.ActionLog);
+        Assert.NotNull(patch.Payload.ActionLog!.Produce);
+        Assert.Equal(ResourceTypes.Battery, patch.Payload.ActionLog!.Produce!.ResourceType);
+    }
+
+    #region Helper Methods
+
+    private static RoomObjectSnapshot CreateFactory(string id, int x, int y, string userId, int level = 0,
+        int energy = 0, int battery = 0, int utrium = 0, int cooldown = 0)
+    {
+        var store = new Dictionary<string, int>(StringComparer.Ordinal);
+        if (energy > 0) store[ResourceTypes.Energy] = energy;
+        if (battery > 0) store[ResourceTypes.Battery] = battery;
+        if (utrium > 0) store[ResourceTypes.Utrium] = utrium;
+
+        var currentCooldown = cooldown > 0 ? cooldown : (int?)null;
+
+        var result = new RoomObjectSnapshot(
+            id,
+            RoomObjectTypes.Factory,
+            "W1N1",
+            "shard0",
+            userId,
+            x,
+            y,
+            Hits: ScreepsGameConstants.FactoryHits,
+            HitsMax: ScreepsGameConstants.FactoryHits,
+            Fatigue: null,
+            TicksToLive: null,
+            Name: null,
+            Level: level,
+            Density: null,
+            MineralType: null,
+            DepositType: null,
+            StructureType: RoomObjectTypes.Factory,
+            Store: store,
+            StoreCapacity: ScreepsGameConstants.FactoryCapacity,
+            StoreCapacityResource: new Dictionary<string, int>(StringComparer.Ordinal)
+            {
+                [ResourceTypes.Energy] = ScreepsGameConstants.FactoryCapacity
+            },
+            Reservation: null,
+            Sign: null,
+            Structure: null,
+            Effects: new Dictionary<PowerTypes, PowerEffectSnapshot>(),
+            Spawning: null,
+            Body: [],
+            IsSpawning: null,
+            UserSummoned: null,
+            IsPublic: null,
+            StrongholdId: null,
+            DeathTime: null,
+            DecayTime: null,
+            CreepId: null,
+            CreepName: null,
+            CreepTicksToLive: null,
+            CreepSaying: null,
+            ResourceType: null,
+            ResourceAmount: null,
+            Progress: null,
+            ProgressTotal: null,
+            ActionLog: null,
+            Energy: null,
+            MineralAmount: null,
+            InvaderHarvested: null,
+            Harvested: null,
+            Cooldown: currentCooldown,
+            CooldownTime: null,
+            SafeMode: null,
+            SafeModeAvailable: null,
+            PortalDestination: null,
+            Send: null);
+        return result;
+    }
+
+    private static RoomIntentSnapshot CreateProduceIntent(string userId, string factoryId, string commodityType)
+    {
+        var fields = new Dictionary<string, IntentFieldValue>(StringComparer.Ordinal)
+        {
+            [IntentKeys.ResourceType] = new(IntentFieldValueKind.Text, TextValue: commodityType)
+        };
+        var argument = new IntentArgument(fields);
+        var record = new IntentRecord(IntentKeys.Produce, [argument]);
+        var objectIntents = new Dictionary<string, IReadOnlyList<IntentRecord>>(StringComparer.Ordinal)
+        {
+            [factoryId] = [record]
+        };
+
+        var envelope = new IntentEnvelope(
+            userId,
+            objectIntents,
+            new Dictionary<string, SpawnIntentEnvelope>(StringComparer.Ordinal),
+            new Dictionary<string, CreepIntentEnvelope>(StringComparer.Ordinal));
+
+        var users = new Dictionary<string, IntentEnvelope>(StringComparer.Ordinal)
+        {
+            [userId] = envelope
+        };
+
+        var result = new RoomIntentSnapshot("W1N1", "shard0", users);
+        return result;
+    }
+
+    private static RoomIntentSnapshot CreateMultipleProduceIntents(string userId, string factoryId, string commodityType, int count)
+    {
+        var fields = new Dictionary<string, IntentFieldValue>(StringComparer.Ordinal)
+        {
+            [IntentKeys.ResourceType] = new(IntentFieldValueKind.Text, TextValue: commodityType)
+        };
+        var argument = new IntentArgument(fields);
+        var records = Enumerable.Range(0, count)
+            .Select(_ => new IntentRecord(IntentKeys.Produce, [argument]))
+            .ToList();
+
+        var objectIntents = new Dictionary<string, IReadOnlyList<IntentRecord>>(StringComparer.Ordinal)
+        {
+            [factoryId] = records
+        };
+
+        var envelope = new IntentEnvelope(
+            userId,
+            objectIntents,
+            new Dictionary<string, SpawnIntentEnvelope>(StringComparer.Ordinal),
+            new Dictionary<string, CreepIntentEnvelope>(StringComparer.Ordinal));
+
+        var users = new Dictionary<string, IntentEnvelope>(StringComparer.Ordinal)
+        {
+            [userId] = envelope
+        };
+
+        var result = new RoomIntentSnapshot("W1N1", "shard0", users);
+        return result;
+    }
+
+    private static RoomProcessorContext CreateContext(IEnumerable<RoomObjectSnapshot> objects, RoomIntentSnapshot? intents = null, int gameTime = 100)
+    {
+        var objectMap = objects.ToDictionary(o => o.Id, o => o, StringComparer.Ordinal);
+
+        var state = new RoomState(
+            "W1N1",
+            gameTime,
+            null,
+            objectMap,
+            new Dictionary<string, UserState>(StringComparer.Ordinal),
+            intents,
+            new Dictionary<string, RoomTerrainSnapshot>(StringComparer.Ordinal),
+            []);
+
+        var result = new RoomProcessorContext(state, new FakeMutationWriter(), new FakeCreepStatsSink());
+        return result;
+    }
+
+    private sealed class FakeMutationWriter : IRoomMutationWriter
+    {
+        public List<(string ObjectId, RoomObjectPatchPayload Payload)> Patches { get; } = [];
+        public List<RoomObjectSnapshot> Upserts { get; } = [];
+        public List<string> Removals { get; } = [];
+        public RoomInfoPatchPayload? RoomInfoPatch { get; private set; }
+
+        public void Upsert(RoomObjectSnapshot document) => Upserts.Add(document);
+
+        public void Patch(string objectId, RoomObjectPatchPayload patch) => Patches.Add((objectId, patch));
+
+        public void Remove(string objectId) => Removals.Add(objectId);
+
+        public void SetRoomInfoPatch(RoomInfoPatchPayload patch) => RoomInfoPatch = patch;
+
+        public void SetEventLog(IRoomEventLogPayload? eventLog) { }
+
+        public void SetMapView(IRoomMapViewPayload? mapView) { }
+
+        public Task FlushAsync(CancellationToken token = default) => Task.CompletedTask;
+
+        public void Reset()
+        {
+            Patches.Clear();
+            Upserts.Clear();
+            Removals.Clear();
+        }
+    }
+
+    private sealed class FakeCreepStatsSink : ICreepStatsSink
+    {
+        private readonly Dictionary<string, Dictionary<string, int>> _metrics = [];
+
+        public void IncrementEnergyControl(string userId, int amount) { }
+        public void IncrementEnergyCreeps(string userId, int amount) { }
+        public void IncrementCreepsLost(string userId, int bodyParts) { }
+        public void IncrementCreepsProduced(string userId, int bodyParts) { }
+        public void IncrementSpawnRenewals(string userId) { }
+        public void IncrementSpawnRecycles(string userId) { }
+        public void IncrementSpawnCreates(string userId) { }
+        public void IncrementTombstonesCreated(string userId) { }
+        public void IncrementEnergyConstruction(string userId, int amount) { }
+        public void IncrementEnergyHarvested(string userId, int amount) { }
+        public Task FlushAsync(int gameTime, CancellationToken token = default) => Task.CompletedTask;
+    }
+
+    #endregion
+}

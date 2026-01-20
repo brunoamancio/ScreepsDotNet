@@ -127,7 +127,7 @@ ScreepsDotNet/
 | IDE0051/52 pragma | - | Add pragma for constants in attribute params |
 | Dictionary access | - | Use `GetValueOrDefault(key, default)` not `TryGetValue` ternary |
 | Tuple variable naming | - | Use camelCase: `var (id, name)`, discard unused: `var (_, name)` |
-| Method signature length | - | Keep on one line unless exceeds 185 characters |
+| Method/record signature length | - | Keep on one line unless exceeds 185 characters (applies to method signatures and record primary constructors) |
 | Enums vs constants | - | Use `enum` for integer sets (place in `Types/`), not `static class` with `const int` |
 
 **Implicit usings** (configured in `Directory.Build.props` - never add manually):
