@@ -380,6 +380,7 @@ public sealed class HarvestIntentStepTests
         public void IncrementSpawnRecycles(string userId) { }
         public void IncrementSpawnCreates(string userId) { }
         public void IncrementTombstonesCreated(string userId) { }
+        public void IncrementEnergyControl(string userId, int amount) { }
         public Task FlushAsync(int gameTime, CancellationToken token = default) => Task.CompletedTask;
     }
 }

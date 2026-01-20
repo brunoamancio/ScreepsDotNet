@@ -461,6 +461,8 @@ public sealed class SpawnIntentStepTests
         public void IncrementEnergyHarvested(string userId, int amount)
             => EnergyHarvested += amount;
 
+        public void IncrementEnergyControl(string userId, int amount) { }
+
         public Task FlushAsync(int gameTime, CancellationToken token = default) => Task.CompletedTask;
     }
 

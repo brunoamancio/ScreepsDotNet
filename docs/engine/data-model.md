@@ -51,6 +51,63 @@ These DTOs live in the driver assembly so both the engine and driver loops share
 
 Each field can also be patched through `RoomObjectPatchPayload`, and `RoomContractMapper` writes the updates back to Mongo using the shared `RoomDocumentFields` constants. Harvest and extractor handlers must use these typed fields instead of ad-hoc dictionaries to keep the driver/engine boundary storage-agnostic.
 
+## Schema Gaps & Parity Requirements
+
+The following fields are **missing from `RoomObjectSnapshot`/`RoomObjectPatchPayload`** and are **required for E7 parity validation** (verified against Node.js engine source):
+
+### Controller Fields
+
+**Missing:** `SafeModeAvailable` (int) - Counter of available safe mode activations
+
+- **Node.js behavior:** Incremented by 1 on every controller level-up (`upgradeController.js` line 73)
+- **Current state:** Only `SafeMode` (active timer) exists in snapshot
+- **Required for parity:** YES - affects safe mode activation logic
+- **Blocking:** Controller level-up transitions (deferred from E2.3 ControllerIntentStep)
+- **Schema change needed:**
+  - Add `int? SafeModeAvailable = null` to `RoomObjectSnapshot` constructor
+  - Add `int? SafeModeAvailable { get; init; }` to `RoomObjectPatchPayload`
+  - Update `RoomContractMapper.ApplyPatchToDocument` to write `safeModeAvailable` field
+  - Update all controller-related tests
+
+**Tracking:** See `docs/engine/e2.3-plan.md` "Controller Intents (Deferred - PARITY-BLOCKING)"
+
+### Global User Fields
+
+**Missing:** GCL increment mutation via `IGlobalMutationWriter`
+
+- **Node.js behavior:** Calls `bulkUsers.inc(user, 'gcl', amount)` on **every** controller upgrade (`upgradeController.js` line 80-82)
+- **Current state:** `UserState` has `Gcl` field but no mutation path
+- **Required for parity:** YES - affects user progression and room control limits
+- **Blocking:** Controller upgrade intent (deferred from E2.3 ControllerIntentStep)
+- **Implementation needed:**
+  - Add `IGlobalMutationWriter.IncrementUserGcl(userId, amount)` method
+  - Wire through `RoomProcessorContext` or separate global mutation sink
+  - Implement in driver layer to batch user updates
+
+**Tracking:** Blocked by E5 (Global Systems) - global mutation writer implementation
+
+### Boost System
+
+**Ready:** `CreepBodyPartSnapshot.Boost` field exists
+
+- **Node.js behavior:** Calculates boosted upgrade power using `C.BOOSTS[WORK][boostType].upgradeController` multipliers (`upgradeController.js` lines 31-53)
+- **Current state:** Boost field exists in schema but no constants or calculation logic
+- **Required for parity:** YES - affects controller upgrade speed and GCL accumulation
+- **Blocking:** Controller upgrade intent (deferred from E2.3 ControllerIntentStep)
+- **Implementation needed:**
+  - Add boost constants to `ScreepsGameConstants` (e.g., `BOOSTS[WORK]["UH"]["upgradeController"] = 2`)
+  - Implement boost calculation helper in `ControllerIntentStep.CalculateUpgradePower`
+  - Handle boost consumption (decrements `CreepBodyPartSnapshot.Boost` after use)
+
+**Tracking:** See `docs/engine/e2.3-plan.md` "Controller Intents (Deferred - PARITY-BLOCKING)"
+
+### Non-Critical Gaps (can defer to post-MVP)
+
+- **Notifications:** `driver.sendNotification(userId, message)` - User experience only
+- **Event log emissions:** `EVENT_UPGRADE_CONTROLLER`, `EVENT_TRANSFER`, etc. - Replay/visualization only
+
+**E7 Requirement:** Schema gaps and boost system MUST be resolved before parity validation. Notifications and event logs can be deferred to post-MVP.
+
 ## Implementation Plan
 
 1. **Introduce driver contracts (Step E2.1).** ✅ (handled on driver side; see D10 status)

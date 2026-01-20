@@ -33,6 +33,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IRoomProcessorStep, CombatResolutionStep>();
         services.AddSingleton<IRoomProcessorStep, StructureDecayStep>();
         services.AddSingleton<IRoomProcessorStep, ControllerDowngradeStep>();
+        services.AddSingleton<IRoomProcessorStep, ControllerIntentStep>();
         services.AddSingleton<IRoomProcessorStep, PowerAbilityCooldownStep>();
         services.AddSingleton<IRoomProcessorStep, RoomIntentEventLogStep>();
         services.AddSingleton<IBodyAnalysisHelper, BodyAnalysisHelper>();

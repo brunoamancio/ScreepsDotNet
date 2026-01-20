@@ -11,4 +11,5 @@ public static class RoomStatsMetricNames
     public const string TombstonesCreated = "tombstonesCreated";
     public const string EnergyConstruction = "energyConstruction";
     public const string EnergyHarvested = "energyHarvested";
+    public const string EnergyControl = "energyControl";
 }

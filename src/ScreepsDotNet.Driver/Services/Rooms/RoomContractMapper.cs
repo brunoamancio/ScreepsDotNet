@@ -682,7 +682,15 @@ internal static class RoomContractMapper
         if (patch.CooldownTime.HasValue)
             document[RoomDocumentFields.RoomObject.CooldownTime] = patch.CooldownTime.Value;
 
-        if (patch.ActionLog is { } actionLog && actionLog.HasEntries) {
+        if (patch.Reservation is { } reservation) {
+            document[RoomDocumentFields.RoomObject.Reservation] = new BsonDocument
+            {
+                [RoomDocumentFields.RoomObject.ReservationFields.User] = reservation.UserId,
+                [RoomDocumentFields.RoomObject.ReservationFields.EndTime] = reservation.EndTime
+            };
+        }
+
+        if (patch.ActionLog is { HasEntries: true } actionLog) {
             var logDocument = new BsonDocument();
             if (actionLog.Die is { } die) {
                 logDocument[RoomDocumentFields.RoomObject.ActionLogFields.Die] = new BsonDocument

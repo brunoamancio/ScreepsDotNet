@@ -231,6 +231,7 @@ public sealed class TowerIntentStepTests
         public void IncrementEnergyConstruction(string userId, int amount)
             => EnergyConstruction += amount;
         public void IncrementEnergyHarvested(string userId, int amount) { }
+        public void IncrementEnergyControl(string userId, int amount) { }
         public Task FlushAsync(int gameTime, CancellationToken token = default) => Task.CompletedTask;
     }
 }

@@ -24,6 +24,7 @@ Modern .NET rewrite of the Screeps private server backend. Exposes legacy HTTP +
 - Run `git status` from `ScreepsDotNet/` directory (not repo root)
 - Use Testcontainers for integration tests (never local Docker state)
 - Update plan documents after completing work that follows a documented plan (keep plans in sync with implementation)
+- Document deferred features in ALL related plans when skipping functionality during implementation (track what was deferred, why, and where it should be implemented later)
 
 ❌ **NEVER:**
 - Modify files in `ScreepsNodeJs/` (separate git repository)
@@ -230,7 +231,12 @@ When working on tasks that follow a documented plan (e.g., `.claude/plans/*.md`,
    - Deferred features (document what was intentionally skipped and why)
    - Success criteria (mark as complete or note blockers)
    - Dates (update "Last Updated" timestamp)
-3. **When finding issues:** If the plan is incorrect or outdated, fix it immediately to prevent confusion
+3. **When deferring features:** Document deferrals in ALL related plans:
+   - **Current plan:** Add "Deferred Features" section with impact assessment, what's missing, and why
+   - **Parent/roadmap plans:** Update progress tracking and move deferred items to appropriate sections (e.g., E2.3 plan when working on controller intents)
+   - **Future plans:** Note dependencies so deferred work isn't forgotten when related features are implemented
+   - **Example:** Deferring GCL updates in controller intents → document in implementation plan AND E2.3 plan AND note in future global processor work
+4. **When finding issues:** If the plan is incorrect or outdated, fix it immediately to prevent confusion
 
 **Example plan locations:**
 - Implementation plans: `.claude/plans/` (agent-generated, task-specific)

@@ -213,6 +213,45 @@ public static class ScreepsGameConstants
     public const int TerrainMaskWall = 1;
     public const int TerrainMaskSwamp = 2;
 
+    // Controller upgrade/downgrade
+    public const int UpgradeControllerPower = 1;
+    public const int ControllerMaxUpgradePerTick = 15;
+    public const int ControllerDowngradeRestore = 100;
+    public const int ControllerDowngradeSafeModeThreshold = 5000;
+
+    // Controller reserve/claim
+    public const int ControllerReserve = 1;
+    public const int ControllerReserveMax = 5000;
+    public const int ControllerClaimDowngrade = 300;
+    public const int ControllerAttackBlockedUpgrade = 1000;
+
+    // Controller level progression (energy required per level)
+    public static IReadOnlyDictionary<ControllerLevel, int> ControllerLevelProgress { get; } =
+        new Dictionary<ControllerLevel, int>
+        {
+            [ControllerLevel.Level1] = 200,
+            [ControllerLevel.Level2] = 45_000,
+            [ControllerLevel.Level3] = 135_000,
+            [ControllerLevel.Level4] = 405_000,
+            [ControllerLevel.Level5] = 1_215_000,
+            [ControllerLevel.Level6] = 3_645_000,
+            [ControllerLevel.Level7] = 10_935_000
+        };
+
+    // Controller downgrade timers (ticks before downgrade per level)
+    public static IReadOnlyDictionary<ControllerLevel, int> ControllerDowngradeTimers { get; } =
+        new Dictionary<ControllerLevel, int>
+        {
+            [ControllerLevel.Level1] = 20_000,
+            [ControllerLevel.Level2] = 10_000,
+            [ControllerLevel.Level3] = 20_000,
+            [ControllerLevel.Level4] = 40_000,
+            [ControllerLevel.Level5] = 80_000,
+            [ControllerLevel.Level6] = 120_000,
+            [ControllerLevel.Level7] = 150_000,
+            [ControllerLevel.Level8] = 200_000
+        };
+
     public static IReadOnlyDictionary<BodyPartType, int> BodyPartEnergyCost { get; } = new Dictionary<BodyPartType, int>
     {
         [BodyPartType.Move] = 50,

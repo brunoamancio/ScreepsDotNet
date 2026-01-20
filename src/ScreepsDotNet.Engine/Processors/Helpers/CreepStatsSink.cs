@@ -17,6 +17,7 @@ public interface ICreepStatsSink
     void IncrementTombstonesCreated(string userId);
     void IncrementEnergyConstruction(string userId, int amount);
     void IncrementEnergyHarvested(string userId, int amount);
+    void IncrementEnergyControl(string userId, int amount);
     Task FlushAsync(int gameTime, CancellationToken token = default);
 }
 
@@ -31,6 +32,7 @@ internal sealed class NullCreepStatsSink : ICreepStatsSink
     public void IncrementTombstonesCreated(string userId) { }
     public void IncrementEnergyConstruction(string userId, int amount) { }
     public void IncrementEnergyHarvested(string userId, int amount) { }
+    public void IncrementEnergyControl(string userId, int amount) { }
     public Task FlushAsync(int gameTime, CancellationToken token = default) => Task.CompletedTask;
 }
 
@@ -63,6 +65,9 @@ internal sealed class RoomStatsSink(IRoomStatsUpdater statsUpdater) : ICreepStat
 
     public void IncrementEnergyHarvested(string userId, int amount)
         => Increment(userId, RoomStatsMetricNames.EnergyHarvested, amount);
+
+    public void IncrementEnergyControl(string userId, int amount)
+        => Increment(userId, RoomStatsMetricNames.EnergyControl, amount);
 
     public Task FlushAsync(int gameTime, CancellationToken token = default)
         => statsUpdater.FlushAsync(gameTime, token);

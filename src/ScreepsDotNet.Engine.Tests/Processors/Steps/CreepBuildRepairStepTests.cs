@@ -254,6 +254,7 @@ public sealed class CreepBuildRepairStepTests
         public void IncrementEnergyConstruction(string userId, int amount)
             => EnergyConstruction[userId] = EnergyConstruction.GetValueOrDefault(userId, 0) + amount;
         public void IncrementEnergyHarvested(string userId, int amount) { }
+        public void IncrementEnergyControl(string userId, int amount) { }
         public Task FlushAsync(int gameTime, CancellationToken token = default) => Task.CompletedTask;
     }
 }
