@@ -52,7 +52,7 @@ public sealed record PowerCreepSnapshot(
     string? Shard,
     IReadOnlyDictionary<PowerTypes, PowerCreepPowerSnapshot> Powers);
 
-public sealed record PowerCreepPowerSnapshot(int Level);
+public sealed record PowerCreepPowerSnapshot(int Level, int? CooldownTime = null);
 
 public sealed record GlobalUserIntentSnapshot(
     string Id,

@@ -59,7 +59,8 @@ public sealed record RoomObjectSnapshot(
     int? SafeMode = null,
     int? SafeModeAvailable = null,
     RoomPortalDestinationSnapshot? PortalDestination = null,
-    TerminalSendSnapshot? Send = null)
+    TerminalSendSnapshot? Send = null,
+    IReadOnlyDictionary<PowerTypes, PowerCreepPowerSnapshot>? Powers = null)
 {
     public int? MoveBodyParts => GetStoreValue(IntentKeys.Move);
     public int? ControllerDowngradeTimer => GetStoreValue(StoreKeys.DowngradeTimer);
