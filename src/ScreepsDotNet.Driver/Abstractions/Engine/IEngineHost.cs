@@ -10,4 +10,9 @@ public interface IEngineHost
     /// Executes the global processor for the given tick.
     /// </summary>
     Task RunGlobalAsync(int gameTime, CancellationToken token = default);
+
+    /// <summary>
+    /// Executes room-level processing for the given room and tick.
+    /// </summary>
+    Task RunRoomAsync(string roomName, int gameTime, CancellationToken token = default);
 }

@@ -25,6 +25,7 @@ Modern .NET rewrite of the Screeps private server backend. Exposes legacy HTTP +
 - Use Testcontainers for integration tests (never local Docker state)
 - Update plan documents after completing work that follows a documented plan (keep plans in sync with implementation)
 - Document deferred features in ALL related plans when skipping functionality during implementation (track what was deferred, why, and where it should be implemented later)
+- **Maintain legacy parity at all times** - When adding new features or refactoring, preserve backward compatibility and keep legacy code paths functional (use optional parameters, feature flags, or conditional execution)
 
 ❌ **NEVER:**
 - Modify files in `ScreepsNodeJs/` (separate git repository)

@@ -9,8 +9,7 @@ namespace ScreepsDotNet.Driver.Services.Loops;
 internal sealed class MainLoopGlobalProcessor(
     IUserDataService userDataService,
     IInterRoomSnapshotProvider snapshotProvider,
-    IInterRoomTransferProcessor transferProcessor,
-    IEngineHost? engineHost = null,
+    IEngineHost engineHost,
     ILogger<MainLoopGlobalProcessor>? logger = null)
     : IMainLoopGlobalProcessor
 {
@@ -20,26 +19,20 @@ internal sealed class MainLoopGlobalProcessor(
 
         var snapshot = await snapshotProvider.GetSnapshotAsync(token).ConfigureAwait(false);
 
-        if (engineHost is not null) {
+        try {
             await engineHost.RunGlobalAsync(snapshot.GameTime, token).ConfigureAwait(false);
             logger?.LogDebug(
                 "Engine global processor ran at tick {GameTime} ({Rooms} accessible rooms, {Creeps} moving creeps).",
                 snapshot.GameTime,
                 snapshot.AccessibleRooms.Count,
                 snapshot.MovingCreeps.Count);
-            return;
         }
-
-        var moved = await transferProcessor.ProcessTransfersAsync(snapshot.AccessibleRooms, token).ConfigureAwait(false);
-
-        if (moved > 0)
-            snapshotProvider.Invalidate();
-
-        logger?.LogDebug(
-            "Inter-room snapshot captured {Rooms} accessible rooms, {Creeps} moving creeps; processed {Moved} transfers at tick {GameTime}.",
-            snapshot.AccessibleRooms.Count,
-            snapshot.MovingCreeps.Count,
-            moved,
-            snapshot.GameTime);
+        catch (OperationCanceledException) when (token.IsCancellationRequested) {
+            throw;
+        }
+        catch (Exception ex) {
+            logger?.LogError(ex, "Error in engine global processor at tick {GameTime}.", snapshot.GameTime);
+            throw;
+        }
     }
 }

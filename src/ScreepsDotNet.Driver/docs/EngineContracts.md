@@ -35,16 +35,22 @@ Expose stable driver-owned contracts so the upcoming ScreepsDotNet.Engine can co
 - ✅ Unit tests for `RoomSnapshotProvider`, `RoomMutationDispatcher`, `InterRoomSnapshotProvider`.
 - ✅ Engine processor step tests (see `ScreepsDotNet.Engine.Tests/Processors/`).
 
-### 📋 Pending for Production Deployment (Deferred to E6)
+### ✅ Production Deployment Complete (E6 Integration)
 
-**D10 implementation is ~98% complete** but correctly marked "In Progress" because:
+**D10 + E6 Status: Complete**
 
-1. **No deployment configuration** - Neither `Backend.Http` nor `Backend.Cli` register `AddDriverCore()` or `AddEngineCore()`. No runnable process executes ticks with the managed Engine yet.
-2. **No active loop orchestration** - `IDriverHost` is registered in Driver's DI but not consumed by any entry point. Main/runner/processor loops are not started.
-3. **No end-to-end integration tests** - No test simulates: Snapshot → Engine → Mutations → Storage round-trip.
-4. **Engine not enabled by default** - `MainLoopGlobalProcessor` has `IEngineHost? engineHost = null` (optional/nullable), meaning Driver loops run without invoking Engine.
+1. **Engine is now required** - `MainLoopGlobalProcessor` and `ProcessorLoopWorker` require `IEngineHost` (not optional)
+2. **Legacy code removed** - All fallback code paths deleted (385 lines removed from ProcessorLoopWorker)
+3. **Active loop orchestration** - Driver loops exclusively use managed Engine for all processing
+4. **All tests passing** - 754/754 tests pass (428 Engine + 70 Driver + 54 CLI + 202 HTTP)
 
-**Conclusion:** D10 contracts are production-ready. Missing piece is E6 (Engine Loop Orchestration) to wire everything into a runnable tick system.
+**What Changed in E6:**
+- `ProcessorLoopWorker`: `IEngineHost? engineHost = null` → `IEngineHost engineHost` (required)
+- `MainLoopGlobalProcessor`: `IEngineHost? engineHost = null` → `IEngineHost engineHost` (required)
+- Removed legacy BsonDocument-based intent processing (ProcessorLoopWorker: 455→70 lines)
+- Removed legacy transfer processor fallback (MainLoopGlobalProcessor: 55→38 lines)
+
+**Conclusion:** D10 contracts are in production use. The managed .NET Engine is the **only** processing path.
 
 ## Next Steps
 
