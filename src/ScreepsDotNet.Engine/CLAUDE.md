@@ -28,7 +28,7 @@ Rebuild the legacy Screeps simulation kernel (processor) in managed .NET. Ports 
 - ✅ **ALWAYS emit stats/actions through `RoomStatsSink`** for telemetry
 - ✅ **ALWAYS follow solution-wide conventions** (implicit usings, primary constructors, `Lock` type, `[]` collections)
 - ✅ **ALWAYS test parity against Node.js engine** (E7 validation suite)
-- ✅ **ALWAYS update `docs/engine/` when changing mechanics** (data-model.md, e2.3-plan.md, etc.)
+- ✅ **ALWAYS update `docs/engine/` when changing mechanics** (data-model.md, e2.md, etc.)
 
 ## Code Structure
 
@@ -37,10 +37,10 @@ src/ScreepsDotNet.Engine/
 ├── CLAUDE.md                                    # This file (coding patterns)
 ├── ../../docs/engine/                           # Plan documents (moved from here)
 │   ├── roadmap.md                               # E1-E8 milestones
-│   ├── e2.3-plan.md                             # Handler backlog tracking
-│   ├── e5-plan.md                               # E5 blockers & implementation
+│   ├── e2.md                             # Handler backlog tracking
+│   ├── e5.md                               # E5 blockers & implementation
 │   ├── data-model.md                            # Engine data contracts (E2)
-│   └── legacy-surface.md                        # Node engine API inventory (E1)
+│   └── e1.md                        # Node engine API inventory (E1)
 ├── Services/
 │   ├── RoomStateProvider.cs                    # Read room snapshots (wraps Driver)
 │   ├── GlobalStateProvider.cs                  # Read global state (wraps Driver)
@@ -268,8 +268,8 @@ public class ControllerProcessor
 
 For detailed roadmap and status tracking, see:
 - **Roadmap:** `../../docs/engine/roadmap.md` (E1-E8 milestones, progress tracking)
-- **E2.3 Handlers:** `../../docs/engine/e2.3-plan.md` (detailed handler breakdown)
-- **E5 Blockers:** `../../docs/engine/e5-plan.md` (global mutation infrastructure)
+- **E2.3 Handlers:** `../../docs/engine/e2.md` (detailed handler breakdown)
+- **E5 Blockers:** `../../docs/engine/e5.md` (global mutation infrastructure)
 
 ## Common Tasks
 
@@ -434,7 +434,7 @@ public class ControllerUpgradeParityTests
 
 ```bash
 # 5. Update tracking
-# - Update docs/engine/e2.3-plan.md (mark handler as complete)
+# - Update docs/engine/e2.md (mark handler as complete)
 # - Update this CLAUDE.md if pattern changes
 ```
 
@@ -657,10 +657,10 @@ public class FakeRoomStateProvider : IRoomStateProvider
 
 ### Plan Documents (Engine-Specific)
 - `../../docs/engine/roadmap.md` - E1-E8 milestones and progress tracking
-- `../../docs/engine/e2.3-plan.md` - Handler backlog tracking (detailed)
-- `../../docs/engine/e5-plan.md` - E5 blockers & implementation plan
+- `../../docs/engine/e2.md` - Handler backlog tracking (detailed)
+- `../../docs/engine/e5.md` - E5 blockers & implementation plan
 - `../../docs/engine/data-model.md` - Engine data contracts (E2)
-- `../../docs/engine/legacy-surface.md` - Node engine API inventory (E1)
+- `../../docs/engine/e1.md` - Node engine API inventory (E1)
 
 ### Related Subsystems
 - `../ScreepsDotNet.Driver/CLAUDE.md` - Driver abstractions Engine consumes
@@ -702,8 +702,8 @@ public class FakeRoomStateProvider : IRoomStateProvider
 
 **Don't put in this file:**
 - ❌ Roadmap tracking → Use `../../docs/engine/roadmap.md`
-- ❌ Handler progress → Use `../../docs/engine/e2.3-plan.md`
-- ❌ E5 blockers → Use `../../docs/engine/e5-plan.md`
+- ❌ Handler progress → Use `../../docs/engine/e2.md`
+- ❌ E5 blockers → Use `../../docs/engine/e5.md`
 - ❌ Data model design → Use `../../docs/engine/data-model.md`
 
 **Keep it focused:**

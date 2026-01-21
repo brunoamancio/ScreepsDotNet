@@ -2,7 +2,7 @@
 
 **Last Updated:** January 21, 2026
 
-This document tracks the Engine subsystem roadmap and implementation status. For detailed handler tracking, see `e2.3-plan.md`. For E5 blockers, see `e5-plan.md`.
+This document tracks the Engine subsystem roadmap and implementation status. For detailed handler tracking, see `e2.md`. For E5 blockers, see `e5.md`.
 
 ---
 
@@ -10,7 +10,7 @@ This document tracks the Engine subsystem roadmap and implementation status. For
 
 | ID | Status | Title | Exit Criteria | Dependencies |
 |----|--------|-------|---------------|--------------|
-| E1 | ✅ | Map Legacy Engine Surface | Node engine API inventory documented (`docs/engine/legacy-surface.md`) | Node engine repo, driver notes |
+| E1 | ✅ | Map Legacy Engine Surface | Node engine API inventory documented (`e1.md`) | Node engine repo, driver notes |
 | E2 | ⚠️ 95% | Data & Storage Model | Driver snapshot/mutation contracts in place, Engine consuming them. Handlers for all intent types. | Driver contracts, Screeps schemas |
 | E3 | 📋 | Intent Gathering & Validation | `IIntentPipeline` + validators with unit tests mirroring Node fixtures | Driver runtime outputs, constants |
 | E4 | 📋 | Simulation Kernel (Room Processor) | Managed processor produces identical room diffs vs. Node baseline | E2, E3, Pathfinder service |
@@ -26,7 +26,7 @@ This document tracks the Engine subsystem roadmap and implementation status. For
 **Status:** Complete
 
 **Deliverables:**
-- ✅ Node engine API inventory documented in `docs/engine/legacy-surface.md`
+- ✅ Node engine API inventory documented in `e1.md`
 - ✅ All game mechanics catalogued (creep actions, structure logic, combat, market, etc.)
 
 ---
@@ -52,7 +52,7 @@ This document tracks the Engine subsystem roadmap and implementation status. For
 - E5 global mutations implemented ❌ (blocker)
 - 4 blocked features implemented (1-2 hours after E5 Phase 1)
 
-**Details:** See `e2.3-plan.md` for handler breakdown, `e5-plan.md` for E5 blockers, `data-model.md` for contracts
+**Details:** See `e2.md` for handler breakdown and deferred features, `e5.md` for E5 blockers, `data-model.md` for contracts
 
 ---
 
@@ -107,7 +107,7 @@ This document tracks the Engine subsystem roadmap and implementation status. For
 
 **Dependencies:** E4 foundation
 
-**Details:** See `e5-plan.md` for implementation plan and E2.3 blockers
+**Details:** See `e5.md` for implementation plan and E2 blockers
 
 ---
 
@@ -139,11 +139,11 @@ This document tracks the Engine subsystem roadmap and implementation status. For
 - Regression detection on schema changes
 
 **Prerequisites:**
-- All E2.3 features complete (including 4 E5-blocked features)
+- All E2 features complete (including 4 E5-blocked features)
 - All E1-E6 milestones complete
 - Legacy Node.js engine repo access
 
-**Details:** See `e2.3-plan.md` for parity-critical feature status
+**Details:** See `e2.md` for parity-critical feature status
 
 ---
 
@@ -179,7 +179,8 @@ This document tracks the Engine subsystem roadmap and implementation status. For
 **Next Milestone:** E5 Phase 1 (Global Mutations) to unblock E2.3
 
 **Reference Documents:**
-- Detailed E2.3 handler tracking: `e2.3-plan.md`
-- E5 blockers and implementation plan: `e5-plan.md`
+- E1 (Legacy surface mapping): `e1.md`
+- E2 (Handlers and deferred features): `e2.md`
+- E5 (Global systems blockers): `e5.md`
 - Data model design: `data-model.md`
-- Coding patterns: `src/ScreepsDotNet.Engine/CLAUDE.md`
+- Coding patterns: `../../src/ScreepsDotNet.Engine/CLAUDE.md`

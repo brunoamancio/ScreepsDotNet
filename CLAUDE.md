@@ -240,7 +240,7 @@ When working on tasks that follow a documented plan (e.g., `.claude/plans/*.md`,
 
 **Example plan locations:**
 - Implementation plans: `.claude/plans/` (agent-generated, task-specific)
-- Feature roadmaps: `docs/engine/e2.3-plan.md`, `docs/driver/*.md` (long-term tracking)
+- Feature roadmaps: `docs/engine/e2.md`, `docs/driver/*.md` (long-term tracking)
 
 **Why this matters:** Plans serve as the source of truth for what was built, what remains, and what was deferred. Keeping them accurate ensures future work doesn't duplicate effort or miss requirements.
 
@@ -385,18 +385,18 @@ This file provides **solution-wide** context. For subsystem-specific details:
 - `docs/driver.md` - Driver design overview
 - `docs/common-tasks.md` - Step-by-step development guides
 - `docs/engine/roadmap.md` - Engine E1-E8 milestones
-- `docs/engine/e2.3-plan.md` - Handler implementation tracking
-- `docs/engine/e5-plan.md` - E5 blockers & global systems
+- `docs/engine/e2.md` - Handler implementation tracking
+- `docs/engine/e5.md` - E5 blockers & global systems
 - `docs/engine/data-model.md` - Engine data contracts
-- `docs/engine/legacy-surface.md` - Node.js engine API inventory
+- `docs/engine/e1.md` - Node.js engine API inventory
 
 ## When Stuck
 
 1. Check subsystem CLAUDE.md (Driver, Engine, Pathfinder) for coding patterns
 2. Check `docs/` for plan tracking and design documentation:
    - `docs/engine/roadmap.md` - Engine milestones
-   - `docs/engine/e2.3-plan.md` - Handler implementation status
-   - `docs/engine/e5-plan.md` - E5 blockers
+   - `docs/engine/e2.md` - Handler implementation status
+   - `docs/engine/e5.md` - E5 blockers
 3. Use Context7 MCP for library/API documentation
 4. Search codebase for similar patterns (`rg "pattern" -n src/`)
 5. Check test files for usage examples

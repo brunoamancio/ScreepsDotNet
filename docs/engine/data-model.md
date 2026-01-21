@@ -87,7 +87,7 @@ Each field can also be patched through `RoomObjectPatchPayload`, and `RoomContra
 
 ### ⚠️ Blocked by E5 (Global Systems)
 
-The following features require E5 global mutation infrastructure. See `docs/engine/e5-plan.md` for details.
+The following features require E5 global mutation infrastructure. See `docs/engine/e5.md` for details.
 
 #### Global User Mutations
 1. **User GCL updates** - Controller upgrades should increment global GCL
@@ -156,7 +156,7 @@ These features don't affect simulation correctness and can be implemented post-E
 - User GCL updates (Controller)
 - Boost effects GCL component (Controller)
 
-See `docs/engine/e2.3-plan.md` for detailed handler breakdown.
+See `docs/engine/e2.md` for detailed handler breakdown.
 
 ### 4. Mutation Path Alignment (E2.4) - ✅ Complete
 - `RoomMutationWriterFactory` produces per-room writers
