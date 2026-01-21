@@ -12,7 +12,7 @@ This document tracks the Engine subsystem roadmap and implementation status. For
 |----|--------|-------|---------------|--------------|
 | E1 | ✅ | Map Legacy Engine Surface | Node engine API inventory documented (`e1.md`) | Node engine repo, driver notes |
 | E2 | ⚠️ 95% | Data & Storage Model | Driver snapshot/mutation contracts in place, Engine consuming them. Handlers for all intent types. | Driver contracts, Screeps schemas |
-| E3 | 📋 | Intent Gathering & Validation | `IIntentPipeline` + validators with unit tests mirroring Node fixtures | Driver runtime outputs, constants |
+| E3 | ⚠️ 60% | Intent Gathering & Validation | `IIntentPipeline` + validators with unit tests mirroring Node fixtures | Driver runtime outputs, constants |
 | E4 | 📋 | Simulation Kernel (Room Processor) | Managed processor produces identical room diffs vs. Node baseline | E2, E3, Pathfinder service |
 | E5 | 📋 | Global Systems | Market, NPC spawns, shard messaging hooked into processor loop. Global mutations (`IGlobalMutationWriter`), power effect tracking. | E4 foundation |
 | E6 | 📋 | Engine Loop Orchestration | `EngineHost` coordinates ticks; main/runner/processor loops call managed engine | Driver queue service, telemetry sink |
@@ -56,31 +56,37 @@ This document tracks the Engine subsystem roadmap and implementation status. For
 
 ---
 
-## E3: Intent Gathering & Validation 📋
+## E3: Intent Gathering & Validation ⚠️ 60% Complete
 
-**Status:** Not Started (Planning Complete)
+**Status:** E3.1 ✅ Complete | E3.2 ✅ Complete | E3.3 📋 Pending | E3.4 📋 Pending
 
-**Planned Deliverables:**
-- `IIntentPipeline` interface for centralized validation
-- 5 validator components: Range, Resource, Permission, State, Schema
-- Validation constants (35+ intent types)
-- Unit tests mirroring Node fixtures (169 new + 240 E2 regression)
-- Integration with Engine processors (remove inline validation)
-- Observability metrics
+**Completed Deliverables:**
+- ✅ `IIntentValidator` and `IIntentPipeline` interfaces
+- ✅ 5 validator implementations: Range (28 tests), Resource (18 tests), Permission (20 tests), State (15 tests), Schema (15 tests)
+- ✅ Validation constants (ValidationRanges, ValidationErrorCode, ResourceRequirements, PermissionRules, StateRequirements)
+- ✅ 96/96 validator tests passing
+- ✅ DI registration infrastructure
+
+**Pending Deliverables:**
+- 📋 `IntentValidationPipeline` implementation (E3.3)
+- 📋 Integration with Engine processors - remove inline validation (E3.3)
+- 📋 Observability metrics (E3.4)
+- 📋 Parity validation against Node.js (deferred to E7)
 
 **Dependencies:**
 - E2 95% complete (handler infrastructure in place) ✅
 - Driver runtime outputs ✅
-- Constants for validation rules ⚠️ (partial)
+- Constants for validation rules ✅
 
 **Exit Criteria:**
-- All room-level intents validated before processing
-- All 5 validators implemented and tested (169 tests)
-- All E2 tests continue passing (240/240)
-- Parity with Node.js validation (silent failures)
-- Validation overhead <5ms per room
+- ✅ All 5 validators implemented and tested (96 tests)
+- ✅ All validation constants defined
+- 📋 IntentValidationPipeline orchestrates validators (E3.3)
+- 📋 All E2 tests continue passing after integration (E3.3)
+- 📋 Parity with Node.js validation (E7)
+- 📋 Validation overhead <5ms per room (measure in E3.3)
 
-**Details:** See `e3.md` for detailed implementation plan, validator breakdown, and test tracking
+**Details:** See `e3.md` for detailed implementation plan, `e3.1.md` and `e3.2.md` for completed work
 
 ---
 
@@ -177,22 +183,25 @@ This document tracks the Engine subsystem roadmap and implementation status. For
 
 ## Summary
 
-**Overall Engine Progress:** E1 complete, E2 95% complete (4 features blocked by E5), E3-E8 pending
+**Overall Engine Progress:** E1 complete, E2 95% complete (4 features blocked by E5), E3 60% complete (validators done, integration pending), E4-E8 pending
 
 **Critical Path:**
-1. Complete E5 Phase 1 (Global Mutations) → unblocks E2.3 remaining 5%
-2. Complete E2.3 → enables E3 (Intent Validation)
-3. Complete E3 → enables E4 (Simulation Kernel)
-4. Complete E4/E5 → enables E6 (Orchestration)
-5. Complete E6 → enables E7 (Parity Validation)
-6. E8 can proceed in parallel with E6/E7
+1. Complete E3.3 (Pipeline Integration) → enables E4 simulation kernel work
+2. Complete E5 Phase 1 (Global Mutations) → unblocks E2.3 remaining 5%
+3. Complete E2.3 → full E2 completion
+4. Complete E3.4 (Observability) → E3 fully complete
+5. Complete E4/E5 → enables E6 (Orchestration)
+6. Complete E6 → enables E7 (Parity Validation)
+7. E8 can proceed in parallel with E6/E7
 
-**Next Milestone:** E5 Phase 1 (Global Mutations) to unblock E2.3
+**Next Milestone:** E3.3 (Pipeline Integration) OR E5 Phase 1 (Global Mutations) - can proceed in parallel
 
 **Reference Documents:**
 - E1 (Legacy surface mapping): `e1.md`
 - E2 (Handlers and deferred features): `e2.md`
-- E3 (Intent validation implementation): `e3.md`
+- E3 (Intent validation overview): `e3.md`
+  - E3.1 (Validation infrastructure): `e3.1.md` ✅
+  - E3.2 (Validator implementation): `e3.2.md` ✅
 - E5 (Global systems blockers): `e5.md`
 - Data model design: `data-model.md`
 - Coding patterns: `../../src/ScreepsDotNet.Engine/CLAUDE.md`
