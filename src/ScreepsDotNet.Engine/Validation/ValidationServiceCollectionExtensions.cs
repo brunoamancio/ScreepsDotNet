@@ -23,6 +23,9 @@ public static class ValidationServiceCollectionExtensions
         services.AddSingleton<IIntentValidator, Validators.RangeValidator>();
         services.AddSingleton<IIntentValidator, Validators.PermissionValidator>();
         services.AddSingleton<IIntentValidator, Validators.ResourceValidator>();
+
+        services.AddSingleton<IValidationStatisticsSink, ValidationStatisticsSink>();
+
         services.AddSingleton<IIntentPipeline, IntentValidationPipeline>();
 
         return services;

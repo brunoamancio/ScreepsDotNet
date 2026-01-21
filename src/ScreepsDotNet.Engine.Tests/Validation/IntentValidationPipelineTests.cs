@@ -11,7 +11,8 @@ public sealed class IntentValidationPipelineTests
     {
         // Arrange
         var validators = new List<IIntentValidator>();
-        var pipeline = new IntentValidationPipeline(validators);
+        var statisticsSink = new FakeValidationStatisticsSink();
+        var pipeline = new IntentValidationPipeline(validators, statisticsSink);
         var intents = new List<IntentRecord>();
         var roomSnapshot = CreateMinimalRoomSnapshot();
 
@@ -27,7 +28,8 @@ public sealed class IntentValidationPipelineTests
     {
         // Arrange
         var validators = new List<IIntentValidator>();
-        var pipeline = new IntentValidationPipeline(validators);
+        var statisticsSink = new FakeValidationStatisticsSink();
+        var pipeline = new IntentValidationPipeline(validators, statisticsSink);
         var intents = new List<IntentRecord> { CreateTestIntent("attack") };
         var roomSnapshot = CreateRoomSnapshotWithoutIntents();
 
@@ -44,7 +46,8 @@ public sealed class IntentValidationPipelineTests
         // Arrange
         var validator = new AlwaysValidValidator();
         var validators = new List<IIntentValidator> { validator };
-        var pipeline = new IntentValidationPipeline(validators);
+        var statisticsSink = new FakeValidationStatisticsSink();
+        var pipeline = new IntentValidationPipeline(validators, statisticsSink);
 
         var intents = new List<IntentRecord>
         {
@@ -71,7 +74,8 @@ public sealed class IntentValidationPipelineTests
         // Arrange
         var validator = new SelectiveValidator(["attack", "move"]); // Only these pass
         var validators = new List<IIntentValidator> { validator };
-        var pipeline = new IntentValidationPipeline(validators);
+        var statisticsSink = new FakeValidationStatisticsSink();
+        var pipeline = new IntentValidationPipeline(validators, statisticsSink);
 
         var intents = new List<IntentRecord>
         {
@@ -103,7 +107,8 @@ public sealed class IntentValidationPipelineTests
         var thirdValidator = new CountingValidator(shouldPass: true);
 
         var validators = new List<IIntentValidator> { firstValidator, secondValidator, thirdValidator };
-        var pipeline = new IntentValidationPipeline(validators);
+        var statisticsSink = new FakeValidationStatisticsSink();
+        var pipeline = new IntentValidationPipeline(validators, statisticsSink);
 
         var intents = new List<IntentRecord> { CreateTestIntent("attack") };
         var roomSnapshot = CreateMinimalRoomSnapshot();
@@ -129,7 +134,8 @@ public sealed class IntentValidationPipelineTests
         var validator3 = new OrderTrackingValidator("Range", executionOrder);
 
         var validators = new List<IIntentValidator> { validator1, validator2, validator3 };
-        var pipeline = new IntentValidationPipeline(validators);
+        var statisticsSink = new FakeValidationStatisticsSink();
+        var pipeline = new IntentValidationPipeline(validators, statisticsSink);
 
         var intents = new List<IntentRecord> { CreateTestIntent("attack") };
         var roomSnapshot = CreateMinimalRoomSnapshot();
@@ -152,7 +158,8 @@ public sealed class IntentValidationPipelineTests
         var validator2 = new SelectiveValidator(["attack", "move"]);
 
         var validators = new List<IIntentValidator> { validator1, validator2 };
-        var pipeline = new IntentValidationPipeline(validators);
+        var statisticsSink = new FakeValidationStatisticsSink();
+        var pipeline = new IntentValidationPipeline(validators, statisticsSink);
 
         var intents = new List<IntentRecord>
         {
@@ -176,7 +183,8 @@ public sealed class IntentValidationPipelineTests
     {
         // Arrange
         var validators = new List<IIntentValidator>(); // No validators registered
-        var pipeline = new IntentValidationPipeline(validators);
+        var statisticsSink = new FakeValidationStatisticsSink();
+        var pipeline = new IntentValidationPipeline(validators, statisticsSink);
 
         var intents = new List<IntentRecord>
         {
@@ -267,6 +275,25 @@ public sealed class IntentValidationPipelineTests
             executionOrder.Add(name);
             var result = ValidationResult.Success;
             return result;
+        }
+    }
+
+    private sealed class FakeValidationStatisticsSink : IValidationStatisticsSink
+    {
+        public void RecordValidation(IntentRecord intent, ValidationResult result)
+        {
+            // No-op for test purposes
+        }
+
+        public ValidationStatistics GetStatistics()
+        {
+            var stats = new ValidationStatistics();
+            return stats;
+        }
+
+        public void Reset()
+        {
+            // No-op for test purposes
         }
     }
 }

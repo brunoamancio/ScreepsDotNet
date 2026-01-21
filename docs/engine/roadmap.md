@@ -12,7 +12,7 @@ This document tracks the Engine subsystem roadmap and implementation status. For
 |----|--------|-------|---------------|--------------|
 | E1 | ✅ | Map Legacy Engine Surface | Node engine API inventory documented (`e1.md`) | Node engine repo, driver notes |
 | E2 | ⚠️ 95% | Data & Storage Model | Driver snapshot/mutation contracts in place, Engine consuming them. Handlers for all intent types. | Driver contracts, Screeps schemas |
-| E3 | ⚠️ 90% | Intent Gathering & Validation | `IIntentPipeline` + validators with unit tests mirroring Node fixtures | Driver runtime outputs, constants |
+| E3 | ✅ | Intent Gathering & Validation | `IIntentPipeline` + validators with unit tests mirroring Node fixtures | Driver runtime outputs, constants |
 | E4 | 📋 | Simulation Kernel (Room Processor) | Managed processor produces identical room diffs vs. Node baseline | E2, E3, Pathfinder service |
 | E5 | 📋 | Global Systems | Market, NPC spawns, shard messaging hooked into processor loop. Global mutations (`IGlobalMutationWriter`), power effect tracking. | E4 foundation |
 | E6 | 📋 | Engine Loop Orchestration | `EngineHost` coordinates ticks; main/runner/processor loops call managed engine | Driver queue service, telemetry sink |
@@ -56,9 +56,9 @@ This document tracks the Engine subsystem roadmap and implementation status. For
 
 ---
 
-## E3: Intent Gathering & Validation ⚠️ 90% Complete
+## E3: Intent Gathering & Validation ✅ Complete
 
-**Status:** E3.1 ✅ Complete | E3.2 ✅ Complete | E3.3 ✅ Complete | E3.4 📋 Pending
+**Status:** E3.1 ✅ Complete | E3.2 ✅ Complete | E3.3 ✅ Complete | E3.4 ✅ Complete
 
 **Completed Deliverables:**
 - ✅ `IIntentValidator` and `IIntentPipeline` interfaces
@@ -68,11 +68,14 @@ This document tracks the Engine subsystem roadmap and implementation status. For
 - ✅ DI registration infrastructure
 - ✅ `IntentValidationPipeline` orchestrates all validators
 - ✅ `IntentValidationStep` integrated into RoomProcessor (runs first)
-- ✅ 344/344 tests passing (104 validation + 240 E2 regression)
+- ✅ 354/354 tests passing (114 validation + 240 E2 regression)
+- ✅ Observability infrastructure: `ValidationStatisticsSink` with 10/10 tests passing
+- ✅ Statistics tracking: valid/rejected counts, error code distribution, intent type distribution
 
-**Pending Deliverables:**
-- 📋 Observability metrics (E3.4)
-- 📋 Parity validation against Node.js (deferred to E7)
+**Deferred Features:**
+- 📋 Parity validation against Node.js (deferred to E7 - Compatibility & Parity Validation)
+- 📋 Export statistics to telemetry (deferred to E8 - Observability & Tooling)
+- 📋 Remove inline validation from E2 handlers (optional cleanup after E3 proven stable in production)
 
 **Dependencies:**
 - E2 95% complete (handler infrastructure in place) ✅
@@ -83,9 +86,10 @@ This document tracks the Engine subsystem roadmap and implementation status. For
 - ✅ All 5 validators implemented and tested (96 tests)
 - ✅ All validation constants defined
 - ✅ IntentValidationPipeline orchestrates validators
-- ✅ All E2 tests continue passing after integration (344/344)
+- ✅ All E2 tests continue passing after integration (354/354)
+- ✅ Observability infrastructure implemented (10 tests)
 - 📋 Parity with Node.js validation (deferred to E7)
-- 📋 Validation overhead <5ms per room (measure in E3.4/production)
+- 📋 Validation overhead <5ms per room (measure in production)
 
 **Details:** See `e3.md` for detailed implementation plan, `e3.1.md` and `e3.2.md` for completed work
 
@@ -171,6 +175,7 @@ This document tracks the Engine subsystem roadmap and implementation status. For
 
 **Planned Deliverables:**
 - Engine metrics flow to telemetry
+- Export E3 validation statistics to telemetry (deferred from E3.4)
 - Diagnostics commands (inspect room state, intent queue, etc.)
 - Operator playbooks for debugging
 - Performance profiling tools
@@ -184,10 +189,10 @@ This document tracks the Engine subsystem roadmap and implementation status. For
 
 ## Summary
 
-**Overall Engine Progress:** E1 complete, E2 95% complete (4 features blocked by E5), E3 90% complete (pipeline integrated, observability pending), E4-E8 pending
+**Overall Engine Progress:** E1 complete ✅, E2 95% complete (4 features blocked by E5), E3 100% complete ✅, E4-E8 pending
 
 **Critical Path:**
-1. Complete E3.4 (Observability) → E3 fully complete
+1. ✅ Complete E3.4 (Observability) → E3 fully complete
 2. Complete E5 Phase 1 (Global Mutations) → unblocks E2.3 remaining 5%
 3. Complete E2.3 → full E2 completion
 4. Complete E4 (Simulation Kernel) → builds on E2 + E3 foundation
@@ -196,7 +201,7 @@ This document tracks the Engine subsystem roadmap and implementation status. For
 7. Complete E7 (Parity Validation) → lockstep testing vs Node.js
 8. E8 (Observability) can proceed in parallel with E6/E7
 
-**Next Milestone:** E3.4 (Observability) OR E5 Phase 1 (Global Mutations) - can proceed in parallel
+**Next Milestone:** E5 Phase 1 (Global Mutations) - unblocks E2.3 remaining features
 
 **Reference Documents:**
 - E1 (Legacy surface mapping): `e1.md`
