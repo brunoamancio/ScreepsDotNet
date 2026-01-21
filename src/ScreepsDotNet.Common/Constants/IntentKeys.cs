@@ -43,4 +43,5 @@ public static class IntentKeys
     public const string Say = "say";
     public const string Send = "send";
     public const string Power = "power";
+    public const string LaunchNuke = "launchNuke";
 }

@@ -126,7 +126,7 @@ ScreepsDotNet/
 | Target-typed new | IDE0090 | `new()` not `new Type()` when type is clear from context |
 | IDE0051/52 pragma | - | Add pragma for constants in attribute params |
 | Dictionary access | - | Use `GetValueOrDefault(key, default)` not `TryGetValue` ternary |
-| Tuple variable naming | - | Use camelCase: `var (id, name)`, discard unused: `var (_, name)` |
+| Tuple deconstruction | IDE0042 | Always deconstruct tuples: `var (id, payload) = Single(...)`, discard unused: `var (_, payload)` |
 | Method/record signature length | - | Keep on one line unless exceeds 185 characters (applies to method signatures and record primary constructors) |
 | Enums vs constants | - | Use `enum` for integer sets (place in `Types/`), not `static class` with `const int` |
 

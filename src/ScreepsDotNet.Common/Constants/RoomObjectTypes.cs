@@ -29,6 +29,7 @@ public static class RoomObjectTypes
     public const string Extractor = "extractor";
     public const string Container = "container";
     public const string Nuker = "nuker";
+    public const string Nuke = "nuke";
     public const string ConstructedWall = "constructedWall";
     public const string ConstructionSite = "constructionSite";
     public const string Ruin = "ruin";

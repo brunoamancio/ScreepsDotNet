@@ -214,6 +214,11 @@ public static class ScreepsGameConstants
     public const int NukerEnergyCapacity = 300_000;
     public const int NukerGhodiumCapacity = 5_000;
     public const int NukerCooldown = 100_000;
+    public const int NukeRange = 10;
+    public const int NukeLandTime = 50_000;
+    public const int NukeDamageCenter = 10_000_000;
+    public const int NukeDamageOuter = 5_000_000;
+    public const int ControllerNukeBlockedUpgrade = 200;
     public const int FactoryHits = 1000;
     public const int FactoryCapacity = 50_000;
     public const int TerrainMaskWall = 1;

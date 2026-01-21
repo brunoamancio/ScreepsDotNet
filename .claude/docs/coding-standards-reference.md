@@ -1,6 +1,6 @@
 # Coding Standards Reference
 
-Condensed examples for the 20 most critical coding standards. For full rule documentation, see `src/.editorconfig` and `src/ScreepsDotNet.slnx.DotSettings`.
+Condensed examples for the 21 most critical coding standards. For full rule documentation, see `src/.editorconfig` and `src/ScreepsDotNet.slnx.DotSettings`.
 
 ## 1. Variable Declarations (IDE0007)
 
@@ -543,6 +543,56 @@ effects[effectKey] = new PowerEffect();
 - String constants (ResourceTypes, IntentKeys, RoomObjectTypes)
 - Complex values (arrays, objects, computed values)
 - Values used in attribute parameters (enums work here too, but constants are clearer)
+
+## 21. Tuple Deconstruction (IDE0042)
+
+**Rule:** Always deconstruct tuple return values into individual variables using camelCase naming. Use the discard pattern `_` for unused tuple elements.
+
+**✅ Good:**
+```csharp
+// Deconstruct tuple with both elements used (camelCase)
+var (objectId, payload) = Assert.Single(writer.Patches);
+Assert.Equal(nuker.Id, objectId);
+Assert.Equal(0, payload.Store![ResourceTypes.Energy]);
+
+// Discard unused tuple elements with underscore
+var (_, payload) = Assert.Single(writer.Patches);
+Assert.Equal(200 + ScreepsGameConstants.NukerCooldown, payload.CooldownTime);
+
+// Multiple tuple deconstructions in same scope
+var (_, rampartPayload) = writer.Patches.Single(p => p.ObjectId == rampart.Id);
+var (_, towerPayload) = writer.Patches.Single(p => p.ObjectId == tower.Id);
+Assert.Equal(0, rampartPayload.Hits);
+Assert.Equal(0, towerPayload.Hits);
+
+// Deconstruct method return values
+var (success, result) = ValidateInput(data);
+if (success)
+    Process(result);
+```
+
+**❌ Bad:**
+```csharp
+// Don't access tuple properties directly without deconstructing
+var patch = Assert.Single(writer.Patches);  // ❌ Should deconstruct
+Assert.Equal(nuker.Id, patch.ObjectId);  // ❌ Accessing tuple property
+Assert.Equal(0, patch.Payload.Store![ResourceTypes.Energy]);
+
+// Don't use PascalCase for tuple variables
+var (ObjectId, Payload) = Assert.Single(writer.Patches);  // ❌ Should be camelCase
+Assert.Equal(nuker.Id, ObjectId);
+
+// Don't declare unused variables (use discard instead)
+var (objectId, payload) = Assert.Single(writer.Patches);  // ❌ objectId never used
+Assert.Equal(0, payload.Hits);  // Should use: var (_, payload) = ...
+```
+
+**IDE Configuration:**
+```ini
+# .editorconfig
+csharp_style_deconstructed_variable_declaration = true:warning
+dotnet_diagnostic.ide0042.severity = warning
+```
 
 ## Summary
 

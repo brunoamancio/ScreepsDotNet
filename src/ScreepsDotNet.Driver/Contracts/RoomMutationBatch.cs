@@ -47,6 +47,7 @@ public sealed record RoomObjectPatchPayload : IRoomObjectPatchPayload
     public int? CooldownTime { get; init; }
     public int? NextRegenerationTime { get; init; }
     public RoomReservationSnapshot? Reservation { get; init; }
+    public int? SafeMode { get; init; }
     public int? SafeModeAvailable { get; init; }
     public IReadOnlyDictionary<PowerTypes, PowerEffectSnapshot>? Effects { get; init; }
     public IReadOnlyDictionary<PowerTypes, PowerCreepPowerSnapshot>? Powers { get; init; }
@@ -79,6 +80,7 @@ public sealed record RoomObjectPatchPayload : IRoomObjectPatchPayload
         Spawning is not null ||
         ClearSpawning ||
         Reservation is not null ||
+        SafeMode.HasValue ||
         SafeModeAvailable.HasValue ||
         (Effects is { Count: > 0 }) ||
         (Powers is { Count: > 0 });

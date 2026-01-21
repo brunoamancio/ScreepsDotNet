@@ -43,6 +43,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IRoomProcessorStep, LabIntentStep>();
         services.AddSingleton<IRoomProcessorStep, LinkIntentStep>();
         services.AddSingleton<IRoomProcessorStep, PowerSpawnIntentStep>();
+        services.AddSingleton<IRoomProcessorStep, NukerIntentStep>();
         services.AddSingleton<IRoomProcessorStep, FactoryIntentStep>();
         services.AddSingleton<IRoomProcessorStep, CombatResolutionStep>();
         services.AddSingleton<IRoomProcessorStep, StructureDecayStep>();
@@ -51,6 +52,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IRoomProcessorStep, PowerEffectDecayStep>();
         services.AddSingleton<IRoomProcessorStep, PowerAbilityStep>();
         services.AddSingleton<IRoomProcessorStep, PowerAbilityCooldownStep>();
+        services.AddSingleton<IRoomProcessorStep, NukeLandingStep>();
         services.AddSingleton<IRoomProcessorStep, RoomIntentEventLogStep>();
         services.AddSingleton<IBodyAnalysisHelper, BodyAnalysisHelper>();
         services.AddSingleton<ISpawnStateReader, SpawnStateReader>();
