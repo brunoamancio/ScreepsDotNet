@@ -157,6 +157,93 @@ internal sealed class PowerAbilityStep : IRoomProcessorStep
 
         actionLogLedger[powerCreep.Id] = new RoomObjectActionLogPatch(
             UsePower: new RoomObjectActionLogUsePower((int)powerType, targetX, targetY));
+
+        // Apply power effects based on power type
+        ApplyPowerEffect(powerType, target, creepPower.Level, gameTime, powerInfo, effectsLedger, modifiedObjects);
+    }
+
+    private static void ApplyPowerEffect(
+        PowerTypes powerType,
+        RoomObjectSnapshot? target,
+        int level,
+        int gameTime,
+        PowerAbilityInfo powerInfo,
+        Dictionary<string, Dictionary<PowerTypes, PowerEffectSnapshot>> effectsLedger,
+        HashSet<string> modifiedObjects)
+    {
+        if (target is null)
+            return;
+
+        var applyEffect =
+            // Validate target type for each power
+            powerType switch
+        {
+            PowerTypes.OperateSpawn => string.Equals(target.Type, RoomObjectTypes.Spawn, StringComparison.Ordinal),
+            PowerTypes.OperateTower => string.Equals(target.Type, RoomObjectTypes.Tower, StringComparison.Ordinal),
+            PowerTypes.OperateStorage => string.Equals(target.Type, RoomObjectTypes.Storage, StringComparison.Ordinal),
+            PowerTypes.OperateLab => string.Equals(target.Type, RoomObjectTypes.Lab, StringComparison.Ordinal),
+            PowerTypes.OperateObserver => string.Equals(target.Type, RoomObjectTypes.Observer, StringComparison.Ordinal),
+            PowerTypes.OperateTerminal => string.Equals(target.Type, RoomObjectTypes.Terminal, StringComparison.Ordinal),
+            PowerTypes.OperatePower => string.Equals(target.Type, RoomObjectTypes.PowerSpawn, StringComparison.Ordinal),
+            PowerTypes.OperateController => string.Equals(target.Type, RoomObjectTypes.Controller, StringComparison.Ordinal),
+            PowerTypes.DisruptSpawn => string.Equals(target.Type, RoomObjectTypes.Spawn, StringComparison.Ordinal),
+            PowerTypes.DisruptTower => string.Equals(target.Type, RoomObjectTypes.Tower, StringComparison.Ordinal),
+            PowerTypes.DisruptSource => string.Equals(target.Type, RoomObjectTypes.Source, StringComparison.Ordinal),
+            PowerTypes.DisruptTerminal => string.Equals(target.Type, RoomObjectTypes.Terminal, StringComparison.Ordinal),
+            PowerTypes.RegenSource => string.Equals(target.Type, RoomObjectTypes.Source, StringComparison.Ordinal),
+            PowerTypes.RegenMineral => ValidateRegenMineral(target),
+            PowerTypes.Fortify => ValidateFortifyTarget(target),
+            PowerTypes.OperateFactory => string.Equals(target.Type, RoomObjectTypes.Factory, StringComparison.Ordinal),
+            _ => false
+        };
+
+        if (!applyEffect)
+            return;
+
+        // Calculate effect duration
+        var duration = CalculateDuration(powerInfo, level);
+        var endTime = gameTime + duration;
+
+        // Add effect to target
+        if (!effectsLedger.TryGetValue(target.Id, out var effects))
+        {
+            effects = new Dictionary<PowerTypes, PowerEffectSnapshot>(target.Effects);
+            effectsLedger[target.Id] = effects;
+        }
+
+        effects[powerType] = new PowerEffectSnapshot(
+            Power: powerType,
+            Level: level,
+            EndTime: endTime);
+
+        modifiedObjects.Add(target.Id);
+    }
+
+    private static bool ValidateRegenMineral(RoomObjectSnapshot target)
+    {
+        if (!string.Equals(target.Type, RoomObjectTypes.Mineral, StringComparison.Ordinal))
+            return false;
+
+        var mineralAmount = target.MineralAmount ?? 0;
+        var result = mineralAmount > 0;
+        return result;
+    }
+
+    private static bool ValidateFortifyTarget(RoomObjectSnapshot target)
+    {
+        var isWall = string.Equals(target.Type, RoomObjectTypes.ConstructedWall, StringComparison.Ordinal);
+        var isRampart = string.Equals(target.Type, RoomObjectTypes.Rampart, StringComparison.Ordinal);
+        var result = isWall || isRampart;
+        return result;
+    }
+
+    private static int CalculateDuration(PowerAbilityInfo powerInfo, int level)
+    {
+        if (powerInfo.DurationLevels is not null)
+            return powerInfo.DurationLevels[level - 1];
+
+        var result = powerInfo.Duration ?? 0;
+        return result;
     }
 
     private static bool TryGetPowerType(IntentRecord record, out PowerTypes powerType)
