@@ -34,12 +34,13 @@ Rebuild the legacy Screeps simulation kernel (processor) in managed .NET. Ports 
 
 ```
 src/ScreepsDotNet.Engine/
-├── CLAUDE.md                                    # This file
-├── docs/
-│   ├── engine/
-│   │   ├── legacy-surface.md                   # Node engine API inventory (E1)
-│   │   ├── data-model.md                       # Engine data contracts (E2)
-│   │   └── e2.3-plan.md                        # Handler backlog tracking
+├── CLAUDE.md                                    # This file (coding patterns)
+├── ../../docs/engine/                           # Plan documents (moved from here)
+│   ├── roadmap.md                               # E1-E8 milestones
+│   ├── e2.3-plan.md                             # Handler backlog tracking
+│   ├── e5-plan.md                               # E5 blockers & implementation
+│   ├── data-model.md                            # Engine data contracts (E2)
+│   └── legacy-surface.md                        # Node engine API inventory (E1)
 ├── Services/
 │   ├── RoomStateProvider.cs                    # Read room snapshots (wraps Driver)
 │   ├── GlobalStateProvider.cs                  # Read global state (wraps Driver)
@@ -263,56 +264,12 @@ public class ControllerProcessor
 
 ## Current Status
 
-### ✅ Completed
-- **E1: Map Legacy Engine Surface** - Node engine API inventory documented in `docs/engine/legacy-surface.md`
-- **E2 (partial): Data & Storage Model**
-  - ✅ `RoomStateProvider` / `GlobalStateProvider` abstractions created
-  - ✅ `RoomMutationWriterFactory` / `UserMemorySink` abstractions created
-  - ✅ `ServiceCollectionExtensions.AddEngineCore()` wires all providers
-  - ✅ Several intent handlers ported (creep move, harvest, spawn, tower, link, lab basics)
+**E2 is 95% Complete** - 11/11 handler families implemented (240/240 tests passing), 4 features blocked by E5.
 
-### 🔄 In Progress (E2.3 Handler Backlog)
-Active work on porting remaining intent handlers (see `docs/engine/e2.3-plan.md`):
-
-**Recently completed (Jan 2026):**
-1. ✅ **Controller intents** - upgrade, reserve, attack (12/12 tests, SafeMode tracking, boost effects partial)
-2. ✅ **Resource I/O** - transfer, withdraw, pickup, drop (31/31 tests, lab capacity tracking)
-3. ✅ **Lab reactions** - boost/unboost creeps, run reactions (24/24 tests, action log recording)
-
-**Remaining ports:**
-4. **Structure energy routing** - links, terminals, factories, power spawns (~20 tests estimated)
-5. **Power creep abilities** - 19 power abilities (~40+ tests estimated)
-
-**Each handler must:**
-- Consume state via `IRoomStateProvider`
-- Write mutations via `IRoomMutationWriterFactory`
-- Emit stats/actions via `RoomStatsSink`
-- Include unit tests + parity validation
-
-### 📋 Pending
-- **E3: Intent Gathering & Validation** - Intent pipeline, validators
-- **E4: Simulation Kernel** - Complete room processor (all mechanics)
-- **E5: Global Systems** - Global mutations (`IGlobalMutationWriter`), power effect tracking, market/NPC/shard systems (see `docs/engine/e5-plan.md`)
-- **E6: Engine Loop Orchestration** - `EngineHost` tick coordination
-- **E7: Parity Validation** - Lockstep testing vs. Node engine
-- **E8: Observability & Tooling** - Engine metrics, diagnostics
-
-## Roadmap (E1-E8)
-
-| ID | Status | Title | Exit Criteria | Dependencies |
-|----|--------|-------|---------------|--------------|
-| E1 | ✅ | Map Legacy Engine Surface | Node engine API inventory documented (`docs/engine/legacy-surface.md`) | Node engine repo, driver notes |
-| E2 | 🔄 | Data & Storage Model | Driver snapshot/mutation contracts in place, Engine consuming them. Handlers for all intent types. | Driver contracts, Screeps schemas |
-| E3 | 📋 | Intent Gathering & Validation | `IIntentPipeline` + validators with unit tests mirroring Node fixtures | Driver runtime outputs, constants |
-| E4 | 📋 | Simulation Kernel (Room Processor) | Managed processor produces identical room diffs vs. Node baseline | E2, E3, Pathfinder service |
-| E5 | 📋 | Global Systems | Market, NPC spawns, shard messaging hooked into processor loop. Global mutations (`IGlobalMutationWriter`), power effect tracking. | E4 foundation |
-| E6 | 📋 | Engine Loop Orchestration | `EngineHost` coordinates ticks; main/runner/processor loops call managed engine | Driver queue service, telemetry sink |
-| E7 | 📋 | Compatibility & Parity Validation | Lockstep testing vs. Node engine, automated divergence detection | Prior steps, legacy engine repo |
-| E8 | 📋 | Observability & Tooling | Engine metrics flow to telemetry, diagnostics commands, operator playbooks | D8 logging stack, scheduler hooks |
-
-**Detailed status:**
-- E2.3 handler backlog: `docs/engine/e2.3-plan.md`
-- E5 blockers & implementation plan: `docs/engine/e5-plan.md`
+For detailed roadmap and status tracking, see:
+- **Roadmap:** `../../docs/engine/roadmap.md` (E1-E8 milestones, progress tracking)
+- **E2.3 Handlers:** `../../docs/engine/e2.3-plan.md` (detailed handler breakdown)
+- **E5 Blockers:** `../../docs/engine/e5-plan.md` (global mutation infrastructure)
 
 ## Common Tasks
 
@@ -698,10 +655,12 @@ public class FakeRoomStateProvider : IRoomStateProvider
 
 ## Reference Documentation
 
-### Design Docs (Engine-Specific)
-- `docs/engine/legacy-surface.md` - Node engine API inventory (E1)
-- `docs/engine/data-model.md` - Engine data contracts (E2)
-- `docs/engine/e2.3-plan.md` - Handler backlog tracking
+### Plan Documents (Engine-Specific)
+- `../../docs/engine/roadmap.md` - E1-E8 milestones and progress tracking
+- `../../docs/engine/e2.3-plan.md` - Handler backlog tracking (detailed)
+- `../../docs/engine/e5-plan.md` - E5 blockers & implementation plan
+- `../../docs/engine/data-model.md` - Engine data contracts (E2)
+- `../../docs/engine/legacy-surface.md` - Node engine API inventory (E1)
 
 ### Related Subsystems
 - `../ScreepsDotNet.Driver/CLAUDE.md` - Driver abstractions Engine consumes
@@ -732,68 +691,30 @@ public class FakeRoomStateProvider : IRoomStateProvider
 - **Check:** `statsSink.Record*()` is called after successful operation
 - **Verify:** `RoomStatsPipeline` is registered in DI
 
-## Active Work (Immediate Next Steps)
-
-### E2.3 Handler Backlog
-
-**Tracked in:** `docs/engine/e2.3-plan.md`
-
-**Next handlers to port:**
-
-1. **Controller intents** (upgrade, reserve, attack)
-   - `ControllerUpgradeHandler`
-   - `ControllerReserveHandler`
-   - `ControllerAttackHandler`
-
-2. **Resource I/O** (transfer, withdraw, pickup, drop)
-   - `TransferHandler`
-   - `WithdrawHandler`
-   - `PickupHandler`
-   - `DropHandler`
-
-3. **Lab reactions** (boost, runReaction)
-   - `LabBoostHandler`
-   - `LabReactionHandler`
-
-4. **Structure energy routing**
-   - `LinkTransferHandler`
-   - `TerminalSendHandler`
-   - `FactoryProduceHandler`
-   - `PowerSpawnProcessHandler`
-
-5. **Power creep abilities**
-   - Various power intent handlers
-
-**Each handler checklist:**
-- [ ] Read state via `IRoomStateProvider`
-- [ ] Write mutations via `IRoomMutationWriterFactory`
-- [ ] Emit stats via `RoomStatsSink`
-- [ ] Unit tests with fake providers
-- [ ] Update `docs/engine/e2.3-plan.md`
-
-### E3 Planning (Next Milestone)
-
-**Outline intent validation pipeline:**
-- Intent schema validation
-- Range checks (creep near target?)
-- Resource availability checks
-- Permission checks (ownership, etc.)
-
-**Goal:** Define `IIntentPipeline` contract before E2 completes
 
 ## Maintenance
 
 **Update this file when:**
-- Adding new intent handlers (update Active Work)
 - Changing data access patterns (update Coding Patterns)
 - Discovering parity issues (update Known Issues)
-- Roadmap milestones shift (update Current Status)
 - Integration contracts change (update Integration Points)
+- Adding new debugging tips or common tasks
+
+**Don't put in this file:**
+- ❌ Roadmap tracking → Use `../../docs/engine/roadmap.md`
+- ❌ Handler progress → Use `../../docs/engine/e2.3-plan.md`
+- ❌ E5 blockers → Use `../../docs/engine/e5-plan.md`
+- ❌ Data model design → Use `../../docs/engine/data-model.md`
 
 **Keep it focused:**
-- This is for Engine simulation logic, not Driver infrastructure
-- Driver details belong in `../ScreepsDotNet.Driver/CLAUDE.md`
-- Solution-wide patterns belong in `../../CLAUDE.md`
-- Detailed mechanics design belongs in `docs/engine/*.md`
+- ✅ Coding patterns and best practices
+- ✅ Common tasks (how to add handler, debug, test)
+- ✅ Integration points with Driver
+- ✅ Known issues and workarounds
 
-**Last Updated:** 2026-01-17
+**Cross-references:**
+- Driver patterns belong in `../ScreepsDotNet.Driver/CLAUDE.md`
+- Solution-wide patterns belong in `../../CLAUDE.md`
+- All plan tracking belongs in `../../docs/engine/*.md`
+
+**Last Updated:** 2026-01-21

@@ -359,10 +359,13 @@ This file provides **solution-wide** context. For subsystem-specific details:
 
 1. **Backend HTTP/CLI** - Shard-aware write APIs, intent/bot tooling parity
 2. **Driver (D6-D10)** - See `src/ScreepsDotNet.Driver/CLAUDE.md` for details
-3. **Engine (E2-E8)** - See `src/ScreepsDotNet.Engine/CLAUDE.md` for details
+3. **Engine (E2-E8)** - See `docs/engine/roadmap.md` for detailed roadmap
 4. **Documentation** - Keep docs in sync with feature changes
 
-**Detailed roadmaps live in subsystem CLAUDE.md files.**
+**Roadmaps:**
+- Engine: `docs/engine/roadmap.md` (E1-E8 milestones)
+- Driver: `src/ScreepsDotNet.Driver/CLAUDE.md` (D1-D10 inline)
+- Pathfinder: `src/native/pathfinder/CLAUDE.md` (build/test instructions)
 
 ## Documentation Map
 
@@ -381,11 +384,19 @@ This file provides **solution-wide** context. For subsystem-specific details:
 - `docs/cli.md` - CLI command reference
 - `docs/driver.md` - Driver design overview
 - `docs/common-tasks.md` - Step-by-step development guides
+- `docs/engine/roadmap.md` - Engine E1-E8 milestones
+- `docs/engine/e2.3-plan.md` - Handler implementation tracking
+- `docs/engine/e5-plan.md` - E5 blockers & global systems
+- `docs/engine/data-model.md` - Engine data contracts
+- `docs/engine/legacy-surface.md` - Node.js engine API inventory
 
 ## When Stuck
 
-1. Check subsystem CLAUDE.md (Driver, Engine, Pathfinder)
-2. Check `docs/` for detailed design documentation
+1. Check subsystem CLAUDE.md (Driver, Engine, Pathfinder) for coding patterns
+2. Check `docs/` for plan tracking and design documentation:
+   - `docs/engine/roadmap.md` - Engine milestones
+   - `docs/engine/e2.3-plan.md` - Handler implementation status
+   - `docs/engine/e5-plan.md` - E5 blockers
 3. Use Context7 MCP for library/API documentation
 4. Search codebase for similar patterns (`rg "pattern" -n src/`)
 5. Check test files for usage examples
@@ -403,7 +414,8 @@ This file provides **solution-wide** context. For subsystem-specific details:
 **Keep it focused:**
 - This is for working context, not tutorials
 - Tutorials belong in `docs/`
-- Subsystem details belong in subsystem CLAUDE.md
+- Subsystem coding patterns belong in subsystem CLAUDE.md
+- Plan tracking belongs in `docs/engine/` (roadmap, e2.3-plan, e5-plan, etc.)
 - Target: Under 500 lines total
 
-**Last Updated:** 2026-01-19
+**Last Updated:** 2026-01-21

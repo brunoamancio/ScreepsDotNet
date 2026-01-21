@@ -1,7 +1,13 @@
 # Engine Data Model Plan (E2)
 
-Status: drafted January 13, 2026. Updated January 13, 2026 (E2 now in progress; engine providers wrap driver contracts).
+**Status:** E2.3 is 95% Complete - January 21, 2026
 
+**Progress:**
+- E2.1-E2.2: ✅ Complete (driver contracts, snapshot providers)
+- E2.3: ⚠️ 95% Complete (11/11 handler families, 240/240 tests, 4 features blocked by E5)
+- E2.4: ✅ Complete (mutation writers, memory sinks)
+- E2.5: ✅ Complete (test coverage, parity checks)
+ 
 ## Constraints
 
 1. **Driver-only boundary:** The engine may only talk to the driver layer. We cannot reference Mongo/Redis services, repositories, or documents directly. All world data must arrive via driver abstractions.
@@ -51,87 +57,134 @@ These DTOs live in the driver assembly so both the engine and driver loops share
 
 Each field can also be patched through `RoomObjectPatchPayload`, and `RoomContractMapper` writes the updates back to Mongo using the shared `RoomDocumentFields` constants. Harvest and extractor handlers must use these typed fields instead of ad-hoc dictionaries to keep the driver/engine boundary storage-agnostic.
 
-## Schema Gaps & Parity Requirements
+## Schema Implementation Status
 
-The following fields are **missing from `RoomObjectSnapshot`/`RoomObjectPatchPayload`** and are **required for E7 parity validation** (verified against Node.js engine source):
+### ✅ Implemented Features
 
-### Controller Fields
+#### Controller Fields
+- ✅ **SafeModeAvailable** - COMPLETE (January 20, 2026)
+  - Implemented in `RoomObjectSnapshot` and `RoomObjectPatchPayload`
+  - Tracked by `ControllerIntentStep` during level transitions
+  - Tests verify counter increments on level-up
+  - **Schema:** `int? SafeModeAvailable` in snapshot/patch contracts
 
-**Missing:** `SafeModeAvailable` (int) - Counter of available safe mode activations
+#### Boost System
+- ⚠️ **Partially Implemented** (January 20, 2026)
+  - ✅ Controller progress calculation complete (`CalculateBoostEffect`)
+  - ✅ Constants exist (`WorkBoostUpgradeMultipliers`: GH 1.5x, GH2O 1.8x, XGH2O 2.0x)
+  - ✅ 4 comprehensive tests covering boost mechanics
+  - ❌ GCL updates blocked by E5 (requires `IGlobalMutationWriter.IncrementUserGcl`)
+  - **Schema:** `CreepBodyPartSnapshot.Boost` field ready
 
-- **Node.js behavior:** Incremented by 1 on every controller level-up (`upgradeController.js` line 73)
-- **Current state:** Only `SafeMode` (active timer) exists in snapshot
-- **Required for parity:** YES - affects safe mode activation logic
-- **Blocking:** Controller level-up transitions (deferred from E2.3 ControllerIntentStep)
-- **Schema change needed:**
-  - Add `int? SafeModeAvailable = null` to `RoomObjectSnapshot` constructor
-  - Add `int? SafeModeAvailable { get; init; }` to `RoomObjectPatchPayload`
-  - Update `RoomContractMapper.ApplyPatchToDocument` to write `safeModeAvailable` field
-  - Update all controller-related tests
+#### Power Effects System
+- ✅ **Power Effect Infrastructure** - COMPLETE (January 21, 2026)
+  - `PowerEffectSnapshot` added to `RoomObjectSnapshot.Effects` (dictionary keyed by power type)
+  - `PowerEffectDecayStep` removes expired effects each tick
+  - `PowerAbilityStep` implements 18 power abilities (1 deferred to E5)
+  - Effect consumption in Lab/PowerSpawn/Factory handlers
+  - 58 power ability tests (decay, core abilities, effect-based, direct-action)
+  - **Schema:** `Dictionary<PowerTypes, PowerEffectSnapshot>? Effects` in snapshot
 
-**Tracking:** See `docs/engine/e2.3-plan.md` "Controller Intents (Deferred - PARITY-BLOCKING)"
+### ⚠️ Blocked by E5 (Global Systems)
 
-### Global User Fields
+The following features require E5 global mutation infrastructure. See `docs/engine/e5-plan.md` for details.
 
-**Missing:** GCL increment mutation via `IGlobalMutationWriter`
+#### Global User Mutations
+1. **User GCL updates** - Controller upgrades should increment global GCL
+   - **Needs:** `IGlobalMutationWriter.IncrementUserGcl(userId, amount)`
+   - **Impact:** Both boosted and non-boosted GCL gains blocked
+   - **Parity:** Required for E7 validation
 
-- **Node.js behavior:** Calls `bulkUsers.inc(user, 'gcl', amount)` on **every** controller upgrade (`upgradeController.js` line 80-82)
-- **Current state:** `UserState` has `Gcl` field but no mutation path
-- **Required for parity:** YES - affects user progression and room control limits
-- **Blocking:** Controller upgrade intent (deferred from E2.3 ControllerIntentStep)
-- **Implementation needed:**
-  - Add `IGlobalMutationWriter.IncrementUserGcl(userId, amount)` method
-  - Wire through `RoomProcessorContext` or separate global mutation sink
-  - Implement in driver layer to batch user updates
+2. **User power balance** - PowerSpawn processing should increment global power
+   - **Needs:** `IGlobalMutationWriter.IncrementUserPower(userId, amount)`
+   - **Impact:** Power balance tracking for generateOps ability
+   - **Parity:** Required for E7 validation
 
-**Tracking:** Blocked by E5 (Global Systems) - global mutation writer implementation
+3. **PWR_GENERATE_OPS ability** - Power creep ability to generate ops
+   - **Needs:** `IGlobalMutationWriter.DecrementUserPower(userId, amount)`
+   - **Impact:** 1 of 19 power abilities blocked
+   - **Parity:** Required for E7 validation
 
-### Boost System
+### 📝 Deferred (Non-Parity-Critical)
 
-**Ready:** `CreepBodyPartSnapshot.Boost` field exists
+These features don't affect simulation correctness and can be implemented post-E7:
 
-- **Node.js behavior:** Calculates boosted upgrade power using `C.BOOSTS[WORK][boostType].upgradeController` multipliers (`upgradeController.js` lines 31-53)
-- **Current state:** Boost field exists in schema but no constants or calculation logic
-- **Required for parity:** YES - affects controller upgrade speed and GCL accumulation
-- **Blocking:** Controller upgrade intent (deferred from E2.3 ControllerIntentStep)
-- **Implementation needed:**
-  - Add boost constants to `ScreepsGameConstants` (e.g., `BOOSTS[WORK]["UH"]["upgradeController"] = 2`)
-  - Implement boost calculation helper in `ControllerIntentStep.CalculateUpgradePower`
-  - Handle boost consumption (decrements `CreepBodyPartSnapshot.Boost` after use)
+1. **Event log emissions** - `EVENT_TRANSFER`, `EVENT_UPGRADE_CONTROLLER`, etc. (replay visualization)
+2. **Level-up notifications** - User notifications on controller level-up (UX only)
+3. **Stats recording** - Power processed, resources transferred, etc. (analytics only)
 
-**Tracking:** See `docs/engine/e2.3-plan.md` "Controller Intents (Deferred - PARITY-BLOCKING)"
+## Implementation Status
 
-### Non-Critical Gaps (can defer to post-MVP)
+### 1. Driver Contracts (E2.1) - ✅ Complete
+- Driver-side snapshot providers (`IRoomSnapshotProvider`, `IInterRoomSnapshotProvider`)
+- Engine DTOs in `ScreepsDotNet.Driver.Contracts`
+- Room/global state contracts
+- Action log and harvest metadata surfaces
 
-- **Notifications:** `driver.sendNotification(userId, message)` - User experience only
-- **Event log emissions:** `EVENT_UPGRADE_CONTROLLER`, `EVENT_TRANSFER`, etc. - Replay/visualization only
+### 2. Snapshot Providers (E2.2) - ✅ Complete
+- `RoomStateProvider`/`GlobalStateProvider` wrap driver contracts
+- Registered through `AddEngineCore` DI
+- Engine consumes `RoomSnapshot`/`GlobalSnapshot` without database knowledge
 
-**E7 Requirement:** Schema gaps and boost system MUST be resolved before parity validation. Notifications and event logs can be deferred to post-MVP.
+### 3. Engine Consumption (E2.3) - ⚠️ 95% Complete
+**Implemented Handlers (11/11 families, 240/240 tests):**
+- ✅ Movement (25 tests) - crashes, pull chains, inter-room/portal transfers
+- ✅ Spawn (18 tests) - create, renew, recycle
+- ✅ Lifecycle (included) - TTL expiration, despawn
+- ✅ Build/Repair (12 tests) - construction sites, structure repairs
+- ✅ Harvest (15 tests) - sources, minerals, deposits
+- ✅ Towers (10 tests) - attack, heal, repair with range falloff
+- ✅ Resource I/O (31 tests) - transfer, withdraw, pickup, drop
+- ✅ Controller (12 tests) - upgrade, reserve, attack, level transitions
+- ✅ Lab (27 tests) - reactions (62 formulas), boosts (40 types), unboost
+- ✅ Structure Energy Routing (28 tests) - Links (8), PowerSpawns (9), Factories (11)
+- ✅ Power Abilities (58 tests) - 18 abilities, effect decay, cooldowns
+- ✅ Market (4 tests) - orders, deals, terminal sends
+- ✅ Inter-Room Transfers (included) - edge exits, portals
 
-## Implementation Plan
+**Infrastructure:**
+- ✅ `StructureBlueprintRegistry` - Shared structure metadata
+- ✅ `IStructureBlueprintProvider`/`StructureSnapshotFactory` - Structure materialization
+- ✅ `RoomProcessorContext` + `IRoomProcessorStep` pipeline
+- ✅ Combat resolution, decay, downgrade systems
+- ✅ Power effect tracking (`PowerEffectDecayStep`, `PowerAbilityStep`)
+- ✅ Intent event logging (`RoomIntentEventLogStep`)
 
-1. **Introduce driver contracts (Step E2.1).** ✅ (handled on driver side; see D10 status)
+**Blocked by E5 (4 features):**
+- PWR_GENERATE_OPS power ability
+- User power balance tracking (PowerSpawn)
+- User GCL updates (Controller)
+- Boost effects GCL component (Controller)
 
-2. **Add snapshot providers (Step E2.2).** ✅ Driver now exposes `IRoomSnapshotProvider` + `IInterRoomSnapshotProvider`; the engine wraps them via `RoomStateProvider`/`GlobalStateProvider` (registered through `AddEngineCore`).
+See `docs/engine/e2.3-plan.md` for detailed handler breakdown.
 
-3. **Wire engine consumption (Step E2.3).**
-   - **In progress:** `RoomStateProvider`/`GlobalStateProvider` now pull `RoomSnapshot`/`GlobalSnapshot` from the driver, and `RoomProcessor` consumes them via the new `RoomProcessorContext` + `IRoomProcessorStep` pipeline. The current step set covers creep lifecycle, movement, combat resolution, structure decay, controller downgrade, power cooldowns, and intent event logging. Remaining work: port the rest of the legacy handlers (spawn logic, labs, notifications, etc.) so room diffs match the Node processor.
-   - Shared structure metadata now lives in `ScreepsDotNet.Common.Structures.StructureBlueprintRegistry`, and the engine exposes `IStructureBlueprintProvider`/`StructureSnapshotFactory` through DI so room steps can materialize finished structures without duplicating Mongo constants.
-   - Detailed task breakdown (dependencies, handler ports, telemetry work) lives in `docs/engine/e2.3-plan.md`.
+### 4. Mutation Path Alignment (E2.4) - ✅ Complete
+- `RoomMutationWriterFactory` produces per-room writers
+- Writers stage JSON upserts/patches and flush via `IRoomMutationDispatcher`
+- `UserMemorySink` wraps `IUserDataService` for memory persistence
+- Event log and map view payloads integrated
+- Global mutation writer design ready (pending E5 implementation)
 
-4. **Mutation path alignment (Step E2.4).**
-   - **In progress:** `RoomMutationWriterFactory` produces per-room writers that stage JSON upserts/patches and flush via the driver `IRoomMutationDispatcher`. Upcoming work: integrate these writers into the processor/global systems and add helpers for event log/map view payloads.
+### 5. Tests & Parity Checks (E2.5) - ✅ Complete
+- 240/240 engine tests passing
+- Driver regression fixtures for room/global snapshots
+- Unit tests cover `RoomStateProvider`/`GlobalStateProvider` consumers
+- Integration tests use Testcontainers (never local Docker state)
 
-   - Memory surfaces: `UserMemorySink` wraps `IUserDataService` so engine code can persist raw memory, segments, and inter-shard data without touching Redis directly.
+## E2 Deliverables
 
-5. **Tests & parity checks (Step E2.5).**
-   - Driver already owns the regression fixtures for room/global snapshots; once the engine builds higher-level caches, add engine-side unit tests around `RoomStateProvider`/`GlobalStateProvider` consumers.
+### ✅ Completed
+- ✅ Driver contracts + snapshot provider interfaces (E2.1)
+- ✅ Engine consumes only driver contracts (no `ScreepsDotNet.Storage.MongoRedis` references)
+- ✅ Documentation updated (this file + `src/ScreepsDotNet.Engine/CLAUDE.md`)
+- ✅ 240 unit tests covering snapshot building, mutation contract serialization, handler logic
+- ✅ 11/11 handler families implemented with full test coverage
+- ✅ Mutation writers integrated with driver `IRoomMutationDispatcher`
+- ✅ Memory persistence via `UserMemorySink`
 
-## Deliverables for E2 Completion
+### ⚠️ Remaining Work (Blocked by E5)
+- E5 must implement `IGlobalMutationWriter` for global user mutations (GCL, power balance)
+- After E5 Phase 1, return to E2.3 to implement 4 blocked features (1-2 hours effort)
 
-- New driver contracts + snapshot provider interfaces merged.
-- Engine project updated to consume only those contracts (no `ScreepsDotNet.Storage.MongoRedis` references).
-- Documentation (this file + engine AGENT) describing the layering and migration steps.
-- Unit tests covering snapshot building + mutation contract serialization.
-
-Once these pieces land, we can proceed to **E3 (Intent Gathering & Validation)** using the same contracts, confident that the engine never reaches down to the database layer.
+### Next Steps
+With E2 95% complete, the engine is ready for **E3 (Intent Gathering & Validation)** and can proceed to E7 parity validation once E5 global mutations are in place. The engine operates entirely through driver abstractions without touching the database layer.
