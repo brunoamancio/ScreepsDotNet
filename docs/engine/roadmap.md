@@ -146,13 +146,15 @@ This document tracks the Engine subsystem roadmap and implementation status. For
 - Automated divergence detection
 - Parity test suite covering all mechanics
 - Regression detection on schema changes
+- E3 validator parity tests (deferred from E3.2)
 
 **Prerequisites:**
 - All E2 features complete (including 4 E5-blocked features)
 - All E1-E6 milestones complete
+- E3 validators implemented (✅ E3.2 complete)
 - Legacy Node.js engine repo access
 
-**Details:** See `e2.md` for parity-critical feature status
+**Details:** See `e2.md` for parity-critical feature status, `e3.md` for deferred E3 parity validation
 
 ---
 

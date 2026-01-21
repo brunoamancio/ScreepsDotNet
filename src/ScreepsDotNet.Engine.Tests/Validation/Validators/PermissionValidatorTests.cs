@@ -44,7 +44,7 @@ public sealed class PermissionValidatorTests
     {
         var intent = CreateIntent(IntentKeys.UpgradeController, actorId: "creep1", targetId: "controller1");
         var snapshot = CreateSnapshot(
-            ("creep1", RoomObjectTypes.Creep, "user1", (string?)null),
+            ("creep1", RoomObjectTypes.Creep, "user1", null),
             ("controller1", RoomObjectTypes.Controller, null, "user1"));
 
         var result = _validator.Validate(intent, snapshot);
@@ -58,7 +58,7 @@ public sealed class PermissionValidatorTests
     {
         var intent = CreateIntent(IntentKeys.UpgradeController, actorId: "creep1", targetId: "controller1");
         var snapshot = CreateSnapshot(
-            ("creep1", RoomObjectTypes.Creep, "user1", (string?)null),
+            ("creep1", RoomObjectTypes.Creep, "user1", null),
             ("controller1", RoomObjectTypes.Controller, null, "user2"));
 
         var result = _validator.Validate(intent, snapshot);
@@ -130,8 +130,8 @@ public sealed class PermissionValidatorTests
     {
         var intent = CreateIntent(IntentKeys.Attack, actorId: "creep1", targetId: "creep2");
         var snapshot = CreateSnapshot(
-            ("creep1", RoomObjectTypes.Creep, "user1", (int?)null),
-            ("creep2", RoomObjectTypes.Creep, "user2", (int?)null),
+            ("creep1", RoomObjectTypes.Creep, "user1", null),
+            ("creep2", RoomObjectTypes.Creep, "user2", null),
             ("controller1", RoomObjectTypes.Controller, "user2", 100));
 
         var result = _validator.Validate(intent, snapshot);
@@ -145,8 +145,8 @@ public sealed class PermissionValidatorTests
     {
         var intent = CreateIntent(IntentKeys.Attack, actorId: "creep1", targetId: "creep2");
         var snapshot = CreateSnapshot(
-            ("creep1", RoomObjectTypes.Creep, "user1", (int?)null),
-            ("creep2", RoomObjectTypes.Creep, "user2", (int?)null),
+            ("creep1", RoomObjectTypes.Creep, "user1", null),
+            ("creep2", RoomObjectTypes.Creep, "user2", null),
             ("controller1", RoomObjectTypes.Controller, "user2", 0));
 
         var result = _validator.Validate(intent, snapshot);
@@ -160,8 +160,8 @@ public sealed class PermissionValidatorTests
     {
         var intent = CreateIntent(IntentKeys.Attack, actorId: "creep1", targetId: "creep2");
         var snapshot = CreateSnapshot(
-            ("creep1", RoomObjectTypes.Creep, "user1", (int?)null),
-            ("creep2", RoomObjectTypes.Creep, "user1", (int?)null),
+            ("creep1", RoomObjectTypes.Creep, "user1", null),
+            ("creep2", RoomObjectTypes.Creep, "user1", null),
             ("controller1", RoomObjectTypes.Controller, "user1", 100));
 
         var result = _validator.Validate(intent, snapshot);
@@ -175,8 +175,8 @@ public sealed class PermissionValidatorTests
     {
         var intent = CreateIntent(IntentKeys.RangedAttack, actorId: "creep1", targetId: "creep2");
         var snapshot = CreateSnapshot(
-            ("creep1", RoomObjectTypes.Creep, "user1", (int?)null),
-            ("creep2", RoomObjectTypes.Creep, "user2", (int?)null),
+            ("creep1", RoomObjectTypes.Creep, "user1", null),
+            ("creep2", RoomObjectTypes.Creep, "user2", null),
             ("controller1", RoomObjectTypes.Controller, "user2", 50));
 
         var result = _validator.Validate(intent, snapshot);
@@ -190,8 +190,8 @@ public sealed class PermissionValidatorTests
     {
         var intent = CreateIntent(IntentKeys.Dismantle, actorId: "creep1", targetId: "spawn1");
         var snapshot = CreateSnapshot(
-            ("creep1", RoomObjectTypes.Creep, "user1", (int?)null),
-            ("spawn1", RoomObjectTypes.Spawn, "user2", (int?)null),
+            ("creep1", RoomObjectTypes.Creep, "user1", null),
+            ("spawn1", RoomObjectTypes.Spawn, "user2", null),
             ("controller1", RoomObjectTypes.Controller, "user2", 100));
 
         var result = _validator.Validate(intent, snapshot);
@@ -207,7 +207,7 @@ public sealed class PermissionValidatorTests
     {
         var intent = CreateIntent(IntentKeys.Repair, actorId: "creep1", targetId: "rampart1");
         var snapshot = CreateSnapshot(
-            ("creep1", RoomObjectTypes.Creep, "user1", (bool?)null),
+            ("creep1", RoomObjectTypes.Creep, "user1", null),
             ("rampart1", RoomObjectTypes.Rampart, "user2", true));
 
         var result = _validator.Validate(intent, snapshot);
@@ -221,7 +221,7 @@ public sealed class PermissionValidatorTests
     {
         var intent = CreateIntent(IntentKeys.Repair, actorId: "creep1", targetId: "rampart1");
         var snapshot = CreateSnapshot(
-            ("creep1", RoomObjectTypes.Creep, "user1", (bool?)null),
+            ("creep1", RoomObjectTypes.Creep, "user1", null),
             ("rampart1", RoomObjectTypes.Rampart, "user2", false));
 
         var result = _validator.Validate(intent, snapshot);
@@ -235,8 +235,8 @@ public sealed class PermissionValidatorTests
     {
         var intent = CreateIntent(IntentKeys.Transfer, actorId: "creep1", targetId: "container1");
         var snapshot = CreateSnapshot(
-            ("creep1", RoomObjectTypes.Creep, "user1", (bool?)null, 10, 10),
-            ("container1", RoomObjectTypes.Container, "user1", (bool?)null, 10, 20),
+            ("creep1", RoomObjectTypes.Creep, "user1", null, 10, 10),
+            ("container1", RoomObjectTypes.Container, "user1", null, 10, 20),
             ("rampart1", RoomObjectTypes.Rampart, "user1", false, 10, 20));
 
         var result = _validator.Validate(intent, snapshot);
@@ -250,8 +250,8 @@ public sealed class PermissionValidatorTests
     {
         var intent = CreateIntent(IntentKeys.Withdraw, actorId: "creep1", targetId: "container1");
         var snapshot = CreateSnapshot(
-            ("creep1", RoomObjectTypes.Creep, "user1", (bool?)null, 10, 10),
-            ("container1", RoomObjectTypes.Container, "user2", (bool?)null, 15, 25),
+            ("creep1", RoomObjectTypes.Creep, "user1", null, 10, 10),
+            ("container1", RoomObjectTypes.Container, "user2", null, 15, 25),
             ("rampart1", RoomObjectTypes.Rampart, "user2", false, 15, 25));
 
         var result = _validator.Validate(intent, snapshot);
@@ -282,8 +282,8 @@ public sealed class PermissionValidatorTests
     {
         var intent = CreateIntent(IntentKeys.Harvest, actorId: "creep1", targetId: "source1");
         var snapshot = CreateSnapshot(
-            ("creep1", RoomObjectTypes.Creep, "user1", (string?)null),
-            ("source1", RoomObjectTypes.Source, null, (string?)null),
+            ("creep1", RoomObjectTypes.Creep, "user1", null),
+            ("source1", RoomObjectTypes.Source, null, null),
             ("controller1", RoomObjectTypes.Controller, null, "user1"));
 
         var result = _validator.Validate(intent, snapshot);
@@ -328,8 +328,7 @@ public sealed class PermissionValidatorTests
         var objectDict = new Dictionary<string, RoomObjectSnapshot>(StringComparer.Ordinal);
         var maxSafeMode = 0;
 
-        foreach (var (id, type, userId) in objects)
-        {
+        foreach (var (id, type, userId) in objects) {
             var obj = new RoomObjectSnapshot(
                 Id: id,
                 Type: type,
@@ -354,7 +353,7 @@ public sealed class PermissionValidatorTests
                 Reservation: null,
                 Sign: null,
                 Structure: null,
-                Effects: new Dictionary<ScreepsDotNet.Common.Types.PowerTypes, PowerEffectSnapshot>(0),
+                Effects: new Dictionary<Common.Types.PowerTypes, PowerEffectSnapshot>(0),
                 Body: [],
                 IsPublic: null,
                 SafeMode: null);
@@ -379,8 +378,7 @@ public sealed class PermissionValidatorTests
     {
         var objectDict = new Dictionary<string, RoomObjectSnapshot>(StringComparer.Ordinal);
 
-        foreach (var (id, type, userId, reservationUserId) in objects)
-        {
+        foreach (var (id, type, userId, reservationUserId) in objects) {
             var obj = new RoomObjectSnapshot(
                 Id: id,
                 Type: type,
@@ -405,7 +403,7 @@ public sealed class PermissionValidatorTests
                 Reservation: reservationUserId is not null ? new RoomReservationSnapshot(reservationUserId, 1000) : null,
                 Sign: null,
                 Structure: null,
-                Effects: new Dictionary<ScreepsDotNet.Common.Types.PowerTypes, PowerEffectSnapshot>(0),
+                Effects: new Dictionary<Common.Types.PowerTypes, PowerEffectSnapshot>(0),
                 Body: [],
                 IsPublic: null,
                 SafeMode: null);
@@ -431,8 +429,7 @@ public sealed class PermissionValidatorTests
         var objectDict = new Dictionary<string, RoomObjectSnapshot>(StringComparer.Ordinal);
         var maxSafeMode = 0;
 
-        foreach (var (id, type, userId, safeMode) in objects)
-        {
+        foreach (var (id, type, userId, safeMode) in objects) {
             var obj = new RoomObjectSnapshot(
                 Id: id,
                 Type: type,
@@ -457,7 +454,7 @@ public sealed class PermissionValidatorTests
                 Reservation: null,
                 Sign: null,
                 Structure: null,
-                Effects: new Dictionary<ScreepsDotNet.Common.Types.PowerTypes, PowerEffectSnapshot>(0),
+                Effects: new Dictionary<Common.Types.PowerTypes, PowerEffectSnapshot>(0),
                 Body: [],
                 IsPublic: null,
                 SafeMode: safeMode);
@@ -485,8 +482,7 @@ public sealed class PermissionValidatorTests
     {
         var objectDict = new Dictionary<string, RoomObjectSnapshot>(StringComparer.Ordinal);
 
-        foreach (var (id, type, userId, isPublic) in objects)
-        {
+        foreach (var (id, type, userId, isPublic) in objects) {
             var obj = new RoomObjectSnapshot(
                 Id: id,
                 Type: type,
@@ -511,7 +507,7 @@ public sealed class PermissionValidatorTests
                 Reservation: null,
                 Sign: null,
                 Structure: null,
-                Effects: new Dictionary<ScreepsDotNet.Common.Types.PowerTypes, PowerEffectSnapshot>(0),
+                Effects: new Dictionary<Common.Types.PowerTypes, PowerEffectSnapshot>(0),
                 Body: [],
                 IsPublic: isPublic,
                 SafeMode: null);
@@ -536,8 +532,7 @@ public sealed class PermissionValidatorTests
     {
         var objectDict = new Dictionary<string, RoomObjectSnapshot>(StringComparer.Ordinal);
 
-        foreach (var (id, type, userId, isPublic, x, y) in objects)
-        {
+        foreach (var (id, type, userId, isPublic, x, y) in objects) {
             var obj = new RoomObjectSnapshot(
                 Id: id,
                 Type: type,
@@ -562,7 +557,7 @@ public sealed class PermissionValidatorTests
                 Reservation: null,
                 Sign: null,
                 Structure: null,
-                Effects: new Dictionary<ScreepsDotNet.Common.Types.PowerTypes, PowerEffectSnapshot>(0),
+                Effects: new Dictionary<Common.Types.PowerTypes, PowerEffectSnapshot>(0),
                 Body: [],
                 IsPublic: isPublic,
                 SafeMode: null);

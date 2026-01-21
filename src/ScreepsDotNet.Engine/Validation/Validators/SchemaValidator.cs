@@ -147,22 +147,19 @@ public sealed class SchemaValidator : IIntentValidator
     private static ValidationResult ValidateTargetIdOnly(IReadOnlyDictionary<string, IntentFieldValue> fields)
     {
         // Check required field "id"
-        if (!fields.TryGetValue(IntentKeys.TargetId, out var idField))
-        {
+        if (!fields.TryGetValue(IntentKeys.TargetId, out var idField)) {
             var missingFieldResult = ValidationResult.Failure(ValidationErrorCode.MissingRequiredField);
             return missingFieldResult;
         }
 
         // Validate type: must be Text
-        if (idField.Kind != IntentFieldValueKind.Text)
-        {
+        if (idField.Kind != IntentFieldValueKind.Text) {
             var invalidTypeResult = ValidationResult.Failure(ValidationErrorCode.InvalidFieldType);
             return invalidTypeResult;
         }
 
         // Validate non-null, non-empty
-        if (string.IsNullOrEmpty(idField.TextValue))
-        {
+        if (string.IsNullOrEmpty(idField.TextValue)) {
             var invalidFieldResult = ValidationResult.Failure(ValidationErrorCode.InvalidFieldType);
             return invalidFieldResult;
         }
@@ -173,57 +170,49 @@ public sealed class SchemaValidator : IIntentValidator
     private static ValidationResult ValidateResourceTransfer(IReadOnlyDictionary<string, IntentFieldValue> fields)
     {
         // Check required field "id"
-        if (!fields.TryGetValue(IntentKeys.TargetId, out var idField))
-        {
+        if (!fields.TryGetValue(IntentKeys.TargetId, out var idField)) {
             var missingIdResult = ValidationResult.Failure(ValidationErrorCode.MissingRequiredField);
             return missingIdResult;
         }
 
         // Validate id type
-        if (idField.Kind != IntentFieldValueKind.Text || string.IsNullOrEmpty(idField.TextValue))
-        {
+        if (idField.Kind != IntentFieldValueKind.Text || string.IsNullOrEmpty(idField.TextValue)) {
             var invalidIdTypeResult = ValidationResult.Failure(ValidationErrorCode.InvalidFieldType);
             return invalidIdTypeResult;
         }
 
         // Check required field "resourceType"
-        if (!fields.TryGetValue(IntentKeys.ResourceType, out var resourceTypeField))
-        {
+        if (!fields.TryGetValue(IntentKeys.ResourceType, out var resourceTypeField)) {
             var missingResourceTypeResult = ValidationResult.Failure(ValidationErrorCode.MissingRequiredField);
             return missingResourceTypeResult;
         }
 
         // Validate resourceType type
-        if (resourceTypeField.Kind != IntentFieldValueKind.Text || string.IsNullOrEmpty(resourceTypeField.TextValue))
-        {
+        if (resourceTypeField.Kind != IntentFieldValueKind.Text || string.IsNullOrEmpty(resourceTypeField.TextValue)) {
             var invalidResourceTypeTypeResult = ValidationResult.Failure(ValidationErrorCode.InvalidFieldType);
             return invalidResourceTypeTypeResult;
         }
 
         // Validate resourceType value
-        if (!ValidResourceTypes.Contains(resourceTypeField.TextValue!))
-        {
+        if (!ValidResourceTypes.Contains(resourceTypeField.TextValue!)) {
             var invalidResourceResult = ValidationResult.Failure(ValidationErrorCode.InvalidResourceType);
             return invalidResourceResult;
         }
 
         // Check required field "amount"
-        if (!fields.TryGetValue(IntentKeys.Amount, out var amountField))
-        {
+        if (!fields.TryGetValue(IntentKeys.Amount, out var amountField)) {
             var missingAmountResult = ValidationResult.Failure(ValidationErrorCode.MissingRequiredField);
             return missingAmountResult;
         }
 
         // Validate amount type
-        if (amountField.Kind != IntentFieldValueKind.Number || !amountField.NumberValue.HasValue)
-        {
+        if (amountField.Kind != IntentFieldValueKind.Number || !amountField.NumberValue.HasValue) {
             var invalidAmountTypeResult = ValidationResult.Failure(ValidationErrorCode.InvalidFieldType);
             return invalidAmountTypeResult;
         }
 
         // Validate amount >= 0
-        if (amountField.NumberValue.Value < 0)
-        {
+        if (amountField.NumberValue.Value < 0) {
             var negativeAmountResult = ValidationResult.Failure(ValidationErrorCode.NegativeAmount);
             return negativeAmountResult;
         }
@@ -234,43 +223,37 @@ public sealed class SchemaValidator : IIntentValidator
     private static ValidationResult ValidateResourceDrop(IReadOnlyDictionary<string, IntentFieldValue> fields)
     {
         // Check required field "resourceType"
-        if (!fields.TryGetValue(IntentKeys.ResourceType, out var resourceTypeField))
-        {
+        if (!fields.TryGetValue(IntentKeys.ResourceType, out var resourceTypeField)) {
             var missingResourceTypeResult = ValidationResult.Failure(ValidationErrorCode.MissingRequiredField);
             return missingResourceTypeResult;
         }
 
         // Validate resourceType type
-        if (resourceTypeField.Kind != IntentFieldValueKind.Text || string.IsNullOrEmpty(resourceTypeField.TextValue))
-        {
+        if (resourceTypeField.Kind != IntentFieldValueKind.Text || string.IsNullOrEmpty(resourceTypeField.TextValue)) {
             var invalidResourceTypeTypeResult = ValidationResult.Failure(ValidationErrorCode.InvalidFieldType);
             return invalidResourceTypeTypeResult;
         }
 
         // Validate resourceType value
-        if (!ValidResourceTypes.Contains(resourceTypeField.TextValue!))
-        {
+        if (!ValidResourceTypes.Contains(resourceTypeField.TextValue!)) {
             var invalidResourceResult = ValidationResult.Failure(ValidationErrorCode.InvalidResourceType);
             return invalidResourceResult;
         }
 
         // Check required field "amount"
-        if (!fields.TryGetValue(IntentKeys.Amount, out var amountField))
-        {
+        if (!fields.TryGetValue(IntentKeys.Amount, out var amountField)) {
             var missingAmountResult = ValidationResult.Failure(ValidationErrorCode.MissingRequiredField);
             return missingAmountResult;
         }
 
         // Validate amount type
-        if (amountField.Kind != IntentFieldValueKind.Number || !amountField.NumberValue.HasValue)
-        {
+        if (amountField.Kind != IntentFieldValueKind.Number || !amountField.NumberValue.HasValue) {
             var invalidAmountTypeResult = ValidationResult.Failure(ValidationErrorCode.InvalidFieldType);
             return invalidAmountTypeResult;
         }
 
         // Validate amount >= 0
-        if (amountField.NumberValue.Value < 0)
-        {
+        if (amountField.NumberValue.Value < 0) {
             var negativeAmountResult = ValidationResult.Failure(ValidationErrorCode.NegativeAmount);
             return negativeAmountResult;
         }

@@ -17,8 +17,7 @@ public sealed class PermissionValidator : IIntentValidator
     public ValidationResult Validate(IntentRecord intent, RoomSnapshot roomSnapshot)
     {
         // Extract actor and target IDs from intent arguments
-        if (!TryGetActorAndTargetIds(intent, out var actorId, out var targetId))
-        {
+        if (!TryGetActorAndTargetIds(intent, out var actorId, out var targetId)) {
             // No IDs found - let other validators handle this
             return ValidationResult.Success;
         }
@@ -68,8 +67,7 @@ public sealed class PermissionValidator : IIntentValidator
             return ValidationResult.Success;
 
         // Not owned or reserved by actor
-        if (controller.Reservation?.UserId is not null)
-        {
+        if (controller.Reservation?.UserId is not null) {
             var reservationResult = ValidationResult.Failure(ValidationErrorCode.ControllerNotReservedByActor);
             return reservationResult;
         }
@@ -119,18 +117,15 @@ public sealed class PermissionValidator : IIntentValidator
             return ValidationResult.Success;
 
         // Check if room has active safe mode
-        if (controller.SafeMode.HasValue && controller.SafeMode.Value > gameTime)
-        {
+        if (controller.SafeMode.HasValue && controller.SafeMode.Value > gameTime) {
             // Safe mode is active - check if attacking own structures
-            if (controller.UserId == actor.UserId)
-            {
+            if (controller.UserId == actor.UserId) {
                 // Room owner can attack own creeps even in safe mode
                 return ValidationResult.Success;
             }
 
             // Safe mode blocks attacks from non-owners
-            if (controller.UserId != actor.UserId)
-            {
+            if (controller.UserId != actor.UserId) {
                 var safeModeResult = ValidationResult.Failure(ValidationErrorCode.SafeModeActive);
                 return safeModeResult;
             }
@@ -208,8 +203,7 @@ public sealed class PermissionValidator : IIntentValidator
         actorId = actorIdField.TextValue;
 
         // Try to get target ID (optional)
-        if (fields.TryGetValue(IntentKeys.TargetId, out var targetIdField) && targetIdField.TextValue is not null)
-        {
+        if (fields.TryGetValue(IntentKeys.TargetId, out var targetIdField) && targetIdField.TextValue is not null) {
             targetId = targetIdField.TextValue;
         }
 
