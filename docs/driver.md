@@ -14,7 +14,7 @@ This document summarizes the ongoing effort to port the legacy Screeps Node.js d
 - Queue infrastructure, scheduler helpers, bulk writers, room/user services, and notification/history services run inside `ScreepsDotNet.Driver`.
 - ClearScript-based runtime coordinator executes user code, captures console/memory/intents, and writes through the new services via `RunnerLoopWorker`/`ProcessorLoopWorker`.
 - Native pathfinder binaries now live under `src/native/pathfinder`; `dotnet build` downloads the correct RID package (hash-verified) and `PathfinderService` now always uses the native solver (the managed A* fallback has been removed, so missing binaries fail fast).
-- Next milestone is rewriting the engine itself on .NET; the driver is feature-complete and ready to plug into the new runtime stack without relying on a Node compatibility shim. Track that effort in [src/ScreepsDotNet.Engine/AGENT.md](../src/ScreepsDotNet.Engine/AGENT.md).
+- **Managed .NET Engine is production-ready**: E6 (Engine Loop Orchestration) complete - driver loops exclusively use the managed Engine for all processing. No legacy Node.js fallbacks remain. Track engine progress in [docs/engine/roadmap.md](engine/roadmap.md) (E1-E6 complete, E7-E9 pending).
 
 ## Workstreams & Plan Docs
 
@@ -29,9 +29,9 @@ This document summarizes the ongoing effort to port the legacy Screeps Node.js d
 | **D7 – Config/events** | Recreate `config.emit(...)`, tick knobs, and environment service. | [src/ScreepsDotNet.Driver/docs/ConfigAndEvents.md](../src/ScreepsDotNet.Driver/docs/ConfigAndEvents.md) | **Completed** – Config emitter + environment service mirror legacy behavior and feed every loop. |
 | **D8 – Runtime lifecycle** | Provide runtime hooks (make runtime, console, memory, intent persistence). | [src/ScreepsDotNet.Driver/docs/RuntimeLifecycle.md](../src/ScreepsDotNet.Driver/docs/RuntimeLifecycle.md) | **Completed** – Runtime coordinator, sandbox pooling, telemetry fan-out, watchdog/scheduler throttling, and the observability exporter toggle/documentation are done (payload contract in [src/docs/runtime-telemetry.md](../src/docs/runtime-telemetry.md)). |
 | **D9 – History & notifications** | Save room history/map view diffs and deliver notifications/console output via hooks. | [src/ScreepsDotNet.Driver/docs/HistoryAndNotifications.md](../src/ScreepsDotNet.Driver/docs/HistoryAndNotifications.md) | **Completed** – History pipeline writes map-view/event logs from Mongo, notification throttling covers console/watchdog/roomsDone, docs/tests updated. |
-| **D10 – Engine contracts** | Expose driver-owned DTOs/providers (room + inter-room snapshots, mutation batches) so the new .NET engine consumes data via the driver only. | [src/ScreepsDotNet.Driver/docs/EngineContracts.md](../src/ScreepsDotNet.Driver/docs/EngineContracts.md) | **In progress** – Room + global snapshot providers, mutation dispatcher wiring, and regression tests are merged. |
+| **D10 – Engine contracts** | Expose driver-owned DTOs/providers (room + inter-room snapshots, mutation batches) so the new .NET engine consumes data via the driver only. | [src/ScreepsDotNet.Driver/docs/EngineContracts.md](../src/ScreepsDotNet.Driver/docs/EngineContracts.md) | **Completed** – D10+E6 complete: managed .NET Engine is production-ready and required in all driver loops (no legacy fallbacks remain). |
 
-Status legend: ✔ done, ◐ in progress, ☐ not started. See the driver AGENT file for the most up-to-date ticks.
+**Status:** All driver milestones (D1-D10) complete ✅. See [src/ScreepsDotNet.Driver/CLAUDE.md](../src/ScreepsDotNet.Driver/CLAUDE.md) for tactical patterns and [docs/engine/roadmap.md](engine/roadmap.md) for engine progress.
 
 ## Hand-off Reference
 

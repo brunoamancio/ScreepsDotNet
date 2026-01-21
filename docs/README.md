@@ -12,8 +12,11 @@ Use this index to understand which file owns which slice of project knowledge. W
 | `docs/cli.md` | CLI usage, global switches, command reference, automation tips. | Update when commands/flags change. |
 | `docs/driver.md` | Driver rewrite overview + links to per-step plan docs (`src/ScreepsDotNet.Driver/docs/*.md`). | Mirrors the status table from the driver AGENT; update when milestones move. |
 | `docs/specs/*` | Deep specs (e.g., market/world APIs). | Keep authoritative descriptions here; cross-reference from backend docs as needed. |
-| `src/ScreepsDotNet.Driver/CLAUDE.md` | Driver subsystem AI context - D1-D10 roadmap, code patterns (✅/❌), common tasks (add processor, wire telemetry), integration contracts. | AI-optimized with inline examples. |
-| `src/ScreepsDotNet.Engine/CLAUDE.md` | Engine subsystem AI context - E1-E8 roadmap, 🚨 NEVER direct DB patterns, intent handler examples, parity testing, E2.3 active work. | AI-optimized. Critical: Engine NEVER accesses Mongo/Redis directly (use Driver). |
+| `src/ScreepsDotNet.Driver/CLAUDE.md` | Driver subsystem AI context - D1-D10 roadmap, code patterns (✅/❌), common tasks (add processor, wire telemetry), integration contracts. | AI-optimized with inline examples. All D1-D10 complete ✅. |
+| `src/ScreepsDotNet.Engine/CLAUDE.md` | Engine subsystem AI context - E1-E8 roadmap, 🚨 NEVER direct DB patterns, intent handler examples, parity testing. | AI-optimized. Critical: Engine NEVER accesses Mongo/Redis directly (use Driver). E1-E6 complete ✅. |
+| `docs/engine/roadmap.md` | Engine roadmap tracking (E1-E9) - milestone status, test counts, deferred features, dependencies. | Human-readable roadmap. Update when milestones complete or scope changes. E1-E6 complete ✅, E7-E9 pending. |
+| `docs/engine/e2.md` | Engine handler implementation tracking - 11 handler families, 240 tests, E5 blockers resolved. | Detailed handler breakdown with test counts and parity notes. |
+| `docs/engine/data-model.md` | Engine data contracts design - Driver↔Engine boundary, DTOs, deferred features (event logs, notifications, stats). | Reference for E2 implementation. All features complete except non-parity-critical deferrals. |
 | `src/native/pathfinder/CLAUDE.md` | Native pathfinder AI context - cross-platform builds (all RIDs), parity testing (100% Node.js match), baseline refresh, CI/CD, P/Invoke patterns. | AI-optimized with build/test workflows. |
 
 ## Update checklist
