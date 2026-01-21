@@ -511,6 +511,10 @@ public sealed class MineralRegenerationStepTests
 
         public void SetMapView(IRoomMapViewPayload? mapView) { }
 
+#pragma warning disable CA1822 // Mark members as static
+        public int GetMutationCount() => 0;
+#pragma warning restore CA1822
+
         public Task FlushAsync(CancellationToken token = default) => Task.CompletedTask;
 
         public void Reset()
@@ -529,6 +533,10 @@ public sealed class MineralRegenerationStepTests
         public void IncrementEnergyConstruction(string userId, int amount) { }
         public void IncrementEnergyHarvested(string userId, int amount) { }
         public void IncrementEnergyControl(string userId, int amount) { }
+#pragma warning disable CA1822 // Mark members as static
+        public int GetMutationCount() => 0;
+#pragma warning restore CA1822
+
         public Task FlushAsync(int gameTime, CancellationToken token = default) => Task.CompletedTask;
     }
 }

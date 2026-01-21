@@ -13,6 +13,7 @@ using ScreepsDotNet.Engine.Processors;
 using ScreepsDotNet.Engine.Processors.GlobalSteps;
 using ScreepsDotNet.Engine.Processors.Helpers;
 using ScreepsDotNet.Engine.Processors.Steps;
+using ScreepsDotNet.Engine.Telemetry;
 using ScreepsDotNet.Engine.Validation;
 
 public static class ServiceCollectionExtensions
@@ -20,6 +21,9 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddEngineCore(this IServiceCollection services)
     {
         services.AddIntentValidation();
+
+        // Telemetry
+        services.AddSingleton<IEngineTelemetrySink, EngineTelemetrySink>();
 
         services.AddSingleton<IRoomStateProvider, RoomStateProvider>();
         services.AddSingleton<IGlobalStateProvider, GlobalStateProvider>();

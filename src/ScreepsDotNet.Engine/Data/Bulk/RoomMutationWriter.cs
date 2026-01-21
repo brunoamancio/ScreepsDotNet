@@ -54,6 +54,15 @@ internal sealed class RoomMutationWriter(
     public void SetMapView(IRoomMapViewPayload? mapView)
         => _mapView = mapView;
 
+    public int GetMutationCount()
+    {
+        var count = _upserts.Count + _patches.Count + _removals.Count;
+        if (_roomInfoPatch is not null) count++;
+        if (_eventLog is not null) count++;
+        if (_mapView is not null) count++;
+        return count;
+    }
+
     public async Task FlushAsync(CancellationToken token = default)
     {
         if (_upserts.Count == 0 &&

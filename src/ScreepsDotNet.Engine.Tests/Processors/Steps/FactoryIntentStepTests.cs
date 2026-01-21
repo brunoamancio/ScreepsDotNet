@@ -546,6 +546,10 @@ public sealed class FactoryIntentStepTests
 
         public void SetMapView(IRoomMapViewPayload? mapView) { }
 
+#pragma warning disable CA1822 // Mark members as static
+        public int GetMutationCount() => 0;
+#pragma warning restore CA1822
+
         public Task FlushAsync(CancellationToken token = default) => Task.CompletedTask;
 
         public void Reset()
@@ -570,6 +574,10 @@ public sealed class FactoryIntentStepTests
         public void IncrementTombstonesCreated(string userId) { }
         public void IncrementEnergyConstruction(string userId, int amount) { }
         public void IncrementEnergyHarvested(string userId, int amount) { }
+#pragma warning disable CA1822 // Mark members as static
+        public int GetMutationCount() => 0;
+#pragma warning restore CA1822
+
         public Task FlushAsync(int gameTime, CancellationToken token = default) => Task.CompletedTask;
     }
 

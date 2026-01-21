@@ -10,6 +10,7 @@ public interface IRoomMutationWriter
     void SetRoomInfoPatch(RoomInfoPatchPayload patch);
     void SetEventLog(IRoomEventLogPayload? eventLog);
     void SetMapView(IRoomMapViewPayload? mapView);
+    int GetMutationCount();
     Task FlushAsync(CancellationToken token = default);
     void Reset();
 }
