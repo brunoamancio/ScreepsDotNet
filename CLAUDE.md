@@ -66,7 +66,7 @@ GET http://localhost:5210/api/server/info
 ## Project Structure
 
 **Solution:** `src/ScreepsDotNet.slnx` (XML-based)
-**Working Directory:** `/home/th3b0y/screeps-rewrite/ScreepsDotNet` (always run git commands from here)
+**Working Directory:** Repository root (always run git commands from the ScreepsDotNet directory)
 
 **Key config files:**
 - `.editorconfig`: `src/.editorconfig` (coding style - ERROR/WARNING levels)
@@ -229,7 +229,7 @@ When working on tasks that follow a documented plan (e.g., `.claude/plans/*.md`,
 **Activate project (if not already active):**
 ```typescript
 mcp__plugin_serena_serena__activate_project({ project: "screeps-rewrite" })
-// Or use full path: { project: "/home/th3b0y/screeps-rewrite/ScreepsDotNet" }
+// Or use the project name registered in Serena configuration
 ```
 
 **Common operations:**
