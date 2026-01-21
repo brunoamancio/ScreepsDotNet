@@ -1,4 +1,5 @@
 using ScreepsDotNet.Common.Constants;
+using ScreepsDotNet.Engine.Tests.Processors.Helpers;
 using ScreepsDotNet.Common.Types;
 using ScreepsDotNet.Driver.Contracts;
 using ScreepsDotNet.Engine.Data.Bulk;
@@ -263,7 +264,8 @@ public sealed class PowerAbilityStepTests
         return new RoomProcessorContext(
             state,
             new RecordingMutationWriter(),
-            new NullCreepStatsSink());
+            new NullCreepStatsSink(),
+            new NullGlobalMutationWriter());
     }
 
     private static RoomObjectSnapshot CreatePowerCreep(IReadOnlyDictionary<PowerTypes, PowerCreepPowerSnapshot> powers, int ops, string userId = "user1")
@@ -1467,7 +1469,8 @@ public sealed class PowerAbilityStepTests
         return new RoomProcessorContext(
             state,
             new RecordingMutationWriter(),
-            new NullCreepStatsSink());
+            new NullCreepStatsSink(),
+            new NullGlobalMutationWriter());
     }
 
     private static RoomObjectSnapshot CreateExtension(string id, int x, int y)

@@ -1,4 +1,5 @@
 namespace ScreepsDotNet.Engine.Tests.Processors.Steps;
+using ScreepsDotNet.Engine.Tests.Processors.Helpers;
 
 using ScreepsDotNet.Common.Constants;
 using ScreepsDotNet.Common.Types;
@@ -406,7 +407,7 @@ public sealed class ControllerIntentStepTests
             new Dictionary<string, RoomTerrainSnapshot>(StringComparer.Ordinal),
             []);
 
-        return new RoomProcessorContext(state, new FakeMutationWriter(), new FakeCreepStatsSink());
+        return new RoomProcessorContext(state, new FakeMutationWriter(), new FakeCreepStatsSink(), new NullGlobalMutationWriter());
     }
 
     private static RoomIntentSnapshot CreateUpgradeIntent(string userId, string creepId, string controllerId)

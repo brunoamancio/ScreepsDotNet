@@ -1,4 +1,5 @@
 namespace ScreepsDotNet.Engine.Tests.Processors.Steps;
+using ScreepsDotNet.Engine.Tests.Processors.Helpers;
 
 using ScreepsDotNet.Common.Constants;
 using ScreepsDotNet.Common.Types;
@@ -734,7 +735,7 @@ public sealed class ResourceTransferIntentStepTests
             new Dictionary<string, RoomTerrainSnapshot>(StringComparer.Ordinal),
             []);
 
-        return new RoomProcessorContext(state, new FakeMutationWriter(), new NullCreepStatsSink());
+        return new RoomProcessorContext(state, new FakeMutationWriter(), new NullCreepStatsSink(), new NullGlobalMutationWriter());
     }
 
     private static RoomIntentSnapshot CreateTransferIntent(string userId, string creepId, string targetId, string resourceType, int amount)

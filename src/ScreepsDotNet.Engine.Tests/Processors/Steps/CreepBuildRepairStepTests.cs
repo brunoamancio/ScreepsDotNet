@@ -1,4 +1,5 @@
 namespace ScreepsDotNet.Engine.Tests.Processors.Steps;
+using ScreepsDotNet.Engine.Tests.Processors.Helpers;
 
 using ScreepsDotNet.Common.Constants;
 using ScreepsDotNet.Common.Structures;
@@ -25,7 +26,7 @@ public sealed class CreepBuildRepairStepTests
         var stats = new RecordingStatsSink();
         var step = new CreepBuildRepairStep(_blueprints, _snapshotFactory);
 
-        await step.ExecuteAsync(new RoomProcessorContext(State, MutationWriter, stats), TestContext.Current.CancellationToken);
+        await step.ExecuteAsync(new RoomProcessorContext(State, MutationWriter, stats, new NullGlobalMutationWriter()), TestContext.Current.CancellationToken);
 
         Assert.Contains(MutationWriter.Patches, patch => patch.ObjectId == site.Id && patch.Payload.Progress == 5);
         Assert.Contains(MutationWriter.Patches, patch => patch.ObjectId == creep.Id && patch.Payload.Store![RoomDocumentFields.RoomObject.Store.Energy] == 45);
@@ -41,7 +42,7 @@ public sealed class CreepBuildRepairStepTests
         var stats = new RecordingStatsSink();
         var step = new CreepBuildRepairStep(_blueprints, _snapshotFactory);
 
-        await step.ExecuteAsync(new RoomProcessorContext(State, MutationWriter, stats), TestContext.Current.CancellationToken);
+        await step.ExecuteAsync(new RoomProcessorContext(State, MutationWriter, stats, new NullGlobalMutationWriter()), TestContext.Current.CancellationToken);
 
         Assert.Contains(MutationWriter.Removals, id => id == site.Id);
         Assert.Contains(MutationWriter.Upserts, upsert => upsert.Type == RoomObjectTypes.Extension);
@@ -56,7 +57,7 @@ public sealed class CreepBuildRepairStepTests
         var stats = new RecordingStatsSink();
         var step = new CreepBuildRepairStep(_blueprints, _snapshotFactory);
 
-        await step.ExecuteAsync(new RoomProcessorContext(State, MutationWriter, stats), TestContext.Current.CancellationToken);
+        await step.ExecuteAsync(new RoomProcessorContext(State, MutationWriter, stats, new NullGlobalMutationWriter()), TestContext.Current.CancellationToken);
 
         Assert.Contains(MutationWriter.Patches, patch => patch.ObjectId == structure.Id && patch.Payload.Hits == 200);
         Assert.Contains(MutationWriter.Patches, patch => patch.ObjectId == creep.Id && patch.Payload.Store![RoomDocumentFields.RoomObject.Store.Energy] == 19);

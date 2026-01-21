@@ -13,7 +13,9 @@ public sealed record GlobalMutationBatch(
     IReadOnlyList<RoomObjectMutation> RoomObjectMutations,
     IReadOnlyList<TransactionLogEntry> TransactionLogEntries,
     IReadOnlyList<UserResourceMutation> UserResourceMutations,
-    IReadOnlyList<UserResourceLogEntry> UserResourceLogEntries)
+    IReadOnlyList<UserResourceLogEntry> UserResourceLogEntries,
+    IReadOnlyList<UserGclMutation> UserGclMutations,
+    IReadOnlyList<UserPowerMutation> UserPowerMutations)
 {
-    public static readonly GlobalMutationBatch Empty = new([], [], [], [], [], [], [], []);
+    public static readonly GlobalMutationBatch Empty = new([], [], [], [], [], [], [], [], [], []);
 }

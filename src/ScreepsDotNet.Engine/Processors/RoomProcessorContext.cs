@@ -2,6 +2,7 @@ namespace ScreepsDotNet.Engine.Processors;
 
 using ScreepsDotNet.Driver.Contracts;
 using ScreepsDotNet.Engine.Data.Bulk;
+using ScreepsDotNet.Engine.Data.GlobalMutations;
 using ScreepsDotNet.Engine.Data.Memory;
 using ScreepsDotNet.Engine.Data.Models;
 using ScreepsDotNet.Engine.Processors.Helpers;
@@ -10,6 +11,7 @@ public sealed class RoomProcessorContext(
     RoomState state,
     IRoomMutationWriter mutationWriter,
     ICreepStatsSink statsSink,
+    IGlobalMutationWriter globalMutationWriter,
     RoomExitTopology? exitTopology = null)
 {
     private readonly Dictionary<string, string> _rawMemory = new(StringComparer.Ordinal);
@@ -19,6 +21,7 @@ public sealed class RoomProcessorContext(
     public RoomState State { get; private set; } = state;
     public IRoomMutationWriter MutationWriter { get; } = mutationWriter;
     public ICreepStatsSink Stats { get; } = statsSink;
+    public IGlobalMutationWriter GlobalMutationWriter { get; } = globalMutationWriter;
     public RoomExitTopology? ExitTopology { get; } = exitTopology;
 
     /// <summary>

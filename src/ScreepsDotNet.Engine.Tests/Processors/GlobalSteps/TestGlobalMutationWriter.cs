@@ -14,6 +14,8 @@ internal sealed class RecordingGlobalMutationWriter : IGlobalMutationWriter
     public List<TransactionLogEntry> TransactionLogs { get; } = [];
     public List<UserResourceMutation> UserResourceMutations { get; } = [];
     public List<UserResourceLogEntry> UserResourceLogs { get; } = [];
+    public List<UserGclMutation> UserGclMutations { get; } = [];
+    public List<UserPowerMutation> UserPowerMutations { get; } = [];
 
     public void PatchPowerCreep(string powerCreepId, PowerCreepMutationPatch patch)
         => PowerCreepPatches.Add((powerCreepId, patch));
@@ -61,6 +63,15 @@ internal sealed class RecordingGlobalMutationWriter : IGlobalMutationWriter
     public void InsertUserResourceLog(UserResourceLogEntry entry)
         => UserResourceLogs.Add(entry);
 
+    public void IncrementUserGcl(string userId, int amount)
+        => UserGclMutations.Add(new UserGclMutation(userId, amount));
+
+    public void IncrementUserPower(string userId, double amount)
+        => UserPowerMutations.Add(new UserPowerMutation(userId, amount));
+
+    public void DecrementUserPower(string userId, double amount)
+        => UserPowerMutations.Add(new UserPowerMutation(userId, -amount));
+
     public Task FlushAsync(CancellationToken token = default) => Task.CompletedTask;
 
     public void Reset()
@@ -74,5 +85,7 @@ internal sealed class RecordingGlobalMutationWriter : IGlobalMutationWriter
         TransactionLogs.Clear();
         UserResourceMutations.Clear();
         UserResourceLogs.Clear();
+        UserGclMutations.Clear();
+        UserPowerMutations.Clear();
     }
 }

@@ -85,7 +85,7 @@ public sealed class SpawnEnergyChargerTests
             new Dictionary<string, RoomTerrainSnapshot>(StringComparer.Ordinal),
             []);
 
-        return new RoomProcessorContext(state, new FakeMutationWriter(), _stats);
+        return new RoomProcessorContext(state, new FakeMutationWriter(), _stats, new NullGlobalMutationWriter());
     }
 
     private static RoomObjectSnapshot CreateSpawn(string id, int energy)

@@ -1,4 +1,5 @@
 using ScreepsDotNet.Common.Constants;
+using ScreepsDotNet.Engine.Tests.Processors.Helpers;
 using ScreepsDotNet.Common.Types;
 using ScreepsDotNet.Driver.Contracts;
 using ScreepsDotNet.Engine.Data.Bulk;
@@ -102,7 +103,8 @@ public sealed class PowerEffectDecayStepTests
         return new RoomProcessorContext(
             state,
             new RecordingMutationWriter(),
-            new NullCreepStatsSink());
+            new NullCreepStatsSink(),
+            new NullGlobalMutationWriter());
     }
 
     private static RoomObjectSnapshot CreateSpawn(IReadOnlyDictionary<PowerTypes, PowerEffectSnapshot> effects)

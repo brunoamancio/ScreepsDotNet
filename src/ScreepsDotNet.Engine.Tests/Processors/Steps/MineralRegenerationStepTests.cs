@@ -1,4 +1,5 @@
 #pragma warning disable xUnit1051 // Use TestContext.Current.CancellationToken
+using ScreepsDotNet.Engine.Tests.Processors.Helpers;
 
 using ScreepsDotNet.Common.Constants;
 using ScreepsDotNet.Common.Types;
@@ -422,7 +423,8 @@ public sealed class MineralRegenerationStepTests
         var context = new RoomProcessorContext(
             state,
             new RecordingMutationWriter(),
-            new NullCreepStatsSink());
+            new NullCreepStatsSink(),
+            new NullGlobalMutationWriter());
         return context;
     }
 

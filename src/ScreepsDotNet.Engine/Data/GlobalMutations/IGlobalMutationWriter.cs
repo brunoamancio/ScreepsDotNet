@@ -18,6 +18,9 @@ public interface IGlobalMutationWriter
     void InsertTransaction(TransactionLogEntry entry);
     void AdjustUserResource(string userId, string resourceType, int newBalance);
     void InsertUserResourceLog(UserResourceLogEntry entry);
+    void IncrementUserGcl(string userId, int amount);
+    void IncrementUserPower(string userId, double amount);
+    void DecrementUserPower(string userId, double amount);
     Task FlushAsync(CancellationToken token = default);
     void Reset();
 }

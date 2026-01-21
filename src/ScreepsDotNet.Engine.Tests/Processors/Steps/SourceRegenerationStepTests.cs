@@ -1,4 +1,5 @@
 using ScreepsDotNet.Common.Constants;
+using ScreepsDotNet.Engine.Tests.Processors.Helpers;
 using ScreepsDotNet.Common.Types;
 using ScreepsDotNet.Common.Utilities;
 using ScreepsDotNet.Driver.Contracts;
@@ -353,7 +354,8 @@ public sealed class SourceRegenerationStepTests
         var context = new RoomProcessorContext(
             state,
             new RecordingMutationWriter(),
-            new NullCreepStatsSink());
+            new NullCreepStatsSink(),
+            new NullGlobalMutationWriter());
         return context;
     }
 

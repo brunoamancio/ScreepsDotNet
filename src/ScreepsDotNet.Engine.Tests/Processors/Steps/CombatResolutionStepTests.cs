@@ -1,4 +1,5 @@
 namespace ScreepsDotNet.Engine.Tests.Processors.Steps;
+using ScreepsDotNet.Engine.Tests.Processors.Helpers;
 
 using ScreepsDotNet.Common.Constants;
 using ScreepsDotNet.Common.Types;
@@ -62,7 +63,7 @@ public sealed class CombatResolutionStepTests
                                   new Dictionary<string, RoomTerrainSnapshot>(StringComparer.Ordinal),
                                   []);
 
-        return new RoomProcessorContext(state, new FakeMutationWriter(), new NullCreepStatsSink());
+        return new RoomProcessorContext(state, new FakeMutationWriter(), new NullCreepStatsSink(), new NullGlobalMutationWriter());
     }
 
     private static RoomIntentSnapshot CreateIntents(string targetId, int damage, string userId = "user1")

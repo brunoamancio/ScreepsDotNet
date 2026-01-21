@@ -116,9 +116,6 @@ internal sealed class ControllerIntentStep : IRoomProcessorStep
         var maxPerTick = level == 8 ? ScreepsGameConstants.ControllerMaxUpgradePerTick : workParts;
         var energyToConsume = Math.Min(workParts, Math.Min(availableEnergy, maxPerTick));
 
-        if (energyToConsume <= 0)
-            return;
-
         var boostEffect = CalculateBoostEffect(creep, energyToConsume);
         var progressGain = energyToConsume + boostEffect;
 
@@ -131,6 +128,8 @@ internal sealed class ControllerIntentStep : IRoomProcessorStep
 
         var newProgress = currentProgress + progressGain;
         controllerProgressLedger[controllerId] = newProgress;
+
+        context.GlobalMutationWriter.IncrementUserGcl(creep.UserId!, progressGain);
 
         context.Stats.IncrementEnergyControl(creep.UserId!, energyToConsume);
     }

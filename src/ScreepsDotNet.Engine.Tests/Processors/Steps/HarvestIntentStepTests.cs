@@ -1,4 +1,5 @@
 namespace ScreepsDotNet.Engine.Tests.Processors.Steps;
+using ScreepsDotNet.Engine.Tests.Processors.Helpers;
 
 using ScreepsDotNet.Common.Constants;
 using ScreepsDotNet.Common.Types;
@@ -109,7 +110,7 @@ public sealed class HarvestIntentStepTests
             new Dictionary<string, RoomTerrainSnapshot>(StringComparer.Ordinal),
             []);
 
-        return new RoomProcessorContext(state, new FakeMutationWriter(), statsSink ?? new NullCreepStatsSink());
+        return new RoomProcessorContext(state, new FakeMutationWriter(), statsSink ?? new NullCreepStatsSink(), new NullGlobalMutationWriter());
     }
 
     private static RoomIntentSnapshot CreateHarvestIntents(string userId, string creepId, string targetId)

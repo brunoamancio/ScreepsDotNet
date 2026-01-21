@@ -57,12 +57,8 @@ internal sealed class PowerSpawnIntentStep : IRoomProcessorStep
     /// Processes a processPower intent for a power spawn.
     /// Consumes 1 power and 50 energy per tick.
     /// </summary>
-    private static void ProcessPowerSpawn(
-        RoomProcessorContext context,
-        RoomObjectSnapshot powerSpawn,
-        IntentRecord record,
-        Dictionary<string, Dictionary<string, int>> storeLedger,
-        HashSet<string> modifiedObjects)
+    private static void ProcessPowerSpawn(RoomProcessorContext context, RoomObjectSnapshot powerSpawn, IntentRecord record, Dictionary<string, Dictionary<string, int>> storeLedger,
+                                          HashSet<string> modifiedObjects)
     {
         var gameTime = context.State.GameTime;
 
@@ -107,17 +103,13 @@ internal sealed class PowerSpawnIntentStep : IRoomProcessorStep
         storeLedger[powerSpawn.Id] = store;
         modifiedObjects.Add(powerSpawn.Id);
 
-        // TODO (E5): Increment user power balance
-        // context.GlobalMutationWriter.IncrementUserPower(powerSpawn.UserId, amount);
+        context.GlobalMutationWriter.IncrementUserPower(powerSpawn.UserId!, amount);
 
-        // TODO (E5): Record stats
-        // context.Stats.IncrementUserStat(powerSpawn.UserId, "powerProcessed", amount);
+        // TODO (E8): Record stats for telemetry/observability
+        // context.Stats.IncrementUserStat(powerSpawn.User, "powerProcessed", amount);
     }
 
-    private static void EmitPatches(
-        RoomProcessorContext context,
-        Dictionary<string, Dictionary<string, int>> storeLedger,
-        HashSet<string> modifiedObjects)
+    private static void EmitPatches(RoomProcessorContext context, Dictionary<string, Dictionary<string, int>> storeLedger, HashSet<string> modifiedObjects)
     {
         foreach (var objectId in modifiedObjects) {
             var patch = new RoomObjectPatchPayload();

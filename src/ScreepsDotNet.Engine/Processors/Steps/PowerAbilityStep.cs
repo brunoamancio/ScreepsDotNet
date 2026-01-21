@@ -160,12 +160,7 @@ internal sealed class PowerAbilityStep : IRoomProcessorStep
 
         // Handle direct-action abilities
         if (powerType == PowerTypes.GenerateOps) {
-            // TODO (E5): Requires IGlobalMutationWriter.IncrementUserPower(userId, amount)
-            // Node.js lines 57-69 in usePower.js:
-            // - Adds ops to power creep store based on effect[level-1]
-            // - Drops overflow if exceeds capacity
-            // Blocked by E5 (Global Systems) - requires global user power balance tracking
-            // See docs/engine/e5-plan.md for E5 implementation plan
+            ProcessGenerateOps(context, powerCreep, creepPower.Level, powerInfo, storeLedger, modifiedObjects);
             return;
         }
 
@@ -502,5 +497,81 @@ internal sealed class PowerAbilityStep : IRoomProcessorStep
             DecayTime: decayTime);
 
         context.MutationWriter.Upsert(rampart);
+    }
+
+    /// <summary>
+    /// Processes PWR_GENERATE_OPS ability.
+    /// Converts user's global power into ops resource in power creep's store.
+    /// Handles overflow by creating drops at the power creep's position.
+    /// </summary>
+    private static void ProcessGenerateOps(
+        RoomProcessorContext context,
+        RoomObjectSnapshot powerCreep,
+        int level,
+        PowerAbilityInfo powerInfo,
+        Dictionary<string, Dictionary<string, int>> storeLedger,
+        HashSet<string> modifiedObjects)
+    {
+        if (powerInfo.Effect is null || powerInfo.Effect.Length == 0)
+            return;
+
+        // Calculate ops amount from effect array (levels 1-5: 1/2/4/6/8 ops)
+        var opsAmount = powerInfo.Effect[level - 1];
+
+        // E5: Deduct from user's global power balance (1:1 ratio)
+        context.GlobalMutationWriter.DecrementUserPower(powerCreep.UserId!, opsAmount);
+
+        // Get current store from ledger
+        if (!storeLedger.TryGetValue(powerCreep.Id, out var store)) {
+            store = new Dictionary<string, int>(powerCreep.Store, Comparer);
+            storeLedger[powerCreep.Id] = store;
+        }
+
+        var currentOps = store.GetValueOrDefault(ResourceTypes.Ops, 0);
+        var storeCapacity = powerCreep.StoreCapacity ?? 0;
+        var availableSpace = storeCapacity - currentOps;
+
+        // Add ops to store (up to capacity)
+        var opsToStore = Math.Min(opsAmount, availableSpace);
+        var overflow = opsAmount - opsToStore;
+
+        store[ResourceTypes.Ops] = currentOps + opsToStore;
+        modifiedObjects.Add(powerCreep.Id);
+
+        // Create drop for overflow (matching Node.js behavior)
+        if (overflow > 0) {
+            var drop = new RoomObjectSnapshot(
+                Id: Guid.NewGuid().ToString(),
+                Type: RoomObjectTypes.Resource,
+                RoomName: powerCreep.RoomName,
+                Shard: powerCreep.Shard,
+                UserId: null,
+                X: powerCreep.X,
+                Y: powerCreep.Y,
+                Hits: null,
+                HitsMax: null,
+                Fatigue: null,
+                TicksToLive: null,
+                Name: null,
+                Level: null,
+                Density: null,
+                MineralType: null,
+                DepositType: null,
+                StructureType: null,
+                Store: new Dictionary<string, int>(Comparer) { [ResourceTypes.Ops] = overflow },
+                StoreCapacity: null,
+                StoreCapacityResource: new Dictionary<string, int>(Comparer),
+                Reservation: null,
+                Sign: null,
+                Structure: null,
+                Effects: new Dictionary<PowerTypes, PowerEffectSnapshot>(),
+                Body: [],
+                Spawning: null,
+                DecayTime: context.State.GameTime + ScreepsGameConstants.EnergyDecay,
+                ResourceType: ResourceTypes.Ops,
+                ResourceAmount: overflow);
+
+            context.MutationWriter.Upsert(drop);
+        }
     }
 }

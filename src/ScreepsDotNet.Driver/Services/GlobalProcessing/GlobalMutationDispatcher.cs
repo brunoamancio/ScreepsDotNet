@@ -27,6 +27,8 @@ internal sealed class GlobalMutationDispatcher(IBulkWriterFactory bulkWriterFact
         var usersWriter = bulkWriterFactory.CreateUsersWriter();
         var hasUserMoneyOps = ApplyUserMoneyMutations(usersWriter, batch.UserMoneyMutations);
         var hasUserResourceOps = ApplyUserResourceMutations(usersWriter, batch.UserResourceMutations);
+        var hasUserGclOps = ApplyUserGclMutations(usersWriter, batch.UserGclMutations);
+        var hasUserPowerOps = ApplyUserPowerMutations(usersWriter, batch.UserPowerMutations);
 
         var userMoneyWriter = bulkWriterFactory.CreateUsersMoneyWriter();
         var hasMoneyEntryOps = ApplyUserMoneyLogEntries(userMoneyWriter, batch.UserMoneyLogEntries);
@@ -48,7 +50,7 @@ internal sealed class GlobalMutationDispatcher(IBulkWriterFactory bulkWriterFact
             if (interShardWriter.HasPendingOperations)
                 await interShardWriter.ExecuteAsync(token).ConfigureAwait(false);
         }
-        if (hasUserMoneyOps || hasUserResourceOps)
+        if (hasUserMoneyOps || hasUserResourceOps || hasUserGclOps || hasUserPowerOps)
             await usersWriter.ExecuteAsync(token).ConfigureAwait(false);
         if (hasMoneyEntryOps)
             await userMoneyWriter.ExecuteAsync(token).ConfigureAwait(false);
@@ -302,6 +304,38 @@ internal sealed class GlobalMutationDispatcher(IBulkWriterFactory bulkWriterFact
                 document[Market] = BsonDocument.Create(entry.Metadata);
 
             writer.Insert(document);
+        }
+
+        return writer.HasPendingOperations;
+    }
+
+    private static bool ApplyUserGclMutations(IBulkWriter<UserDocument> writer, IReadOnlyList<UserGclMutation> mutations)
+    {
+        if (mutations.Count == 0)
+            return false;
+
+        foreach (var mutation in mutations) {
+            if (string.IsNullOrWhiteSpace(mutation.UserId))
+                continue;
+
+            var update = new BsonDocument("$inc", new BsonDocument($"{UserDocumentFields.Gcl}.{UserDocumentFields.GclFields.Progress}", mutation.GclIncrement));
+            writer.Update(mutation.UserId, update);
+        }
+
+        return writer.HasPendingOperations;
+    }
+
+    private static bool ApplyUserPowerMutations(IBulkWriter<UserDocument> writer, IReadOnlyList<UserPowerMutation> mutations)
+    {
+        if (mutations.Count == 0)
+            return false;
+
+        foreach (var mutation in mutations) {
+            if (string.IsNullOrWhiteSpace(mutation.UserId))
+                continue;
+
+            var update = new BsonDocument("$inc", new BsonDocument(UserDocumentFields.Power, mutation.PowerChange));
+            writer.Update(mutation.UserId, update);
         }
 
         return writer.HasPendingOperations;

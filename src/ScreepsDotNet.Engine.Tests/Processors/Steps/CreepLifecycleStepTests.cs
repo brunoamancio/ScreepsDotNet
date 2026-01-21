@@ -1,4 +1,5 @@
 using ScreepsDotNet.Common.Constants;
+using ScreepsDotNet.Engine.Tests.Processors.Helpers;
 using ScreepsDotNet.Common.Types;
 using ScreepsDotNet.Driver.Contracts;
 using ScreepsDotNet.Engine.Data.Bulk;
@@ -64,7 +65,8 @@ public sealed class CreepLifecycleStepTests
         return new RoomProcessorContext(
             state,
             new RecordingMutationWriter(),
-            new NullCreepStatsSink());
+            new NullCreepStatsSink(),
+            new NullGlobalMutationWriter());
     }
 
     private static RoomObjectSnapshot CreateCreep(int ticksToLive, int hits = 100, string userId = "user1", bool userSummoned = false, string id = "creep1")

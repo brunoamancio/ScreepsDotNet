@@ -13,6 +13,8 @@ internal sealed class GlobalMutationWriter(IGlobalMutationDispatcher dispatcher)
     private readonly List<TransactionLogEntry> _transactionEntries = [];
     private readonly List<UserResourceMutation> _userResourceMutations = [];
     private readonly List<UserResourceLogEntry> _userResourceEntries = [];
+    private readonly List<UserGclMutation> _userGclMutations = [];
+    private readonly List<UserPowerMutation> _userPowerMutations = [];
 
     public void PatchPowerCreep(string powerCreepId, PowerCreepMutationPatch patch)
     {
@@ -80,7 +82,7 @@ internal sealed class GlobalMutationWriter(IGlobalMutationDispatcher dispatcher)
 
     public void PatchRoomObject(string objectId, GlobalRoomObjectPatch patch)
     {
-        if (string.IsNullOrWhiteSpace(objectId) || patch is null)
+        if (string.IsNullOrWhiteSpace(objectId))
             return;
 
         _roomObjectMutations.Add(new RoomObjectMutation(objectId, RoomObjectMutationType.Patch, Patch: patch));
@@ -114,6 +116,27 @@ internal sealed class GlobalMutationWriter(IGlobalMutationDispatcher dispatcher)
         _userResourceEntries.Add(entry);
     }
 
+    public void IncrementUserGcl(string userId, int amount)
+    {
+        if (string.IsNullOrWhiteSpace(userId) || amount <= 0)
+            return;
+        _userGclMutations.Add(new UserGclMutation(userId, amount));
+    }
+
+    public void IncrementUserPower(string userId, double amount)
+    {
+        if (string.IsNullOrWhiteSpace(userId) || amount <= 0)
+            return;
+        _userPowerMutations.Add(new UserPowerMutation(userId, amount));
+    }
+
+    public void DecrementUserPower(string userId, double amount)
+    {
+        if (string.IsNullOrWhiteSpace(userId) || amount <= 0)
+            return;
+        _userPowerMutations.Add(new UserPowerMutation(userId, -amount));
+    }
+
     public async Task FlushAsync(CancellationToken token = default)
     {
         if (_powerCreepMutations.Count == 0 &&
@@ -123,7 +146,9 @@ internal sealed class GlobalMutationWriter(IGlobalMutationDispatcher dispatcher)
             _roomObjectMutations.Count == 0 &&
             _transactionEntries.Count == 0 &&
             _userResourceMutations.Count == 0 &&
-            _userResourceEntries.Count == 0) {
+            _userResourceEntries.Count == 0 &&
+            _userGclMutations.Count == 0 &&
+            _userPowerMutations.Count == 0) {
             return;
         }
 
@@ -135,7 +160,9 @@ internal sealed class GlobalMutationWriter(IGlobalMutationDispatcher dispatcher)
             [.. _roomObjectMutations],
             [.. _transactionEntries],
             [.. _userResourceMutations],
-            [.. _userResourceEntries]);
+            [.. _userResourceEntries],
+            [.. _userGclMutations],
+            [.. _userPowerMutations]);
         await dispatcher.ApplyAsync(batch, token).ConfigureAwait(false);
         Reset();
     }
@@ -150,5 +177,7 @@ internal sealed class GlobalMutationWriter(IGlobalMutationDispatcher dispatcher)
         _transactionEntries.Clear();
         _userResourceMutations.Clear();
         _userResourceEntries.Clear();
+        _userGclMutations.Clear();
+        _userPowerMutations.Clear();
     }
 }

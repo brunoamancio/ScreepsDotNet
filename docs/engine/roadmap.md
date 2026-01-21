@@ -11,10 +11,10 @@ This document tracks the Engine subsystem roadmap and implementation status. For
 | ID | Status | Title | Exit Criteria | Dependencies |
 |----|--------|-------|---------------|--------------|
 | E1 | ✅ | Map Legacy Engine Surface | Node engine API inventory documented (`e1.md`) | Node engine repo, driver notes |
-| E2 | ⚠️ 95% | Data & Storage Model | Driver snapshot/mutation contracts in place, Engine consuming them. Handlers for all intent types. | Driver contracts, Screeps schemas |
+| E2 | ✅ | Data & Storage Model | Driver snapshot/mutation contracts in place, Engine consuming them. Handlers for all intent types. | Driver contracts, Screeps schemas |
 | E3 | ✅ | Intent Gathering & Validation | `IIntentPipeline` + validators with unit tests mirroring Node fixtures | Driver runtime outputs, constants |
 | E4 | ✅ | Simulation Kernel (Room Processor) | Passive regeneration systems (source, mineral) implemented. Construction site decay verified as non-existent. | E2, E3 |
-| E5 | 📋 | Global Systems | Market, NPC spawns, shard messaging hooked into processor loop. Global mutations (`IGlobalMutationWriter`), power effect tracking. | E4 foundation |
+| E5 | ⚠️ Phase 1 ✅ | Global Systems | Phase 1: User GCL/power tracking complete. Global mutations (`IGlobalMutationWriter`) operational. Phase 2-4: Market, NPC spawns, keeper rooms, nuker operations. | E4 foundation |
 | E6 | 📋 | Engine Loop Orchestration | `EngineHost` coordinates ticks; main/runner/processor loops call managed engine | Driver queue service, telemetry sink |
 | E7 | 📋 | Compatibility & Parity Validation | Lockstep testing vs. Node engine, automated divergence detection | Prior steps, legacy engine repo |
 | E8 | 📋 | Observability & Tooling | Engine metrics flow to telemetry, diagnostics commands, operator playbooks | D8 logging stack, scheduler hooks |
@@ -31,26 +31,26 @@ This document tracks the Engine subsystem roadmap and implementation status. For
 
 ---
 
-## E2: Data & Storage Model ⚠️ 95% Complete
+## E2: Data & Storage Model ✅ Complete (2026-01-21)
 
-**Status:** Nearly complete, 4 features blocked by E5
+**Status:** Complete (all features implemented)
 
 **Key Deliverables:**
 - ✅ Driver contracts and snapshot providers
 - ✅ Engine consumes only driver abstractions (no direct DB access)
 - ✅ 11/11 handler families implemented (240/240 tests)
 - ✅ Room mutation writers and memory persistence
-- ❌ 4 features blocked by E5 global mutations:
-  - PWR_GENERATE_OPS power ability
-  - User power balance tracking (PowerSpawn)
-  - User GCL updates (Controller)
-  - Boost effects GCL component (Controller)
+- ✅ 4 features unblocked by E5 Phase 1 global mutations:
+  - ✅ PWR_GENERATE_OPS power ability (with overflow drop creation)
+  - ✅ User power balance tracking (PowerSpawn)
+  - ✅ User GCL updates (Controller)
+  - ✅ Boost effects GCL component (Controller)
 
 **Exit Criteria:**
 - All room-level intent handlers complete ✅
 - Engine isolated from storage layer ✅
-- E5 global mutations implemented ❌ (blocker)
-- 4 blocked features implemented (1-2 hours after E5 Phase 1)
+- E5 global mutations implemented ✅ (Phase 1 complete)
+- 4 blocked features implemented ✅ (2.5 hours actual)
 
 **Details:** See `e2.md` for handler breakdown and deferred features, `e5.md` for E5 blockers, `data-model.md` for contracts
 
@@ -135,22 +135,29 @@ These features require global mutation infrastructure (`IGlobalMutationWriter`) 
 
 ---
 
-## E5: Global Systems 📋
+## E5: Global Systems ⚠️ Phase 1 Complete (2026-01-21)
 
-**Status:** Not Started (Blocking 4 E2.3 features)
+**Status:** Phase 1 Complete ✅ | Phase 2-4 Not Started 📋
 
-**Planned Deliverables:**
-- Global mutation infrastructure (`IGlobalMutationWriter`)
-- User GCL/power balance tracking
-- Market operations (global order matching, NPC maintenance)
-- NPC spawns (invaders, source keepers)
-- Shard messaging
+**Completed Deliverables (Phase 1):**
+- ✅ Global mutation infrastructure (`IGlobalMutationWriter`) - 3 methods added: `IncrementUserGcl`, `IncrementUserPower`, `DecrementUserPower`
+- ✅ User GCL/power balance tracking - wired into `GlobalMutationDispatcher` with MongoDB `$inc` operations
+- ✅ Unblocked 4 E2.3 features:
+  - ✅ Controller GCL updates (Node.js parity: `bulkUsers.inc(user, 'gcl', progressGain)`)
+  - ✅ Boost effects GCL component (included in controller upgrades)
+  - ✅ PWR_GENERATE_OPS ability (1:1 power-to-ops ratio, overflow drops)
+  - ✅ Power spawn balance tracking (Node.js parity: `bulkUsers.inc(user, 'power', amount)`)
+- ✅ 19 new GlobalMutationWriter tests (all passing)
+- ✅ 726/726 tests passing (100% success rate)
 
-**Impact:** Unblocks 4 E2.3 features (see E2 section above)
+**Remaining Phases:**
+- 📋 Phase 2: Power effect tracking (✅ COMPLETE - moved to E2.3)
+- 📋 Phase 3: Keeper room mechanics (2-3 hours)
+- 📋 Phase 4: Nuker operations (4-6 hours, split: E2 intent + E4 passive)
 
-**Dependencies:** E4 foundation
+**Dependencies:** E4 foundation ✅
 
-**Details:** See `e5.md` for implementation plan and E2 blockers
+**Details:** See `e5.md` for detailed implementation notes and completion summary
 
 ---
 
@@ -165,9 +172,12 @@ These features require global mutation infrastructure (`IGlobalMutationWriter`) 
 - Error handling and recovery
 
 **Dependencies:**
-- Driver queue service
-- Telemetry sink
-- E4/E5 completion
+- ✅ E2 complete (all intent handlers operational)
+- ✅ E3 complete (intent validation)
+- ✅ E4 complete (room processor infrastructure)
+- ✅ E5 Phase 1 complete (user stats tracking)
+- 📋 Driver queue service (D4 complete, integration pending)
+- 📋 Telemetry sink (D8/E8 observability work)
 
 ---
 
@@ -183,10 +193,13 @@ These features require global mutation infrastructure (`IGlobalMutationWriter`) 
 - E3 validator parity tests (deferred from E3.2)
 
 **Prerequisites:**
-- All E2 features complete (including 4 E5-blocked features)
-- All E1-E6 milestones complete
-- E3 validators implemented (✅ E3.2 complete)
-- Legacy Node.js engine repo access
+- ✅ All E2 features complete (including 4 E5-blocked features)
+- ✅ E3 validators implemented
+- ✅ E4 simulation kernel complete
+- ✅ E5 Phase 1 complete (user stats tracking)
+- 📋 E5 Phase 2-4 complete (optional - keeper rooms, nukers)
+- 📋 E6 orchestration complete
+- ✅ Legacy Node.js engine repo access
 
 **Details:** See `e2.md` for parity-critical feature status, `e3.md` for deferred E3 parity validation
 
@@ -212,14 +225,20 @@ These features require global mutation infrastructure (`IGlobalMutationWriter`) 
 
 ## Summary
 
-**Overall Engine Progress:** E1 complete ✅, E2 95% complete (4 features blocked by E5), E3 100% complete ✅, E4-E8 pending
+**Overall Engine Progress:** E1-E4 complete ✅, E5 Phase 1 complete ✅, E6-E8 pending
 
-**Critical Path:**
-1. ✅ Complete E3.4 (Observability) → E3 fully complete
-2. Complete E5 Phase 1 (Global Mutations) → unblocks E2.3 remaining 5%
-3. Complete E2.3 → full E2 completion
-4. Complete E4 (Simulation Kernel) → builds on E2 + E3 foundation
-5. Complete E5 (Global Systems) → enables full game mechanics
+**Completed Milestones:**
+- ✅ E1: Legacy engine surface mapped
+- ✅ E2: Data & storage model complete (all 240 tests passing)
+- ✅ E3: Intent validation pipeline complete (354 tests passing)
+- ✅ E4: Simulation kernel complete (passive regeneration systems)
+- ✅ E5 Phase 1: User GCL/power tracking complete (unblocked all E2 features)
+
+**Remaining Work:**
+- 📋 E5 Phase 2-4: Keeper rooms, nuker operations (6-9 hours estimated)
+- 📋 E6: Engine loop orchestration (depends on: E4/E5 complete ✅, Driver queue service, Telemetry sink)
+- 📋 E7: Parity validation (depends on: E1-E6 complete)
+- 📋 E8: Observability & tooling (depends on: D8 logging stack, Scheduler hooks, E6 orchestration)
 6. Complete E6 (Orchestration) → enables managed engine deployment
 7. Complete E7 (Parity Validation) → lockstep testing vs Node.js
 8. E8 (Observability) can proceed in parallel with E6/E7
