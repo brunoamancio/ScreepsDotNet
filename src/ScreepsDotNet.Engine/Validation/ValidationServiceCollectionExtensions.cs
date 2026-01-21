@@ -20,16 +20,15 @@ public static class ValidationServiceCollectionExtensions
         services.AddSingleton<IIntentValidator, Validators.RangeValidator>();
 
         // TODO (E3.2.2): Uncomment after implementing ResourceValidator
-        // services.AddSingleton<IIntentValidator, ResourceValidator>();
+        // services.AddSingleton<IIntentValidator, Validators.ResourceValidator>();
 
         // TODO (E3.2.3): Uncomment after implementing PermissionValidator
-        // services.AddSingleton<IIntentValidator, PermissionValidator>();
+        // services.AddSingleton<IIntentValidator, Validators.PermissionValidator>();
 
-        // TODO (E3.2.4): Uncomment after implementing StateValidator
-        // services.AddSingleton<IIntentValidator, StateValidator>();
+        services.AddSingleton<IIntentValidator, Validators.StateValidator>();
 
         // TODO (E3.2.5): Uncomment after implementing SchemaValidator
-        // services.AddSingleton<IIntentValidator, SchemaValidator>();
+        // services.AddSingleton<IIntentValidator, Validators.SchemaValidator>();
 
         // TODO (E3.3): Uncomment after implementing IntentValidationPipeline
         // services.AddSingleton<IIntentPipeline, IntentValidationPipeline>();
