@@ -41,8 +41,7 @@ internal sealed class PowerSpawnIntentStep : IRoomProcessorStep
                     continue;
 
                 foreach (var record in records) {
-                    if (record.Name == IntentKeys.ProcessPower)
-                    {
+                    if (record.Name == IntentKeys.ProcessPower) {
                         ProcessPowerSpawn(context, obj, record, storeLedger, modifiedObjects);
                     }
                 }
@@ -83,12 +82,9 @@ internal sealed class PowerSpawnIntentStep : IRoomProcessorStep
         var amount = 1;
 
         // Check for PWR_OPERATE_POWER effect to boost processing amount
-        if (powerSpawn.Effects.TryGetValue(PowerTypes.OperatePower, out var operatePowerEffect))
-        {
-            if (operatePowerEffect.EndTime > gameTime && PowerInfo.Abilities.TryGetValue(PowerTypes.OperatePower, out var powerInfo))
-            {
-                if (powerInfo.Effect is not null)
-                {
+        if (powerSpawn.Effects.TryGetValue(PowerTypes.OperatePower, out var operatePowerEffect)) {
+            if (operatePowerEffect.EndTime > gameTime && PowerInfo.Abilities.TryGetValue(PowerTypes.OperatePower, out var powerInfo)) {
+                if (powerInfo.Effect is not null) {
                     var effectBonus = powerInfo.Effect[operatePowerEffect.Level - 1];
                     amount = 1 + effectBonus;
                 }

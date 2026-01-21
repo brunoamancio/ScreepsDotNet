@@ -146,12 +146,9 @@ internal sealed class LabIntentStep : IRoomProcessorStep
         var reactionAmount = ScreepsGameConstants.LabReactionAmount;
 
         // Check for PWR_OPERATE_LAB effect to boost reaction amount
-        if (lab.Effects.TryGetValue(PowerTypes.OperateLab, out var operateLabEffect))
-        {
-            if (operateLabEffect.EndTime > gameTime && PowerInfo.Abilities.TryGetValue(PowerTypes.OperateLab, out var powerInfo))
-            {
-                if (powerInfo.Effect is not null)
-                {
+        if (lab.Effects.TryGetValue(PowerTypes.OperateLab, out var operateLabEffect)) {
+            if (operateLabEffect.EndTime > gameTime && PowerInfo.Abilities.TryGetValue(PowerTypes.OperateLab, out var powerInfo)) {
+                if (powerInfo.Effect is not null) {
                     var effectBonus = powerInfo.Effect[operateLabEffect.Level - 1];
                     reactionAmount = ScreepsGameConstants.LabReactionAmount + effectBonus;
                 }

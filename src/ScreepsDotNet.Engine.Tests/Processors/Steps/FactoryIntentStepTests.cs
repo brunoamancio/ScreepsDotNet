@@ -26,10 +26,10 @@ public sealed class FactoryIntentStepTests
         await _step.ExecuteAsync(context, TestContext.Current.CancellationToken);
 
         // Assert
-        var patch = writer.Patches.Single(p => p.ObjectId == factory.Id);
-        Assert.Equal(50, patch.Payload.Store![ResourceTypes.Battery]);
-        Assert.Equal(0, patch.Payload.Store!.GetValueOrDefault(ResourceTypes.Energy, 0));
-        Assert.Equal(110, patch.Payload.Cooldown);
+        var (ObjectId, Payload) = writer.Patches.Single(p => p.ObjectId == factory.Id);
+        Assert.Equal(50, Payload.Store![ResourceTypes.Battery]);
+        Assert.Equal(0, Payload.Store!.GetValueOrDefault(ResourceTypes.Energy, 0));
+        Assert.Equal(110, Payload.Cooldown);
     }
 
     [Fact]
@@ -46,11 +46,11 @@ public sealed class FactoryIntentStepTests
         await _step.ExecuteAsync(context, TestContext.Current.CancellationToken);
 
         // Assert
-        var patch = writer.Patches.Single(p => p.ObjectId == factory.Id);
-        Assert.Equal(100, patch.Payload.Store![ResourceTypes.UtriumBar]);
-        Assert.Equal(0, patch.Payload.Store!.GetValueOrDefault(ResourceTypes.Utrium, 0));
-        Assert.Equal(0, patch.Payload.Store!.GetValueOrDefault(ResourceTypes.Energy, 0));
-        Assert.Equal(120, patch.Payload.Cooldown);
+        var (ObjectId, Payload) = writer.Patches.Single(p => p.ObjectId == factory.Id);
+        Assert.Equal(100, Payload.Store![ResourceTypes.UtriumBar]);
+        Assert.Equal(0, Payload.Store!.GetValueOrDefault(ResourceTypes.Utrium, 0));
+        Assert.Equal(0, Payload.Store!.GetValueOrDefault(ResourceTypes.Energy, 0));
+        Assert.Equal(120, Payload.Cooldown);
     }
 
     [Fact]
@@ -131,10 +131,10 @@ public sealed class FactoryIntentStepTests
         await _step.ExecuteAsync(context, TestContext.Current.CancellationToken);
 
         // Assert
-        var patch = writer.Patches.Single(p => p.ObjectId == factory.Id);
-        Assert.Equal(150, patch.Payload.Store![ResourceTypes.Battery]);
-        Assert.Equal(0, patch.Payload.Store!.GetValueOrDefault(ResourceTypes.Energy, 0));
-        Assert.Equal(130, patch.Payload.Cooldown);
+        var (ObjectId, Payload) = writer.Patches.Single(p => p.ObjectId == factory.Id);
+        Assert.Equal(150, Payload.Store![ResourceTypes.Battery]);
+        Assert.Equal(0, Payload.Store!.GetValueOrDefault(ResourceTypes.Energy, 0));
+        Assert.Equal(130, Payload.Cooldown);
     }
 
     [Fact]
@@ -150,10 +150,10 @@ public sealed class FactoryIntentStepTests
         await _step.ExecuteAsync(context, TestContext.Current.CancellationToken);
 
         // Assert
-        var patch = writer.Patches.Single(p => p.ObjectId == factory.Id);
-        Assert.NotNull(patch.Payload.ActionLog);
-        Assert.NotNull(patch.Payload.ActionLog!.Produce);
-        Assert.Equal(ResourceTypes.Battery, patch.Payload.ActionLog!.Produce!.ResourceType);
+        var (ObjectId, Payload) = writer.Patches.Single(p => p.ObjectId == factory.Id);
+        Assert.NotNull(Payload.ActionLog);
+        Assert.NotNull(Payload.ActionLog!.Produce);
+        Assert.Equal(ResourceTypes.Battery, Payload.ActionLog!.Produce!.ResourceType);
     }
 
     [Fact]
@@ -177,12 +177,12 @@ public sealed class FactoryIntentStepTests
         await _step.ExecuteAsync(context, TestContext.Current.CancellationToken);
 
         // Assert - Effect level 1 adds +1 to factory level (0 + 1 = 1), allows level 1 commodity
-        var patch = writer.Patches.Single(p => p.ObjectId == factory.Id);
-        Assert.Equal(5, patch.Payload.Store![ResourceTypes.Switch]);
-        Assert.Equal(0, patch.Payload.Store!.GetValueOrDefault(ResourceTypes.Wire, 0));
-        Assert.Equal(0, patch.Payload.Store!.GetValueOrDefault(ResourceTypes.Oxidant, 0));
-        Assert.Equal(0, patch.Payload.Store!.GetValueOrDefault(ResourceTypes.UtriumBar, 0));
-        Assert.Equal(0, patch.Payload.Store!.GetValueOrDefault(ResourceTypes.Energy, 0));
+        var (ObjectId, Payload) = writer.Patches.Single(p => p.ObjectId == factory.Id);
+        Assert.Equal(5, Payload.Store![ResourceTypes.Switch]);
+        Assert.Equal(0, Payload.Store!.GetValueOrDefault(ResourceTypes.Wire, 0));
+        Assert.Equal(0, Payload.Store!.GetValueOrDefault(ResourceTypes.Oxidant, 0));
+        Assert.Equal(0, Payload.Store!.GetValueOrDefault(ResourceTypes.UtriumBar, 0));
+        Assert.Equal(0, Payload.Store!.GetValueOrDefault(ResourceTypes.Energy, 0));
     }
 
     [Fact]
@@ -206,12 +206,12 @@ public sealed class FactoryIntentStepTests
         await _step.ExecuteAsync(context, TestContext.Current.CancellationToken);
 
         // Assert - Effect level 3 adds +3 to factory level (0 + 3 = 3), allows level 3 commodity
-        var patch = writer.Patches.Single(p => p.ObjectId == factory.Id);
-        Assert.Equal(12, patch.Payload.Store![ResourceTypes.Liquid]);
-        Assert.Equal(0, patch.Payload.Store!.GetValueOrDefault(ResourceTypes.Oxidant, 0));
-        Assert.Equal(0, patch.Payload.Store!.GetValueOrDefault(ResourceTypes.Reductant, 0));
-        Assert.Equal(0, patch.Payload.Store!.GetValueOrDefault(ResourceTypes.GhodiumMelt, 0));
-        Assert.Equal(0, patch.Payload.Store!.GetValueOrDefault(ResourceTypes.Energy, 0));
+        var (ObjectId, Payload) = writer.Patches.Single(p => p.ObjectId == factory.Id);
+        Assert.Equal(12, Payload.Store![ResourceTypes.Liquid]);
+        Assert.Equal(0, Payload.Store!.GetValueOrDefault(ResourceTypes.Oxidant, 0));
+        Assert.Equal(0, Payload.Store!.GetValueOrDefault(ResourceTypes.Reductant, 0));
+        Assert.Equal(0, Payload.Store!.GetValueOrDefault(ResourceTypes.GhodiumMelt, 0));
+        Assert.Equal(0, Payload.Store!.GetValueOrDefault(ResourceTypes.Energy, 0));
     }
 
     [Fact]
@@ -236,13 +236,13 @@ public sealed class FactoryIntentStepTests
         await _step.ExecuteAsync(context, TestContext.Current.CancellationToken);
 
         // Assert - Effect level 5 adds +5 to factory level (0 + 5 = 5), allows level 5 commodity
-        var patch = writer.Patches.Single(p => p.ObjectId == factory.Id);
-        Assert.Equal(1, patch.Payload.Store![ResourceTypes.Device]);
-        Assert.Equal(0, patch.Payload.Store!.GetValueOrDefault(ResourceTypes.Circuit, 0));
-        Assert.Equal(0, patch.Payload.Store!.GetValueOrDefault(ResourceTypes.Microchip, 0));
-        Assert.Equal(0, patch.Payload.Store!.GetValueOrDefault(ResourceTypes.Crystal, 0));
-        Assert.Equal(0, patch.Payload.Store!.GetValueOrDefault(ResourceTypes.GhodiumMelt, 0));
-        Assert.Equal(0, patch.Payload.Store!.GetValueOrDefault(ResourceTypes.Energy, 0));
+        var (ObjectId, Payload) = writer.Patches.Single(p => p.ObjectId == factory.Id);
+        Assert.Equal(1, Payload.Store![ResourceTypes.Device]);
+        Assert.Equal(0, Payload.Store!.GetValueOrDefault(ResourceTypes.Circuit, 0));
+        Assert.Equal(0, Payload.Store!.GetValueOrDefault(ResourceTypes.Microchip, 0));
+        Assert.Equal(0, Payload.Store!.GetValueOrDefault(ResourceTypes.Crystal, 0));
+        Assert.Equal(0, Payload.Store!.GetValueOrDefault(ResourceTypes.GhodiumMelt, 0));
+        Assert.Equal(0, Payload.Store!.GetValueOrDefault(ResourceTypes.Energy, 0));
     }
 
     #region Helper Methods

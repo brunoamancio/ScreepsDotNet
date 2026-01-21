@@ -32,15 +32,15 @@ public sealed class PowerAbilityStepTests
         Assert.NotEmpty(writer.Patches);
 
         // Check ops deducted
-        var powerCreepPatch = writer.Patches.FirstOrDefault(p => p.ObjectId == "pc1");
-        Assert.NotNull(powerCreepPatch.Payload);
-        Assert.NotNull(powerCreepPatch.Payload.Store);
-        Assert.Equal(50, powerCreepPatch.Payload.Store[ResourceTypes.Ops]);
+        var (ObjectId, Payload) = writer.Patches.FirstOrDefault(p => p.ObjectId == "pc1");
+        Assert.NotNull(Payload);
+        Assert.NotNull(Payload.Store);
+        Assert.Equal(50, Payload.Store[ResourceTypes.Ops]);
 
         // Check cooldown set (100 ops cost, 300 cooldown)
-        Assert.NotNull(powerCreepPatch.Payload.Powers);
-        Assert.True(powerCreepPatch.Payload.Powers.ContainsKey(PowerTypes.OperateSpawn));
-        Assert.Equal(400, powerCreepPatch.Payload.Powers[PowerTypes.OperateSpawn].CooldownTime);
+        Assert.NotNull(Payload.Powers);
+        Assert.True(Payload.Powers.ContainsKey(PowerTypes.OperateSpawn));
+        Assert.Equal(400, Payload.Powers[PowerTypes.OperateSpawn].CooldownTime);
     }
 
     [Fact]
@@ -222,12 +222,12 @@ public sealed class PowerAbilityStepTests
         await step.ExecuteAsync(context, TestContext.Current.CancellationToken);
 
         var writer = (RecordingMutationWriter)context.MutationWriter;
-        var powerCreepPatch = writer.Patches.FirstOrDefault(p => p.ObjectId == "pc1");
-        Assert.NotNull(powerCreepPatch.Payload.ActionLog);
-        Assert.NotNull(powerCreepPatch.Payload.ActionLog.UsePower);
-        Assert.Equal((int)PowerTypes.OperateSpawn, powerCreepPatch.Payload.ActionLog.UsePower.Power);
-        Assert.Equal(12, powerCreepPatch.Payload.ActionLog.UsePower.X);
-        Assert.Equal(10, powerCreepPatch.Payload.ActionLog.UsePower.Y);
+        var (ObjectId, Payload) = writer.Patches.FirstOrDefault(p => p.ObjectId == "pc1");
+        Assert.NotNull(Payload.ActionLog);
+        Assert.NotNull(Payload.ActionLog.UsePower);
+        Assert.Equal((int)PowerTypes.OperateSpawn, Payload.ActionLog.UsePower.Power);
+        Assert.Equal(12, Payload.ActionLog.UsePower.X);
+        Assert.Equal(10, Payload.ActionLog.UsePower.Y);
     }
 
     private static RoomProcessorContext CreateContext(RoomObjectSnapshot powerCreep, int gameTime, RoomObjectSnapshot controller, RoomObjectSnapshot target, IReadOnlyDictionary<string, IReadOnlyList<IntentRecord>> objectIntents)
@@ -382,11 +382,11 @@ public sealed class PowerAbilityStepTests
         await step.ExecuteAsync(context, TestContext.Current.CancellationToken);
 
         var writer = (RecordingMutationWriter)context.MutationWriter;
-        var spawnPatch = writer.Patches.FirstOrDefault(p => p.ObjectId == "spawn1");
-        Assert.NotNull(spawnPatch.Payload.Effects);
-        Assert.True(spawnPatch.Payload.Effects.ContainsKey(PowerTypes.OperateSpawn));
-        Assert.Equal(3, spawnPatch.Payload.Effects[PowerTypes.OperateSpawn].Level);
-        Assert.Equal(1100, spawnPatch.Payload.Effects[PowerTypes.OperateSpawn].EndTime);
+        var (ObjectId, Payload) = writer.Patches.FirstOrDefault(p => p.ObjectId == "spawn1");
+        Assert.NotNull(Payload.Effects);
+        Assert.True(Payload.Effects.ContainsKey(PowerTypes.OperateSpawn));
+        Assert.Equal(3, Payload.Effects[PowerTypes.OperateSpawn].Level);
+        Assert.Equal(1100, Payload.Effects[PowerTypes.OperateSpawn].EndTime);
     }
 
     [Fact]
@@ -407,8 +407,8 @@ public sealed class PowerAbilityStepTests
         await step.ExecuteAsync(context, TestContext.Current.CancellationToken);
 
         var writer = (RecordingMutationWriter)context.MutationWriter;
-        var towerPatch = writer.Patches.FirstOrDefault(p => p.ObjectId == "tower1");
-        Assert.True(towerPatch.ObjectId is null || towerPatch.Payload.Effects is null);
+        var (ObjectId, Payload) = writer.Patches.FirstOrDefault(p => p.ObjectId == "tower1");
+        Assert.True(ObjectId is null || Payload.Effects is null);
     }
 
     [Fact]
@@ -429,11 +429,11 @@ public sealed class PowerAbilityStepTests
         await step.ExecuteAsync(context, TestContext.Current.CancellationToken);
 
         var writer = (RecordingMutationWriter)context.MutationWriter;
-        var towerPatch = writer.Patches.FirstOrDefault(p => p.ObjectId == "tower1");
-        Assert.NotNull(towerPatch.Payload.Effects);
-        Assert.True(towerPatch.Payload.Effects.ContainsKey(PowerTypes.OperateTower));
-        Assert.Equal(2, towerPatch.Payload.Effects[PowerTypes.OperateTower].Level);
-        Assert.Equal(200, towerPatch.Payload.Effects[PowerTypes.OperateTower].EndTime);
+        var (ObjectId, Payload) = writer.Patches.FirstOrDefault(p => p.ObjectId == "tower1");
+        Assert.NotNull(Payload.Effects);
+        Assert.True(Payload.Effects.ContainsKey(PowerTypes.OperateTower));
+        Assert.Equal(2, Payload.Effects[PowerTypes.OperateTower].Level);
+        Assert.Equal(200, Payload.Effects[PowerTypes.OperateTower].EndTime);
     }
 
     [Fact]
@@ -454,8 +454,8 @@ public sealed class PowerAbilityStepTests
         await step.ExecuteAsync(context, TestContext.Current.CancellationToken);
 
         var writer = (RecordingMutationWriter)context.MutationWriter;
-        var spawnPatch = writer.Patches.FirstOrDefault(p => p.ObjectId == "spawn1");
-        Assert.True(spawnPatch.ObjectId is null || spawnPatch.Payload.Effects is null);
+        var (ObjectId, Payload) = writer.Patches.FirstOrDefault(p => p.ObjectId == "spawn1");
+        Assert.True(ObjectId is null || Payload.Effects is null);
     }
 
     [Fact]
@@ -476,10 +476,10 @@ public sealed class PowerAbilityStepTests
         await step.ExecuteAsync(context, TestContext.Current.CancellationToken);
 
         var writer = (RecordingMutationWriter)context.MutationWriter;
-        var storagePatch = writer.Patches.FirstOrDefault(p => p.ObjectId == "storage1");
-        Assert.NotNull(storagePatch.Payload.Effects);
-        Assert.True(storagePatch.Payload.Effects.ContainsKey(PowerTypes.OperateStorage));
-        Assert.Equal(1, storagePatch.Payload.Effects[PowerTypes.OperateStorage].Level);
+        var (ObjectId, Payload) = writer.Patches.FirstOrDefault(p => p.ObjectId == "storage1");
+        Assert.NotNull(Payload.Effects);
+        Assert.True(Payload.Effects.ContainsKey(PowerTypes.OperateStorage));
+        Assert.Equal(1, Payload.Effects[PowerTypes.OperateStorage].Level);
     }
 
     [Fact]
@@ -500,8 +500,8 @@ public sealed class PowerAbilityStepTests
         await step.ExecuteAsync(context, TestContext.Current.CancellationToken);
 
         var writer = (RecordingMutationWriter)context.MutationWriter;
-        var targetPatch = writer.Patches.FirstOrDefault(p => p.ObjectId == "spawn1");
-        Assert.True(targetPatch.ObjectId is null || targetPatch.Payload.Effects is null || targetPatch.Payload.Effects.Count == 0);
+        var (ObjectId, Payload) = writer.Patches.FirstOrDefault(p => p.ObjectId == "spawn1");
+        Assert.True(ObjectId is null || Payload.Effects is null || Payload.Effects.Count == 0);
     }
 
     [Fact]
@@ -522,10 +522,10 @@ public sealed class PowerAbilityStepTests
         await step.ExecuteAsync(context, TestContext.Current.CancellationToken);
 
         var writer = (RecordingMutationWriter)context.MutationWriter;
-        var labPatch = writer.Patches.FirstOrDefault(p => p.ObjectId == "lab1");
-        Assert.NotNull(labPatch.Payload.Effects);
-        Assert.True(labPatch.Payload.Effects.ContainsKey(PowerTypes.OperateLab));
-        Assert.Equal(4, labPatch.Payload.Effects[PowerTypes.OperateLab].Level);
+        var (ObjectId, Payload) = writer.Patches.FirstOrDefault(p => p.ObjectId == "lab1");
+        Assert.NotNull(Payload.Effects);
+        Assert.True(Payload.Effects.ContainsKey(PowerTypes.OperateLab));
+        Assert.Equal(4, Payload.Effects[PowerTypes.OperateLab].Level);
     }
 
     [Fact]
@@ -546,8 +546,8 @@ public sealed class PowerAbilityStepTests
         await step.ExecuteAsync(context, TestContext.Current.CancellationToken);
 
         var writer = (RecordingMutationWriter)context.MutationWriter;
-        var targetPatch = writer.Patches.FirstOrDefault(p => p.ObjectId == "spawn1");
-        Assert.True(targetPatch.ObjectId is null || targetPatch.Payload.Effects is null || targetPatch.Payload.Effects.Count == 0);
+        var (ObjectId, Payload) = writer.Patches.FirstOrDefault(p => p.ObjectId == "spawn1");
+        Assert.True(ObjectId is null || Payload.Effects is null || Payload.Effects.Count == 0);
     }
 
     [Fact]
@@ -568,10 +568,10 @@ public sealed class PowerAbilityStepTests
         await step.ExecuteAsync(context, TestContext.Current.CancellationToken);
 
         var writer = (RecordingMutationWriter)context.MutationWriter;
-        var observerPatch = writer.Patches.FirstOrDefault(p => p.ObjectId == "observer1");
-        Assert.NotNull(observerPatch.Payload.Effects);
-        Assert.True(observerPatch.Payload.Effects.ContainsKey(PowerTypes.OperateObserver));
-        Assert.Equal(5, observerPatch.Payload.Effects[PowerTypes.OperateObserver].Level);
+        var (ObjectId, Payload) = writer.Patches.FirstOrDefault(p => p.ObjectId == "observer1");
+        Assert.NotNull(Payload.Effects);
+        Assert.True(Payload.Effects.ContainsKey(PowerTypes.OperateObserver));
+        Assert.Equal(5, Payload.Effects[PowerTypes.OperateObserver].Level);
     }
 
     [Fact]
@@ -592,8 +592,8 @@ public sealed class PowerAbilityStepTests
         await step.ExecuteAsync(context, TestContext.Current.CancellationToken);
 
         var writer = (RecordingMutationWriter)context.MutationWriter;
-        var targetPatch = writer.Patches.FirstOrDefault(p => p.ObjectId == "spawn1");
-        Assert.True(targetPatch.ObjectId is null || targetPatch.Payload.Effects is null || targetPatch.Payload.Effects.Count == 0);
+        var (ObjectId, Payload) = writer.Patches.FirstOrDefault(p => p.ObjectId == "spawn1");
+        Assert.True(ObjectId is null || Payload.Effects is null || Payload.Effects.Count == 0);
     }
 
     [Fact]
@@ -614,10 +614,10 @@ public sealed class PowerAbilityStepTests
         await step.ExecuteAsync(context, TestContext.Current.CancellationToken);
 
         var writer = (RecordingMutationWriter)context.MutationWriter;
-        var terminalPatch = writer.Patches.FirstOrDefault(p => p.ObjectId == "terminal1");
-        Assert.NotNull(terminalPatch.Payload.Effects);
-        Assert.True(terminalPatch.Payload.Effects.ContainsKey(PowerTypes.OperateTerminal));
-        Assert.Equal(2, terminalPatch.Payload.Effects[PowerTypes.OperateTerminal].Level);
+        var (ObjectId, Payload) = writer.Patches.FirstOrDefault(p => p.ObjectId == "terminal1");
+        Assert.NotNull(Payload.Effects);
+        Assert.True(Payload.Effects.ContainsKey(PowerTypes.OperateTerminal));
+        Assert.Equal(2, Payload.Effects[PowerTypes.OperateTerminal].Level);
     }
 
     [Fact]
@@ -638,8 +638,8 @@ public sealed class PowerAbilityStepTests
         await step.ExecuteAsync(context, TestContext.Current.CancellationToken);
 
         var writer = (RecordingMutationWriter)context.MutationWriter;
-        var targetPatch = writer.Patches.FirstOrDefault(p => p.ObjectId == "spawn1");
-        Assert.True(targetPatch.ObjectId is null || targetPatch.Payload.Effects is null || targetPatch.Payload.Effects.Count == 0);
+        var (ObjectId, Payload) = writer.Patches.FirstOrDefault(p => p.ObjectId == "spawn1");
+        Assert.True(ObjectId is null || Payload.Effects is null || Payload.Effects.Count == 0);
     }
 
     [Fact]
@@ -660,10 +660,10 @@ public sealed class PowerAbilityStepTests
         await step.ExecuteAsync(context, TestContext.Current.CancellationToken);
 
         var writer = (RecordingMutationWriter)context.MutationWriter;
-        var powerSpawnPatch = writer.Patches.FirstOrDefault(p => p.ObjectId == "powerSpawn1");
-        Assert.NotNull(powerSpawnPatch.Payload.Effects);
-        Assert.True(powerSpawnPatch.Payload.Effects.ContainsKey(PowerTypes.OperatePower));
-        Assert.Equal(3, powerSpawnPatch.Payload.Effects[PowerTypes.OperatePower].Level);
+        var (ObjectId, Payload) = writer.Patches.FirstOrDefault(p => p.ObjectId == "powerSpawn1");
+        Assert.NotNull(Payload.Effects);
+        Assert.True(Payload.Effects.ContainsKey(PowerTypes.OperatePower));
+        Assert.Equal(3, Payload.Effects[PowerTypes.OperatePower].Level);
     }
 
     [Fact]
@@ -684,8 +684,8 @@ public sealed class PowerAbilityStepTests
         await step.ExecuteAsync(context, TestContext.Current.CancellationToken);
 
         var writer = (RecordingMutationWriter)context.MutationWriter;
-        var targetPatch = writer.Patches.FirstOrDefault(p => p.ObjectId == "spawn1");
-        Assert.True(targetPatch.ObjectId is null || targetPatch.Payload.Effects is null || targetPatch.Payload.Effects.Count == 0);
+        var (ObjectId, Payload) = writer.Patches.FirstOrDefault(p => p.ObjectId == "spawn1");
+        Assert.True(ObjectId is null || Payload.Effects is null || Payload.Effects.Count == 0);
     }
 
     [Fact]
@@ -705,10 +705,10 @@ public sealed class PowerAbilityStepTests
         await step.ExecuteAsync(context, TestContext.Current.CancellationToken);
 
         var writer = (RecordingMutationWriter)context.MutationWriter;
-        var controllerPatch = writer.Patches.FirstOrDefault(p => p.ObjectId == "controller1");
-        Assert.NotNull(controllerPatch.Payload.Effects);
-        Assert.True(controllerPatch.Payload.Effects.ContainsKey(PowerTypes.OperateController));
-        Assert.Equal(4, controllerPatch.Payload.Effects[PowerTypes.OperateController].Level);
+        var (ObjectId, Payload) = writer.Patches.FirstOrDefault(p => p.ObjectId == "controller1");
+        Assert.NotNull(Payload.Effects);
+        Assert.True(Payload.Effects.ContainsKey(PowerTypes.OperateController));
+        Assert.Equal(4, Payload.Effects[PowerTypes.OperateController].Level);
     }
 
     [Fact]
@@ -729,8 +729,8 @@ public sealed class PowerAbilityStepTests
         await step.ExecuteAsync(context, TestContext.Current.CancellationToken);
 
         var writer = (RecordingMutationWriter)context.MutationWriter;
-        var targetPatch = writer.Patches.FirstOrDefault(p => p.ObjectId == "spawn1");
-        Assert.True(targetPatch.ObjectId is null || targetPatch.Payload.Effects is null || targetPatch.Payload.Effects.Count == 0);
+        var (ObjectId, Payload) = writer.Patches.FirstOrDefault(p => p.ObjectId == "spawn1");
+        Assert.True(ObjectId is null || Payload.Effects is null || Payload.Effects.Count == 0);
     }
 
     // Group 2: Disruption Effects (8 tests)
@@ -753,10 +753,10 @@ public sealed class PowerAbilityStepTests
         await step.ExecuteAsync(context, TestContext.Current.CancellationToken);
 
         var writer = (RecordingMutationWriter)context.MutationWriter;
-        var spawnPatch = writer.Patches.FirstOrDefault(p => p.ObjectId == "spawn1");
-        Assert.NotNull(spawnPatch.Payload.Effects);
-        Assert.True(spawnPatch.Payload.Effects.ContainsKey(PowerTypes.DisruptSpawn));
-        Assert.Equal(3, spawnPatch.Payload.Effects[PowerTypes.DisruptSpawn].Level);
+        var (ObjectId, Payload) = writer.Patches.FirstOrDefault(p => p.ObjectId == "spawn1");
+        Assert.NotNull(Payload.Effects);
+        Assert.True(Payload.Effects.ContainsKey(PowerTypes.DisruptSpawn));
+        Assert.Equal(3, Payload.Effects[PowerTypes.DisruptSpawn].Level);
     }
 
     [Fact]
@@ -777,8 +777,8 @@ public sealed class PowerAbilityStepTests
         await step.ExecuteAsync(context, TestContext.Current.CancellationToken);
 
         var writer = (RecordingMutationWriter)context.MutationWriter;
-        var targetPatch = writer.Patches.FirstOrDefault(p => p.ObjectId == "tower1");
-        Assert.True(targetPatch.ObjectId is null || targetPatch.Payload.Effects is null || targetPatch.Payload.Effects.Count == 0);
+        var (ObjectId, Payload) = writer.Patches.FirstOrDefault(p => p.ObjectId == "tower1");
+        Assert.True(ObjectId is null || Payload.Effects is null || Payload.Effects.Count == 0);
     }
 
     [Fact]
@@ -799,10 +799,10 @@ public sealed class PowerAbilityStepTests
         await step.ExecuteAsync(context, TestContext.Current.CancellationToken);
 
         var writer = (RecordingMutationWriter)context.MutationWriter;
-        var towerPatch = writer.Patches.FirstOrDefault(p => p.ObjectId == "tower1");
-        Assert.NotNull(towerPatch.Payload.Effects);
-        Assert.True(towerPatch.Payload.Effects.ContainsKey(PowerTypes.DisruptTower));
-        Assert.Equal(2, towerPatch.Payload.Effects[PowerTypes.DisruptTower].Level);
+        var (ObjectId, Payload) = writer.Patches.FirstOrDefault(p => p.ObjectId == "tower1");
+        Assert.NotNull(Payload.Effects);
+        Assert.True(Payload.Effects.ContainsKey(PowerTypes.DisruptTower));
+        Assert.Equal(2, Payload.Effects[PowerTypes.DisruptTower].Level);
     }
 
     [Fact]
@@ -823,8 +823,8 @@ public sealed class PowerAbilityStepTests
         await step.ExecuteAsync(context, TestContext.Current.CancellationToken);
 
         var writer = (RecordingMutationWriter)context.MutationWriter;
-        var targetPatch = writer.Patches.FirstOrDefault(p => p.ObjectId == "spawn1");
-        Assert.True(targetPatch.ObjectId is null || targetPatch.Payload.Effects is null || targetPatch.Payload.Effects.Count == 0);
+        var (ObjectId, Payload) = writer.Patches.FirstOrDefault(p => p.ObjectId == "spawn1");
+        Assert.True(ObjectId is null || Payload.Effects is null || Payload.Effects.Count == 0);
     }
 
     [Fact]
@@ -845,10 +845,10 @@ public sealed class PowerAbilityStepTests
         await step.ExecuteAsync(context, TestContext.Current.CancellationToken);
 
         var writer = (RecordingMutationWriter)context.MutationWriter;
-        var sourcePatch = writer.Patches.FirstOrDefault(p => p.ObjectId == "source1");
-        Assert.NotNull(sourcePatch.Payload.Effects);
-        Assert.True(sourcePatch.Payload.Effects.ContainsKey(PowerTypes.DisruptSource));
-        Assert.Equal(4, sourcePatch.Payload.Effects[PowerTypes.DisruptSource].Level);
+        var (ObjectId, Payload) = writer.Patches.FirstOrDefault(p => p.ObjectId == "source1");
+        Assert.NotNull(Payload.Effects);
+        Assert.True(Payload.Effects.ContainsKey(PowerTypes.DisruptSource));
+        Assert.Equal(4, Payload.Effects[PowerTypes.DisruptSource].Level);
     }
 
     [Fact]
@@ -869,8 +869,8 @@ public sealed class PowerAbilityStepTests
         await step.ExecuteAsync(context, TestContext.Current.CancellationToken);
 
         var writer = (RecordingMutationWriter)context.MutationWriter;
-        var targetPatch = writer.Patches.FirstOrDefault(p => p.ObjectId == "spawn1");
-        Assert.True(targetPatch.ObjectId is null || targetPatch.Payload.Effects is null || targetPatch.Payload.Effects.Count == 0);
+        var (ObjectId, Payload) = writer.Patches.FirstOrDefault(p => p.ObjectId == "spawn1");
+        Assert.True(ObjectId is null || Payload.Effects is null || Payload.Effects.Count == 0);
     }
 
     [Fact]
@@ -891,10 +891,10 @@ public sealed class PowerAbilityStepTests
         await step.ExecuteAsync(context, TestContext.Current.CancellationToken);
 
         var writer = (RecordingMutationWriter)context.MutationWriter;
-        var terminalPatch = writer.Patches.FirstOrDefault(p => p.ObjectId == "terminal1");
-        Assert.NotNull(terminalPatch.Payload.Effects);
-        Assert.True(terminalPatch.Payload.Effects.ContainsKey(PowerTypes.DisruptTerminal));
-        Assert.Equal(3, terminalPatch.Payload.Effects[PowerTypes.DisruptTerminal].Level);
+        var (ObjectId, Payload) = writer.Patches.FirstOrDefault(p => p.ObjectId == "terminal1");
+        Assert.NotNull(Payload.Effects);
+        Assert.True(Payload.Effects.ContainsKey(PowerTypes.DisruptTerminal));
+        Assert.Equal(3, Payload.Effects[PowerTypes.DisruptTerminal].Level);
     }
 
     [Fact]
@@ -915,8 +915,8 @@ public sealed class PowerAbilityStepTests
         await step.ExecuteAsync(context, TestContext.Current.CancellationToken);
 
         var writer = (RecordingMutationWriter)context.MutationWriter;
-        var targetPatch = writer.Patches.FirstOrDefault(p => p.ObjectId == "spawn1");
-        Assert.True(targetPatch.ObjectId is null || targetPatch.Payload.Effects is null || targetPatch.Payload.Effects.Count == 0);
+        var (ObjectId, Payload) = writer.Patches.FirstOrDefault(p => p.ObjectId == "spawn1");
+        Assert.True(ObjectId is null || Payload.Effects is null || Payload.Effects.Count == 0);
     }
 
     // Group 3: Regeneration Effects (4 tests)
@@ -939,10 +939,10 @@ public sealed class PowerAbilityStepTests
         await step.ExecuteAsync(context, TestContext.Current.CancellationToken);
 
         var writer = (RecordingMutationWriter)context.MutationWriter;
-        var sourcePatch = writer.Patches.FirstOrDefault(p => p.ObjectId == "source1");
-        Assert.NotNull(sourcePatch.Payload.Effects);
-        Assert.True(sourcePatch.Payload.Effects.ContainsKey(PowerTypes.RegenSource));
-        Assert.Equal(5, sourcePatch.Payload.Effects[PowerTypes.RegenSource].Level);
+        var (ObjectId, Payload) = writer.Patches.FirstOrDefault(p => p.ObjectId == "source1");
+        Assert.NotNull(Payload.Effects);
+        Assert.True(Payload.Effects.ContainsKey(PowerTypes.RegenSource));
+        Assert.Equal(5, Payload.Effects[PowerTypes.RegenSource].Level);
     }
 
     [Fact]
@@ -963,8 +963,8 @@ public sealed class PowerAbilityStepTests
         await step.ExecuteAsync(context, TestContext.Current.CancellationToken);
 
         var writer = (RecordingMutationWriter)context.MutationWriter;
-        var targetPatch = writer.Patches.FirstOrDefault(p => p.ObjectId == "spawn1");
-        Assert.True(targetPatch.ObjectId is null || targetPatch.Payload.Effects is null || targetPatch.Payload.Effects.Count == 0);
+        var (ObjectId, Payload) = writer.Patches.FirstOrDefault(p => p.ObjectId == "spawn1");
+        Assert.True(ObjectId is null || Payload.Effects is null || Payload.Effects.Count == 0);
     }
 
     [Fact]
@@ -985,10 +985,10 @@ public sealed class PowerAbilityStepTests
         await step.ExecuteAsync(context, TestContext.Current.CancellationToken);
 
         var writer = (RecordingMutationWriter)context.MutationWriter;
-        var mineralPatch = writer.Patches.FirstOrDefault(p => p.ObjectId == "mineral1");
-        Assert.NotNull(mineralPatch.Payload.Effects);
-        Assert.True(mineralPatch.Payload.Effects.ContainsKey(PowerTypes.RegenMineral));
-        Assert.Equal(3, mineralPatch.Payload.Effects[PowerTypes.RegenMineral].Level);
+        var (ObjectId, Payload) = writer.Patches.FirstOrDefault(p => p.ObjectId == "mineral1");
+        Assert.NotNull(Payload.Effects);
+        Assert.True(Payload.Effects.ContainsKey(PowerTypes.RegenMineral));
+        Assert.Equal(3, Payload.Effects[PowerTypes.RegenMineral].Level);
     }
 
     [Fact]
@@ -1009,8 +1009,8 @@ public sealed class PowerAbilityStepTests
         await step.ExecuteAsync(context, TestContext.Current.CancellationToken);
 
         var writer = (RecordingMutationWriter)context.MutationWriter;
-        var targetPatch = writer.Patches.FirstOrDefault(p => p.ObjectId == "spawn1");
-        Assert.True(targetPatch.ObjectId is null || targetPatch.Payload.Effects is null || targetPatch.Payload.Effects.Count == 0);
+        var (ObjectId, Payload) = writer.Patches.FirstOrDefault(p => p.ObjectId == "spawn1");
+        Assert.True(ObjectId is null || Payload.Effects is null || Payload.Effects.Count == 0);
     }
 
     // Group 4: Fortify (2 tests)
@@ -1033,10 +1033,10 @@ public sealed class PowerAbilityStepTests
         await step.ExecuteAsync(context, TestContext.Current.CancellationToken);
 
         var writer = (RecordingMutationWriter)context.MutationWriter;
-        var wallPatch = writer.Patches.FirstOrDefault(p => p.ObjectId == "wall1");
-        Assert.NotNull(wallPatch.Payload.Effects);
-        Assert.True(wallPatch.Payload.Effects.ContainsKey(PowerTypes.Fortify));
-        Assert.Equal(4, wallPatch.Payload.Effects[PowerTypes.Fortify].Level);
+        var (ObjectId, Payload) = writer.Patches.FirstOrDefault(p => p.ObjectId == "wall1");
+        Assert.NotNull(Payload.Effects);
+        Assert.True(Payload.Effects.ContainsKey(PowerTypes.Fortify));
+        Assert.Equal(4, Payload.Effects[PowerTypes.Fortify].Level);
     }
 
     [Fact]
@@ -1057,8 +1057,8 @@ public sealed class PowerAbilityStepTests
         await step.ExecuteAsync(context, TestContext.Current.CancellationToken);
 
         var writer = (RecordingMutationWriter)context.MutationWriter;
-        var targetPatch = writer.Patches.FirstOrDefault(p => p.ObjectId == "spawn1");
-        Assert.True(targetPatch.ObjectId is null || targetPatch.Payload.Effects is null || targetPatch.Payload.Effects.Count == 0);
+        var (ObjectId, Payload) = writer.Patches.FirstOrDefault(p => p.ObjectId == "spawn1");
+        Assert.True(ObjectId is null || Payload.Effects is null || Payload.Effects.Count == 0);
     }
 
     // Group 5: Factory (2 tests)
@@ -1081,10 +1081,10 @@ public sealed class PowerAbilityStepTests
         await step.ExecuteAsync(context, TestContext.Current.CancellationToken);
 
         var writer = (RecordingMutationWriter)context.MutationWriter;
-        var factoryPatch = writer.Patches.FirstOrDefault(p => p.ObjectId == "factory1");
-        Assert.NotNull(factoryPatch.Payload.Effects);
-        Assert.True(factoryPatch.Payload.Effects.ContainsKey(PowerTypes.OperateFactory));
-        Assert.Equal(2, factoryPatch.Payload.Effects[PowerTypes.OperateFactory].Level);
+        var (ObjectId, Payload) = writer.Patches.FirstOrDefault(p => p.ObjectId == "factory1");
+        Assert.NotNull(Payload.Effects);
+        Assert.True(Payload.Effects.ContainsKey(PowerTypes.OperateFactory));
+        Assert.Equal(2, Payload.Effects[PowerTypes.OperateFactory].Level);
     }
 
     [Fact]
@@ -1105,8 +1105,8 @@ public sealed class PowerAbilityStepTests
         await step.ExecuteAsync(context, TestContext.Current.CancellationToken);
 
         var writer = (RecordingMutationWriter)context.MutationWriter;
-        var targetPatch = writer.Patches.FirstOrDefault(p => p.ObjectId == "spawn1");
-        Assert.True(targetPatch.ObjectId is null || targetPatch.Payload.Effects is null || targetPatch.Payload.Effects.Count == 0);
+        var (ObjectId, Payload) = writer.Patches.FirstOrDefault(p => p.ObjectId == "spawn1");
+        Assert.True(ObjectId is null || Payload.Effects is null || Payload.Effects.Count == 0);
     }
 
     [Fact]
@@ -1130,11 +1130,11 @@ public sealed class PowerAbilityStepTests
         await step.ExecuteAsync(context, TestContext.Current.CancellationToken);
 
         var writer = (RecordingMutationWriter)context.MutationWriter;
-        var storagePatch = writer.Patches.FirstOrDefault(p => p.ObjectId == "storage1");
+        var (ObjectId, Payload) = writer.Patches.FirstOrDefault(p => p.ObjectId == "storage1");
         var ext1Patch = writer.Patches.FirstOrDefault(p => p.ObjectId == "ext1");
         var ext2Patch = writer.Patches.FirstOrDefault(p => p.ObjectId == "ext2");
-        Assert.NotNull(storagePatch.Payload.Store);
-        Assert.True(storagePatch.Payload.Store[ResourceTypes.Energy] < 10000);
+        Assert.NotNull(Payload.Store);
+        Assert.True(Payload.Store[ResourceTypes.Energy] < 10000);
         Assert.NotNull(ext1Patch.Payload.Store);
         Assert.True(ext1Patch.Payload.Store[ResourceTypes.Energy] > 0);
         Assert.NotNull(ext2Patch.Payload.Store);
@@ -1161,8 +1161,8 @@ public sealed class PowerAbilityStepTests
         await step.ExecuteAsync(context, TestContext.Current.CancellationToken);
 
         var writer = (RecordingMutationWriter)context.MutationWriter;
-        var ext1Patch = writer.Patches.FirstOrDefault(p => p.ObjectId == "ext1");
-        Assert.True(ext1Patch.ObjectId is null || ext1Patch.Payload.Store is null);
+        var (ObjectId, Payload) = writer.Patches.FirstOrDefault(p => p.ObjectId == "ext1");
+        Assert.True(ObjectId is null || Payload.Store is null);
     }
 
     [Fact]
@@ -1183,8 +1183,8 @@ public sealed class PowerAbilityStepTests
         await step.ExecuteAsync(context, TestContext.Current.CancellationToken);
 
         var writer = (RecordingMutationWriter)context.MutationWriter;
-        var powerCreepPatch = writer.Patches.FirstOrDefault(p => p.ObjectId == "pc1");
-        Assert.True(powerCreepPatch.ObjectId is null || powerCreepPatch.Payload.Store is null || powerCreepPatch.Payload.Store[ResourceTypes.Ops] == 50);
+        var (ObjectId, Payload) = writer.Patches.FirstOrDefault(p => p.ObjectId == "pc1");
+        Assert.True(ObjectId is null || Payload.Store is null || Payload.Store[ResourceTypes.Ops] == 50);
     }
 
     [Fact]
@@ -1206,8 +1206,8 @@ public sealed class PowerAbilityStepTests
         await step.ExecuteAsync(context, TestContext.Current.CancellationToken);
 
         var writer = (RecordingMutationWriter)context.MutationWriter;
-        var storagePatch = writer.Patches.FirstOrDefault(p => p.ObjectId == "storage1");
-        Assert.True(storagePatch.ObjectId is null || storagePatch.Payload.Store is null || storagePatch.Payload.Store[ResourceTypes.Energy] == 10000);
+        var (ObjectId, Payload) = writer.Patches.FirstOrDefault(p => p.ObjectId == "storage1");
+        Assert.True(ObjectId is null || Payload.Store is null || Payload.Store[ResourceTypes.Energy] == 10000);
     }
 
     [Fact]
@@ -1232,10 +1232,10 @@ public sealed class PowerAbilityStepTests
         await step.ExecuteAsync(context, TestContext.Current.CancellationToken);
 
         var writer = (RecordingMutationWriter)context.MutationWriter;
-        var ext1Patch = writer.Patches.FirstOrDefault(p => p.ObjectId == "ext1");
+        var (ObjectId, Payload) = writer.Patches.FirstOrDefault(p => p.ObjectId == "ext1");
         var ext2Patch = writer.Patches.FirstOrDefault(p => p.ObjectId == "ext2");
-        Assert.NotNull(ext1Patch.Payload.Store);
-        Assert.True(ext1Patch.Payload.Store[ResourceTypes.Energy] > 0);
+        Assert.NotNull(Payload.Store);
+        Assert.True(Payload.Store[ResourceTypes.Energy] > 0);
         Assert.True(ext2Patch.ObjectId is null || ext2Patch.Payload.Store is null);
     }
 
@@ -1259,10 +1259,10 @@ public sealed class PowerAbilityStepTests
         await step.ExecuteAsync(context, TestContext.Current.CancellationToken);
 
         var writer = (RecordingMutationWriter)context.MutationWriter;
-        var terminalPatch = writer.Patches.FirstOrDefault(p => p.ObjectId == "terminal1");
+        var (ObjectId, Payload) = writer.Patches.FirstOrDefault(p => p.ObjectId == "terminal1");
         var ext1Patch = writer.Patches.FirstOrDefault(p => p.ObjectId == "ext1");
-        Assert.NotNull(terminalPatch.Payload.Store);
-        Assert.True(terminalPatch.Payload.Store[ResourceTypes.Energy] < 10000);
+        Assert.NotNull(Payload.Store);
+        Assert.True(Payload.Store[ResourceTypes.Energy] < 10000);
         Assert.NotNull(ext1Patch.Payload.Store);
         Assert.True(ext1Patch.Payload.Store[ResourceTypes.Energy] > 0);
     }
@@ -1335,9 +1335,9 @@ public sealed class PowerAbilityStepTests
         await step.ExecuteAsync(context, TestContext.Current.CancellationToken);
 
         var writer = (RecordingMutationWriter)context.MutationWriter;
-        var powerCreepPatch = writer.Patches.FirstOrDefault(p => p.ObjectId == "pc1");
-        Assert.NotNull(powerCreepPatch.Payload.Store);
-        Assert.Equal(100, powerCreepPatch.Payload.Store[ResourceTypes.Energy]);
+        var (ObjectId, Payload) = writer.Patches.FirstOrDefault(p => p.ObjectId == "pc1");
+        Assert.NotNull(Payload.Store);
+        Assert.Equal(100, Payload.Store[ResourceTypes.Energy]);
     }
 
     [Fact]
@@ -1381,10 +1381,10 @@ public sealed class PowerAbilityStepTests
         await step.ExecuteAsync(context, TestContext.Current.CancellationToken);
 
         var writer = (RecordingMutationWriter)context.MutationWriter;
-        var powerCreepPatch = writer.Patches.FirstOrDefault(p => p.ObjectId == "pc1");
-        Assert.NotNull(powerCreepPatch.Payload.Powers);
-        Assert.True(powerCreepPatch.Payload.Powers.ContainsKey(PowerTypes.Shield));
-        Assert.Equal(120, powerCreepPatch.Payload.Powers[PowerTypes.Shield].CooldownTime);
+        var (ObjectId, Payload) = writer.Patches.FirstOrDefault(p => p.ObjectId == "pc1");
+        Assert.NotNull(Payload.Powers);
+        Assert.True(Payload.Powers.ContainsKey(PowerTypes.Shield));
+        Assert.Equal(120, Payload.Powers[PowerTypes.Shield].CooldownTime);
     }
 
     [Fact]
@@ -1415,19 +1415,18 @@ public sealed class PowerAbilityStepTests
     {
         var intent = new Dictionary<string, IReadOnlyList<IntentRecord>>(StringComparer.Ordinal)
         {
-            ["pc1"] = new List<IntentRecord>
-            {
+            ["pc1"] =
+            [
                 new(
                     IntentKeys.Power,
-                    new List<IntentArgument>
-                    {
+                    [
                         new(
                             new Dictionary<string, IntentFieldValue>(StringComparer.Ordinal)
                             {
                                 [PowerCreepIntentFields.Power] = new(IntentFieldValueKind.Number, NumberValue: (int)power)
                             })
-                    })
-            }
+                    ])
+            ]
         };
         return intent;
     }
@@ -1440,8 +1439,7 @@ public sealed class PowerAbilityStepTests
             [controller.Id] = controller
         };
 
-        foreach (var obj in additionalObjects)
-        {
+        foreach (var obj in additionalObjects) {
             objects[obj.Id] = obj;
         }
 
@@ -1534,20 +1532,19 @@ public sealed class PowerAbilityStepTests
     {
         var intent = new Dictionary<string, IReadOnlyList<IntentRecord>>(StringComparer.Ordinal)
         {
-            ["pc1"] = new List<IntentRecord>
-            {
+            ["pc1"] =
+            [
                 new(
                     IntentKeys.Power,
-                    new List<IntentArgument>
-                    {
+                    [
                         new(
                             new Dictionary<string, IntentFieldValue>(StringComparer.Ordinal)
                             {
                                 [PowerCreepIntentFields.Power] = new(IntentFieldValueKind.Number, NumberValue: (int)power),
                                 [PowerCreepIntentFields.Id] = new(IntentFieldValueKind.Text, TextValue: targetId)
                             })
-                    })
-            }
+                    ])
+            ]
         };
         return intent;
     }

@@ -43,8 +43,7 @@ internal sealed class FactoryIntentStep : IRoomProcessorStep
                     continue;
 
                 foreach (var record in records) {
-                    if (record.Name == IntentKeys.Produce)
-                    {
+                    if (record.Name == IntentKeys.Produce) {
                         ProcessProduce(context, obj, record, storeLedger, cooldownLedger, actionLogLedger, modifiedObjects);
                     }
                 }
@@ -96,12 +95,9 @@ internal sealed class FactoryIntentStep : IRoomProcessorStep
         var factoryLevel = factory.Level ?? 0;
 
         // Check for PWR_OPERATE_FACTORY effect to boost factory level for recipe gating
-        if (factory.Effects is not null && factory.Effects.TryGetValue(PowerTypes.OperateFactory, out var operateFactoryEffect))
-        {
-            if (operateFactoryEffect.EndTime > gameTime && PowerInfo.Abilities.TryGetValue(PowerTypes.OperateFactory, out var powerInfo))
-            {
-                if (powerInfo.Effect is not null)
-                {
+        if (factory.Effects is not null && factory.Effects.TryGetValue(PowerTypes.OperateFactory, out var operateFactoryEffect)) {
+            if (operateFactoryEffect.EndTime > gameTime && PowerInfo.Abilities.TryGetValue(PowerTypes.OperateFactory, out var powerInfo)) {
+                if (powerInfo.Effect is not null) {
                     var effectBonus = powerInfo.Effect[operateFactoryEffect.Level - 1];
                     factoryLevel += effectBonus;
                 }

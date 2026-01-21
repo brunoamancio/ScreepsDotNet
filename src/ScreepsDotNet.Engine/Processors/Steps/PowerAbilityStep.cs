@@ -24,13 +24,11 @@ internal sealed class PowerAbilityStep : IRoomProcessorStep
         var actionLogLedger = new Dictionary<string, RoomObjectActionLogPatch>(Comparer);
         var modifiedObjects = new HashSet<string>(Comparer);
 
-        foreach (var envelope in intents.Users.Values)
-        {
+        foreach (var envelope in intents.Users.Values) {
             if (envelope?.ObjectIntents is null || envelope.ObjectIntents.Count == 0)
                 continue;
 
-            foreach (var (objectId, records) in envelope.ObjectIntents)
-            {
+            foreach (var (objectId, records) in envelope.ObjectIntents) {
                 if (string.IsNullOrWhiteSpace(objectId) || records.Count == 0)
                     continue;
 
@@ -40,8 +38,7 @@ internal sealed class PowerAbilityStep : IRoomProcessorStep
                 if (!string.Equals(powerCreep.Type, RoomObjectTypes.PowerCreep, StringComparison.Ordinal))
                     continue;
 
-                foreach (var record in records)
-                {
+                foreach (var record in records) {
                     if (!string.Equals(record.Name, IntentKeys.Power, StringComparison.Ordinal))
                         continue;
 
@@ -67,15 +64,13 @@ internal sealed class PowerAbilityStep : IRoomProcessorStep
     {
         // Validate room has power enabled
         var controller = context.State.Objects.Values.FirstOrDefault(o => string.Equals(o.Type, RoomObjectTypes.Controller, StringComparison.Ordinal));
-        if (controller is not null)
-        {
+        if (controller is not null) {
             var isPowerEnabled = controller.Store.GetValueOrDefault(RoomDocumentFields.Controller.IsPowerEnabled, 0) == 1;
             if (!isPowerEnabled)
                 return;
 
             // Check enemy safe mode
-            if (!string.Equals(controller.UserId, powerCreep.UserId, StringComparison.Ordinal))
-            {
+            if (!string.Equals(controller.UserId, powerCreep.UserId, StringComparison.Ordinal)) {
                 var safeMode = controller.SafeMode ?? 0;
                 if (safeMode > context.State.GameTime)
                     return;
@@ -114,8 +109,7 @@ internal sealed class PowerAbilityStep : IRoomProcessorStep
 
         // Extract target if range-based ability
         RoomObjectSnapshot? target = null;
-        if (powerInfo.Range.HasValue)
-        {
+        if (powerInfo.Range.HasValue) {
             if (!TryGetTargetId(record, out var targetId))
                 return;
 
@@ -131,8 +125,7 @@ internal sealed class PowerAbilityStep : IRoomProcessorStep
                 return;
 
             // Special validation for operateExtension: must be storage or terminal
-            if (powerType == PowerTypes.OperateExtension)
-            {
+            if (powerType == PowerTypes.OperateExtension) {
                 var isStorage = string.Equals(target.Type, RoomObjectTypes.Storage, StringComparison.Ordinal);
                 var isTerminal = string.Equals(target.Type, RoomObjectTypes.Terminal, StringComparison.Ordinal);
                 if (!isStorage && !isTerminal)
@@ -141,8 +134,7 @@ internal sealed class PowerAbilityStep : IRoomProcessorStep
         }
 
         // Deduct ops
-        if (!storeLedger.TryGetValue(powerCreep.Id, out var ledgerStore))
-        {
+        if (!storeLedger.TryGetValue(powerCreep.Id, out var ledgerStore)) {
             ledgerStore = new Dictionary<string, int>(powerCreep.Store);
             storeLedger[powerCreep.Id] = ledgerStore;
         }
@@ -151,8 +143,7 @@ internal sealed class PowerAbilityStep : IRoomProcessorStep
         modifiedObjects.Add(powerCreep.Id);
 
         // Set power cooldown
-        if (!powersLedger.TryGetValue(powerCreep.Id, out var ledgerPowers))
-        {
+        if (!powersLedger.TryGetValue(powerCreep.Id, out var ledgerPowers)) {
             ledgerPowers = new Dictionary<PowerTypes, PowerCreepPowerSnapshot>(powers);
             powersLedger[powerCreep.Id] = ledgerPowers;
         }
@@ -168,8 +159,7 @@ internal sealed class PowerAbilityStep : IRoomProcessorStep
             UsePower: new RoomObjectActionLogUsePower((int)powerType, targetX, targetY));
 
         // Handle direct-action abilities
-        if (powerType == PowerTypes.GenerateOps)
-        {
+        if (powerType == PowerTypes.GenerateOps) {
             // TODO (E5): Requires IGlobalMutationWriter.IncrementUserPower(userId, amount)
             // Node.js lines 57-69 in usePower.js:
             // - Adds ops to power creep store based on effect[level-1]
@@ -179,14 +169,12 @@ internal sealed class PowerAbilityStep : IRoomProcessorStep
             return;
         }
 
-        if (powerType == PowerTypes.OperateExtension)
-        {
+        if (powerType == PowerTypes.OperateExtension) {
             ProcessOperateExtension(context, powerCreep, target, creepPower.Level, powerInfo, storeLedger, modifiedObjects);
             return;
         }
 
-        if (powerType == PowerTypes.Shield)
-        {
+        if (powerType == PowerTypes.Shield) {
             ProcessShield(context, powerCreep, creepPower.Level, gameTime, powerInfo, storeLedger, modifiedObjects);
             return;
         }
@@ -210,25 +198,25 @@ internal sealed class PowerAbilityStep : IRoomProcessorStep
         var applyEffect =
             // Validate target type for each power
             powerType switch
-        {
-            PowerTypes.OperateSpawn => string.Equals(target.Type, RoomObjectTypes.Spawn, StringComparison.Ordinal),
-            PowerTypes.OperateTower => string.Equals(target.Type, RoomObjectTypes.Tower, StringComparison.Ordinal),
-            PowerTypes.OperateStorage => string.Equals(target.Type, RoomObjectTypes.Storage, StringComparison.Ordinal),
-            PowerTypes.OperateLab => string.Equals(target.Type, RoomObjectTypes.Lab, StringComparison.Ordinal),
-            PowerTypes.OperateObserver => string.Equals(target.Type, RoomObjectTypes.Observer, StringComparison.Ordinal),
-            PowerTypes.OperateTerminal => string.Equals(target.Type, RoomObjectTypes.Terminal, StringComparison.Ordinal),
-            PowerTypes.OperatePower => string.Equals(target.Type, RoomObjectTypes.PowerSpawn, StringComparison.Ordinal),
-            PowerTypes.OperateController => string.Equals(target.Type, RoomObjectTypes.Controller, StringComparison.Ordinal),
-            PowerTypes.DisruptSpawn => string.Equals(target.Type, RoomObjectTypes.Spawn, StringComparison.Ordinal),
-            PowerTypes.DisruptTower => string.Equals(target.Type, RoomObjectTypes.Tower, StringComparison.Ordinal),
-            PowerTypes.DisruptSource => string.Equals(target.Type, RoomObjectTypes.Source, StringComparison.Ordinal),
-            PowerTypes.DisruptTerminal => string.Equals(target.Type, RoomObjectTypes.Terminal, StringComparison.Ordinal),
-            PowerTypes.RegenSource => string.Equals(target.Type, RoomObjectTypes.Source, StringComparison.Ordinal),
-            PowerTypes.RegenMineral => ValidateRegenMineral(target),
-            PowerTypes.Fortify => ValidateFortifyTarget(target),
-            PowerTypes.OperateFactory => string.Equals(target.Type, RoomObjectTypes.Factory, StringComparison.Ordinal),
-            _ => false
-        };
+            {
+                PowerTypes.OperateSpawn => string.Equals(target.Type, RoomObjectTypes.Spawn, StringComparison.Ordinal),
+                PowerTypes.OperateTower => string.Equals(target.Type, RoomObjectTypes.Tower, StringComparison.Ordinal),
+                PowerTypes.OperateStorage => string.Equals(target.Type, RoomObjectTypes.Storage, StringComparison.Ordinal),
+                PowerTypes.OperateLab => string.Equals(target.Type, RoomObjectTypes.Lab, StringComparison.Ordinal),
+                PowerTypes.OperateObserver => string.Equals(target.Type, RoomObjectTypes.Observer, StringComparison.Ordinal),
+                PowerTypes.OperateTerminal => string.Equals(target.Type, RoomObjectTypes.Terminal, StringComparison.Ordinal),
+                PowerTypes.OperatePower => string.Equals(target.Type, RoomObjectTypes.PowerSpawn, StringComparison.Ordinal),
+                PowerTypes.OperateController => string.Equals(target.Type, RoomObjectTypes.Controller, StringComparison.Ordinal),
+                PowerTypes.DisruptSpawn => string.Equals(target.Type, RoomObjectTypes.Spawn, StringComparison.Ordinal),
+                PowerTypes.DisruptTower => string.Equals(target.Type, RoomObjectTypes.Tower, StringComparison.Ordinal),
+                PowerTypes.DisruptSource => string.Equals(target.Type, RoomObjectTypes.Source, StringComparison.Ordinal),
+                PowerTypes.DisruptTerminal => string.Equals(target.Type, RoomObjectTypes.Terminal, StringComparison.Ordinal),
+                PowerTypes.RegenSource => string.Equals(target.Type, RoomObjectTypes.Source, StringComparison.Ordinal),
+                PowerTypes.RegenMineral => ValidateRegenMineral(target),
+                PowerTypes.Fortify => ValidateFortifyTarget(target),
+                PowerTypes.OperateFactory => string.Equals(target.Type, RoomObjectTypes.Factory, StringComparison.Ordinal),
+                _ => false
+            };
 
         if (!applyEffect)
             return;
@@ -238,8 +226,7 @@ internal sealed class PowerAbilityStep : IRoomProcessorStep
         var endTime = gameTime + duration;
 
         // Add effect to target
-        if (!effectsLedger.TryGetValue(target.Id, out var effects))
-        {
+        if (!effectsLedger.TryGetValue(target.Id, out var effects)) {
             effects = new Dictionary<PowerTypes, PowerEffectSnapshot>(target.Effects);
             effectsLedger[target.Id] = effects;
         }
@@ -347,8 +334,7 @@ internal sealed class PowerAbilityStep : IRoomProcessorStep
         Dictionary<string, RoomObjectActionLogPatch> actionLogLedger,
         HashSet<string> modifiedObjects)
     {
-        foreach (var objectId in modifiedObjects)
-        {
+        foreach (var objectId in modifiedObjects) {
             var patch = new RoomObjectPatchPayload
             {
                 Store = storeLedger.GetValueOrDefault(objectId),
@@ -406,8 +392,7 @@ internal sealed class PowerAbilityStep : IRoomProcessorStep
             return;
 
         // Deduct energy from source
-        if (!storeLedger.TryGetValue(target.Id, out var sourceStore))
-        {
+        if (!storeLedger.TryGetValue(target.Id, out var sourceStore)) {
             sourceStore = new Dictionary<string, int>(target.Store);
             storeLedger[target.Id] = sourceStore;
         }
@@ -416,8 +401,7 @@ internal sealed class PowerAbilityStep : IRoomProcessorStep
 
         // Distribute energy to extensions proportionally
         var remainingEnergy = actualFillAmount;
-        foreach (var extension in extensions)
-        {
+        foreach (var extension in extensions) {
             if (remainingEnergy == 0)
                 break;
 
@@ -433,8 +417,7 @@ internal sealed class PowerAbilityStep : IRoomProcessorStep
 
             var transferAmount = Math.Min(freeSpace, remainingEnergy);
 
-            if (!storeLedger.TryGetValue(extension.Id, out var ledgerExtStore))
-            {
+            if (!storeLedger.TryGetValue(extension.Id, out var ledgerExtStore)) {
                 ledgerExtStore = new Dictionary<string, int>(extension.Store);
                 storeLedger[extension.Id] = ledgerExtStore;
             }
@@ -476,8 +459,7 @@ internal sealed class PowerAbilityStep : IRoomProcessorStep
             return;
 
         // Deduct energy
-        if (!storeLedger.TryGetValue(powerCreep.Id, out var ledgerStore))
-        {
+        if (!storeLedger.TryGetValue(powerCreep.Id, out var ledgerStore)) {
             ledgerStore = new Dictionary<string, int>(powerCreep.Store);
             storeLedger[powerCreep.Id] = ledgerStore;
         }

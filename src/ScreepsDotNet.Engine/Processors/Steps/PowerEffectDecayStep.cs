@@ -12,22 +12,18 @@ internal sealed class PowerEffectDecayStep : IRoomProcessorStep
     {
         var gameTime = context.State.GameTime;
 
-        foreach (var obj in context.State.Objects.Values)
-        {
+        foreach (var obj in context.State.Objects.Values) {
             if (obj.Effects.Count == 0)
                 continue;
 
             var remainingEffects = new Dictionary<PowerTypes, PowerEffectSnapshot>();
             var hasExpiredEffects = false;
 
-            foreach (var (power, effect) in obj.Effects)
-            {
-                if (effect.EndTime <= gameTime)
-                {
+            foreach (var (power, effect) in obj.Effects) {
+                if (effect.EndTime <= gameTime) {
                     hasExpiredEffects = true;
                 }
-                else
-                {
+                else {
                     remainingEffects[power] = effect;
                 }
             }

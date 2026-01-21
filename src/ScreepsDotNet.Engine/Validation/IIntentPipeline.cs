@@ -1,5 +1,4 @@
 using ScreepsDotNet.Driver.Contracts;
-using ScreepsDotNet.Engine.Data.Rooms;
 
 namespace ScreepsDotNet.Engine.Validation;
 
@@ -7,6 +6,7 @@ namespace ScreepsDotNet.Engine.Validation;
 /// Centralized intent validation pipeline.
 /// Coordinates multiple validators in order: Schema → State → Range → Permission → Resource.
 /// Stops at first validation failure (early-exit).
+/// Validators are synchronous for performance.
 /// </summary>
 public interface IIntentPipeline
 {
@@ -15,7 +15,7 @@ public interface IIntentPipeline
     /// Invalid intents are silently dropped (Node.js parity).
     /// </summary>
     /// <param name="intents">Intents to validate</param>
-    /// <param name="roomState">Current room state snapshot</param>
+    /// <param name="roomSnapshot">Current room state snapshot (synchronous)</param>
     /// <returns>List of valid intents that passed all validators</returns>
-    Task<IReadOnlyList<IntentRecord>> ValidateAsync(IReadOnlyList<IntentRecord> intents, IRoomStateProvider roomState);
+    IReadOnlyList<IntentRecord> Validate(IReadOnlyList<IntentRecord> intents, RoomSnapshot roomSnapshot);
 }

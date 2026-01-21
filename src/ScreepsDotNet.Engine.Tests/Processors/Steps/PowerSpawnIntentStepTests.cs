@@ -26,9 +26,9 @@ public sealed class PowerSpawnIntentStepTests
         await _step.ExecuteAsync(context, TestContext.Current.CancellationToken);
 
         // Assert
-        var patch = writer.Patches.Single(p => p.ObjectId == powerSpawn.Id);
-        Assert.Equal(9, patch.Payload.Store![ResourceTypes.Power]);
-        Assert.Equal(450, patch.Payload.Store![ResourceTypes.Energy]);
+        var (ObjectId, Payload) = writer.Patches.Single(p => p.ObjectId == powerSpawn.Id);
+        Assert.Equal(9, Payload.Store![ResourceTypes.Power]);
+        Assert.Equal(450, Payload.Store![ResourceTypes.Energy]);
     }
 
     [Fact]
@@ -108,9 +108,9 @@ public sealed class PowerSpawnIntentStepTests
         await _step.ExecuteAsync(context, TestContext.Current.CancellationToken);
 
         // Assert
-        var patch = writer.Patches.Single(p => p.ObjectId == powerSpawn.Id);
-        Assert.Equal(7, patch.Payload.Store![ResourceTypes.Power]);
-        Assert.Equal(350, patch.Payload.Store![ResourceTypes.Energy]);
+        var (ObjectId, Payload) = writer.Patches.Single(p => p.ObjectId == powerSpawn.Id);
+        Assert.Equal(7, Payload.Store![ResourceTypes.Power]);
+        Assert.Equal(350, Payload.Store![ResourceTypes.Energy]);
     }
 
     [Fact]
@@ -127,8 +127,8 @@ public sealed class PowerSpawnIntentStepTests
         await _step.ExecuteAsync(context, TestContext.Current.CancellationToken);
 
         // Assert - level 1 effect adds +1 bonus = 2 power processed
-        var patch = writer.Patches.Single(p => p.ObjectId == powerSpawn.Id);
-        var result = patch.Payload.Store!;
+        var (ObjectId, Payload) = writer.Patches.Single(p => p.ObjectId == powerSpawn.Id);
+        var result = Payload.Store!;
         var expectedPower = 10 - 2;
         var expectedEnergy = 500 - (2 * ScreepsGameConstants.PowerSpawnEnergyRatio);
         Assert.Equal(expectedPower, result[ResourceTypes.Power]);
@@ -149,8 +149,8 @@ public sealed class PowerSpawnIntentStepTests
         await _step.ExecuteAsync(context, TestContext.Current.CancellationToken);
 
         // Assert - level 3 effect adds +3 bonus = 4 power processed
-        var patch = writer.Patches.Single(p => p.ObjectId == powerSpawn.Id);
-        var result = patch.Payload.Store!;
+        var (ObjectId, Payload) = writer.Patches.Single(p => p.ObjectId == powerSpawn.Id);
+        var result = Payload.Store!;
         var expectedPower = 10 - 4;
         var expectedEnergy = 500 - (4 * ScreepsGameConstants.PowerSpawnEnergyRatio);
         Assert.Equal(expectedPower, result[ResourceTypes.Power]);
@@ -171,8 +171,8 @@ public sealed class PowerSpawnIntentStepTests
         await _step.ExecuteAsync(context, TestContext.Current.CancellationToken);
 
         // Assert - level 5 effect adds +5 bonus = 6 power processed
-        var patch = writer.Patches.Single(p => p.ObjectId == powerSpawn.Id);
-        var result = patch.Payload.Store!;
+        var (ObjectId, Payload) = writer.Patches.Single(p => p.ObjectId == powerSpawn.Id);
+        var result = Payload.Store!;
         var expectedPower = 10 - 6;
         var expectedEnergy = 500 - (6 * ScreepsGameConstants.PowerSpawnEnergyRatio);
         Assert.Equal(expectedPower, result[ResourceTypes.Power]);

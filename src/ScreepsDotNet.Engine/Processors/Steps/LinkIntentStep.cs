@@ -42,8 +42,7 @@ internal sealed class LinkIntentStep : IRoomProcessorStep
                     continue;
 
                 foreach (var record in records) {
-                    if (record.Name == IntentKeys.TransferEnergy)
-                    {
+                    if (record.Name == IntentKeys.TransferEnergy) {
                         ProcessTransferEnergy(context, obj, record, storeLedger, cooldownLedger, actionLogLedger, modifiedObjects);
                     }
                 }

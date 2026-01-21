@@ -17,8 +17,7 @@ public static class ValidationServiceCollectionExtensions
     /// </remarks>
     public static IServiceCollection AddIntentValidation(this IServiceCollection services)
     {
-        // TODO (E3.2.1): Uncomment after implementing RangeValidator
-        // services.AddSingleton<IIntentValidator, RangeValidator>();
+        services.AddSingleton<IIntentValidator, Validators.RangeValidator>();
 
         // TODO (E3.2.2): Uncomment after implementing ResourceValidator
         // services.AddSingleton<IIntentValidator, ResourceValidator>();
