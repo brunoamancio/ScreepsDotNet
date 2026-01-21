@@ -22,5 +22,6 @@ internal static class EndpointRegistration
         StrongholdEndpoints.Map(app);
         SystemEndpoints.Map(app);
         MapEndpoints.Map(app);
+        EngineEndpoints.Map(app);
     }
 }

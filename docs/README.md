@@ -21,6 +21,7 @@ Use this index to understand which file owns which slice of project knowledge. W
 | `docs/engine/roadmap.md` | Engine roadmap tracking (E1-E9) - milestone status, test counts, deferred features. | Human-readable roadmap. Update when milestones complete. E1-E6 complete ✅, E7-E9 pending. |
 | `docs/engine/e1-e9.md` | Individual milestone design docs (E1 through E9). | Detailed handler breakdown with test counts and parity notes. |
 | `docs/engine/data-model.md` | Engine data contracts design - Driver↔Engine boundary, DTOs, deferred features. | Reference for E2 implementation. All features complete except non-parity-critical deferrals. |
+| `docs/engine/operator-playbooks.md` | Debugging workflows and troubleshooting guides for Engine diagnostics and monitoring. | NEW in E8. Playbooks for common issues (high rejection rate, slow processing, memory leaks, etc.). |
 | `src/ScreepsDotNet.Engine/CLAUDE.md` | Engine subsystem AI context - 🚨 NEVER direct DB patterns, intent handler examples, parity testing. | AI-optimized. Critical: Engine NEVER accesses Mongo/Redis directly (use Driver). E1-E6 complete ✅. |
 | **Storage Subsystem** | | |
 | `docs/storage/overview.md` | Storage architecture, MongoDB collections, Redis keys, connection management. | NEW. Extracted from CLAUDE.md. Entry point for storage docs. |

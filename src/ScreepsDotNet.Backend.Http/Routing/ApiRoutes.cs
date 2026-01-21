@@ -97,6 +97,15 @@ public static class ApiRoutes
             public const string Experimentation = $"{PowerBase}/experimentation";
         }
 
+        public static class Engine
+        {
+            private const string EngineBase = $"{Base}/engine";
+            public const string Status = $"{EngineBase}/status";
+            public const string RoomState = $"{EngineBase}/room-state";
+            public const string ValidationStats = $"{EngineBase}/validation-stats";
+            public const string ValidationStatsReset = $"{EngineBase}/validation-stats/reset";
+        }
+
         public static class Intent
         {
             public const string AddObject = $"{Base}/add-object-intent";
