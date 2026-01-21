@@ -218,6 +218,39 @@ public static class ScreepsGameConstants
     public const int TerrainMaskWall = 1;
     public const int TerrainMaskSwamp = 2;
 
+    // Source energy regeneration
+    public const int EnergyRegenTime = 300;
+    public const int SourceEnergyCapacity = 3000;
+    public const int SourceEnergyNeutralCapacity = 1500;
+    public const int SourceEnergyKeeperCapacity = 4000;
+
+    // Mineral regeneration
+    public const int MineralRegenTime = 50_000;
+    public const double MineralDensityChange = 0.05;
+
+    public static IReadOnlyDictionary<int, int> MineralDensityAmounts { get; } =
+        new Dictionary<int, int>
+        {
+            [1] = 15_000,    // DENSITY_LOW
+            [2] = 35_000,    // DENSITY_MODERATE
+            [3] = 70_000,    // DENSITY_HIGH
+            [4] = 100_000    // DENSITY_ULTRA
+        };
+
+    public static IReadOnlyDictionary<int, double> MineralDensityProbability { get; } =
+        new Dictionary<int, double>
+        {
+            [1] = 0.1,  // DENSITY_LOW: 10%
+            [2] = 0.5,  // DENSITY_MODERATE: 50%
+            [3] = 0.9,  // DENSITY_HIGH: 90%
+            [4] = 1.0   // DENSITY_ULTRA: 100%
+        };
+
+    public const int DensityLow = 1;
+    public const int DensityModerate = 2;
+    public const int DensityHigh = 3;
+    public const int DensityUltra = 4;
+
     // Controller upgrade/downgrade
     public const int UpgradeControllerPower = 1;
     public const int ControllerMaxUpgradePerTick = 15;

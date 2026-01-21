@@ -44,6 +44,7 @@ public sealed record RoomObjectPatchPayload : IRoomObjectPatchPayload
     public int? Harvested { get; init; }
     public int? Cooldown { get; init; }
     public int? CooldownTime { get; init; }
+    public int? NextRegenerationTime { get; init; }
     public RoomReservationSnapshot? Reservation { get; init; }
     public int? SafeModeAvailable { get; init; }
     public IReadOnlyDictionary<PowerTypes, PowerEffectSnapshot>? Effects { get; init; }
@@ -72,6 +73,7 @@ public sealed record RoomObjectPatchPayload : IRoomObjectPatchPayload
         Harvested.HasValue ||
         Cooldown.HasValue ||
         CooldownTime.HasValue ||
+        NextRegenerationTime.HasValue ||
         Spawning is not null ||
         ClearSpawning ||
         Reservation is not null ||

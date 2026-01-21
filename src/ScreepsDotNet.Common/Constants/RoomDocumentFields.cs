@@ -39,6 +39,7 @@ public static class RoomDocumentFields
         public const string Harvested = "harvested";
         public const string Cooldown = "cooldown";
         public const string CooldownTime = "cooldownTime";
+        public const string NextRegenerationTime = "nextRegenerationTime";
         public const string Spawning = "spawning";
         public const string NotifyWhenAttacked = "notifyWhenAttacked";
         public const string InterRoom = "interRoom";

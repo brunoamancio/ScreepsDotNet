@@ -150,6 +150,9 @@ public sealed class RoomObjectDocument
     [BsonElement("cooldownTime")]
     public int? CooldownTime { get; set; }
 
+    [BsonElement("nextRegenerationTime")]
+    public int? NextRegenerationTime { get; set; }
+
     [BsonElement("strongholdBehavior")]
     public string? StrongholdBehavior { get; set; }
 

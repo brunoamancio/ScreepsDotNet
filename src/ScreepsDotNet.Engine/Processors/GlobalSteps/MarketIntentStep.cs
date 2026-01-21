@@ -1,8 +1,8 @@
 namespace ScreepsDotNet.Engine.Processors.GlobalSteps;
 
-using System.Text.RegularExpressions;
 using ScreepsDotNet.Common.Constants;
 using ScreepsDotNet.Common.Types;
+using ScreepsDotNet.Common.Utilities;
 using ScreepsDotNet.Driver.Constants;
 using ScreepsDotNet.Driver.Contracts;
 using static ScreepsDotNet.Common.Constants.MarketIntentFields;
@@ -10,7 +10,7 @@ using static ScreepsDotNet.Common.Constants.MarketIntentFields;
 /// <summary>
 /// Handles market-related global intents (create/cancel/extend/change price).
 /// </summary>
-internal sealed partial class MarketIntentStep : IGlobalProcessorStep
+internal sealed class MarketIntentStep : IGlobalProcessorStep
 {
     private static readonly StringComparer Comparer = StringComparer.Ordinal;
     private static readonly HashSet<string> IntershardResources = new(ScreepsGameConstants.IntershardResources, Comparer);
@@ -547,22 +547,10 @@ internal sealed partial class MarketIntentStep : IGlobalProcessorStep
 
     private static (int X, int Y)? ParseRoomCoordinates(string roomName)
     {
-        if (string.IsNullOrWhiteSpace(roomName))
-            return null;
+        if (RoomCoordinateHelper.TryParse(roomName, out var x, out var y))
+            return (x, y);
 
-        var match = RoomNameRegex().Match(roomName);
-        if (!match.Success)
-            return null;
-
-        var xDir = match.Groups[1].Value;
-        var xValue = int.Parse(match.Groups[2].Value);
-        var yDir = match.Groups[3].Value;
-        var yValue = int.Parse(match.Groups[4].Value);
-
-        var x = string.Equals(xDir, "W", StringComparison.Ordinal) ? -xValue - 1 : xValue;
-        var y = string.Equals(yDir, "N", StringComparison.Ordinal) ? -yValue - 1 : yValue;
-
-        return (x, y);
+        return null;
     }
 
     private static int CalculateTerminalEnergyCost(int amount, int range)
@@ -1034,9 +1022,6 @@ internal sealed partial class MarketIntentStep : IGlobalProcessorStep
             }
         }
     }
-
-    [GeneratedRegex(@"^([WE])(\d+)([NS])(\d+)$")]
-    private static partial Regex RoomNameRegex();
 
     private sealed record OrderState(MarketOrderSnapshot Snapshot, bool IsInterShard);
     private sealed record DealIntent(string UserId, string OrderId, int Amount, string TargetRoomName);

@@ -88,10 +88,12 @@ internal static class RoomContractMapper
             document.Harvested,
             document.Cooldown,
             document.CooldownTime,
+            document.NextRegenerationTime,
             document.SafeMode,
             document.SafeModeAvailable,
             MapPortalDestination(document.Destination),
-            MapSend(document.Send));
+            MapSend(document.Send),
+            null);
     }
 
     public static IReadOnlyDictionary<string, UserState> MapUsers(IReadOnlyDictionary<string, UserDocument> users)
@@ -476,6 +478,7 @@ internal static class RoomContractMapper
             Harvested = snapshot.Harvested,
             Cooldown = snapshot.Cooldown,
             CooldownTime = snapshot.CooldownTime,
+            NextRegenerationTime = snapshot.NextRegenerationTime,
             Destination = MapPortalDestination(snapshot.PortalDestination),
             Send = MapSendToBson(snapshot.Send)
         };
@@ -682,6 +685,9 @@ internal static class RoomContractMapper
 
         if (patch.CooldownTime.HasValue)
             document[RoomDocumentFields.RoomObject.CooldownTime] = patch.CooldownTime.Value;
+
+        if (patch.NextRegenerationTime.HasValue)
+            document[RoomDocumentFields.RoomObject.NextRegenerationTime] = patch.NextRegenerationTime.Value;
 
         if (patch.Reservation is { } reservation) {
             document[RoomDocumentFields.RoomObject.Reservation] = new BsonDocument

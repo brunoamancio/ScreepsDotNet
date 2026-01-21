@@ -28,7 +28,7 @@ public static class ValidationRanges
         [IntentKeys.RangedHeal] = 3,
         [IntentKeys.UpgradeController] = 3,
         [IntentKeys.ReserveController] = 3,
-        [IntentKeys.AttackController] = 3,
+        [IntentKeys.AttackController] = 3
 
         // Special Cases (handled differently in processors)
         // Tower range validated in TowerIntentStep (falloff calculation)

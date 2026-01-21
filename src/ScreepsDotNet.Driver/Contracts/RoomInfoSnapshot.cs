@@ -17,4 +17,5 @@ public sealed record RoomInfoSnapshot(
     int? EnergyAvailable,
     long? NextNpcMarketOrder,
     long? PowerBankTime,
-    int? InvaderGoal);
+    int? InvaderGoal,
+    RoomType Type = RoomType.Unknown);

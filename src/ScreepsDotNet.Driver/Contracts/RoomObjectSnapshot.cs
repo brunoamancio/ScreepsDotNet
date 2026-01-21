@@ -56,6 +56,7 @@ public sealed record RoomObjectSnapshot(
     int? Harvested = null,
     int? Cooldown = null,
     int? CooldownTime = null,
+    int? NextRegenerationTime = null,
     int? SafeMode = null,
     int? SafeModeAvailable = null,
     RoomPortalDestinationSnapshot? PortalDestination = null,

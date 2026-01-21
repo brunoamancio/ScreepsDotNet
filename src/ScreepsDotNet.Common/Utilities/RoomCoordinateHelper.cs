@@ -1,12 +1,18 @@
 namespace ScreepsDotNet.Common.Utilities;
 
-using System;
+using System.Text.RegularExpressions;
+using ScreepsDotNet.Common.Types;
 
 /// <summary>
 /// Helpers for converting Screeps room names to Cartesian coordinates and computing distances.
 /// </summary>
-public static class RoomCoordinateHelper
+public static partial class RoomCoordinateHelper
 {
+    /// <summary>
+    /// Regex pattern for validating and parsing Screeps room names (e.g., W5N10, E3S7).
+    /// </summary>
+    [GeneratedRegex(@"^([WE])(\d+)([NS])(\d+)$", RegexOptions.Compiled)]
+    private static partial Regex RoomNameRegex();
     /// <summary>
     /// Converts a Screeps room name (e.g. W10N5) into world coordinates where the origin is at E0S0.
     /// </summary>
@@ -106,5 +112,44 @@ public static class RoomCoordinateHelper
         }
 
         return Math.Max(dx, dy);
+    }
+
+    /// <summary>
+    /// Validates a room name using the standard Screeps pattern ([WE]\d+[NS]\d+).
+    /// </summary>
+    /// <param name="roomName">Room name to validate.</param>
+    /// <returns>True if the room name matches the expected pattern.</returns>
+    public static bool IsValidRoomName(string roomName)
+    {
+        if (string.IsNullOrWhiteSpace(roomName))
+            return false;
+
+        return RoomNameRegex().IsMatch(roomName);
+    }
+
+    /// <summary>
+    /// Determines the room type based on room coordinates.
+    /// </summary>
+    /// <param name="roomName">Room name to classify.</param>
+    /// <returns>Room type classification.</returns>
+    public static RoomType DetermineRoomType(string roomName)
+    {
+        if (!TryParse(roomName, out var x, out var y))
+            return RoomType.Unknown;
+
+        var xIsCenterSector = x % 10 == 0;
+        var yIsCenterSector = y % 10 == 0;
+
+        // Source Keeper rooms: both x and y are center sectors (x % 10 == 0 AND y % 10 == 0)
+        if (xIsCenterSector && yIsCenterSector)
+            return RoomType.Keeper;
+
+        // Highway rooms: one coordinate is center sector (x % 10 == 0 XOR y % 10 == 0)
+        if (xIsCenterSector || yIsCenterSector)
+            return RoomType.Highway;
+
+        // Normal rooms: neither coordinate is center sector
+        var result = RoomType.Normal;
+        return result;
     }
 }
