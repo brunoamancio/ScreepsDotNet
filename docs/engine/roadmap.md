@@ -42,6 +42,11 @@ This document tracks the Engine subsystem roadmap and implementation status. For
 - All room-level intent handlers implemented
 - E5 Phase 1 unblocked 4 E2 features (PWR_GENERATE_OPS, user GCL/power tracking)
 
+**Deferred (Non-Parity-Critical):**
+- 📋 Event log emissions (EVENT_TRANSFER, EVENT_UPGRADE_CONTROLLER, etc.) - replay visualization
+- 📋 Level-up notifications - user notifications on controller level-up (UX only)
+- 📋 Stats recording - power processed, resources transferred, etc. (analytics only)
+
 **Details:** See `e2.md` for handler breakdown, `data-model.md` for contracts
 
 ---
@@ -142,9 +147,8 @@ This document tracks the Engine subsystem roadmap and implementation status. For
 - ✅ All E2 features complete (including 4 E5-blocked features)
 - ✅ E3 validators implemented
 - ✅ E4 simulation kernel complete
-- ✅ E5 Phase 1 complete (user stats tracking)
-- 📋 E5 Phase 2-4 complete (optional - keeper rooms, nukers)
-- 📋 E6 orchestration complete
+- ✅ E5 all phases complete (user stats tracking, power effects, keeper lairs, nuker operations)
+- ✅ E6 orchestration complete
 - ✅ Legacy Node.js engine repo access
 
 **Details:** See `e2.md` for parity-critical feature status, `e3.md` for deferred E3 parity validation
@@ -165,7 +169,7 @@ This document tracks the Engine subsystem roadmap and implementation status. For
 **Dependencies:**
 - D8 logging stack
 - Scheduler hooks
-- E6 orchestration
+- ✅ E6 orchestration complete
 
 ---
 
@@ -180,8 +184,8 @@ This document tracks the Engine subsystem roadmap and implementation status. For
 - Path caching and reuse (50-tick cache)
 
 **Dependencies:**
-- E5 Phase 3 complete (keeper spawning) ✅
-- E6 orchestration (AI runs in processor loop)
+- ✅ E5 Phase 3 complete (keeper spawning)
+- ✅ E6 orchestration complete (AI runs in processor loop)
 - E7 parity framework (for testing AI behavior)
 - E8 observability (for debugging AI decisions)
 
@@ -208,8 +212,8 @@ This document tracks the Engine subsystem roadmap and implementation status. For
 
 **Remaining Work:**
 - 📋 E7: Parity validation (depends on: E1-E6 complete ✅)
-- 📋 E8: Observability & tooling (depends on: D8 logging stack, Scheduler hooks, E6 orchestration ✅)
-- 📋 E9: NPC AI logic (depends on: E5 Phase 3 ✅, E6-E8 complete)
+- 📋 E8: Observability & tooling (depends on: D8 logging stack, Scheduler hooks, E6 complete ✅)
+- 📋 E9: NPC AI logic (depends on: E5 Phase 3 ✅, E6 complete ✅, E7-E8 pending)
 
 **Next Milestone:** E7 (Compatibility & Parity Validation)
 

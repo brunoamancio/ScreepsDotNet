@@ -1,12 +1,13 @@
 # Engine Data Model Plan (E2)
 
-**Status:** E2.3 is 95% Complete - January 21, 2026
+**Status:** E2 Complete ✅ - January 21, 2026
 
 **Progress:**
 - E2.1-E2.2: ✅ Complete (driver contracts, snapshot providers)
-- E2.3: ⚠️ 95% Complete (11/11 handler families, 240/240 tests, 4 features blocked by E5)
+- E2.3: ✅ Complete (11/11 handler families, 240/240 tests, all E5 blockers resolved)
 - E2.4: ✅ Complete (mutation writers, memory sinks)
 - E2.5: ✅ Complete (test coverage, parity checks)
+- E5 Phase 1: ✅ Complete (unblocked 4 E2 global mutation features)
  
 ## Constraints
 
@@ -85,25 +86,25 @@ Each field can also be patched through `RoomObjectPatchPayload`, and `RoomContra
   - 58 power ability tests (decay, core abilities, effect-based, direct-action)
   - **Schema:** `Dictionary<PowerTypes, PowerEffectSnapshot>? Effects` in snapshot
 
-### ⚠️ Blocked by E5 (Global Systems)
+### ✅ Unblocked by E5 Phase 1 (January 21, 2026)
 
-The following features require E5 global mutation infrastructure. See `docs/engine/e5.md` for details.
+The following features were unblocked by E5 Phase 1 global mutation infrastructure. See `docs/engine/e5.md` for details.
 
-#### Global User Mutations
-1. **User GCL updates** - Controller upgrades should increment global GCL
-   - **Needs:** `IGlobalMutationWriter.IncrementUserGcl(userId, amount)`
-   - **Impact:** Both boosted and non-boosted GCL gains blocked
-   - **Parity:** Required for E7 validation
+#### Global User Mutations - All Implemented ✅
+1. **User GCL updates** - Controller upgrades increment global GCL ✅
+   - **Implemented:** `IGlobalMutationWriter.IncrementUserGcl(userId, amount)`
+   - **Impact:** Both boosted and non-boosted GCL gains functional
+   - **Status:** Ready for E7 parity validation
 
-2. **User power balance** - PowerSpawn processing should increment global power
-   - **Needs:** `IGlobalMutationWriter.IncrementUserPower(userId, amount)`
+2. **User power balance** - PowerSpawn processing increments global power ✅
+   - **Implemented:** `IGlobalMutationWriter.IncrementUserPower(userId, amount)`
    - **Impact:** Power balance tracking for generateOps ability
-   - **Parity:** Required for E7 validation
+   - **Status:** Ready for E7 parity validation
 
-3. **PWR_GENERATE_OPS ability** - Power creep ability to generate ops
-   - **Needs:** `IGlobalMutationWriter.DecrementUserPower(userId, amount)`
-   - **Impact:** 1 of 19 power abilities blocked
-   - **Parity:** Required for E7 validation
+3. **PWR_GENERATE_OPS ability** - Power creep ability to generate ops ✅
+   - **Implemented:** `IGlobalMutationWriter.DecrementUserPower(userId, amount)`
+   - **Impact:** All 19 power abilities now functional
+   - **Status:** Ready for E7 parity validation
 
 ### 📝 Deferred (Non-Parity-Critical)
 
@@ -126,7 +127,7 @@ These features don't affect simulation correctness and can be implemented post-E
 - Registered through `AddEngineCore` DI
 - Engine consumes `RoomSnapshot`/`GlobalSnapshot` without database knowledge
 
-### 3. Engine Consumption (E2.3) - ⚠️ 95% Complete
+### 3. Engine Consumption (E2.3) - ✅ Complete
 **Implemented Handlers (11/11 families, 240/240 tests):**
 - ✅ Movement (25 tests) - crashes, pull chains, inter-room/portal transfers
 - ✅ Spawn (18 tests) - create, renew, recycle
@@ -149,12 +150,13 @@ These features don't affect simulation correctness and can be implemented post-E
 - ✅ Combat resolution, decay, downgrade systems
 - ✅ Power effect tracking (`PowerEffectDecayStep`, `PowerAbilityStep`)
 - ✅ Intent event logging (`RoomIntentEventLogStep`)
+- ✅ Global mutation writer (`IGlobalMutationWriter`) - E5 Phase 1
 
-**Blocked by E5 (4 features):**
-- PWR_GENERATE_OPS power ability
-- User power balance tracking (PowerSpawn)
-- User GCL updates (Controller)
-- Boost effects GCL component (Controller)
+**All Features Implemented (January 21, 2026):**
+- ✅ PWR_GENERATE_OPS power ability
+- ✅ User power balance tracking (PowerSpawn)
+- ✅ User GCL updates (Controller)
+- ✅ Boost effects GCL component (Controller)
 
 See `docs/engine/e2.md` for detailed handler breakdown.
 
@@ -173,7 +175,7 @@ See `docs/engine/e2.md` for detailed handler breakdown.
 
 ## E2 Deliverables
 
-### ✅ Completed
+### ✅ All Deliverables Complete (January 21, 2026)
 - ✅ Driver contracts + snapshot provider interfaces (E2.1)
 - ✅ Engine consumes only driver contracts (no `ScreepsDotNet.Storage.MongoRedis` references)
 - ✅ Documentation updated (this file + `src/ScreepsDotNet.Engine/CLAUDE.md`)
@@ -181,10 +183,8 @@ See `docs/engine/e2.md` for detailed handler breakdown.
 - ✅ 11/11 handler families implemented with full test coverage
 - ✅ Mutation writers integrated with driver `IRoomMutationDispatcher`
 - ✅ Memory persistence via `UserMemorySink`
-
-### ⚠️ Remaining Work (Blocked by E5)
-- E5 must implement `IGlobalMutationWriter` for global user mutations (GCL, power balance)
-- After E5 Phase 1, return to E2.3 to implement 4 blocked features (1-2 hours effort)
+- ✅ Global mutation writer implemented via E5 Phase 1
+- ✅ All 4 global mutation features unblocked (GCL, power balance, PWR_GENERATE_OPS)
 
 ### Next Steps
-With E2 95% complete, the engine is ready for **E3 (Intent Gathering & Validation)** and can proceed to E7 parity validation once E5 global mutations are in place. The engine operates entirely through driver abstractions without touching the database layer.
+With E2 100% complete, the engine is ready for **E7 (Compatibility & Parity Validation)**. E3 (Intent Gathering & Validation), E4 (Simulation Kernel), E5 (Global Systems), and E6 (Engine Loop Orchestration) are all complete. The engine operates entirely through driver abstractions without touching the database layer.
