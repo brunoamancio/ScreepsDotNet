@@ -17,7 +17,7 @@ This document tracks the Engine subsystem roadmap and implementation status. For
 | E5 | ✅ | Global Systems | All phases complete: User GCL/power tracking, keeper lairs, nuker operations. Global mutations (`IGlobalMutationWriter`) operational. | E4 foundation |
 | E6 | ✅ | Engine Loop Orchestration | `EngineHost` coordinates ticks; main/runner/processor loops call managed engine | Driver queue service, telemetry sink |
 | E7 | 📋 | Compatibility & Parity Validation | Lockstep testing vs. Node engine, automated divergence detection | Prior steps, legacy engine repo |
-| E8 | 📋 | Observability & Tooling | Engine metrics flow to telemetry, diagnostics commands, operator playbooks | D8 logging stack, scheduler hooks |
+| E8 | 📋 | Observability & Tooling | Engine metrics flow to telemetry, diagnostics commands, operator playbooks | D8 (✅), D4 hooks (✅), E6 (✅) |
 | E9 | 📋 | NPC AI Logic | Keeper and invader AI implemented with pathfinding, targeting, and combat logic | E5 Phase 3 (spawning), E6-E8 complete |
 
 ---
@@ -166,9 +166,9 @@ This document tracks the Engine subsystem roadmap and implementation status. For
 - Operator playbooks for debugging
 - Performance profiling tools
 
-**Dependencies:**
-- D8 logging stack
-- Scheduler hooks
+**Prerequisites:**
+- ✅ D8 runtime lifecycle complete (`IRuntimeTelemetrySink`, `IDriverLoopHooks`)
+- ✅ D4 scheduler hooks complete (`IDriverLoopHooks` telemetry integration)
 - ✅ E6 orchestration complete
 
 ---
@@ -212,7 +212,7 @@ This document tracks the Engine subsystem roadmap and implementation status. For
 
 **Remaining Work:**
 - 📋 E7: Parity validation (depends on: E1-E6 complete ✅)
-- 📋 E8: Observability & tooling (depends on: D8 logging stack, Scheduler hooks, E6 complete ✅)
+- 📋 E8: Observability & tooling (depends on: D8 complete ✅, D4 hooks ✅, E6 complete ✅)
 - 📋 E9: NPC AI logic (depends on: E5 Phase 3 ✅, E6 complete ✅, E7-E8 pending)
 
 **Next Milestone:** E7 (Compatibility & Parity Validation)
