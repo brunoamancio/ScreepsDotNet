@@ -147,6 +147,7 @@ public static class RoomDocumentFields
         public const string DowngradeTime = "downgradeTime";
         public const string SafeMode = "safeMode";
         public const string SafeModeAvailable = "safeModeAvailable";
+        public const string IsPowerEnabled = "isPowerEnabled";
     }
 
     public static class Info
