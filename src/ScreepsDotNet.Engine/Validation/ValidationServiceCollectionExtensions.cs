@@ -27,8 +27,7 @@ public static class ValidationServiceCollectionExtensions
 
         services.AddSingleton<IIntentValidator, Validators.StateValidator>();
 
-        // TODO (E3.2.5): Uncomment after implementing SchemaValidator
-        // services.AddSingleton<IIntentValidator, Validators.SchemaValidator>();
+        services.AddSingleton<IIntentValidator, Validators.SchemaValidator>();
 
         // TODO (E3.3): Uncomment after implementing IntentValidationPipeline
         // services.AddSingleton<IIntentPipeline, IntentValidationPipeline>();

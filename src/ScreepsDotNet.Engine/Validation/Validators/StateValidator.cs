@@ -1,3 +1,4 @@
+using ScreepsDotNet.Common.Constants;
 using ScreepsDotNet.Driver.Contracts;
 using ScreepsDotNet.Engine.Validation.Constants;
 using ScreepsDotNet.Engine.Validation.Models;
@@ -96,7 +97,7 @@ public sealed class StateValidator : IIntentValidator
         var fields = intent.Arguments[0].Fields;
 
         // Try to get actor ID
-        if (!fields.TryGetValue("actorId", out var actorIdField) || actorIdField.TextValue is null)
+        if (!fields.TryGetValue(IntentKeys.ActorId, out var actorIdField) || actorIdField.TextValue is null)
             return false;
 
         actorId = actorIdField.TextValue;

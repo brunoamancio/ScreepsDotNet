@@ -19,6 +19,7 @@ public static class IntentKeys
     public const string BoostCreep = "boostCreep";
     public const string UnboostCreep = "unboostCreep";
 
+    public const string ActorId = "actorId";
     public const string TargetId = "id";
     public const string Amount = "amount";
     public const string ResourceType = "resourceType";
