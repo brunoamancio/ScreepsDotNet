@@ -58,20 +58,29 @@ This document tracks the Engine subsystem roadmap and implementation status. For
 
 ## E3: Intent Gathering & Validation 📋
 
-**Status:** Not Started
+**Status:** Not Started (Planning Complete)
 
 **Planned Deliverables:**
-- `IIntentPipeline` interface for intent processing
-- Intent schema validation
-- Range checks (creep near target?)
-- Resource availability checks
-- Permission checks (ownership, etc.)
-- Unit tests mirroring Node fixtures
+- `IIntentPipeline` interface for centralized validation
+- 5 validator components: Range, Resource, Permission, State, Schema
+- Validation constants (35+ intent types)
+- Unit tests mirroring Node fixtures (169 new + 240 E2 regression)
+- Integration with Engine processors (remove inline validation)
+- Observability metrics
 
 **Dependencies:**
-- E2 completion (handler infrastructure in place)
-- Driver runtime outputs
-- Constants for validation rules
+- E2 95% complete (handler infrastructure in place) ✅
+- Driver runtime outputs ✅
+- Constants for validation rules ⚠️ (partial)
+
+**Exit Criteria:**
+- All room-level intents validated before processing
+- All 5 validators implemented and tested (169 tests)
+- All E2 tests continue passing (240/240)
+- Parity with Node.js validation (silent failures)
+- Validation overhead <5ms per room
+
+**Details:** See `e3.md` for detailed implementation plan, validator breakdown, and test tracking
 
 ---
 
@@ -181,6 +190,7 @@ This document tracks the Engine subsystem roadmap and implementation status. For
 **Reference Documents:**
 - E1 (Legacy surface mapping): `e1.md`
 - E2 (Handlers and deferred features): `e2.md`
+- E3 (Intent validation implementation): `e3.md`
 - E5 (Global systems blockers): `e5.md`
 - Data model design: `data-model.md`
 - Coding patterns: `../../src/ScreepsDotNet.Engine/CLAUDE.md`
