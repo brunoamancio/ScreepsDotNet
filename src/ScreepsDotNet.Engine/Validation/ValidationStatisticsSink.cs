@@ -23,7 +23,8 @@ internal sealed class ValidationStatisticsSink : IValidationStatisticsSink
 
             if (result.IsValid) {
                 _validIntentsCount++;
-            } else {
+            }
+            else {
                 _rejectedIntentsCount++;
 
                 // Track error code distribution

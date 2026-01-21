@@ -40,6 +40,7 @@ public sealed record RoomObjectPatchPayload : IRoomObjectPatchPayload
     public IReadOnlyList<CreepBodyPartSnapshot>? Body { get; init; }
     public int? Energy { get; init; }
     public int? MineralAmount { get; init; }
+    public int? Density { get; init; }
     public int? InvaderHarvested { get; init; }
     public int? Harvested { get; init; }
     public int? Cooldown { get; init; }
@@ -69,6 +70,7 @@ public sealed record RoomObjectPatchPayload : IRoomObjectPatchPayload
         InterRoom is not null ||
         Energy.HasValue ||
         MineralAmount.HasValue ||
+        Density.HasValue ||
         InvaderHarvested.HasValue ||
         Harvested.HasValue ||
         Cooldown.HasValue ||

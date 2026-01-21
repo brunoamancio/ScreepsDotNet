@@ -138,8 +138,9 @@ internal sealed class SourceRegenerationStep : IRoomProcessorStep
 
         // Owned or reserved rooms use standard capacity (3000)
         if (!string.IsNullOrWhiteSpace(controller.UserId) ||
-            !string.IsNullOrWhiteSpace(controller.Reservation?.UserId))
+            !string.IsNullOrWhiteSpace(controller.Reservation?.UserId)) {
             return ScreepsGameConstants.SourceEnergyCapacity;
+        }
 
         // Neutral rooms use reduced capacity (1500)
         var result = ScreepsGameConstants.SourceEnergyNeutralCapacity;

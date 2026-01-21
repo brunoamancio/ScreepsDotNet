@@ -388,7 +388,7 @@ public sealed class SourceRegenerationStepTests
             Reservation: null,
             Sign: null,
             Structure: null,
-            Effects: effects ?? new Dictionary<PowerTypes, PowerEffectSnapshot>(),
+            Effects: effects ?? [],
             Body: [],
             Energy: energy,
             NextRegenerationTime: nextRegenerationTime);

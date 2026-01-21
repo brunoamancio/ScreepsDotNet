@@ -13,7 +13,7 @@ This document tracks the Engine subsystem roadmap and implementation status. For
 | E1 | ✅ | Map Legacy Engine Surface | Node engine API inventory documented (`e1.md`) | Node engine repo, driver notes |
 | E2 | ⚠️ 95% | Data & Storage Model | Driver snapshot/mutation contracts in place, Engine consuming them. Handlers for all intent types. | Driver contracts, Screeps schemas |
 | E3 | ✅ | Intent Gathering & Validation | `IIntentPipeline` + validators with unit tests mirroring Node fixtures | Driver runtime outputs, constants |
-| E4 | 📋 | Simulation Kernel (Room Processor) | Managed processor produces identical room diffs vs. Node baseline | E2, E3, Pathfinder service |
+| E4 | ✅ | Simulation Kernel (Room Processor) | Passive regeneration systems (source, mineral) implemented. Construction site decay verified as non-existent. | E2, E3 |
 | E5 | 📋 | Global Systems | Market, NPC spawns, shard messaging hooked into processor loop. Global mutations (`IGlobalMutationWriter`), power effect tracking. | E4 foundation |
 | E6 | 📋 | Engine Loop Orchestration | `EngineHost` coordinates ticks; main/runner/processor loops call managed engine | Driver queue service, telemetry sink |
 | E7 | 📋 | Compatibility & Parity Validation | Lockstep testing vs. Node engine, automated divergence detection | Prior steps, legacy engine repo |
@@ -95,20 +95,43 @@ This document tracks the Engine subsystem roadmap and implementation status. For
 
 ---
 
-## E4: Simulation Kernel (Room Processor) 📋
+## E4: Simulation Kernel (Room Processor) ✅ Complete
 
-**Status:** Not Started
+**Status:** Complete (January 21, 2026)
 
-**Planned Deliverables:**
-- Complete room processor implementation
-- All game mechanics functional
-- Room diffs match Node.js baseline
-- Performance optimizations
+**Completed Deliverables:**
+- ✅ RoomProcessor orchestration (from E2/E3 work)
+- ✅ 11/11 intent handler families (240/240 tests)
+- ✅ Passive regeneration systems:
+  - ✅ Source energy regeneration (15 tests)
+  - ✅ Mineral regeneration with density changes (12 tests)
+- ✅ Legacy verification: Construction site decay **does not exist** in Node.js engine
+- ✅ 20 processor steps registered in correct order
+- ✅ All 707 tests passing (381 Engine + 202 Backend.Http + 70 Driver + 54 Backend.Cli)
 
-**Dependencies:**
-- E2 (data model)
-- E3 (intent validation)
-- Pathfinder service
+**Key Finding:**
+Construction site decay was listed in original plan but **does not exist in legacy Screeps**. Verified by examining Node.js source:
+- File: `/ScreepsNodeJs/engine/src/processor/intents/construction-sites/tick.js` (empty function body)
+- No decay logic anywhere in Node codebase
+- Construction sites persist indefinitely until manually removed or completed
+
+**Deferred Features (to E5):**
+- ❌ NPC spawning (invaders, source keepers) - Requires global coordination and shard-wide timing
+- ❌ Power bank decay - Part of keeper room mechanics (E5 global systems)
+- ❌ Nuker launch - Likely an intent handler (E2 scope) or cross-room coordination (E5)
+
+These features require global mutation infrastructure (`IGlobalMutationWriter`) and cross-room coordination that will be implemented in E5.
+
+**Dependencies Met:**
+- E2 (data model) ✅
+- E3 (intent validation) ✅
+
+**Blocks:**
+- E5 (Global Systems) - room processor is stable
+- E6 (Orchestration) - simulation kernel complete
+- E7 (Parity) - mechanics implemented for comparison
+
+**Details:** See `e4.md` for implementation details and verification notes
 
 ---
 

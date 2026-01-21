@@ -674,6 +674,9 @@ internal static class RoomContractMapper
         if (patch.MineralAmount.HasValue)
             document[RoomDocumentFields.RoomObject.MineralAmount] = patch.MineralAmount.Value;
 
+        if (patch.Density.HasValue)
+            document[RoomDocumentFields.RoomObject.Density] = patch.Density.Value;
+
         if (patch.InvaderHarvested.HasValue)
             document[RoomDocumentFields.RoomObject.InvaderHarvested] = patch.InvaderHarvested.Value;
 

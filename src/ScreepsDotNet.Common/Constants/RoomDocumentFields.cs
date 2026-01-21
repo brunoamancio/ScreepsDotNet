@@ -36,6 +36,8 @@ public static class RoomDocumentFields
         public const string Energy = "energy";
         public const string EnergyCapacity = "energyCapacity";
         public const string MineralAmount = "mineralAmount";
+        public const string MineralType = "mineralType";
+        public const string Density = "density";
         public const string Harvested = "harvested";
         public const string Cooldown = "cooldown";
         public const string CooldownTime = "cooldownTime";
