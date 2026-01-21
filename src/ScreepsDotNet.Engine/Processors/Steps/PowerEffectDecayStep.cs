@@ -1,6 +1,5 @@
 using ScreepsDotNet.Common.Types;
 using ScreepsDotNet.Driver.Contracts;
-using ScreepsDotNet.Engine.Processors;
 
 namespace ScreepsDotNet.Engine.Processors.Steps;
 
