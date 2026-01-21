@@ -22,8 +22,7 @@ public static class ValidationServiceCollectionExtensions
         // TODO (E3.2.2): Uncomment after implementing ResourceValidator
         // services.AddSingleton<IIntentValidator, Validators.ResourceValidator>();
 
-        // TODO (E3.2.3): Uncomment after implementing PermissionValidator
-        // services.AddSingleton<IIntentValidator, Validators.PermissionValidator>();
+        services.AddSingleton<IIntentValidator, Validators.PermissionValidator>();
 
         services.AddSingleton<IIntentValidator, Validators.StateValidator>();
 

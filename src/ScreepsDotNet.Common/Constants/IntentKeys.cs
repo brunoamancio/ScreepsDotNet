@@ -11,6 +11,7 @@ public static class IntentKeys
     public const string RangedAttack = "rangedAttack";
     public const string Heal = "heal";
     public const string RangedHeal = "rangedHeal";
+    public const string Dismantle = "dismantle";
 
     public const string TransferEnergy = "transferEnergy";
     public const string ProcessPower = "processPower";
