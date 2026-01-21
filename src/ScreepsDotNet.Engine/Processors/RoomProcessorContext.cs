@@ -16,10 +16,19 @@ public sealed class RoomProcessorContext(
     private readonly Dictionary<string, IReadOnlyDictionary<int, string>> _memorySegments = new(StringComparer.Ordinal);
     private readonly Dictionary<string, string> _interShardSegments = new(StringComparer.Ordinal);
 
-    public RoomState State { get; } = state;
+    public RoomState State { get; private set; } = state;
     public IRoomMutationWriter MutationWriter { get; } = mutationWriter;
     public ICreepStatsSink Stats { get; } = statsSink;
     public RoomExitTopology? ExitTopology { get; } = exitTopology;
+
+    /// <summary>
+    /// Replace the room state (used by IntentValidationStep to apply filtered intents).
+    /// </summary>
+    internal void ReplaceState(RoomState newState)
+    {
+        ArgumentNullException.ThrowIfNull(newState);
+        State = newState;
+    }
 
     public void SetRawMemory(string userId, string memoryJson)
     {

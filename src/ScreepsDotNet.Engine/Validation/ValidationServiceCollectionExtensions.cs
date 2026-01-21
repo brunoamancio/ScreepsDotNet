@@ -12,23 +12,18 @@ public static class ValidationServiceCollectionExtensions
     /// Registers the pipeline and all 5 validators in the correct order.
     /// </summary>
     /// <remarks>
-    /// TODO (E3.2): Uncomment registrations after implementing validators.
     /// Order matters: Schema → State → Range → Permission → Resource.
+    /// Validators are registered in order and will be executed in that order by the pipeline.
     /// </remarks>
     public static IServiceCollection AddIntentValidation(this IServiceCollection services)
     {
-        services.AddSingleton<IIntentValidator, Validators.RangeValidator>();
-
-        services.AddSingleton<IIntentValidator, Validators.ResourceValidator>();
-
-        services.AddSingleton<IIntentValidator, Validators.PermissionValidator>();
-
-        services.AddSingleton<IIntentValidator, Validators.StateValidator>();
-
+        // Register validators in order (Schema → State → Range → Permission → Resource)
         services.AddSingleton<IIntentValidator, Validators.SchemaValidator>();
-
-        // TODO (E3.3): Uncomment after implementing IntentValidationPipeline
-        // services.AddSingleton<IIntentPipeline, IntentValidationPipeline>();
+        services.AddSingleton<IIntentValidator, Validators.StateValidator>();
+        services.AddSingleton<IIntentValidator, Validators.RangeValidator>();
+        services.AddSingleton<IIntentValidator, Validators.PermissionValidator>();
+        services.AddSingleton<IIntentValidator, Validators.ResourceValidator>();
+        services.AddSingleton<IIntentPipeline, IntentValidationPipeline>();
 
         return services;
     }

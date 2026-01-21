@@ -13,15 +13,22 @@ using ScreepsDotNet.Engine.Processors;
 using ScreepsDotNet.Engine.Processors.GlobalSteps;
 using ScreepsDotNet.Engine.Processors.Helpers;
 using ScreepsDotNet.Engine.Processors.Steps;
+using ScreepsDotNet.Engine.Validation;
 
 public static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddEngineCore(this IServiceCollection services)
     {
+        services.AddIntentValidation();
+
         services.AddSingleton<IRoomStateProvider, RoomStateProvider>();
         services.AddSingleton<IGlobalStateProvider, GlobalStateProvider>();
         services.AddSingleton<IRoomMutationWriterFactory, RoomMutationWriterFactory>();
         services.AddSingleton<IUserMemorySink, UserMemorySink>();
+
+        // CRITICAL: IntentValidationStep MUST run FIRST before all other steps
+        services.AddSingleton<IRoomProcessorStep, IntentValidationStep>();
+
         services.AddSingleton<IRoomProcessorStep, CreepLifecycleStep>();
         services.AddSingleton<IRoomProcessorStep, MovementIntentStep>();
         services.AddSingleton<IRoomProcessorStep, SpawnIntentStep>();
