@@ -230,8 +230,8 @@ internal sealed class ResourceDropHelper : IResourceDropHelper
             Sign: null,
             Structure: null,
             Effects: new Dictionary<PowerTypes, PowerEffectSnapshot>(),
-            Spawning: null,
             Body: [],
+            Spawning: null,
             ResourceType: resourceType,
             ResourceAmount: amount);
 

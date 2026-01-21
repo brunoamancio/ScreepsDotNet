@@ -497,8 +497,8 @@ internal sealed class PowerAbilityStep : IRoomProcessorStep
             Sign: null,
             Structure: null,
             Effects: new Dictionary<PowerTypes, PowerEffectSnapshot>(),
-            Spawning: null,
             Body: [],
+            Spawning: null,
             DecayTime: decayTime);
 
         context.MutationWriter.Upsert(rampart);

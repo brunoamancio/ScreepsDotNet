@@ -301,10 +301,8 @@ public class StateValidatorTests
             Sign: null,
             Structure: null,
             Effects: new Dictionary<Common.Types.PowerTypes, PowerEffectSnapshot>(),
-            Spawning: null,
             Body: [],
-            IsSpawning: spawning,
-            ActionLog: null
+            IsSpawning: spawning
         );
         return snapshot;
     }
