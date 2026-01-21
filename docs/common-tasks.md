@@ -67,8 +67,8 @@ public async Task SetPreference_ValidRequest_ReturnsOk()
 ```
 
 ### 6. Update Documentation
-- `docs/http-endpoints.md` - Route reference
-- `docs/backend.md` - Feature coverage list
+- `docs/backend/http-api.md` - Route reference
+- `docs/backend/overview.md` - Feature coverage list
 
 ## Add a New CLI Command
 
@@ -114,7 +114,7 @@ app.Configure(config =>
 ```
 
 ### 3. Update Documentation
-- `docs/cli.md` - Command reference
+- `docs/backend/cli.md` - Command reference
 
 ### 4. Test
 ```bash

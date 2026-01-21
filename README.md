@@ -19,7 +19,7 @@ Modern .NET rewrite of the Screeps private server backend. The solution exposes 
 2. `docker compose -f src/docker-compose.yml up -d` to launch Mongo 7 + Redis 7 with seed data.
 3. `dotnet run --project src/ScreepsDotNet.Backend.Http/ScreepsDotNet.Backend.Http.csproj` to run the HTTP host.
 4. Use `docs/getting-started.md` for authentication steps, `.http` scratch files, and the local dev workflow.
-5. Need the CLI? Jump to [docs/cli.md](docs/cli.md) for commands, global switches, and automation tips.
+5. Need the CLI? Jump to [docs/backend/cli.md](docs/backend/cli.md) for commands, global switches, and automation tips.
 
 ## Key components
 
@@ -36,17 +36,14 @@ Modern .NET rewrite of the Screeps private server backend. The solution exposes 
 
 ### For Human Developers
 - [docs/getting-started.md](docs/getting-started.md) – requirements, infra setup, auth flow, tests, seed reset instructions.
-- [docs/cli.md](docs/cli.md) – CLI usage, command reference, formatting rules.
-- [docs/backend.md](docs/backend.md) – HTTP API feature coverage and smoke tests.
-- [docs/http-endpoints.md](docs/http-endpoints.md) – route coverage tables + `.http` scratch file index.
-- [docs/driver.md](docs/driver.md) – driver rewrite overview with links to subsystem plan docs (D1-D10 complete ✅).
-- [src/ScreepsDotNet.Driver/CLAUDE.md](src/ScreepsDotNet.Driver/CLAUDE.md) – driver AI context (code patterns, common tasks, D1-D10 roadmap complete ✅).
-- [src/ScreepsDotNet.Engine/CLAUDE.md](src/ScreepsDotNet.Engine/CLAUDE.md) – engine AI context (E1-E6 complete ✅, NEVER direct DB patterns, intent handlers).
-- [docs/engine/roadmap.md](docs/engine/roadmap.md) – engine roadmap tracking (E1-E6 complete ✅, E7-E9 pending).
-- [src/native/pathfinder/CLAUDE.md](src/native/pathfinder/CLAUDE.md) – pathfinder AI context (cross-platform builds, parity testing, CI/CD, P/Invoke).
+- **Backend:** [docs/backend/overview.md](docs/backend/overview.md) – HTTP API feature coverage | [http-api.md](docs/backend/http-api.md) – route reference | [cli.md](docs/backend/cli.md) – CLI commands
+- **Driver:** [docs/driver/roadmap.md](docs/driver/roadmap.md) – D1-D10 milestone overview (complete ✅) | [src/ScreepsDotNet.Driver/CLAUDE.md](src/ScreepsDotNet.Driver/CLAUDE.md) – code patterns, common tasks
+- **Engine:** [docs/engine/roadmap.md](docs/engine/roadmap.md) – E1-E9 milestone tracking (E1-E6 complete ✅) | [src/ScreepsDotNet.Engine/CLAUDE.md](src/ScreepsDotNet.Engine/CLAUDE.md) – intent handlers, parity testing
+- **Storage:** [docs/storage/overview.md](docs/storage/overview.md) – MongoDB/Redis architecture | [mongodb.md](docs/storage/mongodb.md) – collection schemas | [redis.md](docs/storage/redis.md) – queue patterns | [seeding.md](docs/storage/seeding.md) – seed data
+- **Pathfinder:** [src/native/pathfinder/CLAUDE.md](src/native/pathfinder/CLAUDE.md) – cross-platform builds, parity testing, CI/CD
 - [docs/README.md](docs/README.md) – documentation ownership map (who updates what).
-- `docs/specs/*` – market/world API specs and driver design notes.
-- `docs/badges/BadgeGallery.md` – generated badge samples.
+- `docs/backend/specs/*` – market/world API specs.
+- `docs/assets/badges/gallery.md` – generated badge samples.
 
 ## Current highlights
 
@@ -70,7 +67,7 @@ Modern .NET rewrite of the Screeps private server backend. The solution exposes 
   - E8: Observability & tooling (metrics, diagnostics, operator playbooks)
   - E9: NPC AI logic (keeper/invader pathfinding and combat)
 
-For detailed progress, see [docs/engine/roadmap.md](docs/engine/roadmap.md) and [docs/driver.md](docs/driver.md).
+For detailed progress, see [docs/engine/roadmap.md](docs/engine/roadmap.md) and [docs/driver/roadmap.md](docs/driver/roadmap.md).
 
 ## Contributing
 

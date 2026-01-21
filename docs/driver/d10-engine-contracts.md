@@ -56,6 +56,6 @@ Expose stable driver-owned contracts so the upcoming ScreepsDotNet.Engine can co
 
 1. **E6 (Engine Loop Orchestration):** Create a runnable process (CLI command or hosted service) that calls `AddDriverCore()` + `AddEngineCore()` and starts tick execution.
 2. **End-to-end integration test:** Add test that exercises full tick: load snapshot → run Engine → apply mutations → verify DB state.
-3. **Mark D10 complete in `docs/driver.md`** once E6 has Engine running end-to-end (no longer just "wired but unused").
+3. **Mark D10 complete in `docs/driver/roadmap.md`** once E6 has Engine running end-to-end (no longer just "wired but unused").
 4. Expand contract docs with concrete engine examples (sample provider usage, mutation batch authoring).
 5. After the engine is live, move remaining parity tracking to the engine project (E7 milestones).

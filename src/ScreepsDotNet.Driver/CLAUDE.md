@@ -28,7 +28,7 @@ Port of the legacy Screeps Node.js driver into managed .NET. Provides queue infr
 - ✅ **ALWAYS** put new constants under `ScreepsDotNet.Driver.Abstractions.Shared.Constants`
 - ✅ **ALWAYS** wire bulk mutations through `IBulkWriterFactory`
 - ✅ **ALWAYS** emit telemetry events through `IDriverLoopHooks`, not directly to sinks
-- ✅ **ALWAYS** update relevant doc under `src/ScreepsDotNet.Driver/docs/` when changing behavior
+- ✅ **ALWAYS** update relevant doc under `docs/driver/` when changing behavior
 
 ## Code Structure
 
@@ -321,7 +321,7 @@ if (energy < cost)
 | D9 | ✅ | History & notifications - Room history, notification delivery | [HistoryAndNotifications.md](docs/HistoryAndNotifications.md) |
 | D10 | 🔄 | Engine contracts - Snapshot providers, mutation dispatcher | [EngineContracts.md](docs/EngineContracts.md) |
 
-**Full roadmap:** See `docs/driver.md` for detailed status and cross-references.
+**Full roadmap:** See `docs/driver/roadmap.md` for detailed status and cross-references.
 
 ## Common Tasks
 
@@ -448,7 +448,8 @@ public class HarvestIntentHandlerTests
 
 ```bash
 # 5. Update documentation
-# - Add to docs/driver.md if it's a major feature
+# - Add to docs/driver/roadmap.md if it's a major feature
+# - Update specific milestone doc (docs/driver/d1-d10.md) if it changes that milestone
 # - Update this CLAUDE.md if it changes patterns
 ```
 
@@ -523,7 +524,7 @@ public class ObservabilityTelemetryListener : IDriverLoopHooks
 
 ```bash
 # 4. Update documentation
-# Location: src/ScreepsDotNet.Driver/docs/RuntimeLifecycle.md or docs/runtime-telemetry.md
+# Location: docs/driver/d8-runtime-lifecycle.md or src/docs/runtime-telemetry.md
 ```
 
 ### Debug Runtime Execution Issues
@@ -744,18 +745,23 @@ cd src/native/pathfinder
 ## Reference Documentation
 
 ### Design Docs (Detailed)
-- `docs/DriverApi.md` - Driver surface contract
-- `docs/QueueAndScheduler.md` - Queue/worker patterns
-- `docs/RuntimeLifecycle.md` - V8 runtime coordination
-- `docs/BulkWriters.md` - Bulk mutation patterns
-- `docs/Pathfinder.md` - Native pathfinder integration
-- `docs/ConfigAndEvents.md` - Config emitter design
-- `docs/HistoryAndNotifications.md` - History/notification pipeline
-- `docs/EngineContracts.md` - Engine data contracts
+- `../../docs/driver/roadmap.md` - D1-D10 milestone overview
+- `../../docs/driver/d1-driver-api.md` - Driver surface contract (D1)
+- `../../docs/driver/d2-storage-adapters.md` - Storage adapters (D2)
+- `../../docs/driver/d3-sandbox.md` - ClearScript/V8 sandbox (D3)
+- `../../docs/driver/d4-queue-scheduler.md` - Queue/worker patterns (D4)
+- `../../docs/driver/d5-bulk-writers.md` - Bulk mutation patterns (D5)
+- `../../docs/driver/d6-pathfinder.md` - Native pathfinder integration (D6)
+- `../../docs/driver/d7-config-events.md` - Config emitter design (D7)
+- `../../docs/driver/d8-runtime-lifecycle.md` - V8 runtime coordination (D8)
+- `../../docs/driver/d9-history-notifications.md` - History/notification pipeline (D9)
+- `../../docs/driver/d10-engine-contracts.md` - Engine data contracts (D10)
 
 ### Related Subsystems
 - `../../CLAUDE.md` - Solution-wide patterns
+- `../../docs/storage/` - MongoDB/Redis patterns
 - `../ScreepsDotNet.Engine/CLAUDE.md` - Engine subsystem (consumes driver)
+- `../../docs/engine/roadmap.md` - Engine milestones
 - `../native/pathfinder/CLAUDE.md` - Pathfinder build/release
 
 ### External Dependencies

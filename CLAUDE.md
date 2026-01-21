@@ -149,42 +149,19 @@ ScreepsDotNet/
 
 ## Storage Architecture
 
-### MongoDB Collections (screeps database)
+**Overview:** ScreepsDotNet uses MongoDB 7 (persistent state) and Redis 7 (queues, caching). Implementation in `ScreepsDotNet.Storage.MongoRedis`.
 
-```javascript
-users                   // User accounts, auth, badges
-users.code              // Code branches (default, sim, tutorial)
-users.memory            // RawMemory.get/set data
-users.memory.segments   // RawMemory.segments[0-99]
-users.notifications     // Notification queue
-users.power_creeps      // Power creep definitions
+**Detailed documentation:** See [docs/storage/](docs/storage/) for complete reference:
+- [overview.md](docs/storage/overview.md) - Architecture, collections, Redis keys
+- [mongodb.md](docs/storage/mongodb.md) - Schemas, repository patterns, bulk writers
+- [redis.md](docs/storage/redis.md) - Queue patterns, caching, pub/sub
+- [seeding.md](docs/storage/seeding.md) - Seed data, test fixtures, reset workflows
 
-rooms                   // Room metadata (active, status)
-rooms.objects           // Game objects (creeps, structures, sources, etc.)
-rooms.terrain           // Terrain tiles (wall/plain/swamp)
-rooms.history           // Historical snapshots for charts
+### Quick Reference
 
-market.orders           // Market buy/sell orders
-market.stats            // Historical market data
-
-servers                 // Server metadata (/api/server/info)
-```
-
-### Redis Keys
-
-```
-roomsQueue              # Room processing queue (driver)
-runtimeQueue            # User code execution queue (driver)
-```
-
-### Seed Data
-
-**Location:** `src/docker/mongo-init/`
-**Test fixtures:** `src/ScreepsDotNet.Backend.Core/Seeding/SeedDataDefaults.cs` (keep in sync)
-
-Seeds run automatically when `mongo-data` volume is empty:
-- `seed-server-data.js` - Server metadata, version info
-- `seed-users.js` - test-user, ally-user, owned rooms, spawns, power creeps, inbox threads
+**MongoDB Collections:** users, users.code, users.memory, rooms, rooms.objects, rooms.terrain, market.orders, servers
+**Redis Keys:** roomsQueue, runtimeQueue, gameTime
+**Seed Scripts:** `src/docker/mongo-init/` (auto-run when mongo-data volume is empty)
 
 **Reset workflows:**
 ```bash
@@ -306,7 +283,8 @@ See `docs/common-tasks.md` for step-by-step guides:
 This file provides **solution-wide** context. For subsystem-specific details:
 
 ### Driver (Runtime Coordination)
-**File:** `src/ScreepsDotNet.Driver/CLAUDE.md` ✅
+**AI Context:** `src/ScreepsDotNet.Driver/CLAUDE.md` ✅
+**Roadmap:** `docs/driver/roadmap.md` (D1-D10 complete ✅)
 
 **When to read:**
 - Adding processor logic (intent handlers)
@@ -317,13 +295,14 @@ This file provides **solution-wide** context. For subsystem-specific details:
 - Bulk mutation patterns
 
 **Key topics:**
-- D1-D10 roadmap (D10 in progress)
+- D1-D10 milestone docs in `docs/driver/` (all complete ✅)
 - Code patterns (✅/❌ bulk writers, telemetry, DI)
 - Common tasks (add processor handler, wire telemetry, debug runtime)
 - Integration contracts (Engine consumes driver abstractions)
 
 ### Engine (Simulation Kernel)
-**File:** `src/ScreepsDotNet.Engine/CLAUDE.md` ✅
+**AI Context:** `src/ScreepsDotNet.Engine/CLAUDE.md` ✅
+**Roadmap:** `docs/engine/roadmap.md` (E1-E6 complete ✅, E7-E9 pending)
 
 **When to read:**
 - Adding intent handlers (creep, structure, controller, combat)
@@ -333,11 +312,10 @@ This file provides **solution-wide** context. For subsystem-specific details:
 - Understanding Engine↔Driver data flow
 
 **Key topics:**
-- E1-E8 roadmap (E2 in progress - handler backlog)
+- E1-E9 milestone docs in `docs/engine/` (E1-E6 complete ✅)
 - 🚨 CRITICAL: NEVER access Mongo/Redis directly (use Driver abstractions)
 - Code patterns (✅ IRoomStateProvider vs ❌ IMongoDatabase)
 - Common tasks (add intent handler, test parity, debug mutations)
-- Active work: E2.3 handler backlog (controller, resource I/O, labs, power)
 
 ### Native Pathfinder (C++ P/Invoke)
 **File:** `src/native/pathfinder/CLAUDE.md` ✅
@@ -380,24 +358,19 @@ This file provides **solution-wide** context. For subsystem-specific details:
 ### For Human Readers
 - `README.md` - Project overview
 - `docs/getting-started.md` - Setup tutorial
-- `docs/backend.md` - HTTP API coverage
-- `docs/http-endpoints.md` - Route reference
-- `docs/cli.md` - CLI command reference
-- `docs/driver.md` - Driver design overview
 - `docs/common-tasks.md` - Step-by-step development guides
-- `docs/engine/roadmap.md` - Engine E1-E8 milestones
-- `docs/engine/e2.md` - Handler implementation tracking
-- `docs/engine/e5.md` - E5 blockers & global systems
-- `docs/engine/data-model.md` - Engine data contracts
-- `docs/engine/e1.md` - Node.js engine API inventory
+- **Backend:** `docs/backend/overview.md` - HTTP API coverage | `docs/backend/http-api.md` - Route reference | `docs/backend/cli.md` - CLI commands
+- **Driver:** `docs/driver/roadmap.md` - D1-D10 milestones (complete ✅) | `docs/driver/d1-d10.md` - Individual milestone docs
+- **Engine:** `docs/engine/roadmap.md` - E1-E9 milestones | `docs/engine/e1-e9.md` - Individual milestone docs | `docs/engine/data-model.md` - Data contracts
+- **Storage:** `docs/storage/overview.md` - MongoDB/Redis architecture | `docs/storage/mongodb.md` - Collection schemas | `docs/storage/redis.md` - Queue patterns | `docs/storage/seeding.md` - Seed data
 
 ## When Stuck
 
 1. Check subsystem CLAUDE.md (Driver, Engine, Pathfinder) for coding patterns
 2. Check `docs/` for plan tracking and design documentation:
-   - `docs/engine/roadmap.md` - Engine milestones
-   - `docs/engine/e2.md` - Handler implementation status
-   - `docs/engine/e5.md` - E5 blockers
+   - `docs/driver/roadmap.md` - Driver milestones (D1-D10 complete ✅)
+   - `docs/engine/roadmap.md` - Engine milestones (E1-E6 complete ✅)
+   - `docs/storage/` - MongoDB/Redis patterns
 3. Use Context7 MCP for library/API documentation
 4. Search codebase for similar patterns (`rg "pattern" -n src/`)
 5. Check test files for usage examples

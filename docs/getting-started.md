@@ -66,7 +66,7 @@ dotnet test src/ScreepsDotNet.slnx
 
 1. `docker compose -f src/docker-compose.yml up -d` – be sure infra is running.
 2. `dotnet run --project src/ScreepsDotNet.Backend.Http/ScreepsDotNet.Backend.Http.csproj` – start the HTTP host when working on endpoints.
-3. `dotnet run --project src/ScreepsDotNet.Backend.Cli/ScreepsDotNet.Backend.Cli.csproj -- --help` – explore CLI verbs (details in [docs/cli.md](cli.md)).
+3. `dotnet run --project src/ScreepsDotNet.Backend.Cli/ScreepsDotNet.Backend.Cli.csproj -- --help` – explore CLI verbs (details in [backend/cli.md](backend/cli.md)).
 4. `dotnet test src/ScreepsDotNet.slnx` – run before sending PRs; integration suites rely on the dockerized services.
 5. Keep `dotnet format` handy for IDE warnings: `dotnet format style`.
 
@@ -86,4 +86,4 @@ Document new fixtures both in the seed JS files and in this guide so Testcontain
 - `src/ScreepsDotNet.Backend.Http/mods.sample.json` doubles as a CLI/HTTP manifest sample (`--modfile`).
 - Shared defaults live in `src/ScreepsDotNet.Backend.Core/Seeding/SeedDataDefaults.cs`; reuse it when writing new seeders/tests.
 
-For deeper design docs (market/world specs, driver rewrite notes, etc.) see the files under `docs/specs/`.
+For deeper design docs (market/world specs, driver/engine roadmaps, etc.) see the organized docs under `docs/backend/specs/`, `docs/driver/`, and `docs/engine/`.

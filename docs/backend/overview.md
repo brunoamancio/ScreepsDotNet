@@ -8,7 +8,7 @@ After starting the HTTP host with `dotnet run --project src/ScreepsDotNet.Backen
 
 - `GET http://localhost:5210/health`
 - `GET http://localhost:5210/api/server/info`
-- Use the `.http` files (see [http-endpoints.md](http-endpoints.md)) for user/map/world/system checks or the CLI shortcuts (`./src/cli.sh` / `pwsh ./src/cli.ps1`).
+- Use the `.http` files (see [http-api.md](http-api.md)) for user/map/world/system checks or the CLI shortcuts (`./src/cli.sh` / `pwsh ./src/cli.ps1`).
 
 ## Feature Coverage Snapshot
 
@@ -25,4 +25,4 @@ The backend currently mirrors most of the legacy Screeps API surface:
 - `/api/game/world/*` read/write helpers (rooms, stats, overview, map-stats, room-terrain, place-spawn, flag helpers, invader helpers, notify toggles) all support shard-aware identifiers (`shard/Room` or explicit `shard`).
 - Market endpoints (`orders-index`, `orders`, `my-orders`, `stats`) scale prices into credits and enforce the legacy query validation rules.
 
-See [http-endpoints.md](http-endpoints.md) for per-route references and `.http` scratch files.
+See [http-api.md](http-api.md) for per-route references and `.http` scratch files.

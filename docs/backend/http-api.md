@@ -74,4 +74,4 @@ Use this document to find the route coverage, behaviors, and scratch files for m
 Most HTTP features have CLI counterparts (storage status, system controls, world/map helpers, bots/strongholds). When deciding which surface to extend:
 
 - Use HTTP for client-facing parity or when the official client expects a route.
-- Use CLI for operator-only workflows, but document any new verbs in `docs/cli.md` and keep `.http` samples in sync if they share repositories/services.
+- Use CLI for operator-only workflows, but document any new verbs in `docs/backend/cli.md` and keep `.http` samples in sync if they share repositories/services.
