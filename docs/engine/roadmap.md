@@ -135,9 +135,9 @@ These features require global mutation infrastructure (`IGlobalMutationWriter`) 
 
 ---
 
-## E5: Global Systems ⚠️ Phase 1 Complete (2026-01-21)
+## E5: Global Systems ⚠️ Phase 1-3 Complete (2026-01-21)
 
-**Status:** Phase 1 Complete ✅ | Phase 2-4 Not Started 📋
+**Status:** Phase 1 Complete ✅ | Phase 2 Complete ✅ | Phase 3 Complete ✅ | Phase 4 Not Started 📋
 
 **Completed Deliverables (Phase 1):**
 - ✅ Global mutation infrastructure (`IGlobalMutationWriter`) - 3 methods added: `IncrementUserGcl`, `IncrementUserPower`, `DecrementUserPower`
@@ -150,9 +150,18 @@ These features require global mutation infrastructure (`IGlobalMutationWriter`) 
 - ✅ 19 new GlobalMutationWriter tests (all passing)
 - ✅ 726/726 tests passing (100% success rate)
 
+**Completed Phases:**
+- ✅ Phase 1: User GCL/power tracking (2026-01-21) - unblocked all E2 features
+- ✅ Phase 2: Power effect tracking - moved to E2.3 (already complete)
+- ✅ Phase 3: Keeper lair spawning (2026-01-21):
+  - `KeeperLairStep` processor with 8/8 tests passing
+  - Spawns source keeper creeps (user ID "3") with 5000 HP
+  - 300-tick spawn timer, triggers on missing/weak keeper
+  - Body: 17 TOUGH + 13 MOVE + 10 ATTACK + 10 RANGED_ATTACK
+  - Legacy parity confirmed with Node.js engine
+  - 734/734 tests passing (408 Engine + 70 Driver + 54 CLI + 202 HTTP)
+
 **Remaining Phases:**
-- 📋 Phase 2: Power effect tracking (✅ COMPLETE - moved to E2.3)
-- 📋 Phase 3: Keeper room mechanics (2-3 hours)
 - 📋 Phase 4: Nuker operations (4-6 hours, split: E2 intent + E4 passive)
 
 **Dependencies:** E4 foundation ✅
@@ -225,7 +234,7 @@ These features require global mutation infrastructure (`IGlobalMutationWriter`) 
 
 ## Summary
 
-**Overall Engine Progress:** E1-E4 complete ✅, E5 Phase 1 complete ✅, E6-E8 pending
+**Overall Engine Progress:** E1-E4 complete ✅, E5 Phase 1-3 complete ✅, E6-E8 pending
 
 **Completed Milestones:**
 - ✅ E1: Legacy engine surface mapped
@@ -233,9 +242,13 @@ These features require global mutation infrastructure (`IGlobalMutationWriter`) 
 - ✅ E3: Intent validation pipeline complete (354 tests passing)
 - ✅ E4: Simulation kernel complete (passive regeneration systems)
 - ✅ E5 Phase 1: User GCL/power tracking complete (unblocked all E2 features)
+- ✅ E5 Phase 2: Power effect tracking complete (moved to E2.3)
+- ✅ E5 Phase 3: Keeper lair spawning complete (8 tests, legacy parity confirmed)
+
+**Test Status:** 734/734 passing (408 Engine + 70 Driver + 54 CLI + 202 HTTP)
 
 **Remaining Work:**
-- 📋 E5 Phase 2-4: Keeper rooms, nuker operations (6-9 hours estimated)
+- 📋 E5 Phase 4: Nuker operations (4-6 hours estimated)
 - 📋 E6: Engine loop orchestration (depends on: E4/E5 complete ✅, Driver queue service, Telemetry sink)
 - 📋 E7: Parity validation (depends on: E1-E6 complete)
 - 📋 E8: Observability & tooling (depends on: D8 logging stack, Scheduler hooks, E6 orchestration)
@@ -243,7 +256,7 @@ These features require global mutation infrastructure (`IGlobalMutationWriter`) 
 7. Complete E7 (Parity Validation) → lockstep testing vs Node.js
 8. E8 (Observability) can proceed in parallel with E6/E7
 
-**Next Milestone:** E5 Phase 1 (Global Mutations) - unblocks E2.3 remaining features
+**Next Milestone:** E5 Phase 4 (Nuker Operations) OR E6 (Engine Loop Orchestration)
 
 **Reference Documents:**
 - E1 (Legacy surface mapping): `e1.md`

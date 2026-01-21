@@ -20,6 +20,7 @@ public static class RoomObjectTypes
     public const string Portal = "portal";
     public const string Mineral = "mineral";
     public const string InvaderCore = "invaderCore";
+    public const string KeeperLair = "keeperLair";
     public const string Source = "source";
     public const string Road = "road";
     public const string Wall = "wall";

@@ -1,5 +1,4 @@
 namespace ScreepsDotNet.Engine.Tests.Processors.Steps;
-using ScreepsDotNet.Engine.Tests.Processors.Helpers;
 
 using ScreepsDotNet.Common.Constants;
 using ScreepsDotNet.Common.Types;
@@ -9,6 +8,7 @@ using ScreepsDotNet.Engine.Data.Models;
 using ScreepsDotNet.Engine.Processors;
 using ScreepsDotNet.Engine.Processors.Helpers;
 using ScreepsDotNet.Engine.Processors.Steps;
+using ScreepsDotNet.Engine.Tests.Processors.Helpers;
 
 public sealed class PowerSpawnIntentStepTests
 {
