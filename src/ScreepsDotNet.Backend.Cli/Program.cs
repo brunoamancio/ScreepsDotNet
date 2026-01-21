@@ -7,6 +7,7 @@ using ScreepsDotNet.Backend.Core.Repositories;
 using ScreepsDotNet.Backend.Core.Services;
 using ScreepsDotNet.Backend.Core.Storage;
 using ScreepsDotNet.Common.Structures;
+using ScreepsDotNet.Engine;
 using ScreepsDotNet.Storage.MongoRedis.Adapters;
 using ScreepsDotNet.Storage.MongoRedis.Options;
 using ScreepsDotNet.Storage.MongoRedis.Providers;
@@ -95,6 +96,10 @@ static void ConfigureServices(HostApplicationBuilder builder)
     builder.Services.AddSingleton<ICommandOutputFormatter, CommandOutputFormatter>();
     builder.Services.AddSingleton<ITokenService, RedisTokenService>();
     builder.Services.AddSingleton<IStructureBlueprintProvider, StructureBlueprintProvider>();
+
+    // Engine services (for diagnostics commands)
+    builder.Services.AddEngineCore();
+    builder.Services.AddSingleton<IEngineDiagnosticsService, StubEngineDiagnosticsService>();
 
     builder.Services.AddSingleton<ICliApplication, CliApplication>();
 }

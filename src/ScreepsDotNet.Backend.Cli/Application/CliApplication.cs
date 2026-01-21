@@ -1,5 +1,6 @@
 ﻿using ScreepsDotNet.Backend.Cli.Commands.Auth;
 using ScreepsDotNet.Backend.Cli.Commands.Bot;
+using ScreepsDotNet.Backend.Cli.Commands.Engine;
 using ScreepsDotNet.Backend.Cli.Commands.Flag;
 using ScreepsDotNet.Backend.Cli.Commands.Invader;
 using ScreepsDotNet.Backend.Cli.Commands.Map;
@@ -201,6 +202,19 @@ internal sealed class CliApplication(IServiceProvider serviceProvider, ILogger<C
                 branch.AddCommand<AuthRevokeCommand>("revoke")
                       .WithDescription("Revoke an auth token immediately.")
                       .WithExample("auth", "revoke", "--token", "abcdef");
+            });
+
+            config.AddBranch("engine", branch => {
+                branch.SetDescription("Engine diagnostics and inspection commands.");
+                branch.AddCommand<EngineStatusCommand>("status")
+                      .WithDescription("Show overall Engine statistics.")
+                      .WithExample("engine", "status", "--json");
+                branch.AddCommand<RoomStateCommand>("room-state")
+                      .WithDescription("Show room state snapshot.")
+                      .WithExample("engine", "room-state", "W1N1", "--json");
+                branch.AddCommand<ValidationStatsCommand>("validation-stats")
+                      .WithDescription("Show intent validation statistics.")
+                      .WithExample("engine", "validation-stats", "--reset", "--json");
             });
         });
 
