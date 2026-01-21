@@ -203,6 +203,81 @@ public sealed class LabIntentStepTests
         Assert.Empty(Payload.StoreCapacityResource);
     }
 
+    [Fact]
+    public async Task RunReaction_WithOperateLabEffectLevel1_ProducesBoostedAmount()
+    {
+        var lab = CreateLabWithEffect("lab1", 10, 10, "user1", new Dictionary<string, int>(StringComparer.Ordinal),
+            PowerTypes.OperateLab, level: 1, endTime: 200);
+        var lab1 = CreateLab("lab2", 11, 11, "user1", new Dictionary<string, int>(StringComparer.Ordinal)
+        {
+            [ResourceTypes.Hydrogen] = 100
+        });
+        var lab2 = CreateLab("lab3", 12, 12, "user1", new Dictionary<string, int>(StringComparer.Ordinal)
+        {
+            [ResourceTypes.Oxygen] = 100
+        });
+        var context = CreateContext([lab, lab1, lab2],
+            CreateRunReactionIntent("user1", lab.Id, lab1.Id, lab2.Id), gameTime: 100);
+        var writer = (FakeMutationWriter)context.MutationWriter;
+
+        await _step.ExecuteAsync(context, TestContext.Current.CancellationToken);
+
+        // Level 1 effect adds +2 bonus = 7 total reaction amount
+        var (_, Payload) = writer.Patches.Single(p => p.ObjectId == lab.Id);
+        var expectedAmount = ScreepsGameConstants.LabReactionAmount + 2;
+        Assert.Equal(expectedAmount, Payload.Store![ResourceTypes.Hydroxide]);
+    }
+
+    [Fact]
+    public async Task RunReaction_WithOperateLabEffectLevel3_ProducesBoostedAmount()
+    {
+        var lab = CreateLabWithEffect("lab1", 10, 10, "user1", new Dictionary<string, int>(StringComparer.Ordinal),
+            PowerTypes.OperateLab, level: 3, endTime: 200);
+        var lab1 = CreateLab("lab2", 11, 11, "user1", new Dictionary<string, int>(StringComparer.Ordinal)
+        {
+            [ResourceTypes.Hydrogen] = 100
+        });
+        var lab2 = CreateLab("lab3", 12, 12, "user1", new Dictionary<string, int>(StringComparer.Ordinal)
+        {
+            [ResourceTypes.Oxygen] = 100
+        });
+        var context = CreateContext([lab, lab1, lab2],
+            CreateRunReactionIntent("user1", lab.Id, lab1.Id, lab2.Id), gameTime: 100);
+        var writer = (FakeMutationWriter)context.MutationWriter;
+
+        await _step.ExecuteAsync(context, TestContext.Current.CancellationToken);
+
+        // Level 3 effect adds +6 bonus = 11 total reaction amount
+        var (_, Payload) = writer.Patches.Single(p => p.ObjectId == lab.Id);
+        var expectedAmount = ScreepsGameConstants.LabReactionAmount + 6;
+        Assert.Equal(expectedAmount, Payload.Store![ResourceTypes.Hydroxide]);
+    }
+
+    [Fact]
+    public async Task RunReaction_WithOperateLabEffectLevel5_ProducesBoostedAmount()
+    {
+        var lab = CreateLabWithEffect("lab1", 10, 10, "user1", new Dictionary<string, int>(StringComparer.Ordinal),
+            PowerTypes.OperateLab, level: 5, endTime: 200);
+        var lab1 = CreateLab("lab2", 11, 11, "user1", new Dictionary<string, int>(StringComparer.Ordinal)
+        {
+            [ResourceTypes.Hydrogen] = 100
+        });
+        var lab2 = CreateLab("lab3", 12, 12, "user1", new Dictionary<string, int>(StringComparer.Ordinal)
+        {
+            [ResourceTypes.Oxygen] = 100
+        });
+        var context = CreateContext([lab, lab1, lab2],
+            CreateRunReactionIntent("user1", lab.Id, lab1.Id, lab2.Id), gameTime: 100);
+        var writer = (FakeMutationWriter)context.MutationWriter;
+
+        await _step.ExecuteAsync(context, TestContext.Current.CancellationToken);
+
+        // Level 5 effect adds +10 bonus = 15 total reaction amount
+        var (_, Payload) = writer.Patches.Single(p => p.ObjectId == lab.Id);
+        var expectedAmount = ScreepsGameConstants.LabReactionAmount + 10;
+        Assert.Equal(expectedAmount, Payload.Store![ResourceTypes.Hydroxide]);
+    }
+
     #endregion
 
     #region boostCreep Tests
@@ -612,6 +687,63 @@ public sealed class LabIntentStepTests
             Harvested: null,
             Cooldown: null,
             CooldownTime: cooldownTime);
+
+    private static RoomObjectSnapshot CreateLabWithEffect(string id, int x, int y, string userId, Dictionary<string, int> store, PowerTypes powerType, int level, int endTime, int? cooldownTime = null)
+        => new(
+            id,
+            RoomObjectTypes.Lab,
+            "W1N1",
+            "shard0",
+            userId,
+            x,
+            y,
+            Hits: 500,
+            HitsMax: 500,
+            Fatigue: null,
+            TicksToLive: null,
+            Name: null,
+            Level: null,
+            Density: null,
+            MineralType: null,
+            DepositType: null,
+            StructureType: RoomObjectTypes.Lab,
+            Store: store,
+            StoreCapacity: ScreepsGameConstants.LabEnergyCapacity + ScreepsGameConstants.LabMineralCapacity,
+            StoreCapacityResource: new Dictionary<string, int>(StringComparer.Ordinal),
+            Reservation: null,
+            Sign: null,
+            Structure: null,
+            Effects: new Dictionary<PowerTypes, PowerEffectSnapshot>()
+            {
+                [powerType] = new(powerType, level, endTime)
+            },
+            Spawning: null,
+            Body: [],
+            IsSpawning: null,
+            UserSummoned: null,
+            IsPublic: null,
+            StrongholdId: null,
+            DeathTime: null,
+            DecayTime: null,
+            CreepId: null,
+            CreepName: null,
+            CreepTicksToLive: null,
+            CreepSaying: null,
+            ResourceType: null,
+            ResourceAmount: null,
+            Progress: null,
+            ProgressTotal: null,
+            ActionLog: null,
+            Energy: null,
+            MineralAmount: null,
+            InvaderHarvested: null,
+            Harvested: null,
+            Cooldown: null,
+            CooldownTime: cooldownTime,
+            SafeMode: null,
+            SafeModeAvailable: null,
+            PortalDestination: null,
+            Send: null);
 
     private static RoomObjectSnapshot CreateCreep(string id, int x, int y, string userId, IReadOnlyList<CreepBodyPartSnapshot> body)
     {

@@ -1,6 +1,7 @@
 namespace ScreepsDotNet.Engine.Processors.Steps;
 
 using ScreepsDotNet.Common.Constants;
+using ScreepsDotNet.Common.Types;
 using ScreepsDotNet.Driver.Contracts;
 using ScreepsDotNet.Engine.Processors;
 
@@ -64,12 +65,10 @@ internal sealed class PowerSpawnIntentStep : IRoomProcessorStep
         Dictionary<string, Dictionary<string, int>> storeLedger,
         HashSet<string> modifiedObjects)
     {
+        var gameTime = context.State.GameTime;
+
         // Validate power spawn type
         if (!string.Equals(powerSpawn.Type, RoomObjectTypes.PowerSpawn, StringComparison.Ordinal))
-            return;
-
-        // Validate store exists
-        if (powerSpawn.Store is null)
             return;
 
         // Get current store from ledger
@@ -83,10 +82,18 @@ internal sealed class PowerSpawnIntentStep : IRoomProcessorStep
         // Base amount is 1 power per tick
         var amount = 1;
 
-        // TODO (E5): Check for PWR_OPERATE_POWER effect to increase amount
-        // if (powerSpawn.Effects?.TryGetValue(PowerTypes.OperatePower, out var effect) == true) {
-        //     amount = Math.Min(currentPower, amount + effect.Magnitude);
-        // }
+        // Check for PWR_OPERATE_POWER effect to boost processing amount
+        if (powerSpawn.Effects.TryGetValue(PowerTypes.OperatePower, out var operatePowerEffect))
+        {
+            if (operatePowerEffect.EndTime > gameTime && PowerInfo.Abilities.TryGetValue(PowerTypes.OperatePower, out var powerInfo))
+            {
+                if (powerInfo.Effect is not null)
+                {
+                    var effectBonus = powerInfo.Effect[operatePowerEffect.Level - 1];
+                    amount = 1 + effectBonus;
+                }
+            }
+        }
 
         var energyRequired = amount * ScreepsGameConstants.PowerSpawnEnergyRatio;
 

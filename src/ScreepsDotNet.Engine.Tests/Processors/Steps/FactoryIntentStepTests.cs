@@ -156,6 +156,95 @@ public sealed class FactoryIntentStepTests
         Assert.Equal(ResourceTypes.Battery, patch.Payload.ActionLog!.Produce!.ResourceType);
     }
 
+    [Fact]
+    public async Task WithOperateFactoryEffectLevel1_AllowsLevel1Commodity()
+    {
+        // Arrange - Level 0 factory with effect level 1 can produce level 1 commodity (Switch)
+        var factory = CreateFactoryWithCustomStore("f1", 10, 10, "user1", level: 0,
+            new Dictionary<string, int>(StringComparer.Ordinal)
+            {
+                [ResourceTypes.Wire] = 40,
+                [ResourceTypes.Oxidant] = 95,
+                [ResourceTypes.UtriumBar] = 35,
+                [ResourceTypes.Energy] = 20
+            },
+            PowerTypes.OperateFactory, effectLevel: 1, endTime: 200);
+        var context = CreateContext([factory],
+            CreateProduceIntent("user1", factory.Id, ResourceTypes.Switch), gameTime: 100);
+        var writer = (FakeMutationWriter)context.MutationWriter;
+
+        // Act
+        await _step.ExecuteAsync(context, TestContext.Current.CancellationToken);
+
+        // Assert - Effect level 1 adds +1 to factory level (0 + 1 = 1), allows level 1 commodity
+        var patch = writer.Patches.Single(p => p.ObjectId == factory.Id);
+        Assert.Equal(5, patch.Payload.Store![ResourceTypes.Switch]);
+        Assert.Equal(0, patch.Payload.Store!.GetValueOrDefault(ResourceTypes.Wire, 0));
+        Assert.Equal(0, patch.Payload.Store!.GetValueOrDefault(ResourceTypes.Oxidant, 0));
+        Assert.Equal(0, patch.Payload.Store!.GetValueOrDefault(ResourceTypes.UtriumBar, 0));
+        Assert.Equal(0, patch.Payload.Store!.GetValueOrDefault(ResourceTypes.Energy, 0));
+    }
+
+    [Fact]
+    public async Task WithOperateFactoryEffectLevel3_AllowsLevel3Commodity()
+    {
+        // Arrange - Level 0 factory with effect level 3 can produce level 3 commodity (Liquid)
+        var factory = CreateFactoryWithCustomStore("f1", 10, 10, "user1", level: 0,
+            new Dictionary<string, int>(StringComparer.Ordinal)
+            {
+                [ResourceTypes.Oxidant] = 12,
+                [ResourceTypes.Reductant] = 12,
+                [ResourceTypes.GhodiumMelt] = 12,
+                [ResourceTypes.Energy] = 90
+            },
+            PowerTypes.OperateFactory, effectLevel: 3, endTime: 200);
+        var context = CreateContext([factory],
+            CreateProduceIntent("user1", factory.Id, ResourceTypes.Liquid), gameTime: 100);
+        var writer = (FakeMutationWriter)context.MutationWriter;
+
+        // Act
+        await _step.ExecuteAsync(context, TestContext.Current.CancellationToken);
+
+        // Assert - Effect level 3 adds +3 to factory level (0 + 3 = 3), allows level 3 commodity
+        var patch = writer.Patches.Single(p => p.ObjectId == factory.Id);
+        Assert.Equal(12, patch.Payload.Store![ResourceTypes.Liquid]);
+        Assert.Equal(0, patch.Payload.Store!.GetValueOrDefault(ResourceTypes.Oxidant, 0));
+        Assert.Equal(0, patch.Payload.Store!.GetValueOrDefault(ResourceTypes.Reductant, 0));
+        Assert.Equal(0, patch.Payload.Store!.GetValueOrDefault(ResourceTypes.GhodiumMelt, 0));
+        Assert.Equal(0, patch.Payload.Store!.GetValueOrDefault(ResourceTypes.Energy, 0));
+    }
+
+    [Fact]
+    public async Task WithOperateFactoryEffectLevel5_AllowsLevel5Commodity()
+    {
+        // Arrange - Level 0 factory with effect level 5 can produce level 5 commodity (Device)
+        var factory = CreateFactoryWithCustomStore("f1", 10, 10, "user1", level: 0,
+            new Dictionary<string, int>(StringComparer.Ordinal)
+            {
+                [ResourceTypes.Circuit] = 1,
+                [ResourceTypes.Microchip] = 3,
+                [ResourceTypes.Crystal] = 110,
+                [ResourceTypes.GhodiumMelt] = 150,
+                [ResourceTypes.Energy] = 64
+            },
+            PowerTypes.OperateFactory, effectLevel: 5, endTime: 200);
+        var context = CreateContext([factory],
+            CreateProduceIntent("user1", factory.Id, ResourceTypes.Device), gameTime: 100);
+        var writer = (FakeMutationWriter)context.MutationWriter;
+
+        // Act
+        await _step.ExecuteAsync(context, TestContext.Current.CancellationToken);
+
+        // Assert - Effect level 5 adds +5 to factory level (0 + 5 = 5), allows level 5 commodity
+        var patch = writer.Patches.Single(p => p.ObjectId == factory.Id);
+        Assert.Equal(1, patch.Payload.Store![ResourceTypes.Device]);
+        Assert.Equal(0, patch.Payload.Store!.GetValueOrDefault(ResourceTypes.Circuit, 0));
+        Assert.Equal(0, patch.Payload.Store!.GetValueOrDefault(ResourceTypes.Microchip, 0));
+        Assert.Equal(0, patch.Payload.Store!.GetValueOrDefault(ResourceTypes.Crystal, 0));
+        Assert.Equal(0, patch.Payload.Store!.GetValueOrDefault(ResourceTypes.GhodiumMelt, 0));
+        Assert.Equal(0, patch.Payload.Store!.GetValueOrDefault(ResourceTypes.Energy, 0));
+    }
+
     #region Helper Methods
 
     private static RoomObjectSnapshot CreateFactory(string id, int x, int y, string userId, int level = 0,
@@ -196,6 +285,140 @@ public sealed class FactoryIntentStepTests
             Sign: null,
             Structure: null,
             Effects: new Dictionary<PowerTypes, PowerEffectSnapshot>(),
+            Spawning: null,
+            Body: [],
+            IsSpawning: null,
+            UserSummoned: null,
+            IsPublic: null,
+            StrongholdId: null,
+            DeathTime: null,
+            DecayTime: null,
+            CreepId: null,
+            CreepName: null,
+            CreepTicksToLive: null,
+            CreepSaying: null,
+            ResourceType: null,
+            ResourceAmount: null,
+            Progress: null,
+            ProgressTotal: null,
+            ActionLog: null,
+            Energy: null,
+            MineralAmount: null,
+            InvaderHarvested: null,
+            Harvested: null,
+            Cooldown: currentCooldown,
+            CooldownTime: null,
+            SafeMode: null,
+            SafeModeAvailable: null,
+            PortalDestination: null,
+            Send: null);
+        return result;
+    }
+
+    private static RoomObjectSnapshot CreateFactoryWithEffect(string id, int x, int y, string userId, int level, int battery, int energy, PowerTypes powerType, int effectLevel, int endTime, int cooldown = 0)
+    {
+        var store = new Dictionary<string, int>(StringComparer.Ordinal);
+        if (energy > 0) store[ResourceTypes.Energy] = energy;
+        if (battery > 0) store[ResourceTypes.Battery] = battery;
+
+        var currentCooldown = cooldown > 0 ? cooldown : (int?)null;
+
+        var result = new RoomObjectSnapshot(
+            id,
+            RoomObjectTypes.Factory,
+            "W1N1",
+            "shard0",
+            userId,
+            x,
+            y,
+            Hits: ScreepsGameConstants.FactoryHits,
+            HitsMax: ScreepsGameConstants.FactoryHits,
+            Fatigue: null,
+            TicksToLive: null,
+            Name: null,
+            Level: level,
+            Density: null,
+            MineralType: null,
+            DepositType: null,
+            StructureType: RoomObjectTypes.Factory,
+            Store: store,
+            StoreCapacity: ScreepsGameConstants.FactoryCapacity,
+            StoreCapacityResource: new Dictionary<string, int>(StringComparer.Ordinal)
+            {
+                [ResourceTypes.Energy] = ScreepsGameConstants.FactoryCapacity
+            },
+            Reservation: null,
+            Sign: null,
+            Structure: null,
+            Effects: new Dictionary<PowerTypes, PowerEffectSnapshot>()
+            {
+                [powerType] = new(powerType, effectLevel, endTime)
+            },
+            Spawning: null,
+            Body: [],
+            IsSpawning: null,
+            UserSummoned: null,
+            IsPublic: null,
+            StrongholdId: null,
+            DeathTime: null,
+            DecayTime: null,
+            CreepId: null,
+            CreepName: null,
+            CreepTicksToLive: null,
+            CreepSaying: null,
+            ResourceType: null,
+            ResourceAmount: null,
+            Progress: null,
+            ProgressTotal: null,
+            ActionLog: null,
+            Energy: null,
+            MineralAmount: null,
+            InvaderHarvested: null,
+            Harvested: null,
+            Cooldown: currentCooldown,
+            CooldownTime: null,
+            SafeMode: null,
+            SafeModeAvailable: null,
+            PortalDestination: null,
+            Send: null);
+        return result;
+    }
+
+    private static RoomObjectSnapshot CreateFactoryWithCustomStore(string id, int x, int y, string userId, int level, Dictionary<string, int> store, PowerTypes powerType, int effectLevel, int endTime, int cooldown = 0)
+    {
+        var currentCooldown = cooldown > 0 ? cooldown : (int?)null;
+
+        var result = new RoomObjectSnapshot(
+            id,
+            RoomObjectTypes.Factory,
+            "W1N1",
+            "shard0",
+            userId,
+            x,
+            y,
+            Hits: ScreepsGameConstants.FactoryHits,
+            HitsMax: ScreepsGameConstants.FactoryHits,
+            Fatigue: null,
+            TicksToLive: null,
+            Name: null,
+            Level: level,
+            Density: null,
+            MineralType: null,
+            DepositType: null,
+            StructureType: RoomObjectTypes.Factory,
+            Store: store,
+            StoreCapacity: ScreepsGameConstants.FactoryCapacity,
+            StoreCapacityResource: new Dictionary<string, int>(StringComparer.Ordinal)
+            {
+                [ResourceTypes.Energy] = ScreepsGameConstants.FactoryCapacity
+            },
+            Reservation: null,
+            Sign: null,
+            Structure: null,
+            Effects: new Dictionary<PowerTypes, PowerEffectSnapshot>()
+            {
+                [powerType] = new(powerType, effectLevel, endTime)
+            },
             Spawning: null,
             Body: [],
             IsSpawning: null,

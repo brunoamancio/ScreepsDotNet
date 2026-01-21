@@ -57,23 +57,86 @@ The following E2.3 features are **blocked** by E5 implementation and should be i
 ---
 
 ### 3. PWR_OPERATE_LAB Power Effect
-**Blocking E2.3 Feature:** `LabIntentStep.ProcessRunReaction()` power effect multipliers
-**E2.3 Reference:** `docs/engine/e2.3-plan.md` → "Lab Reactions & Boosts (Deferred)"
-**Parity Status:** ❌ **NON-PARITY-CRITICAL** (nice-to-have, not required for E7)
+~~**UNBLOCKED** - Completed in E2.3 (January 21, 2026)~~
+**Status:** ✅ **COMPLETE** - Power effect infrastructure implemented in E2.3
+**E2.3 Reference:** `docs/engine/e2.3-plan.md` → "Lab Reactions & Boosts"
+
+**What was completed:**
+- ✅ Power effect tracking system (`PowerEffectDecayStep`, `PowerAbilityStep`)
+- ✅ Effect consumption in `LabIntentStep.ProcessRunReaction()`
+- ✅ Reaction amount boost: 5 + effect bonus (levels 1-5: 7/9/11/13/15)
+- ✅ 3 tests added (effect levels 1/3/5)
+
+**Lesson learned:** Power effects are **room-local** (no global state), so they belonged in E2.3, not E5.
+
+---
+
+### 4. PWR_OPERATE_POWER Power Effect
+~~**UNBLOCKED** - Completed in E2.3 (January 21, 2026)~~
+**Status:** ✅ **COMPLETE** - Power effect infrastructure implemented in E2.3
+**E2.3 Reference:** `docs/engine/e2.3-plan.md` → "Structure Energy Routing"
+
+**What was completed:**
+- ✅ Effect consumption in `PowerSpawnIntentStep.ProcessPowerSpawn()`
+- ✅ Processing amount boost: 1 + effect bonus (levels 1-5: 2/3/4/5/6)
+- ✅ 3 tests added (effect levels 1/3/5)
+- ✅ PowerInfo Effect array added: [1, 2, 3, 4, 5]
+
+---
+
+### 5. PWR_OPERATE_FACTORY Power Effect
+~~**UNBLOCKED** - Completed in E2.3 (January 21, 2026)~~
+**Status:** ✅ **COMPLETE** - Power effect infrastructure implemented in E2.3
+**E2.3 Reference:** `docs/engine/e2.3-plan.md` → "Structure Energy Routing"
+
+**What was completed:**
+- ✅ Effect consumption in `FactoryIntentStep.ProcessProduce()`
+- ✅ Factory level boost for recipe gating: level + effect bonus (levels 1-5: +1/+2/+3/+4/+5)
+- ✅ 3 tests added (effect levels 1/3/5 allowing level-gated commodities)
+- ✅ PowerInfo Effect array added: [1, 2, 3, 4, 5]
+
+---
+
+### 6. PWR_GENERATE_OPS Power Ability
+**Blocking E2.3 Feature:** `PowerAbilityStep` PWR_GENERATE_OPS ability
+**E2.3 Reference:** `docs/engine/e2.3-plan.md` → "Power Creep Abilities (Deferred)"
+**Parity Status:** ✅ **PARITY-CRITICAL** (required for E7 validation)
 
 **What's blocked:**
-- Power creeps can use `PWR_OPERATE_LAB` to boost reaction amount from 5 to higher values
-- Requires power effect tracking system (effect duration, magnitude, decay)
+- Power creeps can use `PWR_GENERATE_OPS` to generate ops from user's global power balance
+- Node.js behavior (usePower.js lines 57-69): Adds ops to power creep store, drops overflow if exceeds capacity
+- Requires tracking user's global power balance (incremented by power spawns, decremented by generateOps)
 
 **What's needed from E5:**
-1. Implement power effect decay logic (decrement `endTime` each tick)
-2. Add effect lookup helpers to `RoomProcessorContext`
-3. Document power effect lifecycle (apply → track → decay → remove)
+1. Implement `IGlobalMutationWriter.IncrementUserPower(userId, amount)` method
+2. Implement `IGlobalMutationWriter.DecrementUserPower(userId, amount)` method
+3. Add user power balance field to global user mutations
 
 **Implementation effort after E5:** 1-2 hours
-- Check for `PWR_OPERATE_LAB` effect in `ProcessRunReaction`
-- Increase reaction amount by effect magnitude (default 5 → 5 + effect)
-- 2-3 tests (with effect vs without)
+- Add generateOps case to `PowerAbilityStep.ProcessUsePower` switch
+- Calculate ops amount: `powerInfo.Effect[level - 1]` (levels 1-5: 1/2/4/6/8 ops)
+- Deduct from user power balance: `context.GlobalMutationWriter.DecrementUserPower(creep.UserId, opsCost)`
+- Add ops to power creep store, drop overflow if exceeds capacity
+- 2 tests: valid use (ops added), overflow (drops created)
+
+---
+
+### 7. User Power Balance Updates (Power Spawn)
+**Blocking E2.3 Feature:** `PowerSpawnIntentStep.ProcessPowerSpawn()` power balance tracking
+**E2.3 Reference:** `docs/engine/e2.3-plan.md` → "Structure Energy Routing (Deferred Features)"
+**Parity Status:** ✅ **PARITY-CRITICAL** (required for E7 validation)
+
+**What's blocked:**
+- Power spawns should increment user's global power balance when processing power
+- Node.js behavior: Calls `bulkUsers.inc(powerSpawn.user, 'power', amount)` on every power processing
+- Currently power is consumed but user balance is not tracked
+
+**What's needed from E5:**
+- Same infrastructure as #6 (`IGlobalMutationWriter.IncrementUserPower`)
+
+**Implementation effort after E5:** 30 minutes
+- In `ProcessPowerSpawn`, call `context.GlobalMutationWriter.IncrementUserPower(powerSpawn.UserId, amount)`
+- No new tests needed (existing tests cover power spawn processing)
 
 ---
 
@@ -88,6 +151,8 @@ public interface IGlobalMutationWriter
 {
     // User stats
     void IncrementUserGcl(string userId, int amount);
+    void IncrementUserPower(string userId, int amount);  // For power spawns
+    void DecrementUserPower(string userId, int amount);  // For generateOps
     void IncrementUserCredits(string userId, int amount);
     void DecrementUserCredits(string userId, int amount);
 
@@ -108,17 +173,16 @@ public interface IGlobalMutationWriter
 ---
 
 ### 2. Power Effect Tracking
-**Analogous to:** Action logs (debugging feature)
+~~**COMPLETED IN E2.3** (January 21, 2026)~~
+**Status:** ✅ **NO LONGER NEEDED** - Implemented in E2.3 as part of Power Abilities work
 
-**What's needed:**
-1. Power effect decay processor (runs each tick, decrements `endTime`, removes expired effects)
-2. Effect lookup helpers in `RoomProcessorContext`:
-   ```csharp
-   bool TryGetEffect(RoomObjectSnapshot obj, PowerTypes power, out PowerEffectSnapshot effect);
-   ```
-3. Document effect lifecycle in `docs/engine/power-effects.md`
+**What was implemented:**
+1. ✅ `PowerEffectDecayStep` - Removes expired effects each tick
+2. ✅ `PowerAbilityStep` - Applies power effects to structures
+3. ✅ Effect consumption in Lab/PowerSpawn/Factory handlers
+4. ✅ 67 tests covering power effect lifecycle
 
-**Schema:** Already exists in `RoomObjectSnapshot.Effects` (no schema changes needed)
+**Lesson learned:** Power effects are room-local state, not global state. They didn't require E5 infrastructure.
 
 ---
 

@@ -113,6 +113,72 @@ public sealed class PowerSpawnIntentStepTests
         Assert.Equal(350, patch.Payload.Store![ResourceTypes.Energy]);
     }
 
+    [Fact]
+    public async Task WithOperatePowerEffectLevel1_ProcessesBoostedAmount()
+    {
+        // Arrange
+        var powerSpawn = CreatePowerSpawnWithEffect("ps1", 10, 10, "user1", power: 10, energy: 500,
+            PowerTypes.OperatePower, level: 1, endTime: 200);
+        var context = CreateContext([powerSpawn],
+            CreateProcessPowerIntent("user1", powerSpawn.Id), gameTime: 100);
+        var writer = (FakeMutationWriter)context.MutationWriter;
+
+        // Act
+        await _step.ExecuteAsync(context, TestContext.Current.CancellationToken);
+
+        // Assert - level 1 effect adds +1 bonus = 2 power processed
+        var patch = writer.Patches.Single(p => p.ObjectId == powerSpawn.Id);
+        var result = patch.Payload.Store!;
+        var expectedPower = 10 - 2;
+        var expectedEnergy = 500 - (2 * ScreepsGameConstants.PowerSpawnEnergyRatio);
+        Assert.Equal(expectedPower, result[ResourceTypes.Power]);
+        Assert.Equal(expectedEnergy, result[ResourceTypes.Energy]);
+    }
+
+    [Fact]
+    public async Task WithOperatePowerEffectLevel3_ProcessesBoostedAmount()
+    {
+        // Arrange
+        var powerSpawn = CreatePowerSpawnWithEffect("ps1", 10, 10, "user1", power: 10, energy: 500,
+            PowerTypes.OperatePower, level: 3, endTime: 200);
+        var context = CreateContext([powerSpawn],
+            CreateProcessPowerIntent("user1", powerSpawn.Id), gameTime: 100);
+        var writer = (FakeMutationWriter)context.MutationWriter;
+
+        // Act
+        await _step.ExecuteAsync(context, TestContext.Current.CancellationToken);
+
+        // Assert - level 3 effect adds +3 bonus = 4 power processed
+        var patch = writer.Patches.Single(p => p.ObjectId == powerSpawn.Id);
+        var result = patch.Payload.Store!;
+        var expectedPower = 10 - 4;
+        var expectedEnergy = 500 - (4 * ScreepsGameConstants.PowerSpawnEnergyRatio);
+        Assert.Equal(expectedPower, result[ResourceTypes.Power]);
+        Assert.Equal(expectedEnergy, result[ResourceTypes.Energy]);
+    }
+
+    [Fact]
+    public async Task WithOperatePowerEffectLevel5_ProcessesBoostedAmount()
+    {
+        // Arrange
+        var powerSpawn = CreatePowerSpawnWithEffect("ps1", 10, 10, "user1", power: 10, energy: 500,
+            PowerTypes.OperatePower, level: 5, endTime: 200);
+        var context = CreateContext([powerSpawn],
+            CreateProcessPowerIntent("user1", powerSpawn.Id), gameTime: 100);
+        var writer = (FakeMutationWriter)context.MutationWriter;
+
+        // Act
+        await _step.ExecuteAsync(context, TestContext.Current.CancellationToken);
+
+        // Assert - level 5 effect adds +5 bonus = 6 power processed
+        var patch = writer.Patches.Single(p => p.ObjectId == powerSpawn.Id);
+        var result = patch.Payload.Store!;
+        var expectedPower = 10 - 6;
+        var expectedEnergy = 500 - (6 * ScreepsGameConstants.PowerSpawnEnergyRatio);
+        Assert.Equal(expectedPower, result[ResourceTypes.Power]);
+        Assert.Equal(expectedEnergy, result[ResourceTypes.Energy]);
+    }
+
     #region Helper Methods
 
     private static RoomObjectSnapshot CreatePowerSpawn(string id, int x, int y, string userId, int power, int energy)
@@ -149,6 +215,71 @@ public sealed class PowerSpawnIntentStepTests
             Sign: null,
             Structure: null,
             Effects: new Dictionary<PowerTypes, PowerEffectSnapshot>(),
+            Spawning: null,
+            Body: [],
+            IsSpawning: null,
+            UserSummoned: null,
+            IsPublic: null,
+            StrongholdId: null,
+            DeathTime: null,
+            DecayTime: null,
+            CreepId: null,
+            CreepName: null,
+            CreepTicksToLive: null,
+            CreepSaying: null,
+            ResourceType: null,
+            ResourceAmount: null,
+            Progress: null,
+            ProgressTotal: null,
+            ActionLog: null,
+            Energy: null,
+            MineralAmount: null,
+            InvaderHarvested: null,
+            Harvested: null,
+            Cooldown: null,
+            CooldownTime: null,
+            SafeMode: null,
+            SafeModeAvailable: null,
+            PortalDestination: null,
+            Send: null);
+
+    private static RoomObjectSnapshot CreatePowerSpawnWithEffect(string id, int x, int y, string userId, int power, int energy, PowerTypes powerType, int level, int endTime)
+        => new(
+            id,
+            RoomObjectTypes.PowerSpawn,
+            "W1N1",
+            "shard0",
+            userId,
+            x,
+            y,
+            Hits: ScreepsGameConstants.PowerSpawnHits,
+            HitsMax: ScreepsGameConstants.PowerSpawnHits,
+            Fatigue: null,
+            TicksToLive: null,
+            Name: null,
+            Level: null,
+            Density: null,
+            MineralType: null,
+            DepositType: null,
+            StructureType: RoomObjectTypes.PowerSpawn,
+            Store: new Dictionary<string, int>(StringComparer.Ordinal)
+            {
+                [ResourceTypes.Power] = power,
+                [ResourceTypes.Energy] = energy
+            },
+            StoreCapacity: ScreepsGameConstants.PowerSpawnEnergyCapacity + ScreepsGameConstants.PowerSpawnPowerCapacity,
+            StoreCapacityResource: new Dictionary<string, int>(StringComparer.Ordinal)
+            {
+                [ResourceTypes.Power] = ScreepsGameConstants.PowerSpawnPowerCapacity,
+                [ResourceTypes.Energy] = ScreepsGameConstants.PowerSpawnEnergyCapacity
+            },
+            Reservation: null,
+            Sign: null,
+            Structure: null,
+            Effects: new Dictionary<PowerTypes, PowerEffectSnapshot>()
+            {
+                [powerType] = new(powerType, level, endTime)
+            },
             Spawning: null,
             Body: [],
             IsSpawning: null,

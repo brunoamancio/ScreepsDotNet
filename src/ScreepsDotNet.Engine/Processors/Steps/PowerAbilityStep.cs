@@ -168,6 +168,17 @@ internal sealed class PowerAbilityStep : IRoomProcessorStep
             UsePower: new RoomObjectActionLogUsePower((int)powerType, targetX, targetY));
 
         // Handle direct-action abilities
+        if (powerType == PowerTypes.GenerateOps)
+        {
+            // TODO (E5): Requires IGlobalMutationWriter.IncrementUserPower(userId, amount)
+            // Node.js lines 57-69 in usePower.js:
+            // - Adds ops to power creep store based on effect[level-1]
+            // - Drops overflow if exceeds capacity
+            // Blocked by E5 (Global Systems) - requires global user power balance tracking
+            // See docs/engine/e5-plan.md for E5 implementation plan
+            return;
+        }
+
         if (powerType == PowerTypes.OperateExtension)
         {
             ProcessOperateExtension(context, powerCreep, target, creepPower.Level, powerInfo, storeLedger, modifiedObjects);

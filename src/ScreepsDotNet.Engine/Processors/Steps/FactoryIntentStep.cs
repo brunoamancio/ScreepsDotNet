@@ -1,6 +1,7 @@
 namespace ScreepsDotNet.Engine.Processors.Steps;
 
 using ScreepsDotNet.Common.Constants;
+using ScreepsDotNet.Common.Types;
 using ScreepsDotNet.Driver.Contracts;
 using ScreepsDotNet.Engine.Processors;
 
@@ -91,13 +92,21 @@ internal sealed class FactoryIntentStep : IRoomProcessorStep
         if (recipe is null)
             return;
 
-        // Check factory level (defer PWR_OPERATE_FACTORY effect to E5)
+        // Check factory level
         var factoryLevel = factory.Level ?? 0;
 
-        // TODO (E5): Check for PWR_OPERATE_FACTORY effect to increase factory level
-        // if (factory.Effects?.TryGetValue(PowerTypes.OperateFactory, out var effect) == true) {
-        //     factoryLevel = Math.Max(factoryLevel, effect.Magnitude);
-        // }
+        // Check for PWR_OPERATE_FACTORY effect to boost factory level for recipe gating
+        if (factory.Effects is not null && factory.Effects.TryGetValue(PowerTypes.OperateFactory, out var operateFactoryEffect))
+        {
+            if (operateFactoryEffect.EndTime > gameTime && PowerInfo.Abilities.TryGetValue(PowerTypes.OperateFactory, out var powerInfo))
+            {
+                if (powerInfo.Effect is not null)
+                {
+                    var effectBonus = powerInfo.Effect[operateFactoryEffect.Level - 1];
+                    factoryLevel += effectBonus;
+                }
+            }
+        }
 
         if (recipe.Level.HasValue && factoryLevel < recipe.Level.Value)
             return;

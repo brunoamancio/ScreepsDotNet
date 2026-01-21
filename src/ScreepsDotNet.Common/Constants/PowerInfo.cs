@@ -201,7 +201,8 @@ public static class PowerInfo
             Cooldown: 800,
             Range: 3,
             Duration: 1000,
-            Ops: 100
+            Ops: 100,
+            Effect: [1, 2, 3, 4, 5]
         )
     };
 }
