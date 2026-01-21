@@ -1109,6 +1109,427 @@ public sealed class PowerAbilityStepTests
         Assert.True(targetPatch.ObjectId is null || targetPatch.Payload.Effects is null || targetPatch.Payload.Effects.Count == 0);
     }
 
+    [Fact]
+    public async Task ExecuteAsync_OperateExtension_FillsExtensionsFromStorage()
+    {
+        var powerCreep = CreatePowerCreep(
+            powers: new Dictionary<PowerTypes, PowerCreepPowerSnapshot>
+            {
+                [PowerTypes.OperateExtension] = new(Level: 3, CooldownTime: 0)
+            },
+            ops: 50);
+        var storage = CreateStorage("storage1", 12, 10);
+        storage = storage with { Store = new Dictionary<string, int>(StringComparer.Ordinal) { [ResourceTypes.Energy] = 10000 } };
+        var extension1 = CreateExtension("ext1", 15, 10);
+        var extension2 = CreateExtension("ext2", 16, 10);
+        var controller = CreateController(isPowerEnabled: true);
+        var intent = CreatePowerIntent(PowerTypes.OperateExtension, "storage1");
+        var context = CreateContextWithMultipleObjects(powerCreep, gameTime: 100, controller, [storage, extension1, extension2], intent);
+        var step = new PowerAbilityStep();
+
+        await step.ExecuteAsync(context, TestContext.Current.CancellationToken);
+
+        var writer = (RecordingMutationWriter)context.MutationWriter;
+        var storagePatch = writer.Patches.FirstOrDefault(p => p.ObjectId == "storage1");
+        var ext1Patch = writer.Patches.FirstOrDefault(p => p.ObjectId == "ext1");
+        var ext2Patch = writer.Patches.FirstOrDefault(p => p.ObjectId == "ext2");
+        Assert.NotNull(storagePatch.Payload.Store);
+        Assert.True(storagePatch.Payload.Store[ResourceTypes.Energy] < 10000);
+        Assert.NotNull(ext1Patch.Payload.Store);
+        Assert.True(ext1Patch.Payload.Store[ResourceTypes.Energy] > 0);
+        Assert.NotNull(ext2Patch.Payload.Store);
+        Assert.True(ext2Patch.Payload.Store[ResourceTypes.Energy] > 0);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_OperateExtension_InsufficientStorageEnergy_NoEffect()
+    {
+        var powerCreep = CreatePowerCreep(
+            powers: new Dictionary<PowerTypes, PowerCreepPowerSnapshot>
+            {
+                [PowerTypes.OperateExtension] = new(Level: 3, CooldownTime: 0)
+            },
+            ops: 50);
+        var storage = CreateStorage("storage1", 12, 10);
+        storage = storage with { Store = new Dictionary<string, int>(StringComparer.Ordinal) { [ResourceTypes.Energy] = 0 } };
+        var extension1 = CreateExtension("ext1", 15, 10);
+        var controller = CreateController(isPowerEnabled: true);
+        var intent = CreatePowerIntent(PowerTypes.OperateExtension, "storage1");
+        var context = CreateContextWithMultipleObjects(powerCreep, gameTime: 100, controller, [storage, extension1], intent);
+        var step = new PowerAbilityStep();
+
+        await step.ExecuteAsync(context, TestContext.Current.CancellationToken);
+
+        var writer = (RecordingMutationWriter)context.MutationWriter;
+        var ext1Patch = writer.Patches.FirstOrDefault(p => p.ObjectId == "ext1");
+        Assert.True(ext1Patch.ObjectId is null || ext1Patch.Payload.Store is null);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_OperateExtension_WrongTargetType_NoEffect()
+    {
+        var powerCreep = CreatePowerCreep(
+            powers: new Dictionary<PowerTypes, PowerCreepPowerSnapshot>
+            {
+                [PowerTypes.OperateExtension] = new(Level: 3, CooldownTime: 0)
+            },
+            ops: 50);
+        var spawn = CreateSpawn("spawn1", 12, 10);
+        var controller = CreateController(isPowerEnabled: true);
+        var intent = CreatePowerIntent(PowerTypes.OperateExtension, "spawn1");
+        var context = CreateContext(powerCreep, gameTime: 100, controller, spawn, intent);
+        var step = new PowerAbilityStep();
+
+        await step.ExecuteAsync(context, TestContext.Current.CancellationToken);
+
+        var writer = (RecordingMutationWriter)context.MutationWriter;
+        var powerCreepPatch = writer.Patches.FirstOrDefault(p => p.ObjectId == "pc1");
+        Assert.True(powerCreepPatch.ObjectId is null || powerCreepPatch.Payload.Store is null || powerCreepPatch.Payload.Store[ResourceTypes.Ops] == 50);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_OperateExtension_NoExtensionsInRoom_NoEnergyTransferred()
+    {
+        var powerCreep = CreatePowerCreep(
+            powers: new Dictionary<PowerTypes, PowerCreepPowerSnapshot>
+            {
+                [PowerTypes.OperateExtension] = new(Level: 3, CooldownTime: 0)
+            },
+            ops: 50);
+        var storage = CreateStorage("storage1", 12, 10);
+        storage = storage with { Store = new Dictionary<string, int>(StringComparer.Ordinal) { [ResourceTypes.Energy] = 10000 } };
+        var controller = CreateController(isPowerEnabled: true);
+        var intent = CreatePowerIntent(PowerTypes.OperateExtension, "storage1");
+        var context = CreateContext(powerCreep, gameTime: 100, controller, storage, intent);
+        var step = new PowerAbilityStep();
+
+        await step.ExecuteAsync(context, TestContext.Current.CancellationToken);
+
+        var writer = (RecordingMutationWriter)context.MutationWriter;
+        var storagePatch = writer.Patches.FirstOrDefault(p => p.ObjectId == "storage1");
+        Assert.True(storagePatch.ObjectId is null || storagePatch.Payload.Store is null || storagePatch.Payload.Store[ResourceTypes.Energy] == 10000);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_OperateExtension_FillsOnlyNonFullExtensions()
+    {
+        var powerCreep = CreatePowerCreep(
+            powers: new Dictionary<PowerTypes, PowerCreepPowerSnapshot>
+            {
+                [PowerTypes.OperateExtension] = new(Level: 3, CooldownTime: 0)
+            },
+            ops: 50);
+        var storage = CreateStorage("storage1", 12, 10);
+        storage = storage with { Store = new Dictionary<string, int>(StringComparer.Ordinal) { [ResourceTypes.Energy] = 10000 } };
+        var extension1 = CreateExtension("ext1", 15, 10);
+        var extension2 = CreateExtension("ext2", 16, 10);
+        extension2 = extension2 with { Store = new Dictionary<string, int>(StringComparer.Ordinal) { [ResourceTypes.Energy] = 50 }, StoreCapacity = 50 };
+        var controller = CreateController(isPowerEnabled: true);
+        var intent = CreatePowerIntent(PowerTypes.OperateExtension, "storage1");
+        var context = CreateContextWithMultipleObjects(powerCreep, gameTime: 100, controller, [storage, extension1, extension2], intent);
+        var step = new PowerAbilityStep();
+
+        await step.ExecuteAsync(context, TestContext.Current.CancellationToken);
+
+        var writer = (RecordingMutationWriter)context.MutationWriter;
+        var ext1Patch = writer.Patches.FirstOrDefault(p => p.ObjectId == "ext1");
+        var ext2Patch = writer.Patches.FirstOrDefault(p => p.ObjectId == "ext2");
+        Assert.NotNull(ext1Patch.Payload.Store);
+        Assert.True(ext1Patch.Payload.Store[ResourceTypes.Energy] > 0);
+        Assert.True(ext2Patch.ObjectId is null || ext2Patch.Payload.Store is null);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_OperateExtension_UsesTerminalIfNoStorage()
+    {
+        var powerCreep = CreatePowerCreep(
+            powers: new Dictionary<PowerTypes, PowerCreepPowerSnapshot>
+            {
+                [PowerTypes.OperateExtension] = new(Level: 3, CooldownTime: 0)
+            },
+            ops: 50);
+        var terminal = CreateTerminal("terminal1", 12, 10);
+        terminal = terminal with { Store = new Dictionary<string, int>(StringComparer.Ordinal) { [ResourceTypes.Energy] = 10000 } };
+        var extension1 = CreateExtension("ext1", 15, 10);
+        var controller = CreateController(isPowerEnabled: true);
+        var intent = CreatePowerIntent(PowerTypes.OperateExtension, "terminal1");
+        var context = CreateContextWithMultipleObjects(powerCreep, gameTime: 100, controller, [terminal, extension1], intent);
+        var step = new PowerAbilityStep();
+
+        await step.ExecuteAsync(context, TestContext.Current.CancellationToken);
+
+        var writer = (RecordingMutationWriter)context.MutationWriter;
+        var terminalPatch = writer.Patches.FirstOrDefault(p => p.ObjectId == "terminal1");
+        var ext1Patch = writer.Patches.FirstOrDefault(p => p.ObjectId == "ext1");
+        Assert.NotNull(terminalPatch.Payload.Store);
+        Assert.True(terminalPatch.Payload.Store[ResourceTypes.Energy] < 10000);
+        Assert.NotNull(ext1Patch.Payload.Store);
+        Assert.True(ext1Patch.Payload.Store[ResourceTypes.Energy] > 0);
+    }
+
+    // shield (6 tests)
+
+    [Fact]
+    public async Task ExecuteAsync_Shield_CreatesTemporaryRampart()
+    {
+        var powerCreep = CreatePowerCreep(
+            powers: new Dictionary<PowerTypes, PowerCreepPowerSnapshot>
+            {
+                [PowerTypes.Shield] = new(Level: 3, CooldownTime: 0)
+            },
+            ops: 50);
+        powerCreep = powerCreep with { Store = new Dictionary<string, int>(StringComparer.Ordinal) { [ResourceTypes.Energy] = 200, [ResourceTypes.Ops] = 50 } };
+        var controller = CreateController(isPowerEnabled: true);
+        var intent = CreatePowerIntentNoTarget(PowerTypes.Shield);
+        var context = CreateContext(powerCreep, gameTime: 100, controller, controller, intent);
+        var step = new PowerAbilityStep();
+
+        await step.ExecuteAsync(context, TestContext.Current.CancellationToken);
+
+        var writer = (RecordingMutationWriter)context.MutationWriter;
+        var rampartUpserts = writer.Upserts.Where(u => string.Equals(u.Type, RoomObjectTypes.Rampart, StringComparison.Ordinal)).ToList();
+        Assert.NotEmpty(rampartUpserts);
+        var rampart = rampartUpserts.First();
+        Assert.Equal(10, rampart.X);
+        Assert.Equal(10, rampart.Y);
+        Assert.Equal(15000, rampart.Hits);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_Shield_InsufficientEnergy_NoRampart()
+    {
+        var powerCreep = CreatePowerCreep(
+            powers: new Dictionary<PowerTypes, PowerCreepPowerSnapshot>
+            {
+                [PowerTypes.Shield] = new(Level: 3, CooldownTime: 0)
+            },
+            ops: 50);
+        powerCreep = powerCreep with { Store = new Dictionary<string, int>(StringComparer.Ordinal) { [ResourceTypes.Energy] = 50, [ResourceTypes.Ops] = 50 } };
+        var controller = CreateController(isPowerEnabled: true);
+        var intent = CreatePowerIntentNoTarget(PowerTypes.Shield);
+        var context = CreateContext(powerCreep, gameTime: 100, controller, controller, intent);
+        var step = new PowerAbilityStep();
+
+        await step.ExecuteAsync(context, TestContext.Current.CancellationToken);
+
+        var writer = (RecordingMutationWriter)context.MutationWriter;
+        var rampartUpserts = writer.Upserts.Where(u => string.Equals(u.Type, RoomObjectTypes.Rampart, StringComparison.Ordinal)).ToList();
+        Assert.Empty(rampartUpserts);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_Shield_DeductsEnergy()
+    {
+        var powerCreep = CreatePowerCreep(
+            powers: new Dictionary<PowerTypes, PowerCreepPowerSnapshot>
+            {
+                [PowerTypes.Shield] = new(Level: 3, CooldownTime: 0)
+            },
+            ops: 50);
+        powerCreep = powerCreep with { Store = new Dictionary<string, int>(StringComparer.Ordinal) { [ResourceTypes.Energy] = 200, [ResourceTypes.Ops] = 50 } };
+        var controller = CreateController(isPowerEnabled: true);
+        var intent = CreatePowerIntentNoTarget(PowerTypes.Shield);
+        var context = CreateContext(powerCreep, gameTime: 100, controller, controller, intent);
+        var step = new PowerAbilityStep();
+
+        await step.ExecuteAsync(context, TestContext.Current.CancellationToken);
+
+        var writer = (RecordingMutationWriter)context.MutationWriter;
+        var powerCreepPatch = writer.Patches.FirstOrDefault(p => p.ObjectId == "pc1");
+        Assert.NotNull(powerCreepPatch.Payload.Store);
+        Assert.Equal(100, powerCreepPatch.Payload.Store[ResourceTypes.Energy]);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_Shield_ExistingRampartAtPosition_NoNewRampart()
+    {
+        var powerCreep = CreatePowerCreep(
+            powers: new Dictionary<PowerTypes, PowerCreepPowerSnapshot>
+            {
+                [PowerTypes.Shield] = new(Level: 3, CooldownTime: 0)
+            },
+            ops: 50);
+        powerCreep = powerCreep with { Store = new Dictionary<string, int>(StringComparer.Ordinal) { [ResourceTypes.Energy] = 200, [ResourceTypes.Ops] = 50 } };
+        var existingRampart = CreateRampart("rampart1", 10, 10);
+        var controller = CreateController(isPowerEnabled: true);
+        var intent = CreatePowerIntentNoTarget(PowerTypes.Shield);
+        var context = CreateContextWithMultipleObjects(powerCreep, gameTime: 100, controller, [existingRampart], intent);
+        var step = new PowerAbilityStep();
+
+        await step.ExecuteAsync(context, TestContext.Current.CancellationToken);
+
+        var writer = (RecordingMutationWriter)context.MutationWriter;
+        var rampartUpserts = writer.Upserts.Where(u => string.Equals(u.Type, RoomObjectTypes.Rampart, StringComparison.Ordinal)).ToList();
+        Assert.Empty(rampartUpserts);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_Shield_SetsCooldown()
+    {
+        var powerCreep = CreatePowerCreep(
+            powers: new Dictionary<PowerTypes, PowerCreepPowerSnapshot>
+            {
+                [PowerTypes.Shield] = new(Level: 3, CooldownTime: 0)
+            },
+            ops: 50);
+        powerCreep = powerCreep with { Store = new Dictionary<string, int>(StringComparer.Ordinal) { [ResourceTypes.Energy] = 200, [ResourceTypes.Ops] = 50 } };
+        var controller = CreateController(isPowerEnabled: true);
+        var intent = CreatePowerIntentNoTarget(PowerTypes.Shield);
+        var context = CreateContext(powerCreep, gameTime: 100, controller, controller, intent);
+        var step = new PowerAbilityStep();
+
+        await step.ExecuteAsync(context, TestContext.Current.CancellationToken);
+
+        var writer = (RecordingMutationWriter)context.MutationWriter;
+        var powerCreepPatch = writer.Patches.FirstOrDefault(p => p.ObjectId == "pc1");
+        Assert.NotNull(powerCreepPatch.Payload.Powers);
+        Assert.True(powerCreepPatch.Payload.Powers.ContainsKey(PowerTypes.Shield));
+        Assert.Equal(120, powerCreepPatch.Payload.Powers[PowerTypes.Shield].CooldownTime);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_Shield_SetsDecayTime()
+    {
+        var powerCreep = CreatePowerCreep(
+            powers: new Dictionary<PowerTypes, PowerCreepPowerSnapshot>
+            {
+                [PowerTypes.Shield] = new(Level: 3, CooldownTime: 0)
+            },
+            ops: 50);
+        powerCreep = powerCreep with { Store = new Dictionary<string, int>(StringComparer.Ordinal) { [ResourceTypes.Energy] = 200, [ResourceTypes.Ops] = 50 } };
+        var controller = CreateController(isPowerEnabled: true);
+        var intent = CreatePowerIntentNoTarget(PowerTypes.Shield);
+        var context = CreateContext(powerCreep, gameTime: 100, controller, controller, intent);
+        var step = new PowerAbilityStep();
+
+        await step.ExecuteAsync(context, TestContext.Current.CancellationToken);
+
+        var writer = (RecordingMutationWriter)context.MutationWriter;
+        var rampartUpserts = writer.Upserts.Where(u => string.Equals(u.Type, RoomObjectTypes.Rampart, StringComparison.Ordinal)).ToList();
+        Assert.NotEmpty(rampartUpserts);
+        var rampart = rampartUpserts.First();
+        Assert.Equal(150, rampart.DecayTime);
+    }
+
+    private static IReadOnlyDictionary<string, IReadOnlyList<IntentRecord>> CreatePowerIntentNoTarget(PowerTypes power)
+    {
+        var intent = new Dictionary<string, IReadOnlyList<IntentRecord>>(StringComparer.Ordinal)
+        {
+            ["pc1"] = new List<IntentRecord>
+            {
+                new(
+                    IntentKeys.Power,
+                    new List<IntentArgument>
+                    {
+                        new(
+                            new Dictionary<string, IntentFieldValue>(StringComparer.Ordinal)
+                            {
+                                [PowerCreepIntentFields.Power] = new(IntentFieldValueKind.Number, NumberValue: (int)power)
+                            })
+                    })
+            }
+        };
+        return intent;
+    }
+
+    private static RoomProcessorContext CreateContextWithMultipleObjects(RoomObjectSnapshot powerCreep, int gameTime, RoomObjectSnapshot controller, IEnumerable<RoomObjectSnapshot> additionalObjects, IReadOnlyDictionary<string, IReadOnlyList<IntentRecord>> objectIntents)
+    {
+        var objects = new Dictionary<string, RoomObjectSnapshot>(StringComparer.Ordinal)
+        {
+            [powerCreep.Id] = powerCreep,
+            [controller.Id] = controller
+        };
+
+        foreach (var obj in additionalObjects)
+        {
+            objects[obj.Id] = obj;
+        }
+
+        var intents = new RoomIntentSnapshot(
+            powerCreep.RoomName,
+            null,
+            new Dictionary<string, IntentEnvelope>(StringComparer.Ordinal)
+            {
+                [powerCreep.UserId!] = new(powerCreep.UserId!,
+                                           objectIntents,
+                                           new Dictionary<string, SpawnIntentEnvelope>(StringComparer.Ordinal),
+                                           new Dictionary<string, CreepIntentEnvelope>(StringComparer.Ordinal))
+            });
+
+        var state = new RoomState(
+            powerCreep.RoomName,
+            gameTime,
+            null,
+            objects,
+            new Dictionary<string, UserState>(StringComparer.Ordinal),
+            intents,
+            new Dictionary<string, RoomTerrainSnapshot>(StringComparer.Ordinal),
+            []);
+
+        return new RoomProcessorContext(
+            state,
+            new RecordingMutationWriter(),
+            new NullCreepStatsSink());
+    }
+
+    private static RoomObjectSnapshot CreateExtension(string id, int x, int y)
+        => new(
+            id,
+            RoomObjectTypes.Extension,
+            "W1N1",
+            null,
+            "user1",
+            x,
+            y,
+            Hits: 1000,
+            HitsMax: 1000,
+            Fatigue: null,
+            TicksToLive: null,
+            Name: null,
+            Level: null,
+            Density: null,
+            MineralType: null,
+            DepositType: null,
+            StructureType: null,
+            Store: new Dictionary<string, int>(StringComparer.Ordinal),
+            StoreCapacity: 50,
+            StoreCapacityResource: new Dictionary<string, int>(StringComparer.Ordinal),
+            Reservation: null,
+            Sign: null,
+            Structure: null,
+            Effects: new Dictionary<PowerTypes, PowerEffectSnapshot>(),
+            Spawning: null,
+            Body: []);
+
+    private static RoomObjectSnapshot CreateRampart(string id, int x, int y)
+        => new(
+            id,
+            RoomObjectTypes.Rampart,
+            "W1N1",
+            null,
+            "user1",
+            x,
+            y,
+            Hits: 1000,
+            HitsMax: 300000,
+            Fatigue: null,
+            TicksToLive: null,
+            Name: null,
+            Level: null,
+            Density: null,
+            MineralType: null,
+            DepositType: null,
+            StructureType: null,
+            Store: new Dictionary<string, int>(StringComparer.Ordinal),
+            StoreCapacity: null,
+            StoreCapacityResource: new Dictionary<string, int>(StringComparer.Ordinal),
+            Reservation: null,
+            Sign: null,
+            Structure: null,
+            Effects: new Dictionary<PowerTypes, PowerEffectSnapshot>(),
+            Spawning: null,
+            Body: []);
+
     private static IReadOnlyDictionary<string, IReadOnlyList<IntentRecord>> CreatePowerIntent(PowerTypes power, string targetId)
     {
         var intent = new Dictionary<string, IReadOnlyList<IntentRecord>>(StringComparer.Ordinal)
@@ -1426,8 +1847,10 @@ public sealed class PowerAbilityStepTests
     private sealed class RecordingMutationWriter : IRoomMutationWriter
     {
         public List<(string ObjectId, RoomObjectPatchPayload Payload)> Patches { get; } = [];
+        public List<RoomObjectSnapshot> Upserts { get; } = [];
 
-        public void Upsert(RoomObjectSnapshot document) { }
+        public void Upsert(RoomObjectSnapshot document)
+            => Upserts.Add(document);
 
         public void Patch(string objectId, RoomObjectPatchPayload patch)
             => Patches.Add((objectId, patch));

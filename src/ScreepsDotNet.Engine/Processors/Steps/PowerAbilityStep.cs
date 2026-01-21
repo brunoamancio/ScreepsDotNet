@@ -129,6 +129,15 @@ internal sealed class PowerAbilityStep : IRoomProcessorStep
             // Check for higher-level effect
             if (HasHigherLevelEffect(target, powerType, creepPower.Level, gameTime))
                 return;
+
+            // Special validation for operateExtension: must be storage or terminal
+            if (powerType == PowerTypes.OperateExtension)
+            {
+                var isStorage = string.Equals(target.Type, RoomObjectTypes.Storage, StringComparison.Ordinal);
+                var isTerminal = string.Equals(target.Type, RoomObjectTypes.Terminal, StringComparison.Ordinal);
+                if (!isStorage && !isTerminal)
+                    return;
+            }
         }
 
         // Deduct ops
@@ -158,7 +167,20 @@ internal sealed class PowerAbilityStep : IRoomProcessorStep
         actionLogLedger[powerCreep.Id] = new RoomObjectActionLogPatch(
             UsePower: new RoomObjectActionLogUsePower((int)powerType, targetX, targetY));
 
-        // Apply power effects based on power type
+        // Handle direct-action abilities
+        if (powerType == PowerTypes.OperateExtension)
+        {
+            ProcessOperateExtension(context, powerCreep, target, creepPower.Level, powerInfo, storeLedger, modifiedObjects);
+            return;
+        }
+
+        if (powerType == PowerTypes.Shield)
+        {
+            ProcessShield(context, powerCreep, creepPower.Level, gameTime, powerInfo, storeLedger, modifiedObjects);
+            return;
+        }
+
+        // Apply power effects for effect-based abilities
         ApplyPowerEffect(powerType, target, creepPower.Level, gameTime, powerInfo, effectsLedger, modifiedObjects);
     }
 
@@ -326,5 +348,166 @@ internal sealed class PowerAbilityStep : IRoomProcessorStep
 
             context.MutationWriter.Patch(objectId, patch);
         }
+    }
+
+    private static void ProcessOperateExtension(
+        RoomProcessorContext context,
+        RoomObjectSnapshot powerCreep,
+        RoomObjectSnapshot? target,
+        int level,
+        PowerAbilityInfo powerInfo,
+        Dictionary<string, Dictionary<string, int>> storeLedger,
+        HashSet<string> modifiedObjects)
+    {
+        if (target is null)
+            return;
+
+        // Validate target is storage or terminal
+        var isStorage = string.Equals(target.Type, RoomObjectTypes.Storage, StringComparison.Ordinal);
+        var isTerminal = string.Equals(target.Type, RoomObjectTypes.Terminal, StringComparison.Ordinal);
+        if (!isStorage && !isTerminal)
+            return;
+
+        // Get available energy from target
+        var targetEnergy = storeLedger.TryGetValue(target.Id, out var targetStore)
+            ? targetStore.GetValueOrDefault(ResourceTypes.Energy, target.Store.GetValueOrDefault(ResourceTypes.Energy, 0))
+            : target.Store.GetValueOrDefault(ResourceTypes.Energy, 0);
+
+        if (targetEnergy == 0)
+            return;
+
+        // Find all non-full extensions
+        var extensions = context.State.Objects.Values
+            .Where(o => string.Equals(o.Type, RoomObjectTypes.Extension, StringComparison.Ordinal))
+            .Where(o => string.Equals(o.UserId, powerCreep.UserId, StringComparison.Ordinal))
+            .ToList();
+
+        if (extensions.Count == 0)
+            return;
+
+        // Calculate fill amount based on level
+        var effectMultiplier = powerInfo.EffectMultipliers![level - 1];
+        var totalExtensionCapacity = extensions.Sum(e => e.StoreCapacity ?? 0);
+        var totalFillAmount = (int)(totalExtensionCapacity * effectMultiplier);
+        var actualFillAmount = Math.Min(totalFillAmount, targetEnergy);
+
+        if (actualFillAmount == 0)
+            return;
+
+        // Deduct energy from source
+        if (!storeLedger.TryGetValue(target.Id, out var sourceStore))
+        {
+            sourceStore = new Dictionary<string, int>(target.Store);
+            storeLedger[target.Id] = sourceStore;
+        }
+        sourceStore[ResourceTypes.Energy] = targetEnergy - actualFillAmount;
+        modifiedObjects.Add(target.Id);
+
+        // Distribute energy to extensions proportionally
+        var remainingEnergy = actualFillAmount;
+        foreach (var extension in extensions)
+        {
+            if (remainingEnergy == 0)
+                break;
+
+            var currentEnergy = storeLedger.TryGetValue(extension.Id, out var extStore)
+                ? extStore.GetValueOrDefault(ResourceTypes.Energy, extension.Store.GetValueOrDefault(ResourceTypes.Energy, 0))
+                : extension.Store.GetValueOrDefault(ResourceTypes.Energy, 0);
+
+            var capacity = extension.StoreCapacity ?? 0;
+            var freeSpace = capacity - currentEnergy;
+
+            if (freeSpace == 0)
+                continue;
+
+            var transferAmount = Math.Min(freeSpace, remainingEnergy);
+
+            if (!storeLedger.TryGetValue(extension.Id, out var ledgerExtStore))
+            {
+                ledgerExtStore = new Dictionary<string, int>(extension.Store);
+                storeLedger[extension.Id] = ledgerExtStore;
+            }
+
+            ledgerExtStore[ResourceTypes.Energy] = currentEnergy + transferAmount;
+            modifiedObjects.Add(extension.Id);
+
+            remainingEnergy -= transferAmount;
+        }
+    }
+
+    private static void ProcessShield(
+        RoomProcessorContext context,
+        RoomObjectSnapshot powerCreep,
+        int level,
+        int gameTime,
+        PowerAbilityInfo powerInfo,
+        Dictionary<string, Dictionary<string, int>> storeLedger,
+        HashSet<string> modifiedObjects)
+    {
+        // Shield uses energy, not ops
+        var energyCost = powerInfo.Energy ?? 0;
+
+        // Check energy availability
+        var currentEnergy = storeLedger.TryGetValue(powerCreep.Id, out var creepStore)
+            ? creepStore.GetValueOrDefault(ResourceTypes.Energy, powerCreep.Store.GetValueOrDefault(ResourceTypes.Energy, 0))
+            : powerCreep.Store.GetValueOrDefault(ResourceTypes.Energy, 0);
+
+        if (currentEnergy < energyCost)
+            return;
+
+        // Check if rampart already exists at position
+        var existingRampart = context.State.Objects.Values.FirstOrDefault(o =>
+            string.Equals(o.Type, RoomObjectTypes.Rampart, StringComparison.Ordinal) &&
+            o.X == powerCreep.X &&
+            o.Y == powerCreep.Y);
+
+        if (existingRampart is not null)
+            return;
+
+        // Deduct energy
+        if (!storeLedger.TryGetValue(powerCreep.Id, out var ledgerStore))
+        {
+            ledgerStore = new Dictionary<string, int>(powerCreep.Store);
+            storeLedger[powerCreep.Id] = ledgerStore;
+        }
+
+        ledgerStore[ResourceTypes.Energy] = currentEnergy - energyCost;
+        modifiedObjects.Add(powerCreep.Id);
+
+        // Create temporary rampart
+        var hits = powerInfo.Effect![level - 1];
+        var duration = powerInfo.Duration ?? 0;
+        var decayTime = gameTime + duration;
+
+        var rampart = new RoomObjectSnapshot(
+            Id: Guid.NewGuid().ToString(),
+            Type: RoomObjectTypes.Rampart,
+            RoomName: powerCreep.RoomName,
+            Shard: powerCreep.Shard,
+            UserId: powerCreep.UserId,
+            X: powerCreep.X,
+            Y: powerCreep.Y,
+            Hits: hits,
+            HitsMax: hits,
+            Fatigue: null,
+            TicksToLive: null,
+            Name: null,
+            Level: null,
+            Density: null,
+            MineralType: null,
+            DepositType: null,
+            StructureType: null,
+            Store: new Dictionary<string, int>(Comparer),
+            StoreCapacity: null,
+            StoreCapacityResource: new Dictionary<string, int>(Comparer),
+            Reservation: null,
+            Sign: null,
+            Structure: null,
+            Effects: new Dictionary<PowerTypes, PowerEffectSnapshot>(),
+            Spawning: null,
+            Body: [],
+            DecayTime: decayTime);
+
+        context.MutationWriter.Upsert(rampart);
     }
 }
