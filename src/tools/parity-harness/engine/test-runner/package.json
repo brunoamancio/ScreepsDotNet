@@ -1,0 +1,15 @@
+{
+  "name": "screeps-engine-parity-runner",
+  "version": "1.0.0",
+  "description": "Node.js test runner for Screeps engine parity testing",
+  "main": "run-fixture.js",
+  "scripts": {
+    "test": "node run-fixture.js"
+  },
+  "dependencies": {
+    "mongodb": "^4.17.0"
+  },
+  "engines": {
+    "node": ">=10.13.0"
+  }
+}

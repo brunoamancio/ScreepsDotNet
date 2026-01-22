@@ -334,6 +334,26 @@ This file provides **solution-wide** context. For subsystem-specific details:
 - CI/CD pipeline (GitHub Actions builds all RIDs)
 - P/Invoke patterns (C ABI ↔ C# marshaling)
 
+### Parity Harness (Node.js Test Runner)
+**AI Context:** `tools/parity-harness/CLAUDE.md` ✅
+**Roadmap:** `docs/engine/e7.md` (Phase 1 complete ✅, Phase 5 pending)
+
+**When to read:**
+- Running parity tests against official Node.js Screeps engine
+- Adding new intent processors to Node.js harness
+- Debugging fixture execution or output serialization
+- Updating official Screeps repository versions
+- Troubleshooting parity divergences
+- Integrating Node.js harness with .NET parity tests
+
+**Key topics:**
+- Phase 1 complete: fixture loader, processor executor, output serializer, CLI wrapper
+- Official Screeps repo cloning (engine, driver, common from GitHub)
+- Version pinning strategy (versions.json)
+- Mock infrastructure patterns (bulk writers, stats, event log)
+- JSON fixture format (shared between Node.js and .NET)
+- Common tasks (run fixture, add intent type, update repos, debug execution)
+
 ## Current Focus (High-Level)
 
 1. **Backend HTTP/CLI** - Shard-aware write APIs, intent/bot tooling parity
