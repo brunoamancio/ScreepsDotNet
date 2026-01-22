@@ -2,6 +2,7 @@ using Microsoft.Extensions.Options;
 using MongoDB.Driver;
 using ScreepsDotNet.Storage.MongoRedis.Options;
 using ScreepsDotNet.Storage.MongoRedis.Providers;
+using ScreepsDotNet.TestCommon.Containers;
 using Testcontainers.MongoDb;
 using Testcontainers.Redis;
 
@@ -9,9 +10,8 @@ namespace ScreepsDotNet.Driver.Tests.TestSupport;
 
 public sealed class MongoRedisFixture : IAsyncLifetime
 {
-    private const string MongoImage = "mongo:7.0";
     private const string RedisImage = "redis:7.2";
-    private readonly MongoDbContainer _mongo = new MongoDbBuilder(MongoImage).Build();
+    private readonly MongoDbContainer _mongo = MongoDbTestContainerBuilder.CreateDefault();
     private readonly RedisContainer _redis = new RedisBuilder(RedisImage).Build();
 
     private MongoDatabaseProvider _mongoProvider = null!;

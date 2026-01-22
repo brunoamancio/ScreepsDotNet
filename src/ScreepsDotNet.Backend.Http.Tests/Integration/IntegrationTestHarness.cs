@@ -5,15 +5,15 @@ using MongoDB.Driver;
 using ScreepsDotNet.Backend.Core.Constants;
 using ScreepsDotNet.Backend.Core.Seeding;
 using ScreepsDotNet.Storage.MongoRedis.Seeding;
+using ScreepsDotNet.TestCommon.Containers;
 using StackExchange.Redis;
 using Testcontainers.MongoDb;
 using Testcontainers.Redis;
 
 public sealed class IntegrationTestHarness : IAsyncLifetime
 {
-    private const string MongoImage = "mongo:7.0";
     private const string RedisImage = "redis:7.2";
-    private readonly MongoDbContainer _mongoContainer = new MongoDbBuilder(MongoImage).Build();
+    private readonly MongoDbContainer _mongoContainer = MongoDbTestContainerBuilder.CreateDefault();
     private readonly RedisContainer _redisContainer = new RedisBuilder(RedisImage).Build();
     private readonly ISeedDataService _seedDataService = new SeedDataService();
 

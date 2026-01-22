@@ -30,6 +30,7 @@
     <ProjectReference Include="..\ScreepsDotNet.Backend.Core\ScreepsDotNet.Backend.Core.csproj" />
     <ProjectReference Include="..\ScreepsDotNet.Engine\ScreepsDotNet.Engine.csproj" />
     <ProjectReference Include="..\ScreepsDotNet.Storage.MongoRedis\ScreepsDotNet.Storage.MongoRedis.csproj" />
+    <ProjectReference Include="..\ScreepsDotNet.TestCommon\ScreepsDotNet.TestCommon.csproj" />
   </ItemGroup>
 
 </Project>

@@ -21,6 +21,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\ScreepsDotNet.Backend.Http\ScreepsDotNet.Backend.Http.csproj" />
+    <ProjectReference Include="..\ScreepsDotNet.TestCommon\ScreepsDotNet.TestCommon.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -8,13 +8,12 @@ using ScreepsDotNet.Storage.MongoRedis.Options;
 using ScreepsDotNet.Storage.MongoRedis.Providers;
 using ScreepsDotNet.Storage.MongoRedis.Seeding;
 using ScreepsDotNet.Storage.MongoRedis.Services;
+using ScreepsDotNet.TestCommon.Containers;
 using Testcontainers.MongoDb;
 
 public sealed class MongoMapIntegrationFixture : IAsyncLifetime
 {
-    private const string MongoImage = "mongo:7.0";
-
-    private readonly MongoDbContainer _mongoContainer = new MongoDbBuilder(MongoImage).Build();
+    private readonly MongoDbContainer _mongoContainer = MongoDbTestContainerBuilder.CreateDefault();
     private readonly ISeedDataService _seedDataService = new SeedDataService();
 
     private MongoClient? _client;
