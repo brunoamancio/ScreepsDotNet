@@ -9,8 +9,7 @@ public static class DivergenceReporter
 {
     public static string FormatReport(ParityComparisonResult result, string fixtureName)
     {
-        if (!result.HasDivergences)
-        {
+        if (!result.HasDivergences) {
             return $"✅ Parity Test Passed: {fixtureName}\n\nNo divergences found.";
         }
 
@@ -25,13 +24,11 @@ public static class DivergenceReporter
             .OrderBy(g => g.Key);
 
         var index = 1;
-        foreach (var group in groupedDivergences)
-        {
+        foreach (var group in groupedDivergences) {
             sb.AppendLine($"--- {group.Key} ---");
             sb.AppendLine();
 
-            foreach (var divergence in group)
-            {
+            foreach (var divergence in group) {
                 sb.AppendLine($"{index}. {divergence.Path}");
                 sb.AppendLine($"   Node.js: {FormatValue(divergence.NodeValue)}");
                 sb.AppendLine($"   .NET:    {FormatValue(divergence.DotNetValue)}");
@@ -46,8 +43,7 @@ public static class DivergenceReporter
 
     public static string FormatSummary(ParityComparisonResult result)
     {
-        if (!result.HasDivergences)
-        {
+        if (!result.HasDivergences) {
             return "✅ All fields match";
         }
 
@@ -56,8 +52,7 @@ public static class DivergenceReporter
             .ToDictionary(g => g.Key, g => g.Count());
 
         var parts = new List<string>();
-        foreach (var (category, count) in categoryGroups.OrderBy(kvp => kvp.Key))
-        {
+        foreach (var (category, count) in categoryGroups.OrderBy(kvp => kvp.Key)) {
             parts.Add($"{category}: {count}");
         }
 
@@ -66,23 +61,19 @@ public static class DivergenceReporter
 
     private static string FormatValue(object? value)
     {
-        if (value is null)
-        {
+        if (value is null) {
             return "<null>";
         }
 
-        if (value is string str)
-        {
+        if (value is string str) {
             return $"\"{str}\"";
         }
 
-        if (value is int or long or double or float)
-        {
+        if (value is int or long or double or float) {
             return value.ToString()!;
         }
 
-        if (value is bool boolean)
-        {
+        if (value is bool boolean) {
             return boolean ? "true" : "false";
         }
 

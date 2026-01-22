@@ -38,7 +38,7 @@ public sealed class ValidationParityTests
                 store: new Dictionary<string, int> { [ResourceTypes.Energy] = 10 })
             .WithCreep("creep2", 11, 10, "user1", [BodyPartType.Carry, BodyPartType.Move],
                 capacity: 50,
-                store: new Dictionary<string, int>())
+                store: [])
             .WithTransferIntent("user1", "creep1", "creep2", ResourceTypes.Energy, 100)  // Only has 10
             .Build();
 
@@ -51,8 +51,7 @@ public sealed class ValidationParityTests
 
         // Note: This test expects validation to prevent the transfer
         // If the engine allows partial transfer of available resources, this test may need adjustment
-        if (creep1Patches.Count > 0)
-        {
+        if (creep1Patches.Count > 0) {
             var (_, creep1Payload) = creep1Patches.First();
             Assert.Equal(0, creep1Payload.Store![ResourceTypes.Energy]); // Transferred all 10
         }
@@ -113,14 +112,12 @@ public sealed class ValidationParityTests
         var link1StorePatches = output.MutationWriter.Patches.Where(p => p.ObjectId == "link1" && p.Payload.Store is not null).ToList();
         var link2StorePatches = output.MutationWriter.Patches.Where(p => p.ObjectId == "link2" && p.Payload.Store is not null).ToList();
 
-        if (link1StorePatches.Count > 0)
-        {
+        if (link1StorePatches.Count > 0) {
             var (_, link1Payload) = link1StorePatches.First();
             Assert.Equal(500, link1Payload.Store![ResourceTypes.Energy]); // Unchanged
         }
 
-        if (link2StorePatches.Count > 0)
-        {
+        if (link2StorePatches.Count > 0) {
             var (_, link2Payload) = link2StorePatches.First();
             Assert.Equal(100, link2Payload.Store![ResourceTypes.Energy]); // Unchanged
         }
@@ -154,7 +151,7 @@ public sealed class ValidationParityTests
                 store: new Dictionary<string, int> { [ResourceTypes.Energy] = 30 })
             .WithCreep("creep2", 20, 20, "user1", [BodyPartType.Carry, BodyPartType.Move],
                 capacity: 50,
-                store: new Dictionary<string, int>())
+                store: [])
             .WithTransferIntent("user1", "creep1", "creep2", ResourceTypes.Energy, 10)
             .Build();
 

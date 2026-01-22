@@ -16,7 +16,7 @@ public sealed class EdgeCaseParityTests
         var state = new ParityFixtureBuilder()
             .WithCreep("creep1", 10, 10, "user1", [BodyPartType.Work, BodyPartType.Move],
                 capacity: 50,
-                store: new Dictionary<string, int>())  // Empty store
+                store: [])  // Empty store
             .WithSource("source1", 11, 10, energy: 3000)
             .WithHarvestIntent("user1", "creep1", "source1")
             .Build();
@@ -46,8 +46,7 @@ public sealed class EdgeCaseParityTests
 
         // Assert - Source should still deplete even if creep is full (energy drops on ground)
         var sourcePatches = output.MutationWriter.Patches.Where(p => p.ObjectId == "source1" && p.Payload.Energy.HasValue).ToList();
-        if (sourcePatches.Count > 0)
-        {
+        if (sourcePatches.Count > 0) {
             var (_, sourcePayload) = sourcePatches.First();
             Assert.True(sourcePayload.Energy < 3000, "Source should deplete even when creep is full");
         }
@@ -75,14 +74,12 @@ public sealed class EdgeCaseParityTests
         var creep1StorePatches = output.MutationWriter.Patches.Where(p => p.ObjectId == "creep1" && p.Payload.Store is not null).ToList();
         var creep2StorePatches = output.MutationWriter.Patches.Where(p => p.ObjectId == "creep2" && p.Payload.Store is not null).ToList();
 
-        if (creep1StorePatches.Count > 0)
-        {
+        if (creep1StorePatches.Count > 0) {
             var (_, creep1Payload) = creep1StorePatches.First();
             Assert.Equal(30, creep1Payload.Store![ResourceTypes.Energy]); // Unchanged
         }
 
-        if (creep2StorePatches.Count > 0)
-        {
+        if (creep2StorePatches.Count > 0) {
             var (_, creep2Payload) = creep2StorePatches.First();
             Assert.Equal(10, creep2Payload.Store![ResourceTypes.Energy]); // Unchanged
         }
@@ -107,8 +104,7 @@ public sealed class EdgeCaseParityTests
 
         // Creep energy should not decrease (upgrade failed)
         var creepPatches = output.MutationWriter.Patches.Where(p => p.ObjectId == "creep1" && p.Payload.Store is not null).ToList();
-        if (creepPatches.Count > 0)
-        {
+        if (creepPatches.Count > 0) {
             var (_, creepPayload) = creepPatches.First();
             Assert.Equal(0, creepPayload.Store![ResourceTypes.Energy]); // Still 0 (no energy spent)
         }
@@ -128,8 +124,7 @@ public sealed class EdgeCaseParityTests
 
         // Assert - Self-transfer processes with 3% loss (100 * 0.03 = 3 loss, +97 net)
         var storePatches = output.MutationWriter.Patches.Where(p => p.ObjectId == "link1" && p.Payload.Store is not null).ToList();
-        if (storePatches.Count > 0)
-        {
+        if (storePatches.Count > 0) {
             var (_, linkPayload) = storePatches.Last();
             // 500 + (100 - 3% loss) = 597 (deduction doesn't occur on self-transfer, only addition)
             Assert.Equal(597, linkPayload.Store![ResourceTypes.Energy]);
@@ -143,7 +138,7 @@ public sealed class EdgeCaseParityTests
         var state = new ParityFixtureBuilder()
             .WithCreep("creep1", 10, 10, "user1", [BodyPartType.Work, BodyPartType.Move],
                 capacity: 50,
-                store: new Dictionary<string, int>())
+                store: [])
             .WithSource("source1", 11, 10, energy: 1)
             .WithHarvestIntent("user1", "creep1", "source1")
             .Build();
@@ -180,8 +175,7 @@ public sealed class EdgeCaseParityTests
         var creep1Patches = output.MutationWriter.Patches.Where(p => p.ObjectId == "creep1" && p.Payload.Store is not null).ToList();
         var creep2Patches = output.MutationWriter.Patches.Where(p => p.ObjectId == "creep2" && p.Payload.Store is not null).ToList();
 
-        if (creep1Patches.Count > 0 && creep2Patches.Count > 0)
-        {
+        if (creep1Patches.Count > 0 && creep2Patches.Count > 0) {
             var (_, creep1Payload) = creep1Patches.First();
             var (_, creep2Payload) = creep2Patches.First();
 
@@ -198,10 +192,10 @@ public sealed class EdgeCaseParityTests
         var state = new ParityFixtureBuilder()
             .WithCreep("creep1", 10, 10, "user1", [BodyPartType.Work, BodyPartType.Move],
                 capacity: 50,
-                store: new Dictionary<string, int>())
+                store: [])
             .WithCreep("creep2", 12, 10, "user1", [BodyPartType.Work, BodyPartType.Move],
                 capacity: 50,
-                store: new Dictionary<string, int>())
+                store: [])
             .WithSource("source1", 11, 10, energy: 10)  // Limited energy
             .WithHarvestIntent("user1", "creep1", "source1")
             .WithHarvestIntent("user1", "creep2", "source1")
@@ -215,8 +209,7 @@ public sealed class EdgeCaseParityTests
         var creep2Patches = output.MutationWriter.Patches.Where(p => p.ObjectId == "creep2" && p.Payload.Store is not null).ToList();
         var sourcePatches = output.MutationWriter.Patches.Where(p => p.ObjectId == "source1" && p.Payload.Energy.HasValue).ToList();
 
-        if (creep1Patches.Count > 0 && creep2Patches.Count > 0 && sourcePatches.Count > 0)
-        {
+        if (creep1Patches.Count > 0 && creep2Patches.Count > 0 && sourcePatches.Count > 0) {
             var (_, creep1Payload) = creep1Patches.First();
             var (_, creep2Payload) = creep2Patches.First();
             var (_, sourcePayload) = sourcePatches.First();
@@ -240,7 +233,7 @@ public sealed class EdgeCaseParityTests
         var state = new ParityFixtureBuilder()
             .WithCreep("creep1", 0, 0, "user1", [BodyPartType.Work, BodyPartType.Move],
                 capacity: 50,
-                store: new Dictionary<string, int>())
+                store: [])
             .WithSource("source1", 1, 0, energy: 3000)
             .WithHarvestIntent("user1", "creep1", "source1")
             .Build();
@@ -272,8 +265,7 @@ public sealed class EdgeCaseParityTests
         // Assert - TTL should decrease to 0 (creep dies)
         var ttlPatches = output.MutationWriter.Patches.Where(p => p.ObjectId == "creep1" && p.Payload.TicksToLive.HasValue).ToList();
 
-        if (ttlPatches.Count > 0)
-        {
+        if (ttlPatches.Count > 0) {
             var (_, creepPayload) = ttlPatches.First();
             Assert.Equal(0, creepPayload.TicksToLive);
         }
@@ -298,8 +290,7 @@ public sealed class EdgeCaseParityTests
         var link1Patches = output.MutationWriter.Patches.Where(p => p.ObjectId == "link1" && p.Payload.Store is not null).ToList();
         var link2Patches = output.MutationWriter.Patches.Where(p => p.ObjectId == "link2" && p.Payload.Store is not null).ToList();
 
-        if (link1Patches.Count > 0 && link2Patches.Count > 0)
-        {
+        if (link1Patches.Count > 0 && link2Patches.Count > 0) {
             var (_, link1Payload) = link1Patches.First();
             var (_, link2Payload) = link2Patches.First();
 
@@ -323,7 +314,7 @@ public sealed class EdgeCaseParityTests
                 })
             .WithCreep("creep2", 11, 10, "user1", [BodyPartType.Carry, BodyPartType.Move],
                 capacity: 100,
-                store: new Dictionary<string, int>())
+                store: [])
             .WithTransferIntent("user1", "creep1", "creep2", ResourceTypes.Energy, 20)
             .WithTransferIntent("user1", "creep1", "creep2", ResourceTypes.Utrium, 10)
             .Build();
@@ -335,8 +326,7 @@ public sealed class EdgeCaseParityTests
         var creep1Patches = output.MutationWriter.Patches.Where(p => p.ObjectId == "creep1" && p.Payload.Store is not null).ToList();
         var creep2Patches = output.MutationWriter.Patches.Where(p => p.ObjectId == "creep2" && p.Payload.Store is not null).ToList();
 
-        if (creep1Patches.Count > 0 && creep2Patches.Count > 0)
-        {
+        if (creep1Patches.Count > 0 && creep2Patches.Count > 0) {
             var (_, creep1Payload) = creep1Patches.First();
             var (_, creep2Payload) = creep2Patches.First();
 
@@ -368,8 +358,7 @@ public sealed class EdgeCaseParityTests
         // Assert - Hydroxide produced (H + O → OH)
         var outputLabPatches = output.MutationWriter.Patches.Where(p => p.ObjectId == "outputLab" && p.Payload.Store is not null).ToList();
 
-        if (outputLabPatches.Count > 0)
-        {
+        if (outputLabPatches.Count > 0) {
             var (_, labPayload) = outputLabPatches.First();
             Assert.True(labPayload.Store!.ContainsKey(ResourceTypes.Hydroxide), "Hydroxide should be produced");
         }
@@ -394,8 +383,7 @@ public sealed class EdgeCaseParityTests
         // But energy consumption proves the intent was processed
         var creepPatches = output.MutationWriter.Patches.Where(p => p.ObjectId == "creep1" && p.Payload.Store is not null).ToList();
 
-        if (creepPatches.Count > 0)
-        {
+        if (creepPatches.Count > 0) {
             var (_, creepPayload) = creepPatches.First();
             Assert.True(creepPayload.Store![ResourceTypes.Energy] < 50, "Creep should consume energy when upgrading");
         }

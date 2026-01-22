@@ -26,8 +26,7 @@ public static class ParityTestRunner
         var steps = BuildProcessorSteps();
 
         // Execute all steps
-        foreach (var step in steps)
-        {
+        foreach (var step in steps) {
             await step.ExecuteAsync(context, cancellationToken).ConfigureAwait(false);
         }
 

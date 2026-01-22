@@ -57,10 +57,7 @@ public sealed class CapturingStatsSink : ICreepStatsSink
 
     private static void Increment(Dictionary<string, int> dict, string key, int amount)
     {
-        if (!dict.TryGetValue(key, out var current))
-        {
-            current = 0;
-        }
+        var current = dict.GetValueOrDefault(key, 0);
         dict[key] = current + amount;
     }
 

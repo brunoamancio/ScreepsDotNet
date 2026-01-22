@@ -52,8 +52,7 @@ public sealed class PowerSpawnParityTests
         var storePatches = output.MutationWriter.Patches.Where(p => p.ObjectId == "powerSpawn1" && p.Payload.Store is not null).ToList();
 
         // Resources should be unchanged or only slightly changed
-        if (storePatches.Count > 0)
-        {
+        if (storePatches.Count > 0) {
             var (_, powerSpawnPayload) = storePatches.First();
             Assert.True(powerSpawnPayload.Store![ResourceTypes.Energy] <= 10, "Energy should not decrease significantly");
         }
@@ -77,8 +76,7 @@ public sealed class PowerSpawnParityTests
         var storePatches = output.MutationWriter.Patches.Where(p => p.ObjectId == "powerSpawn1" && p.Payload.Store is not null).ToList();
 
         // Energy should be unchanged
-        if (storePatches.Count > 0)
-        {
+        if (storePatches.Count > 0) {
             var (_, powerSpawnPayload) = storePatches.First();
             Assert.Equal(1000, powerSpawnPayload.Store![ResourceTypes.Energy]);
         }
@@ -101,8 +99,7 @@ public sealed class PowerSpawnParityTests
         // Assert - Should process exactly 1 power with 50 energy
         var storePatches = output.MutationWriter.Patches.Where(p => p.ObjectId == "powerSpawn1" && p.Payload.Store is not null).ToList();
 
-        if (storePatches.Count > 0)
-        {
+        if (storePatches.Count > 0) {
             var (_, powerSpawnPayload) = storePatches.First();
 
             // 50 energy consumed, 1 power consumed

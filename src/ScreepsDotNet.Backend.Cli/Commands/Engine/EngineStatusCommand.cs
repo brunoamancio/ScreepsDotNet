@@ -16,8 +16,7 @@ internal sealed class EngineStatusCommand(IEngineDiagnosticsService diagnosticsS
     {
         var stats = await diagnosticsService.GetEngineStatisticsAsync(cancellationToken).ConfigureAwait(false);
 
-        if (settings.OutputJson)
-        {
+        if (settings.OutputJson) {
             OutputFormatter.WriteJson(stats);
             return 0;
         }

@@ -15,9 +15,9 @@ internal static class EngineEndpoints
     private const string ValidationStatsEndpointName = "GetEngineValidationStats";
     private const string ValidationStatsResetEndpointName = "PostEngineValidationStatsReset";
 
-    #pragma warning disable IDE0051, IDE0052 // Used in attribute parameters
+#pragma warning disable IDE0051, IDE0052 // Used in attribute parameters
     private const string RoomQueryName = "room";
-    #pragma warning restore IDE0051, IDE0052
+#pragma warning restore IDE0051, IDE0052
 
     public static void Map(WebApplication app)
     {
@@ -68,12 +68,12 @@ internal static class EngineEndpoints
         app.MapGet(ApiRoutes.Game.Engine.ValidationStats,
                    (IValidationStatisticsSink statisticsSink,
                     ICurrentUserAccessor accessor) => {
-                       if (accessor.CurrentUser?.Id is null)
-                           return Results.Unauthorized();
+                        if (accessor.CurrentUser?.Id is null)
+                            return Results.Unauthorized();
 
-                       var stats = statisticsSink.GetStatistics();
-                       return Results.Ok(stats);
-                   })
+                        var stats = statisticsSink.GetStatistics();
+                        return Results.Ok(stats);
+                    })
            .RequireTokenAuthentication()
            .WithName(ValidationStatsEndpointName);
     }
@@ -83,12 +83,12 @@ internal static class EngineEndpoints
         app.MapPost(ApiRoutes.Game.Engine.ValidationStatsReset,
                     (IValidationStatisticsSink statisticsSink,
                      ICurrentUserAccessor accessor) => {
-                        if (accessor.CurrentUser?.Id is null)
-                            return Results.Unauthorized();
+                         if (accessor.CurrentUser?.Id is null)
+                             return Results.Unauthorized();
 
-                        statisticsSink.Reset();
-                        return Results.Ok(new { ok = 1 });
-                    })
+                         statisticsSink.Reset();
+                         return Results.Ok(new { ok = 1 });
+                     })
            .RequireTokenAuthentication()
            .WithName(ValidationStatsResetEndpointName);
     }

@@ -19,14 +19,12 @@ internal sealed class ValidationStatsCommand(IValidationStatisticsSink statistic
     {
         var stats = statisticsSink.GetStatistics();
 
-        if (settings.Reset)
-        {
+        if (settings.Reset) {
             statisticsSink.Reset();
             OutputFormatter.WriteLine("Validation statistics reset.");
         }
 
-        if (settings.OutputJson)
-        {
+        if (settings.OutputJson) {
             OutputFormatter.WriteJson(stats);
             return Task.FromResult(0);
         }
@@ -48,8 +46,7 @@ internal sealed class ValidationStatsCommand(IValidationStatisticsSink statistic
             .Take(10)
             .ToList();
 
-        if (topErrors.Count > 0)
-        {
+        if (topErrors.Count > 0) {
             OutputFormatter.WriteTabularData(
                 "Top Rejection Errors",
                 ["Error Code", "Count"],
@@ -62,8 +59,7 @@ internal sealed class ValidationStatsCommand(IValidationStatisticsSink statistic
             .Take(10)
             .ToList();
 
-        if (topIntents.Count > 0)
-        {
+        if (topIntents.Count > 0) {
             OutputFormatter.WriteTabularData(
                 "Top Rejected Intent Types",
                 ["Intent Type", "Count"],

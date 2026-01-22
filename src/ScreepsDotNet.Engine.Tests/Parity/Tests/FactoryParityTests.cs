@@ -30,8 +30,7 @@ public sealed class FactoryParityTests
         // Assert - Components should be consumed
         var storePatches = output.MutationWriter.Patches.Where(p => p.ObjectId == "factory1" && p.Payload.Store is not null).ToList();
 
-        if (storePatches.Count > 0)
-        {
+        if (storePatches.Count > 0) {
             var (_, factoryPayload) = storePatches.First();
 
             // Components consumed (exact amounts depend on commodity recipe)
@@ -64,8 +63,7 @@ public sealed class FactoryParityTests
         var storePatches = output.MutationWriter.Patches.Where(p => p.ObjectId == "factory1" && p.Payload.Store is not null).ToList();
 
         // Resources should be unchanged
-        if (storePatches.Count > 0)
-        {
+        if (storePatches.Count > 0) {
             var (_, factoryPayload) = storePatches.First();
             Assert.Equal(100, factoryPayload.Store![ResourceTypes.Energy]);
             Assert.Equal(10, factoryPayload.Store!.GetValueOrDefault(ResourceTypes.UtriumBar, 0));
@@ -94,8 +92,7 @@ public sealed class FactoryParityTests
         var storePatches = output.MutationWriter.Patches.Where(p => p.ObjectId == "factory1" && p.Payload.Store is not null).ToList();
 
         // Resources should be unchanged
-        if (storePatches.Count > 0)
-        {
+        if (storePatches.Count > 0) {
             var (_, factoryPayload) = storePatches.First();
             Assert.Equal(5, factoryPayload.Store![ResourceTypes.Energy]);
             Assert.Equal(0, factoryPayload.Store!.GetValueOrDefault(ResourceTypes.UtriumBar, 0));
@@ -127,8 +124,7 @@ public sealed class FactoryParityTests
         var storePatches = output.MutationWriter.Patches.Where(p => p.ObjectId == "factory1" && p.Payload.Store is not null).ToList();
 
         // Resources should be unchanged (production blocked by level requirement)
-        if (storePatches.Count > 0)
-        {
+        if (storePatches.Count > 0) {
             var (_, factoryPayload) = storePatches.First();
             Assert.Equal(1000, factoryPayload.Store![ResourceTypes.Energy]);
         }
@@ -161,8 +157,7 @@ public sealed class FactoryParityTests
         // Assert - All required components consumed
         var storePatches = output.MutationWriter.Patches.Where(p => p.ObjectId == "factory1" && p.Payload.Store is not null).ToList();
 
-        if (storePatches.Count > 0)
-        {
+        if (storePatches.Count > 0) {
             var (_, factoryPayload) = storePatches.First();
 
             // Verify energy and components consumed (exact amounts depend on recipe)

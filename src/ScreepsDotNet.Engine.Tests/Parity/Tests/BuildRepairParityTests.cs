@@ -27,16 +27,14 @@ public sealed class BuildRepairParityTests
 
         // Assert - Construction site progress should increase (5 progress per WORK part per energy)
         var sitePatches = output.MutationWriter.Patches.Where(p => p.ObjectId == "site1" && p.Payload.Progress.HasValue).ToList();
-        if (sitePatches.Count > 0)
-        {
+        if (sitePatches.Count > 0) {
             var (_, sitePayload) = sitePatches.First();
             Assert.True(sitePayload.Progress > 0, "Construction site progress should increase");
         }
 
         // Worker energy should decrease
         var workerPatches = output.MutationWriter.Patches.Where(p => p.ObjectId == "worker" && p.Payload.Store is not null).ToList();
-        if (workerPatches.Count > 0)
-        {
+        if (workerPatches.Count > 0) {
             var (_, workerPayload) = workerPatches.First();
             Assert.True(workerPayload.Store![ResourceTypes.Energy] < 50, "Worker energy should decrease");
         }
@@ -59,8 +57,7 @@ public sealed class BuildRepairParityTests
 
         // Assert - Road hits should increase (100 hits per WORK part per energy)
         var roadPatches = output.MutationWriter.Patches.Where(p => p.ObjectId == "road1" && p.Payload.Hits.HasValue).ToList();
-        if (roadPatches.Count > 0)
-        {
+        if (roadPatches.Count > 0) {
             var (_, roadPayload) = roadPatches.First();
             Assert.True(roadPayload.Hits > 2000, "Road hits should increase from repair");
             Assert.True(roadPayload.Hits <= 5000, "Road hits should not exceed max");
@@ -68,8 +65,7 @@ public sealed class BuildRepairParityTests
 
         // Worker energy should decrease
         var workerPatches = output.MutationWriter.Patches.Where(p => p.ObjectId == "worker" && p.Payload.Store is not null).ToList();
-        if (workerPatches.Count > 0)
-        {
+        if (workerPatches.Count > 0) {
             var (_, workerPayload) = workerPatches.First();
             Assert.True(workerPayload.Store![ResourceTypes.Energy] < 50, "Worker energy should decrease");
         }
@@ -112,8 +108,7 @@ public sealed class BuildRepairParityTests
         // Assert - No repair (out of range)
         // Note: Road may still decay passively (2000 → 1950), so check it didn't increase
         var roadPatches = output.MutationWriter.Patches.Where(p => p.ObjectId == "road1" && p.Payload.Hits.HasValue).ToList();
-        if (roadPatches.Count > 0)
-        {
+        if (roadPatches.Count > 0) {
             var (_, roadPayload) = roadPatches.First();
             Assert.True(roadPayload.Hits <= 2000, "Road hits should not increase (out of range)");
         }
@@ -156,8 +151,7 @@ public sealed class BuildRepairParityTests
         // Assert - No repair (no energy)
         // Note: Road may still decay passively (2000 → 1950), so check it didn't increase
         var roadPatches = output.MutationWriter.Patches.Where(p => p.ObjectId == "road1" && p.Payload.Hits.HasValue).ToList();
-        if (roadPatches.Count > 0)
-        {
+        if (roadPatches.Count > 0) {
             var (_, roadPayload) = roadPatches.First();
             Assert.True(roadPayload.Hits <= 2000, "Road hits should not increase (no energy)");
         }
@@ -200,8 +194,7 @@ public sealed class BuildRepairParityTests
         // Assert - No repair (already at full hits)
         // Note: Road decays by 50 hits per tick (5000 → 4950), but should not be repaired back to 5000
         var roadPatches = output.MutationWriter.Patches.Where(p => p.ObjectId == "road1" && p.Payload.Hits.HasValue).ToList();
-        if (roadPatches.Count > 0)
-        {
+        if (roadPatches.Count > 0) {
             var (_, roadPayload) = roadPatches.First();
             Assert.True(roadPayload.Hits <= 5000, "Road hits should not exceed max");
             Assert.True(roadPayload.Hits >= 4950, "Road should only decay by 50 hits");

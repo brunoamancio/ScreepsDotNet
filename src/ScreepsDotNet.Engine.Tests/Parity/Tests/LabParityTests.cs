@@ -63,8 +63,7 @@ public sealed class LabParityTests
 
         // Assert - Lab should have consumed 60 UH (30 per work part)
         var labPatches = output.MutationWriter.Patches.Where(p => p.ObjectId == "lab1" && p.Payload.Store is not null).ToList();
-        if (labPatches.Count > 0)
-        {
+        if (labPatches.Count > 0) {
             var (_, labPayload) = labPatches.First();
             var remainingUH = labPayload.Store!.GetValueOrDefault(ResourceTypes.UtriumHydride, 60);
             Assert.True(remainingUH < 60, "Lab should have consumed UH for boosting");

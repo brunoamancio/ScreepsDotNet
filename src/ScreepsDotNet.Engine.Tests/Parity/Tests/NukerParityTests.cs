@@ -33,8 +33,7 @@ public sealed class NukerParityTests
 
         // Cooldown set
         var cooldownPatch = output.MutationWriter.Patches.FirstOrDefault(p => p.ObjectId == "nuker1" && p.Payload.CooldownTime.HasValue);
-        if (cooldownPatch.ObjectId is not null)
-        {
+        if (cooldownPatch.ObjectId is not null) {
             var (_, cooldownPayload) = cooldownPatch;
             Assert.True(cooldownPayload.CooldownTime > 100, "Nuker should enter cooldown after launch");
         }
@@ -61,8 +60,7 @@ public sealed class NukerParityTests
         var storePatches = output.MutationWriter.Patches.Where(p => p.ObjectId == "nuker1" && p.Payload.Store is not null).ToList();
 
         // If store patch exists, resources should be unchanged
-        if (storePatches.Count > 0)
-        {
+        if (storePatches.Count > 0) {
             var (_, nukerPayload) = storePatches.First();
             Assert.Equal(ScreepsGameConstants.NukerEnergyCapacity, nukerPayload.Store![ResourceTypes.Energy]);
             Assert.Equal(ScreepsGameConstants.NukerGhodiumCapacity, nukerPayload.Store!.GetValueOrDefault(ResourceTypes.Ghodium, 0));
@@ -88,8 +86,7 @@ public sealed class NukerParityTests
         var storePatches = output.MutationWriter.Patches.Where(p => p.ObjectId == "nuker1" && p.Payload.Store is not null).ToList();
 
         // Resources should be unchanged
-        if (storePatches.Count > 0)
-        {
+        if (storePatches.Count > 0) {
             var (_, nukerPayload) = storePatches.First();
             Assert.Equal(100, nukerPayload.Store![ResourceTypes.Energy]);
         }
@@ -114,8 +111,7 @@ public sealed class NukerParityTests
         var storePatches = output.MutationWriter.Patches.Where(p => p.ObjectId == "nuker1" && p.Payload.Store is not null).ToList();
 
         // Ghodium should be unchanged
-        if (storePatches.Count > 0)
-        {
+        if (storePatches.Count > 0) {
             var (_, nukerPayload) = storePatches.First();
             Assert.Equal(100, nukerPayload.Store!.GetValueOrDefault(ResourceTypes.Ghodium, 0));
         }

@@ -25,8 +25,7 @@ public sealed class MovementParityTests
 
         // Assert - Creep should move to (10, 9)
         var positionPatches = output.MutationWriter.Patches.Where(p => p.ObjectId == "creep1" && p.Payload.Position is not null).ToList();
-        if (positionPatches.Count > 0)
-        {
+        if (positionPatches.Count > 0) {
             var (_, payload) = positionPatches.First();
             var newPos = payload.Position!;
             Assert.Equal(10, newPos.X);
@@ -49,8 +48,7 @@ public sealed class MovementParityTests
 
         // Assert - Creep should move to (11, 10)
         var positionPatches = output.MutationWriter.Patches.Where(p => p.ObjectId == "creep1" && p.Payload.Position is not null).ToList();
-        if (positionPatches.Count > 0)
-        {
+        if (positionPatches.Count > 0) {
             var (_, payload) = positionPatches.First();
             var newPos = payload.Position!;
             Assert.Equal(11, newPos.X);
@@ -105,8 +103,7 @@ public sealed class MovementParityTests
 
         // Fatigue should decrease by 2 per MOVE part
         var fatiguePatches = output.MutationWriter.Patches.Where(p => p.ObjectId == "creep1" && p.Payload.Fatigue.HasValue).ToList();
-        if (fatiguePatches.Count > 0)
-        {
+        if (fatiguePatches.Count > 0) {
             var (_, payload) = fatiguePatches.First();
             Assert.True(payload.Fatigue < 10, "Fatigue should decrease");
         }
@@ -144,8 +141,7 @@ public sealed class MovementParityTests
 
         // Assert - Creep should move to (11, 9)
         var positionPatches = output.MutationWriter.Patches.Where(p => p.ObjectId == "creep1" && p.Payload.Position is not null).ToList();
-        if (positionPatches.Count > 0)
-        {
+        if (positionPatches.Count > 0) {
             var (_, payload) = positionPatches.First();
             var newPos = payload.Position!;
             Assert.Equal(11, newPos.X);
@@ -173,8 +169,7 @@ public sealed class MovementParityTests
         Assert.NotEmpty(positionPatches);  // Should move
 
         var fatiguePatches = output.MutationWriter.Patches.Where(p => p.ObjectId == "creep1" && p.Payload.Fatigue.HasValue).ToList();
-        if (fatiguePatches.Count > 0)
-        {
+        if (fatiguePatches.Count > 0) {
             var (_, payload) = fatiguePatches.First();
             Assert.Equal(0, payload.Fatigue);  // No fatigue gain
         }

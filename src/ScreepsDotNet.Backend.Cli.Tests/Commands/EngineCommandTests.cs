@@ -308,8 +308,7 @@ public sealed class EngineCommandTests
 
         public Task<RoomState> GetRoomStateAsync(string roomName, int gameTime, CancellationToken token = default)
         {
-            if (!_states.TryGetValue(roomName, out var state))
-            {
+            if (!_states.TryGetValue(roomName, out var state)) {
                 state = new RoomState(
                     roomName,
                     0,

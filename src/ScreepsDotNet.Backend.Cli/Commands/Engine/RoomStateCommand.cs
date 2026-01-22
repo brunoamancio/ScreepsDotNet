@@ -19,8 +19,7 @@ internal sealed class RoomStateCommand(IRoomStateProvider stateProvider, ILogger
     {
         var state = await stateProvider.GetRoomStateAsync(settings.RoomName, gameTime: 0, token: cancellationToken).ConfigureAwait(false);
 
-        if (settings.OutputJson)
-        {
+        if (settings.OutputJson) {
             OutputFormatter.WriteJson(state);
             return 0;
         }

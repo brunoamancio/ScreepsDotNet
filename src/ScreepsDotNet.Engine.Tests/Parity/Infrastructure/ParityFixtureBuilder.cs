@@ -379,8 +379,7 @@ public sealed class ParityFixtureBuilder
         var targetY = creep.Y + dy;
 
         // Create CreepIntentEnvelope with MoveIntent
-        if (!_userIntents.TryGetValue(userId, out var envelope))
-        {
+        if (!_userIntents.TryGetValue(userId, out var envelope)) {
             envelope = new IntentEnvelope(
                 userId,
                 new Dictionary<string, IReadOnlyList<IntentRecord>>(StringComparer.Ordinal),
@@ -578,8 +577,7 @@ public sealed class ParityFixtureBuilder
 
     public ParityFixtureBuilder WithRenewIntent(string userId, string spawnId, string targetCreepId)
     {
-        if (!_userIntents.TryGetValue(userId, out var envelope))
-        {
+        if (!_userIntents.TryGetValue(userId, out var envelope)) {
             envelope = new IntentEnvelope(
                 userId,
                 new Dictionary<string, IReadOnlyList<IntentRecord>>(StringComparer.Ordinal),
@@ -606,8 +604,7 @@ public sealed class ParityFixtureBuilder
 
     public ParityFixtureBuilder WithRecycleIntent(string userId, string spawnId, string targetCreepId)
     {
-        if (!_userIntents.TryGetValue(userId, out var envelope))
-        {
+        if (!_userIntents.TryGetValue(userId, out var envelope)) {
             envelope = new IntentEnvelope(
                 userId,
                 new Dictionary<string, IReadOnlyList<IntentRecord>>(StringComparer.Ordinal),
@@ -791,8 +788,7 @@ public sealed class ParityFixtureBuilder
 
     private void AddIntent(string userId, string objectId, IntentRecord record)
     {
-        if (!_userIntents.TryGetValue(userId, out var envelope))
-        {
+        if (!_userIntents.TryGetValue(userId, out var envelope)) {
             envelope = new IntentEnvelope(
                 userId,
                 new Dictionary<string, IReadOnlyList<IntentRecord>>(StringComparer.Ordinal),

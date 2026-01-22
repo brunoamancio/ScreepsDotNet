@@ -130,8 +130,7 @@ public sealed class SpawnParityTests
         // Note: Stub checks spawn energy but doesn't pull from extensions (simplified logic)
         // TTL may still decrease passively (100 → 99), but should NOT increase from renew
         var creepPatches = output.MutationWriter.Patches.Where(p => p.ObjectId == "creep1" && p.Payload.TicksToLive.HasValue).ToList();
-        if (creepPatches.Count > 0)
-        {
+        if (creepPatches.Count > 0) {
             var (_, creepPayload) = creepPatches.First();
             Assert.True(creepPayload.TicksToLive <= 100, "TTL should not increase (insufficient energy)");
         }
@@ -154,8 +153,7 @@ public sealed class SpawnParityTests
 
         // Assert - No renew should occur (already at full TTL)
         var creepPatches = output.MutationWriter.Patches.Where(p => p.ObjectId == "creep1" && p.Payload.TicksToLive.HasValue).ToList();
-        if (creepPatches.Count > 0)
-        {
+        if (creepPatches.Count > 0) {
             var (_, creepPayload) = creepPatches.First();
             Assert.True(creepPayload.TicksToLive <= 1500, "TTL should not exceed max");
         }

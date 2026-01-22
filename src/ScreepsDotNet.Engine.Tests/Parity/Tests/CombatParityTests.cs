@@ -26,8 +26,7 @@ public sealed class CombatParityTests
 
         // Assert - Defender should take damage (30 damage per ATTACK part)
         var defenderPatches = output.MutationWriter.Patches.Where(p => p.ObjectId == "defender" && p.Payload.Hits.HasValue).ToList();
-        if (defenderPatches.Count > 0)
-        {
+        if (defenderPatches.Count > 0) {
             var (_, defenderPayload) = defenderPatches.First();
             Assert.True(defenderPayload.Hits < 200, "Defender should take damage from attack");
         }
@@ -50,8 +49,7 @@ public sealed class CombatParityTests
 
         // Assert - Defender should take ranged damage
         var defenderPatches = output.MutationWriter.Patches.Where(p => p.ObjectId == "defender" && p.Payload.Hits.HasValue).ToList();
-        if (defenderPatches.Count > 0)
-        {
+        if (defenderPatches.Count > 0) {
             var (_, defenderPayload) = defenderPatches.First();
             Assert.True(defenderPayload.Hits < 200, "Defender should take damage from ranged attack");
         }
@@ -74,8 +72,7 @@ public sealed class CombatParityTests
 
         // Assert - Healer should restore hits (12 hits per HEAL part)
         var healerPatches = output.MutationWriter.Patches.Where(p => p.ObjectId == "healer" && p.Payload.Hits.HasValue).ToList();
-        if (healerPatches.Count > 0)
-        {
+        if (healerPatches.Count > 0) {
             var (_, healerPayload) = healerPatches.First();
             Assert.True(healerPayload.Hits > 100, "Healer should restore hits");
             Assert.True(healerPayload.Hits <= 200, "Healer should not exceed max hits");
@@ -101,8 +98,7 @@ public sealed class CombatParityTests
 
         // Assert - Ally should restore hits
         var allyPatches = output.MutationWriter.Patches.Where(p => p.ObjectId == "ally" && p.Payload.Hits.HasValue).ToList();
-        if (allyPatches.Count > 0)
-        {
+        if (allyPatches.Count > 0) {
             var (_, allyPayload) = allyPatches.First();
             Assert.True(allyPayload.Hits > 50, "Ally should restore hits from heal");
             Assert.True(allyPayload.Hits <= 200, "Ally should not exceed max hits");
@@ -125,8 +121,7 @@ public sealed class CombatParityTests
 
         // Assert - Rampart should take damage
         var rampartPatches = output.MutationWriter.Patches.Where(p => p.ObjectId == "rampart1" && p.Payload.Hits.HasValue).ToList();
-        if (rampartPatches.Count > 0)
-        {
+        if (rampartPatches.Count > 0) {
             var (_, rampartPayload) = rampartPatches.First();
             Assert.True(rampartPayload.Hits < 1000, "Rampart should take damage from attack");
         }

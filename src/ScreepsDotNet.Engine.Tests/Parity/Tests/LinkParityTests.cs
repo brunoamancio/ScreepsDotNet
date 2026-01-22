@@ -65,7 +65,7 @@ public sealed class LinkParityTests
         var (_, link2Payload) = output.MutationWriter.Patches.First(p => p.ObjectId == "link2" && p.Payload.Store is not null);
 
         var link2Final = link2Payload.Store![ResourceTypes.Energy];
-        Assert.True(link2Final >= 799 && link2Final <= 800, $"Expected link2 at or near capacity (799-800), got {link2Final}");
+        Assert.True(link2Final is >= 799 and <= 800, $"Expected link2 at or near capacity (799-800), got {link2Final}");
         Assert.True(link1Payload.Store![ResourceTypes.Energy] <= 500); // Source decreased
     }
 
