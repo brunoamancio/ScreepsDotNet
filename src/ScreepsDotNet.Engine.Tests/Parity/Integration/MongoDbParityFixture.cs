@@ -16,7 +16,15 @@ public sealed class MongoDbParityFixture : IAsyncLifetime
     public async ValueTask InitializeAsync()
     {
         await _mongoContainer.StartAsync();
+
+        // Use MongoDbContainer's GetConnectionString() method (handles auth, port, etc.)
         ConnectionString = _mongoContainer.GetConnectionString();
+
+        Console.WriteLine($"[MongoDbParityFixture] MongoDB container started");
+        Console.WriteLine($"  Container ID: {_mongoContainer.Id}");
+        Console.WriteLine($"  Hostname: {_mongoContainer.Hostname}");
+        Console.WriteLine($"  Port: {_mongoContainer.GetMappedPublicPort(27017)}");
+        Console.WriteLine($"  Connection String: {ConnectionString}");
     }
 
     public async ValueTask DisposeAsync()

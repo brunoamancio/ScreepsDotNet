@@ -24,14 +24,14 @@ Write-Host "Cloning official Screeps repositories..."
 Write-Host "  (for Engine parity harness)"
 Write-Host "=========================================" -ForegroundColor Cyan
 
-# Get script directory and navigate to parity-harness root
+# Get script directory and navigate to engine harness root
 $scriptDir = $PSScriptRoot
-Set-Location (Join-Path $scriptDir ".." "..")
+Set-Location (Join-Path $scriptDir "..")
 
-# Load version configuration
-$versionsFile = "versions.json"
+# Load version configuration (from parent parity-harness directory)
+$versionsFile = "../versions.json"
 if (-not (Test-Path $versionsFile)) {
-    Write-Error "ERROR: versions.json not found!"
+    Write-Error "ERROR: versions.json not found at $versionsFile!"
     exit 1
 }
 
@@ -113,7 +113,13 @@ function Clone-OrUpdate {
     Write-Host "  Installing npm dependencies..."
     Push-Location $repoPath
     try {
-        npm install --legacy-peer-deps
+        npm install --ignore-scripts --legacy-peer-deps
+
+        # Reset package-lock.json changes (npm install may update it)
+        # We don't want to modify the official repos - only use them as-is
+        if (Test-Path "package-lock.json") {
+            git restore package-lock.json 2>$null
+        }
     }
     finally {
         Pop-Location

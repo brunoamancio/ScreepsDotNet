@@ -6,14 +6,14 @@ echo "Cloning official Screeps repositories..."
 echo "  (for Engine parity harness)"
 echo "========================================="
 
-# Get script directory and navigate to parity-harness root
+# Get script directory and navigate to engine harness root
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cd "$SCRIPT_DIR/../.."
+cd "$SCRIPT_DIR/.."
 
-# Load version configuration
-VERSIONS_FILE="versions.json"
+# Load version configuration (from parent parity-harness directory)
+VERSIONS_FILE="../versions.json"
 if [ ! -f "$VERSIONS_FILE" ]; then
-    echo "ERROR: versions.json not found!"
+    echo "ERROR: versions.json not found at $VERSIONS_FILE!"
     exit 1
 fi
 
@@ -74,7 +74,13 @@ clone_or_update() {
 
     echo "  Installing npm dependencies..."
     cd "$MODULES_DIR/$name"
-    npm install --legacy-peer-deps
+    npm install --ignore-scripts --legacy-peer-deps
+
+    # Reset package-lock.json changes (npm install may update it)
+    # We don't want to modify the official repos - only use them as-is
+    if [ -f "package-lock.json" ]; then
+        git restore package-lock.json 2>/dev/null || true
+    fi
     cd ../..
 
     echo "  ✓ $name ready"

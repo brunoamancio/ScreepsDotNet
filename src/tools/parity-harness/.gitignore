@@ -1,9 +1,0 @@
-# Cloned official Screeps repositories
-screeps-modules/
-
-# Node.js dependencies
-node_modules/
-package-lock.json
-
-# Test outputs
-*.node.json

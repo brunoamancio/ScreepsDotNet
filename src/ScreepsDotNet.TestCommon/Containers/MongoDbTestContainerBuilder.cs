@@ -24,18 +24,19 @@ public static class MongoDbTestContainerBuilder
 
     /// <summary>
     /// Creates a MongoDB container for parity tests with Node.js harness.
-    /// Disables authentication and binds to fixed port 27017 (required for Node.js connection).
+    /// Uses dynamic port binding that external Node.js process can access.
+    /// IMPORTANT: Use container.GetConnectionString() to get proper connection string.
     /// </summary>
-    public static MongoDbContainer CreateForParityTests(string? image = null, int? port = null)
+    public static MongoDbContainer CreateForParityTests(string? image = null)
     {
         var mongoImage = image ?? DefaultMongoImage;
-        var mongoPort = port ?? DefaultMongoPort;
 
-        return new MongoDbBuilder(mongoImage)
-            .WithPortBinding(mongoPort, mongoPort) // Fixed port for Node.js harness
-            .WithCommand("mongod", "--noauth") // Disable authentication
-            .WithWaitStrategy(Wait.ForUnixContainer().UntilMessageIsLogged("Waiting for connections"))
-            .Build();
+        // Use MongoDbBuilder defaults (handles authentication, port binding, wait strategy)
+        // MongoDbBuilder automatically:
+        // - Binds port 27017 to random host port
+        // - Sets up authentication (username: mongo, password: mongo)
+        // - Configures wait strategy for "Waiting for connections"
+        return new MongoDbBuilder(mongoImage).Build();
     }
 
     /// <summary>

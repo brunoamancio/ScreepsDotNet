@@ -53,15 +53,18 @@ public sealed partial class ParityTestPrerequisites : IAsyncLifetime
         var current = new DirectoryInfo(assemblyLocation);
 
         while (current is not null) {
+            // Look for parity harness directory or .git directory as repo root markers
             var harnessPath = Path.Combine(current.FullName, HarnessRelativePath);
-            if (Directory.Exists(harnessPath))
+            var gitPath = Path.Combine(current.FullName, ".git");
+
+            if (Directory.Exists(harnessPath) || Directory.Exists(gitPath))
                 return current.FullName;
 
             current = current.Parent;
         }
 
         throw new InvalidOperationException(
-            $"Could not find repository root. Expected '{HarnessRelativePath}' to exist.");
+            $"Could not find repository root. Expected '{HarnessRelativePath}' or '.git' directory to exist.");
     }
 
     private static async Task EnsureNodeInstalled()

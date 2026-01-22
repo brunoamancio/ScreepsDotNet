@@ -106,7 +106,7 @@ async function executeProcessor(db, fixture) {
  * @returns {Function|null}
  */
 function requireIntentProcessor(intentName) {
-    const enginePath = path.resolve(__dirname, '../../screeps-modules/engine/src/processor');
+    const enginePath = path.resolve(__dirname, '../screeps-modules/engine/src/processor');
 
     // Intent name mapping (Node.js processor file paths)
     const intentMap = {

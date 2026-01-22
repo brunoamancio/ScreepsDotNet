@@ -27,7 +27,9 @@ public static class NodeJsHarnessRunner
                 "Run 'cd tools/parity-harness/engine && npm install' first");
         }
 
-        // Run Node.js harness
+        // Run Node.js harness with driver shim (real constants, no native modules)
+        Console.WriteLine($"[NodeJsHarnessRunner] MongoDB Connection String: {mongoConnectionString}");
+        var driverShimPath = Path.Combine(absoluteHarnessPath, "screeps-modules", "driver-shim.js");
         var startInfo = new ProcessStartInfo
         {
             FileName = "node",
@@ -36,7 +38,12 @@ public static class NodeJsHarnessRunner
             RedirectStandardOutput = true,
             RedirectStandardError = true,
             UseShellExecute = false,
-            CreateNoWindow = true
+            CreateNoWindow = true,
+            EnvironmentVariables = {
+                // Use driver shim that provides real Screeps constants from @screeps/common
+                // without loading native modules (isolated-vm, pathfinder) we don't need
+                ["DRIVER_MODULE"] = driverShimPath
+            }
         };
 
         using var process = new Process();
@@ -65,6 +72,7 @@ public static class NodeJsHarnessRunner
         if (process.ExitCode != 0) {
             throw new InvalidOperationException(
                 $"Node.js harness failed with exit code {process.ExitCode}\n" +
+                $"Connection string: {mongoConnectionString}\n" +
                 $"Error: {errorBuilder}");
         }
 
