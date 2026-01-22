@@ -23,4 +23,8 @@
     <Compile Include="..\GlobalSuppressions.Tests.cs" Link="GlobalSuppressions.Tests.cs" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Include="Parity\Fixtures\**\*.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

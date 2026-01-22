@@ -148,12 +148,16 @@ This document tracks the Engine subsystem roadmap and implementation status. For
 - ✅ Node.js harness: Fixture loader, processor executor, output serializer (Phase 1 - designed, implementation deferred)
 - ✅ .NET test runner: **20/20 processor steps operational** with test doubles (Phase 2 ✅)
 - ✅ Test doubles: 6 stub implementations for complex dependencies (movement, combat, build/repair, spawn, lifecycle) (Phase 2 ✅)
+- ✅ **JSON fixture loader: JsonFixtureLoader + JsonFixtureSchema** (Phase 2 ✅ 2026-01-22)
+  - ✅ Deserializes JSON fixtures to RoomState (7 integration tests)
+  - ✅ 4 example fixtures (harvest_basic, transfer_basic, controller_upgrade, link_transfer)
+  - ✅ Compatible with Node.js harness JSON format
 - ✅ Comparison engine: ParityComparator, DivergenceReporter, NodeJsHarnessRunner (Phase 3)
 - ✅ Fluent test builder: ParityFixtureBuilder with 10+ builder methods (Phase 3)
 - ✅ Core mechanics fixtures: Harvest (2), Controller (3), Transfer (3), Link (4), Lab (3) (Phase 4 ✅)
 - ✅ Edge case tests: Empty/full stores, overflow, resource limits (6 tests) (Phase 4 ✅)
 - ✅ Validation parity tests: Range, resources, permissions, invalid targets, cooldowns (7 tests) (Phase 4 ✅)
-- ✅ **Tests: 33 parity tests passing** (5 comparator + 15 mechanics + 6 edge cases + 7 validation)
+- ✅ **Tests: 40 parity + infrastructure tests passing** (5 comparator + 15 mechanics + 6 edge cases + 7 validation + 7 JsonFixtureLoader)
 
 **Prerequisites:**
 - ✅ All E2 features complete (including 4 E5-blocked features)
@@ -281,7 +285,7 @@ This document tracks the Engine subsystem roadmap and implementation status. For
 - ✅ E8 Phase 3: HTTP diagnostics (8 tests, 4 endpoints with authentication)
 - ✅ E8 Phase 4: Operator playbooks (7 comprehensive debugging workflows)
 
-**Test Status:** 814/814 passing (470 Engine [+33 parity] + 70 Driver + 64 CLI + 210 HTTP)
+**Test Status:** 821/821 passing (477 Engine [+33 parity +7 JsonFixtureLoader] + 70 Driver + 64 CLI + 210 HTTP)
 
 **Remaining Work:**
 - 📋 E7: Parity validation (depends on: E1-E6 complete ✅, E8 complete ✅)
