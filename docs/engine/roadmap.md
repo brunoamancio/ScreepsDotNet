@@ -146,7 +146,8 @@ This document tracks the Engine subsystem roadmap and implementation status. For
 
 **Phase 1-4 Deliverables:**
 - ✅ Node.js harness: Fixture loader, processor executor, output serializer (Phase 1 - designed, implementation deferred)
-- ✅ .NET test runner: 14 processor steps operational (6 deferred pending test doubles) (Phase 2)
+- ✅ .NET test runner: **20/20 processor steps operational** with test doubles (Phase 2 ✅)
+- ✅ Test doubles: 6 stub implementations for complex dependencies (movement, combat, build/repair, spawn, lifecycle) (Phase 2 ✅)
 - ✅ Comparison engine: ParityComparator, DivergenceReporter, NodeJsHarnessRunner (Phase 3)
 - ✅ Fluent test builder: ParityFixtureBuilder with 10+ builder methods (Phase 3)
 - ✅ Core mechanics fixtures: Harvest (2), Controller (3), Transfer (3), Link (4), Lab (3) (Phase 4 ✅)
@@ -185,7 +186,14 @@ This document tracks the Engine subsystem roadmap and implementation status. For
 
 **Impact:** E7 parity tests will cover ~95% of gameplay mechanics. E9 AI and E2 deferred features will be added to parity suite when implemented.
 
-**Details:** See `e7.md` for implementation plan, `e2.md` for deferred features, `e9.md` for AI logic plan
+**Deferred Work:** See `e7.md` "Deferred Features" section for comprehensive list of:
+- ✅ **Test doubles implemented** - All 20 processor steps operational (Phase 2 complete)
+- 📋 Node.js harness implementation (Phase 1 designed, not implemented)
+- 📋 Additional mechanics tests (25+ fixtures for combat, movement, build/repair, spawn, nuker, power spawn, factory)
+- 📋 Additional edge cases (15+ scenarios)
+- 📋 Action log and final state comparison
+
+**Details:** See `e7.md` for implementation plan, `e2.md` for deferred E2 features, `e9.md` for AI logic plan
 
 ---
 

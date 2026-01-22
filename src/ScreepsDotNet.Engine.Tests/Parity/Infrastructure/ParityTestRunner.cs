@@ -8,8 +8,9 @@ using ScreepsDotNet.Engine.Processors.Helpers;
 using ScreepsDotNet.Engine.Processors.Steps;
 
 /// <summary>
-/// Executes room processing for parity testing (simplified proof-of-concept for Phase 2)
-/// Phase 3+ will expand to include all processor steps with proper dependency injection
+/// Executes room processing for parity testing with full processor pipeline
+/// Uses test doubles for complex dependencies (movement, combat, build/repair, spawn, lifecycle)
+/// All 20 processor steps are operational for comprehensive parity validation
 /// </summary>
 public static class ParityTestRunner
 {
@@ -21,7 +22,7 @@ public static class ParityTestRunner
 
         var context = new RoomProcessorContext(state, mutationWriter, statsSink, globalWriter);
 
-        // Phase 3: Run full processor pipeline (limited to steps that don't need ICreepDeathProcessor)
+        // Run full processor pipeline with test doubles for complex dependencies
         var steps = BuildProcessorSteps();
 
         // Execute all steps
@@ -30,7 +31,7 @@ public static class ParityTestRunner
             await step.ExecuteAsync(context, cancellationToken).ConfigureAwait(false);
         }
 
-        // Phase 2: Return mutations without computing final state (Phase 3+ will add)
+        // Return mutations and stats for parity comparison
         return new ParityTestOutput(
             MutationWriter: mutationWriter,
             StatsSink: statsSink,
@@ -40,17 +41,27 @@ public static class ParityTestRunner
 
     private static List<IRoomProcessorStep> BuildProcessorSteps()
     {
-        // Phase 3: Expanded processor pipeline (all steps that don't need complex dependencies)
-        // Deferred: Steps needing ICreepDeathProcessor, IStructureBlueprintProvider, etc.
-        // Will be added in Phase 4+ when test doubles are implemented.
+        // Full processor pipeline with test doubles for complex dependencies
+        // Test doubles allow all 20 steps to execute without requiring full production logic
 
         var resourceDropHelper = new ResourceDropHelper();
+        var deathProcessor = new ParityTestDoubles.StubCreepDeathProcessor();
+        var spawnIntentParser = new ParityTestDoubles.StubSpawnIntentParser();
+        var spawnStateReader = new ParityTestDoubles.StubSpawnStateReader();
+        var spawnEnergyCharger = new ParityTestDoubles.StubSpawnEnergyCharger();
+        var blueprintProvider = new ParityTestDoubles.StubStructureBlueprintProvider();
+        var structureFactory = new ParityTestDoubles.StubStructureSnapshotFactory();
 
         var steps = new List<IRoomProcessorStep>
         {
-            // Movement - Deferred (needs ICreepDeathProcessor)
-            // Build/Repair - Deferred (needs IStructureBlueprintProvider, IStructureSnapshotFactory)
-            // Combat - Deferred (needs ICreepDeathProcessor)
+            // Movement ✅ (test double)
+            new MovementIntentStep(deathProcessor),
+
+            // Build/Repair ✅ (test doubles)
+            new CreepBuildRepairStep(blueprintProvider, structureFactory),
+
+            // Combat ✅ (test double)
+            new CombatResolutionStep(deathProcessor),
 
             // Harvest ✅
             new HarvestIntentStep(resourceDropHelper),
@@ -73,8 +84,11 @@ public static class ParityTestRunner
             // Power Spawn ✅
             new PowerSpawnIntentStep(),
 
-            // Spawn - Deferred (needs ISpawnIntentParser, ISpawnStateReader, ISpawnEnergyCharger, ICreepDeathProcessor)
-            // Tower - Deferred (needs ICreepDeathProcessor)
+            // Spawn ✅ (test doubles)
+            new SpawnIntentStep(spawnIntentParser, spawnStateReader, spawnEnergyCharger, deathProcessor, resourceDropHelper),
+
+            // Tower ✅ (test double)
+            new TowerIntentStep(deathProcessor),
 
             // Factory ✅
             new FactoryIntentStep(),
@@ -90,7 +104,7 @@ public static class ParityTestRunner
             // Power Effect Decay ✅
             new PowerEffectDecayStep(),
 
-            // Keeper Lair ✅ (no dependencies)
+            // Keeper Lair ✅
             new KeeperLairStep(),
 
             // Nuke Landing ✅
@@ -106,10 +120,13 @@ public static class ParityTestRunner
             new ControllerDowngradeStep(),
 
             // Structure Decay ✅
-            new StructureDecayStep()
+            new StructureDecayStep(),
 
-            // Creep Lifecycle (TTL/Death) - Deferred (needs ICreepDeathProcessor)
-            // Spawn Spawning - Deferred (needs ISpawnStateReader, ICreepDeathProcessor)
+            // Creep Lifecycle ✅ (test double)
+            new CreepLifecycleStep(deathProcessor),
+
+            // Spawn Spawning ✅ (test doubles)
+            new SpawnSpawningStep(spawnStateReader, deathProcessor)
         };
 
         return steps;

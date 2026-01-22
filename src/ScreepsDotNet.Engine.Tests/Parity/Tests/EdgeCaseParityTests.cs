@@ -70,9 +70,22 @@ public sealed class EdgeCaseParityTests
         // Act
         var output = await ParityTestRunner.RunAsync(state, TestContext.Current.CancellationToken);
 
-        // Assert - No patches should be created (0 amount)
-        Assert.DoesNotContain(output.MutationWriter.Patches, p => p.ObjectId == "creep1");
-        Assert.DoesNotContain(output.MutationWriter.Patches, p => p.ObjectId == "creep2");
+        // Assert - Store patches should not be created (0 amount transfer)
+        // Note: TTL and other passive mechanics may still create patches
+        var creep1StorePatches = output.MutationWriter.Patches.Where(p => p.ObjectId == "creep1" && p.Payload.Store is not null).ToList();
+        var creep2StorePatches = output.MutationWriter.Patches.Where(p => p.ObjectId == "creep2" && p.Payload.Store is not null).ToList();
+
+        if (creep1StorePatches.Count > 0)
+        {
+            var (_, creep1Payload) = creep1StorePatches.First();
+            Assert.Equal(30, creep1Payload.Store![ResourceTypes.Energy]); // Unchanged
+        }
+
+        if (creep2StorePatches.Count > 0)
+        {
+            var (_, creep2Payload) = creep2StorePatches.First();
+            Assert.Equal(10, creep2Payload.Store![ResourceTypes.Energy]); // Unchanged
+        }
     }
 
     [Fact]
@@ -89,9 +102,16 @@ public sealed class EdgeCaseParityTests
         // Act
         var output = await ParityTestRunner.RunAsync(state, TestContext.Current.CancellationToken);
 
-        // Assert - No patches should be created
-        Assert.DoesNotContain(output.MutationWriter.Patches, p => p.ObjectId == "controller1");
-        Assert.DoesNotContain(output.MutationWriter.Patches, p => p.ObjectId == "creep1");
+        // Assert - Controller progress should not increase (upgrade failed)
+        Assert.DoesNotContain(output.MutationWriter.Patches, p => p.ObjectId == "controller1" && p.Payload.Progress.HasValue);
+
+        // Creep energy should not decrease (upgrade failed)
+        var creepPatches = output.MutationWriter.Patches.Where(p => p.ObjectId == "creep1" && p.Payload.Store is not null).ToList();
+        if (creepPatches.Count > 0)
+        {
+            var (_, creepPayload) = creepPatches.First();
+            Assert.Equal(0, creepPayload.Store![ResourceTypes.Energy]); // Still 0 (no energy spent)
+        }
     }
 
     [Fact]
