@@ -21,9 +21,8 @@ public static class ParityTestRunner
 
         var context = new RoomProcessorContext(state, mutationWriter, statsSink, globalWriter);
 
-        // Phase 2: Run minimal processor steps (harvest only for proof-of-concept)
-        // Phase 3+: Will add full processor pipeline with proper DI
-        var steps = BuildMinimalProcessorSteps();
+        // Phase 3: Run full processor pipeline (limited to steps that don't need ICreepDeathProcessor)
+        var steps = BuildProcessorSteps();
 
         // Execute all steps
         foreach (var step in steps)
@@ -39,33 +38,78 @@ public static class ParityTestRunner
         );
     }
 
-    private static List<IRoomProcessorStep> BuildMinimalProcessorSteps()
+    private static List<IRoomProcessorStep> BuildProcessorSteps()
     {
+        // Phase 3: Expanded processor pipeline (all steps that don't need complex dependencies)
+        // Deferred: Steps needing ICreepDeathProcessor, IStructureBlueprintProvider, etc.
+        // Will be added in Phase 4+ when test doubles are implemented.
+
         var resourceDropHelper = new ResourceDropHelper();
 
         var steps = new List<IRoomProcessorStep>
         {
-            // Phase 2: Harvest only (proof-of-concept)
-            new HarvestIntentStep(resourceDropHelper)
+            // Movement - Deferred (needs ICreepDeathProcessor)
+            // Build/Repair - Deferred (needs IStructureBlueprintProvider, IStructureSnapshotFactory)
+            // Combat - Deferred (needs ICreepDeathProcessor)
 
-            // Phase 3+: Add remaining processor steps with proper DI:
-            // - MovementIntentStep (needs ICreepDeathProcessor)
-            // - CreepBuildRepairStep (needs IStructureBlueprintProvider, IStructureSnapshotFactory)
-            // - CombatResolutionStep (needs ICreepDeathProcessor)
-            // - ResourceTransferIntentStep
-            // - ControllerIntentStep
-            // - LabIntentStep
-            // - LinkIntentStep
-            // - NukerIntentStep
-            // - PowerSpawnIntentStep
-            // - SpawnIntentStep (needs multiple dependencies)
-            // - TowerIntentStep (needs ICreepDeathProcessor)
-            // - FactoryIntentStep
-            // - KeeperLairStep
-            // - NukeLandingStep
-            // - PassiveRegenerationStep
-            // - DecayStep
-            // - TtlStep
+            // Harvest ✅
+            new HarvestIntentStep(resourceDropHelper),
+
+            // Resource Transfer ✅
+            new ResourceTransferIntentStep(resourceDropHelper),
+
+            // Controller ✅
+            new ControllerIntentStep(),
+
+            // Lab ✅
+            new LabIntentStep(),
+
+            // Link ✅
+            new LinkIntentStep(),
+
+            // Nuker ✅
+            new NukerIntentStep(),
+
+            // Power Spawn ✅
+            new PowerSpawnIntentStep(),
+
+            // Spawn - Deferred (needs ISpawnIntentParser, ISpawnStateReader, ISpawnEnergyCharger, ICreepDeathProcessor)
+            // Tower - Deferred (needs ICreepDeathProcessor)
+
+            // Factory ✅
+            new FactoryIntentStep(),
+
+            // Observer - Not implemented yet (E2 deferred)
+
+            // Power Ability ✅
+            new PowerAbilityStep(),
+
+            // Power Ability Cooldown ✅
+            new PowerAbilityCooldownStep(),
+
+            // Power Effect Decay ✅
+            new PowerEffectDecayStep(),
+
+            // Keeper Lair ✅ (no dependencies)
+            new KeeperLairStep(),
+
+            // Nuke Landing ✅
+            new NukeLandingStep(),
+
+            // Source Regeneration ✅
+            new SourceRegenerationStep(),
+
+            // Mineral Regeneration ✅
+            new MineralRegenerationStep(),
+
+            // Controller Downgrade ✅
+            new ControllerDowngradeStep(),
+
+            // Structure Decay ✅
+            new StructureDecayStep(),
+
+            // Creep Lifecycle (TTL/Death) - Deferred (needs ICreepDeathProcessor)
+            // Spawn Spawning - Deferred (needs ISpawnStateReader, ICreepDeathProcessor)
         };
 
         return steps;
