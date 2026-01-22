@@ -355,6 +355,18 @@ public sealed class ParityFixtureBuilder
         return this;
     }
 
+    public ParityFixtureBuilder WithPullIntent(string userId, string creepId, string targetId)
+    {
+        var argument = new IntentArgument(new Dictionary<string, IntentFieldValue>(StringComparer.Ordinal)
+        {
+            [IntentKeys.TargetId] = new(IntentFieldValueKind.Text, TextValue: targetId)
+        });
+
+        var record = new IntentRecord(IntentKeys.Pull, [argument]);
+        AddIntent(userId, creepId, record);
+        return this;
+    }
+
     public ParityFixtureBuilder WithMoveIntent(string userId, string creepId, Direction direction)
     {
         // Find creep's current position
