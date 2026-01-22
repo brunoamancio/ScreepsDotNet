@@ -210,12 +210,11 @@ public static class JsonFixtureLoader
 
         var result = new Dictionary<string, RoomTerrainSnapshot>(StringComparer.Ordinal)
         {
-            [roomName] = new RoomTerrainSnapshot(
-                Id: roomName,
-                RoomName: roomName,
-                Shard: null,
-                Type: "terrain",
-                Terrain: terrain)
+            [roomName] = new(Id: roomName,
+                             RoomName: roomName,
+                             Shard: null,
+                             Type: "terrain",
+                             Terrain: terrain)
         };
 
         return result;
