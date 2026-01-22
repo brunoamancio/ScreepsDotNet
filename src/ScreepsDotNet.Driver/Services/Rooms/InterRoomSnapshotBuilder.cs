@@ -18,7 +18,8 @@ internal sealed class InterRoomSnapshotBuilder(IRoomDataService roomDataService)
         var specialObjects = MapObjects(snapshot.SpecialRoomObjects);
         var market = MapMarket(snapshot.Market);
 
-        return new GlobalSnapshot(snapshot.GameTime, movingCreeps, accessibleRooms, snapshot.ExitTopology, specialObjects, market);
+        var roomIntents = BuildRoomIntentsFromTerminals(specialObjects);
+        return new GlobalSnapshot(snapshot.GameTime, movingCreeps, accessibleRooms, snapshot.ExitTopology, specialObjects, market, roomIntents);
     }
 
     private static IReadOnlyList<RoomObjectSnapshot> MapObjects(IReadOnlyList<RoomObjectDocument> documents)
@@ -161,5 +162,79 @@ internal sealed class InterRoomSnapshotBuilder(IRoomDataService roomDataService)
         }
 
         return result;
+    }
+
+    private static IReadOnlyDictionary<string, RoomIntentSnapshot> BuildRoomIntentsFromTerminals(IReadOnlyList<RoomObjectSnapshot> specialObjects)
+    {
+        var terminalsByRoom = new Dictionary<string, List<RoomObjectSnapshot>>(StringComparer.Ordinal);
+
+        foreach (var obj in specialObjects) {
+            if (obj.Send is null)
+                continue;
+
+            if (string.IsNullOrWhiteSpace(obj.RoomName))
+                continue;
+
+            if (!terminalsByRoom.TryGetValue(obj.RoomName, out var terminals)) {
+                terminals = [];
+                terminalsByRoom[obj.RoomName] = terminals;
+            }
+
+            terminals.Add(obj);
+        }
+
+        if (terminalsByRoom.Count == 0)
+            return new Dictionary<string, RoomIntentSnapshot>(StringComparer.Ordinal);
+
+        var roomIntents = new Dictionary<string, RoomIntentSnapshot>(terminalsByRoom.Count, StringComparer.Ordinal);
+
+        foreach (var (roomName, terminals) in terminalsByRoom) {
+            var userIntents = new Dictionary<string, IntentEnvelope>(StringComparer.Ordinal);
+
+            var terminalsByUser = terminals.GroupBy(t => t.UserId ?? string.Empty, StringComparer.Ordinal);
+
+            foreach (var userGroup in terminalsByUser) {
+                var userId = userGroup.Key;
+                if (string.IsNullOrWhiteSpace(userId))
+                    continue;
+
+                var terminalIntents = new Dictionary<string, TerminalIntentEnvelope>(StringComparer.Ordinal);
+
+                foreach (var terminal in userGroup) {
+                    if (terminal.Send is null)
+                        continue;
+
+                    var sendIntent = new TerminalSendIntent(
+                        terminal.Send.TargetRoomName,
+                        terminal.Send.ResourceType,
+                        terminal.Send.Amount,
+                        terminal.Send.Description);
+
+                    terminalIntents[terminal.Id] = new TerminalIntentEnvelope(sendIntent);
+                }
+
+                if (terminalIntents.Count > 0) {
+                    var envelope = new IntentEnvelope(
+                        userId,
+                        new Dictionary<string, IReadOnlyList<IntentRecord>>(StringComparer.Ordinal),
+                        new Dictionary<string, SpawnIntentEnvelope>(StringComparer.Ordinal),
+                        new Dictionary<string, CreepIntentEnvelope>(StringComparer.Ordinal),
+                        terminalIntents);
+
+                    userIntents[userId] = envelope;
+                }
+            }
+
+            if (userIntents.Count > 0) {
+                var snapshot = new RoomIntentSnapshot(
+                    roomName,
+                    terminals[0].Shard,
+                    userIntents);
+
+                roomIntents[roomName] = snapshot;
+            }
+        }
+
+        return roomIntents;
     }
 }

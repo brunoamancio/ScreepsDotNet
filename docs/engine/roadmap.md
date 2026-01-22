@@ -1,6 +1,6 @@
 # Engine Roadmap (E1-E9)
 
-**Last Updated:** January 22, 2026 (E7 Phase 1-3 Complete)
+**Last Updated:** January 22, 2026 (E7 Terminal.send refactored, GlobalParityTestRunner deferred)
 
 This document tracks the Engine subsystem roadmap and implementation status. For detailed handler tracking, see `e2.md`. For E5 blockers, see `e5.md`.
 
@@ -192,6 +192,11 @@ This document tracks the Engine subsystem roadmap and implementation status. For
 - 📋 Additional mechanics tests (25+ fixtures for combat, movement, build/repair, spawn, nuker, power spawn, factory)
 - 📋 Additional edge cases (15+ scenarios)
 - 📋 Action log and final state comparison
+- 📋 **GlobalParityTestRunner** (Optional) - Cross-room/global processor testing (deferred, existing unit tests provide coverage)
+  - **Decision:** Skip in favor of existing unit test coverage (`MarketIntentStepTests`, `PowerCreepIntentStepTests`)
+  - **Reason:** Sufficient coverage from unit tests, diminishing returns, 8-16 hour implementation cost
+  - **When to Reconsider:** Production divergence detected, complex new global features added, certification needs
+  - **Details:** See `e7.md` "GlobalParityTestRunner (Optional Future Implementation)" section
 
 **Details:** See `e7.md` for implementation plan, `e2.md` for deferred E2 features, `e9.md` for AI logic plan
 

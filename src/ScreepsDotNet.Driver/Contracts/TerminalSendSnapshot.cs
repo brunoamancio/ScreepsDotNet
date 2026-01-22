@@ -1,7 +1,8 @@
 namespace ScreepsDotNet.Driver.Contracts;
 
 /// <summary>
-/// Represents terminal send data stored on the terminal object.
+/// Represents a terminal send operation (inter-room resource transfer).
+/// Legacy property-based representation - will be converted to intent pattern at Engine boundary.
 /// </summary>
 public sealed record TerminalSendSnapshot(
     string TargetRoomName,

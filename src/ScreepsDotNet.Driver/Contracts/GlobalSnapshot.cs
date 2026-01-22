@@ -12,7 +12,11 @@ public sealed record GlobalSnapshot(
     IReadOnlyDictionary<string, RoomInfoSnapshot> AccessibleRooms,
     IReadOnlyDictionary<string, RoomExitTopology> ExitTopology,
     IReadOnlyList<RoomObjectSnapshot> SpecialRoomObjects,
-    GlobalMarketSnapshot Market);
+    GlobalMarketSnapshot Market,
+    IReadOnlyDictionary<string, RoomIntentSnapshot>? RoomIntents = null)
+{
+    public IReadOnlyDictionary<string, RoomIntentSnapshot> RoomIntents { get; init; } = RoomIntents ?? new Dictionary<string, RoomIntentSnapshot>(StringComparer.Ordinal);
+}
 
 /// <summary>
 /// Market- and user-centric data that accompanies the global snapshot.

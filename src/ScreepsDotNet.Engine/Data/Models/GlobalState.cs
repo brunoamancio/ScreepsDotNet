@@ -11,8 +11,11 @@ public sealed record GlobalState(
     IReadOnlyDictionary<string, RoomInfoSnapshot> AccessibleRooms,
     IReadOnlyDictionary<string, RoomExitTopology> ExitTopology,
     IReadOnlyList<RoomObjectSnapshot> SpecialRoomObjects,
-    GlobalMarketSnapshot Market)
+    GlobalMarketSnapshot Market,
+    IReadOnlyDictionary<string, RoomIntentSnapshot>? RoomIntents = null)
 {
+    public IReadOnlyDictionary<string, RoomIntentSnapshot> RoomIntents { get; init; } = RoomIntents ?? new Dictionary<string, RoomIntentSnapshot>(StringComparer.Ordinal);
+
     public static GlobalState FromSnapshot(GlobalSnapshot snapshot)
         => new(
             snapshot.GameTime,
@@ -20,5 +23,6 @@ public sealed record GlobalState(
             snapshot.AccessibleRooms,
             snapshot.ExitTopology,
             snapshot.SpecialRoomObjects,
-            snapshot.Market);
+            snapshot.Market,
+            snapshot.RoomIntents);
 }

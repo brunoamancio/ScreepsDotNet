@@ -12,7 +12,11 @@ public sealed record IntentEnvelope(
     string UserId,
     IReadOnlyDictionary<string, IReadOnlyList<IntentRecord>> ObjectIntents,
     IReadOnlyDictionary<string, SpawnIntentEnvelope> SpawnIntents,
-    IReadOnlyDictionary<string, CreepIntentEnvelope> CreepIntents);
+    IReadOnlyDictionary<string, CreepIntentEnvelope> CreepIntents,
+    IReadOnlyDictionary<string, TerminalIntentEnvelope>? TerminalIntents = null)
+{
+    public IReadOnlyDictionary<string, TerminalIntentEnvelope> TerminalIntents { get; init; } = TerminalIntents ?? new Dictionary<string, TerminalIntentEnvelope>(StringComparer.Ordinal);
+}
 
 public sealed record SpawnIntentEnvelope(
     CreateCreepIntent? CreateCreep,
@@ -42,3 +46,11 @@ public sealed record CreepIntentEnvelope(
 public sealed record MoveIntent(int X, int Y);
 
 public sealed record AttackIntent(string TargetId, int? Damage);
+
+public sealed record TerminalIntentEnvelope(TerminalSendIntent? Send);
+
+public sealed record TerminalSendIntent(
+    string TargetRoomName,
+    string ResourceType,
+    int Amount,
+    string? Description = null);

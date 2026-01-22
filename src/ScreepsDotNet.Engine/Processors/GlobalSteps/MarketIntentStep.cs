@@ -393,50 +393,59 @@ internal sealed class MarketIntentStep : IGlobalProcessorStep
 
     private void ProcessTerminalSends(GlobalProcessorContext context, IReadOnlyDictionary<string, RoomObjectSnapshot> terminalsByRoom)
     {
-        var terminals = context.GetObjectsOfType(RoomObjectTypes.Terminal);
-        foreach (var terminal in terminals) {
-            var sendIntent = TryExtractSendIntent(terminal);
-            if (sendIntent is null)
-                continue;
+        var terminalsById = context.GetObjectsOfType(RoomObjectTypes.Terminal).ToDictionary(t => t.Id, StringComparer.Ordinal);
 
-            var patch = new GlobalRoomObjectPatch(ClearSend: true);
-            context.Mutations.PatchRoomObject(terminal.Id, patch);
+        foreach (var (roomName, roomIntents) in context.State.RoomIntents) {
+            foreach (var (userId, intentEnvelope) in roomIntents.Users) {
+                foreach (var (terminalId, terminalIntents) in intentEnvelope.TerminalIntents) {
+                    var sendIntent = terminalIntents.Send;
+                    if (sendIntent is null)
+                        continue;
 
-            var cooldownTime = terminal.CooldownTime ?? 0;
-            if (cooldownTime > context.GameTime)
-                continue;
+                    if (!terminalsById.TryGetValue(terminalId, out var terminal))
+                        continue;
 
-            if (string.IsNullOrWhiteSpace(sendIntent.TargetRoomName))
-                continue;
+                    // Clear the Send property (converted to intent, now ephemeral)
+                    var clearPatch = new GlobalRoomObjectPatch(ClearSend: true);
+                    context.Mutations.PatchRoomObject(terminal.Id, clearPatch);
 
-            if (!terminalsByRoom.TryGetValue(sendIntent.TargetRoomName, out var targetTerminal))
-                continue;
+                    var cooldownTime = terminal.CooldownTime ?? 0;
+                    if (cooldownTime > context.GameTime)
+                        continue;
 
-            if (string.IsNullOrWhiteSpace(targetTerminal.UserId))
-                continue;
+                    if (string.IsNullOrWhiteSpace(sendIntent.TargetRoomName))
+                        continue;
 
-            var cooldown = ScreepsGameConstants.TerminalCooldown;
-            var operateEffect = GetPowerEffect(terminal, PowerTypes.OperateTerminal, context.GameTime);
-            if (operateEffect.HasValue) {
-                var effectMultiplier = GetPowerEffectMultiplier(PowerTypes.OperateTerminal, operateEffect.Value.Level);
-                var result = Math.Round(cooldown * effectMultiplier);
-                cooldown = (int)result;
-            }
+                    if (!terminalsByRoom.TryGetValue(sendIntent.TargetRoomName, out var targetTerminal))
+                        continue;
 
-            var transferSuccess = ExecuteTerminalTransfer(
-                terminal,
-                targetTerminal,
-                sendIntent.ResourceType,
-                sendIntent.Amount,
-                terminal,
-                sendIntent.Description,
-                context,
-                terminalsByRoom);
+                    if (string.IsNullOrWhiteSpace(targetTerminal.UserId))
+                        continue;
 
-            if (transferSuccess) {
-                var newCooldownTime = context.GameTime + cooldown;
-                var cooldownPatch = new GlobalRoomObjectPatch(CooldownTime: newCooldownTime);
-                context.Mutations.PatchRoomObject(terminal.Id, cooldownPatch);
+                    var cooldown = ScreepsGameConstants.TerminalCooldown;
+                    var operateEffect = GetPowerEffect(terminal, PowerTypes.OperateTerminal, context.GameTime);
+                    if (operateEffect.HasValue) {
+                        var effectMultiplier = GetPowerEffectMultiplier(PowerTypes.OperateTerminal, operateEffect.Value.Level);
+                        var result = Math.Round(cooldown * effectMultiplier);
+                        cooldown = (int)result;
+                    }
+
+                    var transferSuccess = ExecuteTerminalTransfer(
+                        terminal,
+                        targetTerminal,
+                        sendIntent.ResourceType,
+                        sendIntent.Amount,
+                        terminal,
+                        sendIntent.Description,
+                        context,
+                        terminalsByRoom);
+
+                    if (transferSuccess) {
+                        var newCooldownTime = context.GameTime + cooldown;
+                        var cooldownPatch = new GlobalRoomObjectPatch(CooldownTime: newCooldownTime);
+                        context.Mutations.PatchRoomObject(terminal.Id, cooldownPatch);
+                    }
+                }
             }
         }
     }
@@ -588,8 +597,6 @@ internal sealed class MarketIntentStep : IGlobalProcessorStep
         return multiplier;
     }
 
-    private static TerminalSendSnapshot? TryExtractSendIntent(RoomObjectSnapshot terminal)
-        => terminal.Send;
 
     private static void ProcessDealIntents(
         IReadOnlyList<IntentArgument> arguments,

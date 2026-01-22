@@ -88,8 +88,9 @@ internal sealed class RoomSnapshotBuilder(IRoomDataService roomDataService) : IR
 
         var spawnIntents = MapSpawnIntents(document?.ObjectsManual);
         var creepIntents = MapCreepIntents(document?.ObjectsManual);
+        var terminalIntents = new Dictionary<string, TerminalIntentEnvelope>(StringComparer.Ordinal);
 
-        return new IntentEnvelope(userId, objectIntents, spawnIntents, creepIntents);
+        return new IntentEnvelope(userId, objectIntents, spawnIntents, creepIntents, terminalIntents);
     }
 
     private static IReadOnlyDictionary<string, SpawnIntentEnvelope> MapSpawnIntents(Dictionary<string, BsonDocument>? objectsManual)

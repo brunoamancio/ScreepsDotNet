@@ -764,6 +764,63 @@ public sealed class ParityFixtureBuilder
         return this;
     }
 
+    public ParityFixtureBuilder WithTerminal(string id, int x, int y, string userId, Dictionary<string, int> store, int? cooldownTime = null)
+    {
+        var terminal = new RoomObjectSnapshot(
+            id,
+            RoomObjectTypes.Terminal,
+            _roomName,
+            _shard,
+            userId,
+            x,
+            y,
+            Hits: ScreepsGameConstants.TerminalHits,
+            HitsMax: ScreepsGameConstants.TerminalHits,
+            Fatigue: null,
+            TicksToLive: null,
+            Name: null,
+            Level: null,
+            Density: null,
+            MineralType: null,
+            DepositType: null,
+            StructureType: RoomObjectTypes.Terminal,
+            Store: store,
+            StoreCapacity: ScreepsGameConstants.TerminalCapacity,
+            StoreCapacityResource: new Dictionary<string, int>(StringComparer.Ordinal),
+            Reservation: null,
+            Sign: null,
+            Structure: null,
+            Effects: new Dictionary<PowerTypes, PowerEffectSnapshot>(),
+            Spawning: null,
+            Body: [],
+            CooldownTime: cooldownTime
+        );
+
+        _objects.Add(terminal);
+        return this;
+    }
+
+    public ParityFixtureBuilder WithTerminalSendIntent(string userId, string terminalId, string targetRoomName, string resourceType, int amount, string? description = null)
+    {
+        if (!_userIntents.TryGetValue(userId, out var envelope)) {
+            envelope = new IntentEnvelope(
+                userId,
+                new Dictionary<string, IReadOnlyList<IntentRecord>>(StringComparer.Ordinal),
+                new Dictionary<string, SpawnIntentEnvelope>(StringComparer.Ordinal),
+                new Dictionary<string, CreepIntentEnvelope>(StringComparer.Ordinal)
+            );
+            _userIntents[userId] = envelope;
+        }
+
+        var terminalIntents = new Dictionary<string, TerminalIntentEnvelope>(envelope.TerminalIntents, StringComparer.Ordinal);
+        var sendIntent = new TerminalSendIntent(targetRoomName, resourceType, amount, description);
+        var terminalIntent = new TerminalIntentEnvelope(sendIntent);
+        terminalIntents[terminalId] = terminalIntent;
+
+        _userIntents[userId] = envelope with { TerminalIntents = terminalIntents };
+        return this;
+    }
+
     public ParityFixtureBuilder WithLaunchNukeIntent(string userId, string nukerId, string targetRoomName, int targetX, int targetY)
     {
         var argument = new IntentArgument(new Dictionary<string, IntentFieldValue>(StringComparer.Ordinal)
