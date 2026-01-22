@@ -134,7 +134,7 @@ This document tracks the Engine subsystem roadmap and implementation status. For
 
 ## E7: Compatibility & Parity Validation 📋
 
-**Status:** 🚧 In Progress (Phase 1-3 ✅, Phase 4 🚧 Partial)
+**Status:** 🚧 In Progress (Phase 1-3 ✅, Phase 4 ✅ Core Complete)
 
 **Planned Deliverables:**
 - ✅ Node.js test harness (Phase 1)
@@ -149,9 +149,10 @@ This document tracks the Engine subsystem roadmap and implementation status. For
 - ✅ .NET test runner: 14 processor steps operational (6 deferred pending test doubles) (Phase 2)
 - ✅ Comparison engine: ParityComparator, DivergenceReporter, NodeJsHarnessRunner (Phase 3)
 - ✅ Fluent test builder: ParityFixtureBuilder with 10+ builder methods (Phase 3)
-- ✅ Core mechanics fixtures: Harvest (2), Controller (3), Transfer (3), Link (4), Lab (3) (Phase 4 🚧)
-- ✅ Edge case tests: Empty/full stores, overflow, resource limits (6 tests) (Phase 4 🚧)
-- ✅ **Tests: 26 parity tests passing** (5 comparator infrastructure + 15 mechanics + 6 edge cases)
+- ✅ Core mechanics fixtures: Harvest (2), Controller (3), Transfer (3), Link (4), Lab (3) (Phase 4 ✅)
+- ✅ Edge case tests: Empty/full stores, overflow, resource limits (6 tests) (Phase 4 ✅)
+- ✅ Validation parity tests: Range, resources, permissions, invalid targets, cooldowns (7 tests) (Phase 4 ✅)
+- ✅ **Tests: 33 parity tests passing** (5 comparator + 15 mechanics + 6 edge cases + 7 validation)
 
 **Prerequisites:**
 - ✅ All E2 features complete (including 4 E5-blocked features)
@@ -267,7 +268,7 @@ This document tracks the Engine subsystem roadmap and implementation status. For
 - ✅ E8 Phase 3: HTTP diagnostics (8 tests, 4 endpoints with authentication)
 - ✅ E8 Phase 4: Operator playbooks (7 comprehensive debugging workflows)
 
-**Test Status:** 807/807 passing (463 Engine [+26 parity] + 70 Driver + 64 CLI + 210 HTTP)
+**Test Status:** 814/814 passing (470 Engine [+33 parity] + 70 Driver + 64 CLI + 210 HTTP)
 
 **Remaining Work:**
 - 📋 E7: Parity validation (depends on: E1-E6 complete ✅, E8 complete ✅)

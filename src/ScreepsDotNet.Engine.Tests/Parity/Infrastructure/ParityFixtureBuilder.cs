@@ -152,7 +152,7 @@ public sealed class ParityFixtureBuilder
         return this;
     }
 
-    public ParityFixtureBuilder WithLink(string id, int x, int y, string userId, int energy = 0, int? cooldown = null)
+    public ParityFixtureBuilder WithLink(string id, int x, int y, string userId, int energy = 0, int? cooldown = null, int? cooldownTime = null)
     {
         var link = new RoomObjectSnapshot(
             id,
@@ -187,7 +187,8 @@ public sealed class ParityFixtureBuilder
             Effects: new Dictionary<PowerTypes, PowerEffectSnapshot>(),
             Spawning: null,
             Body: [],
-            CooldownTime: cooldown
+            Cooldown: cooldown,
+            CooldownTime: cooldownTime
         );
 
         _objects.Add(link);
