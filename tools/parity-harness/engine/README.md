@@ -38,10 +38,17 @@ npm install
 
 ### 2. Clone Official Screeps Repositories
 
+**Linux/Mac:**
 ```bash
 npm run clone:engine
 # or
 cd engine/scripts && ./clone-repos.sh
+```
+
+**Windows (PowerShell):**
+```powershell
+cd engine/scripts
+pwsh ./clone-repos.ps1
 ```
 
 This will clone the official Screeps repositories (engine, driver, common) into `../screeps-modules/` (gitignored at root level).
@@ -74,7 +81,8 @@ npm run test:engine engine/examples/harvest_basic.json -- --output harvest.node.
 engine/
 ├── README.md                    # This file
 ├── scripts/
-│   └── clone-repos.sh           # Clones official Screeps repos
+│   ├── clone-repos.sh           # Clones official Screeps repos (Linux/Mac)
+│   └── clone-repos.ps1          # Clones official Screeps repos (Windows)
 ├── test-runner/
 │   ├── fixture-loader.js        # Loads JSON fixtures into MongoDB
 │   ├── processor-executor.js    # Executes Node.js processor

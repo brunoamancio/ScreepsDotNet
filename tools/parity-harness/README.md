@@ -121,7 +121,7 @@ tools/parity-harness/
 │   └── common/
 ├── engine/                      # E7: Engine parity harness
 │   ├── README.md                # Engine-specific documentation
-│   ├── scripts/                 # clone-repos.sh
+│   ├── scripts/                 # clone-repos.sh (Linux/Mac), clone-repos.ps1 (Windows)
 │   ├── test-runner/             # Node.js test harness
 │   ├── fixtures/                # Test fixtures (to be created in Phase 4)
 │   └── examples/                # Example fixtures
