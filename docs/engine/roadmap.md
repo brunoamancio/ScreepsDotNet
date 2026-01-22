@@ -1,6 +1,6 @@
-# Engine Roadmap (E1-E9)
+# Engine Roadmap (E1-E10)
 
-**Last Updated:** January 22, 2026 (E7 Terminal.send refactored, GlobalParityTestRunner deferred)
+**Last Updated:** January 22, 2026 (E10 Full Parity Test Coverage milestone added)
 
 This document tracks the Engine subsystem roadmap and implementation status. For detailed handler tracking, see `e2.md`. For E5 blockers, see `e5.md`.
 
@@ -19,6 +19,7 @@ This document tracks the Engine subsystem roadmap and implementation status. For
 | E7 | 📋 | Compatibility & Parity Validation | Lockstep testing vs. Node engine, automated divergence detection | Prior steps, legacy engine repo |
 | E8 | ✅ | Observability & Tooling | Engine metrics flow to telemetry, diagnostics commands, operator playbooks | D8 (✅), D4 hooks (✅), E6 (✅) |
 | E9 | 📋 | NPC AI Logic | Keeper and invader AI implemented with pathfinding, targeting, and combat logic | E5 Phase 3 (spawning), E6-E8 complete |
+| E10 | 📋 | Full Parity Test Coverage | 25-30 fixtures covering all major intent types, CI/CD automated, 100% parity achieved | E7 infrastructure (✅), E1-E6 features (✅) |
 
 ---
 
@@ -276,9 +277,80 @@ This document tracks the Engine subsystem roadmap and implementation status. For
 
 ---
 
+## E10: Full Parity Test Coverage 📋
+
+**Status:** Planned
+
+**Summary:**
+- Expand from 4 fixtures to 25-30 fixtures covering all implemented Engine processors
+- Validate 100% behavioral parity with official Node.js Screeps engine for E1-E6 features
+- Automated divergence detection and CI/CD integration
+- Comprehensive troubleshooting playbooks
+
+**Phase Breakdown:**
+1. **Phase 1: Core Fixtures** (8-12 hours)
+   - Combat: attack, rangedAttack, heal, dismantle (4 fixtures)
+   - Resources: drop, pickup, withdraw, lab boost/unboost (5 fixtures)
+   - Movement: basic, pull, say (3 fixtures)
+   - Structures: build, repair, tower, lab reaction, power spawn (6 fixtures)
+   - Controller: claim, reserve, attack, safemode (4 fixtures)
+   - Spawn: create, renew, recycle (3 fixtures)
+   - Advanced: nuker, factory (2 fixtures)
+
+2. **Phase 2: Test Implementation** (3-5 hours)
+   - Add 25-30 test methods to `EndToEndParityTests.cs`
+   - Verify Node.js harness supports all intent types
+
+3. **Phase 3: Divergence Resolution** (2-8 hours)
+   - Debug and fix behavioral differences
+   - Expected: 3-5 divergences (formulas, cooldown patterns, edge cases)
+
+4. **Phase 4: CI/CD Automation** (2-3 hours)
+   - GitHub Actions workflow for parity tests
+   - Weekly regression checks
+   - Divergence report artifacts on failure
+
+5. **Phase 5: Documentation** (1-2 hours)
+   - Operator playbook: debugging parity failures
+   - Update E7 documentation with extended coverage
+
+**Current State:**
+- ✅ 7/7 parity tests passing
+- ✅ 4 JSON fixtures (harvest_basic, transfer_basic, controller_upgrade, link_transfer)
+- ✅ 884/884 total tests passing
+- ✅ Node.js harness infrastructure complete
+- ✅ Comparison engine operational
+
+**Success Criteria:**
+- ✅ 25-30 JSON fixtures covering all major intent types
+- ✅ All parity tests passing (0 divergences)
+- ✅ CI/CD workflow automated (weekly runs)
+- ✅ Coverage: 95% of E1-E6 features
+- ✅ Documentation complete (troubleshooting playbook)
+
+**Timeline Estimate:** 20-25 hours realistic (16-18 best case, 28-32 worst case)
+
+**Dependencies:**
+- ✅ E7 infrastructure complete (Node.js harness, comparison engine, test runner)
+- ✅ E1-E6 features complete (all intent handlers implemented)
+- ✅ E8 observability (for debugging divergences)
+
+**Risk Assessment:**
+- **Low Risk:** Harvest, transfer, controller upgrade, link (already passing)
+- **Medium Risk:** Combat calculations, lab reactions, boost mechanics
+- **Higher Risk:** Tower operations, spawn mechanics, nuker launch
+
+**Deferred:**
+- ❌ Observer mechanics (`observeRoom` - E9 dependency)
+- ❌ Terminal.send global (would require GlobalParityTestRunner)
+
+**Details:** See `e10.md` for complete implementation plan
+
+---
+
 ## Summary
 
-**Overall Engine Progress:** E1-E6, E8 complete ✅ | E7, E9 pending 📋
+**Overall Engine Progress:** E1-E6, E8 complete ✅ | E7, E9, E10 pending 📋
 
 **Completed Milestones:**
 - ✅ E1: Legacy engine surface mapped
@@ -300,9 +372,10 @@ This document tracks the Engine subsystem roadmap and implementation status. For
 **Remaining Work:**
 - 📋 E7: Parity validation (depends on: E1-E6 complete ✅, E8 complete ✅)
 - 📋 E9: NPC AI logic (depends on: E5 Phase 3 ✅, E6 complete ✅, E7-E8 pending)
+- 📋 E10: Full parity test coverage (depends on: E7 infrastructure ✅, E1-E6 features ✅)
 - 📋 E8.1: Telemetry aggregation & analytics (enhancement: replace stub services with real implementations)
 
-**Next Milestone:** E7 (Compatibility & Parity Validation)
+**Next Milestone:** E10 (Full Parity Test Coverage)
 
 **Reference Documents:**
 - E1 (Legacy surface mapping): `e1.md`
@@ -311,8 +384,10 @@ This document tracks the Engine subsystem roadmap and implementation status. For
   - E3.1 (Validation infrastructure): `e3.1.md` ✅
   - E3.2 (Validator implementation): `e3.2.md` ✅
 - E5 (Global systems): `e5.md`
+- E7 (Compatibility & parity validation): `e7.md` 🚧
 - E8 (Observability & tooling): `e8.md` ✅
 - E9 (NPC AI logic): `e9.md`
+- E10 (Full parity test coverage): `e10.md` 📋
 - Data model design: `data-model.md`
 - Operator playbooks: `operator-playbooks.md` ✅
 - Coding patterns: `../../src/ScreepsDotNet.Engine/CLAUDE.md`
