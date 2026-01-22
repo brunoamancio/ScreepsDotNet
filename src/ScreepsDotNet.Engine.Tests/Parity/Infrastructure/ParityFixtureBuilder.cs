@@ -152,6 +152,48 @@ public sealed class ParityFixtureBuilder
         return this;
     }
 
+    public ParityFixtureBuilder WithLink(string id, int x, int y, string userId, int energy = 0, int? cooldown = null)
+    {
+        var link = new RoomObjectSnapshot(
+            id,
+            RoomObjectTypes.Link,
+            _roomName,
+            _shard,
+            userId,
+            x,
+            y,
+            Hits: ScreepsGameConstants.LinkHits,
+            HitsMax: ScreepsGameConstants.LinkHitsMax,
+            Fatigue: null,
+            TicksToLive: null,
+            Name: null,
+            Level: null,
+            Density: null,
+            MineralType: null,
+            DepositType: null,
+            StructureType: RoomObjectTypes.Link,
+            Store: new Dictionary<string, int>(StringComparer.Ordinal)
+            {
+                [ResourceTypes.Energy] = energy
+            },
+            StoreCapacity: ScreepsGameConstants.LinkCapacity,
+            StoreCapacityResource: new Dictionary<string, int>(StringComparer.Ordinal)
+            {
+                [ResourceTypes.Energy] = ScreepsGameConstants.LinkCapacity
+            },
+            Reservation: null,
+            Sign: null,
+            Structure: null,
+            Effects: new Dictionary<PowerTypes, PowerEffectSnapshot>(),
+            Spawning: null,
+            Body: [],
+            CooldownTime: cooldown
+        );
+
+        _objects.Add(link);
+        return this;
+    }
+
     public ParityFixtureBuilder WithHarvestIntent(string userId, string creepId, string targetId)
     {
         var argument = new IntentArgument(new Dictionary<string, IntentFieldValue>(StringComparer.Ordinal)
@@ -187,6 +229,84 @@ public sealed class ParityFixtureBuilder
 
         var record = new IntentRecord(IntentKeys.Transfer, [argument]);
         AddIntent(userId, creepId, record);
+        return this;
+    }
+
+    public ParityFixtureBuilder WithTransferEnergyIntent(string userId, string sourceLinkId, string targetLinkId, int amount)
+    {
+        var argument = new IntentArgument(new Dictionary<string, IntentFieldValue>(StringComparer.Ordinal)
+        {
+            [IntentKeys.TargetId] = new(IntentFieldValueKind.Text, TextValue: targetLinkId),
+            [IntentKeys.Amount] = new(IntentFieldValueKind.Number, NumberValue: amount)
+        });
+
+        var record = new IntentRecord(IntentKeys.TransferEnergy, [argument]);
+        AddIntent(userId, sourceLinkId, record);
+        return this;
+    }
+
+    public ParityFixtureBuilder WithLab(string id, int x, int y, string userId, Dictionary<string, int> store, int? cooldownTime = null)
+    {
+        var lab = new RoomObjectSnapshot(
+            id,
+            RoomObjectTypes.Lab,
+            _roomName,
+            _shard,
+            userId,
+            x,
+            y,
+            Hits: 500,
+            HitsMax: 500,
+            Fatigue: null,
+            TicksToLive: null,
+            Name: null,
+            Level: null,
+            Density: null,
+            MineralType: null,
+            DepositType: null,
+            StructureType: RoomObjectTypes.Lab,
+            Store: store,
+            StoreCapacity: ScreepsGameConstants.LabEnergyCapacity + ScreepsGameConstants.LabMineralCapacity,
+            StoreCapacityResource: new Dictionary<string, int>(StringComparer.Ordinal),
+            Reservation: null,
+            Sign: null,
+            Structure: null,
+            Effects: new Dictionary<PowerTypes, PowerEffectSnapshot>(),
+            Spawning: null,
+            Body: [],
+            CooldownTime: cooldownTime
+        );
+
+        _objects.Add(lab);
+        return this;
+    }
+
+    public ParityFixtureBuilder WithRunReactionIntent(string userId, string outputLabId, string inputLab1Id, string inputLab2Id)
+    {
+        var argument = new IntentArgument(new Dictionary<string, IntentFieldValue>(StringComparer.Ordinal)
+        {
+            [IntentKeys.Lab1] = new(IntentFieldValueKind.Text, TextValue: inputLab1Id),
+            [IntentKeys.Lab2] = new(IntentFieldValueKind.Text, TextValue: inputLab2Id)
+        });
+
+        var record = new IntentRecord(IntentKeys.RunReaction, [argument]);
+        AddIntent(userId, outputLabId, record);
+        return this;
+    }
+
+    public ParityFixtureBuilder WithBoostCreepIntent(string userId, string labId, string creepId, int? bodyPartsCount = null)
+    {
+        var fields = new Dictionary<string, IntentFieldValue>(StringComparer.Ordinal)
+        {
+            [IntentKeys.TargetId] = new(IntentFieldValueKind.Text, TextValue: creepId)
+        };
+
+        if (bodyPartsCount.HasValue)
+            fields[IntentKeys.BodyPartsCount] = new(IntentFieldValueKind.Number, NumberValue: bodyPartsCount.Value);
+
+        var argument = new IntentArgument(fields);
+        var record = new IntentRecord(IntentKeys.BoostCreep, [argument]);
+        AddIntent(userId, labId, record);
         return this;
     }
 
