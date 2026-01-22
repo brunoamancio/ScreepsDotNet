@@ -36,6 +36,20 @@ async function executeProcessor(db, fixture) {
         },
         remove: function(id) {
             bulkMutations.deletes.push(id);
+        },
+        inc: function(obj, field, amount) {
+            // Find existing update for this object, or create new one
+            let existingUpdate = bulkMutations.updates.find(u => u.id === obj._id);
+            if (!existingUpdate) {
+                existingUpdate = {
+                    id: obj._id,
+                    changes: {}
+                };
+                bulkMutations.updates.push(existingUpdate);
+            }
+
+            // Increment the field
+            existingUpdate.changes[field] = (existingUpdate.changes[field] || obj[field] || 0) + amount;
         }
     };
 
@@ -51,6 +65,21 @@ async function executeProcessor(db, fixture) {
     // Mock event log
     const eventLog = [];
 
+    // Initialize actionLog on all room objects (required by official Screeps processors)
+    for (const obj of Object.values(roomObjects)) {
+        if (!obj.actionLog) {
+            obj.actionLog = {};
+        }
+    }
+
+    // Mock bulk users (for GCL updates, etc.)
+    const mockBulkUsers = {
+        inc: function(userId, field, amount) {
+            // For parity testing, we don't need to track user updates
+            // Just silently accept the call
+        }
+    };
+
     // Build scope object expected by processor
     const scope = {
         roomObjects: roomObjects,
@@ -58,6 +87,7 @@ async function executeProcessor(db, fixture) {
         roomController: roomController || null,
         gameTime: fixture.gameTime,
         bulk: mockBulk,
+        bulkUsers: mockBulkUsers,
         stats: mockStats,
         eventLog: eventLog
     };
@@ -85,6 +115,7 @@ async function executeProcessor(db, fixture) {
                     }
                 } catch (error) {
                     console.error(`    ERROR processing intent ${intent.intent} for ${objectId}:`, error.message);
+                    console.error(`    Stack:`, error.stack);
                 }
             }
         }
@@ -146,7 +177,7 @@ function requireIntentProcessor(intentName) {
         'unboostCreep': 'intents/labs/unboostCreep',
 
         // Link intents
-        'transferEnergy': 'intents/links/transferEnergy',
+        'transferEnergy': 'intents/links/transfer',
 
         // Nuker intents
         'launchNuke': 'intents/nukers/launchNuke',

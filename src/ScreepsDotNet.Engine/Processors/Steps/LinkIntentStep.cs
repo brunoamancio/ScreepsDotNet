@@ -71,12 +71,11 @@ internal sealed class LinkIntentStep : IRoomProcessorStep
         if (!string.Equals(link.Type, RoomObjectTypes.Link, StringComparison.Ordinal))
             return;
 
-        // Check cooldown
-        var gameTime = context.State.GameTime;
+        // Check cooldown (countdown ticker, not absolute time)
         if (!cooldownLedger.TryGetValue(link.Id, out var currentCooldown))
             currentCooldown = link.Cooldown ?? 0;
 
-        if (currentCooldown > gameTime)
+        if (currentCooldown > 0)
             return;
 
         // Get intent arguments
@@ -130,10 +129,10 @@ internal sealed class LinkIntentStep : IRoomProcessorStep
         storeLedger[link.Id] = sourceStore;
         storeLedger[target.Id] = targetStore;
 
-        // Calculate cooldown based on distance
+        // Calculate cooldown based on distance (countdown ticker, not absolute time)
         var distance = Math.Max(Math.Abs(target.X - link.X), Math.Abs(target.Y - link.Y));
         var cooldownTicks = ScreepsGameConstants.LinkCooldown * distance;
-        cooldownLedger[link.Id] = gameTime + cooldownTicks;
+        cooldownLedger[link.Id] = currentCooldown + cooldownTicks;
 
         // Record action log (target position)
         actionLogLedger[link.Id] = new RoomObjectActionLogPatch(

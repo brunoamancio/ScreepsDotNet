@@ -86,7 +86,7 @@ public sealed class LinkParityTests
         var link1Patches = output.MutationWriter.Patches.Where(p => p.ObjectId == "link1").ToList();
         Assert.NotEmpty(link1Patches);
 
-        var hasCooldown = link1Patches.Any(p => p.Payload.Cooldown.HasValue && p.Payload.Cooldown.Value > 100);
-        Assert.True(hasCooldown, "Link cooldown should be set after transfer");
+        var hasCooldown = link1Patches.Any(p => p.Payload.Cooldown.HasValue && p.Payload.Cooldown.Value > 0);
+        Assert.True(hasCooldown, "Link cooldown should be set after transfer (countdown ticker)");
     }
 }

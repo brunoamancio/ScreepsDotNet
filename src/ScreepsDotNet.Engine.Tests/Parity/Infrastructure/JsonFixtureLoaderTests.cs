@@ -132,12 +132,12 @@ public sealed class JsonFixtureLoaderTests
 
         // Assert
         Assert.Equal(400, state.GameTime);
-        Assert.Equal(2, state.Objects.Count);
+        Assert.Equal(3, state.Objects.Count); // controller + 2 links
 
         var link1 = state.Objects["link1"];
         Assert.Equal(RoomObjectTypes.Link, link1.Type);
         Assert.Equal(400, link1.Store[ResourceTypes.Energy]);
-        Assert.Equal(0, link1.CooldownTime);
+        Assert.Equal(0, link1.Cooldown);
 
         var link2 = state.Objects["link2"];
         Assert.Equal(0, link2.Store[ResourceTypes.Energy]);

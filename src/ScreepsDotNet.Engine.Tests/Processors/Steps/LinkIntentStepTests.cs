@@ -28,10 +28,11 @@ public sealed class LinkIntentStepTests
         await _step.ExecuteAsync(context, TestContext.Current.CancellationToken);
 
         // Assert
-        var (ObjectId, Payload) = writer.Patches.Single(p => p.ObjectId == sourceLink.Id);
-        Assert.Equal(300, Payload.Store![ResourceTypes.Energy]);
+        var (objectId, payload) = writer.Patches.Single(p => p.ObjectId == sourceLink.Id);
+        Assert.Equal(sourceLink.Id, objectId);
+        Assert.Equal(300, payload.Store![ResourceTypes.Energy]);
         var expectedCooldown = ScreepsGameConstants.LinkCooldown * Math.Max(Math.Abs(15 - 10), Math.Abs(15 - 10));
-        Assert.Equal(100 + expectedCooldown, Payload.Cooldown);
+        Assert.Equal(expectedCooldown, payload.Cooldown);  // Countdown ticker, not absolute time
 
         var targetPatch = writer.Patches.Single(p => p.ObjectId == targetLink.Id);
         var transferredWithLoss = 100 - (int)Math.Ceiling(100 * ScreepsGameConstants.LinkLossRatio);
@@ -146,10 +147,11 @@ public sealed class LinkIntentStepTests
         await _step.ExecuteAsync(context, TestContext.Current.CancellationToken);
 
         // Assert
-        var (ObjectId, Payload) = writer.Patches.Single(p => p.ObjectId == sourceLink.Id);
+        var (objectId, payload) = writer.Patches.Single(p => p.ObjectId == sourceLink.Id);
+        Assert.Equal(sourceLink.Id, objectId);
         var distance = Math.Max(Math.Abs(15 - 10), Math.Abs(12 - 10));
         var expectedCooldown = ScreepsGameConstants.LinkCooldown * distance;
-        Assert.Equal(100 + expectedCooldown, Payload.Cooldown);
+        Assert.Equal(expectedCooldown, payload.Cooldown);  // Countdown ticker, not absolute time
         Assert.Equal(5, distance);
     }
 
