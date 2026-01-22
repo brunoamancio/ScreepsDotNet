@@ -123,7 +123,7 @@ public sealed class ParityFixtureBuilder
         return this;
     }
 
-    public ParityFixtureBuilder WithController(string id, int x, int y, string userId, int level = 1, int progress = 0)
+    public ParityFixtureBuilder WithController(string id, int x, int y, string userId, int level = 1, int progress = 0, int? progressTotal = null)
     {
         var controller = new RoomObjectSnapshot(
             id,
@@ -153,7 +153,7 @@ public sealed class ParityFixtureBuilder
             Spawning: null,
             Body: [],
             Progress: progress,
-            ProgressTotal: ScreepsGameConstants.ControllerLevelProgress[(ControllerLevel)level]
+            ProgressTotal: progressTotal ?? ScreepsGameConstants.ControllerLevelProgress[(ControllerLevel)level]
         );
 
         _objects.Add(controller);

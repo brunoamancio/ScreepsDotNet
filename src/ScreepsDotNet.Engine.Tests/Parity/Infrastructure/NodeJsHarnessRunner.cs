@@ -11,6 +11,12 @@ public static class NodeJsHarnessRunner
 {
     private static readonly string HarnessPath = Path.Combine("..", "..", "..", "..", "..", "..", "tools", "parity-harness", "engine");
 
+    private static readonly JsonSerializerOptions JsonOptions = new()
+    {
+        PropertyNameCaseInsensitive = true,
+        AllowTrailingCommas = true
+    };
+
     public static async Task<JsonDocument> RunFixtureAsync(string fixturePath, CancellationToken cancellationToken = default)
     {
         var absoluteHarnessPath = Path.GetFullPath(HarnessPath);
@@ -69,7 +75,7 @@ public static class NodeJsHarnessRunner
             throw new InvalidOperationException("Node.js harness produced no output");
         }
 
-        // Parse JSON output
+        // Parse and return as JsonDocument for parity comparison
         try {
             return JsonDocument.Parse(output);
         }
