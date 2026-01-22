@@ -1,0 +1,22 @@
+{
+  "name": "screeps-engine-parity-harness",
+  "version": "1.0.0",
+  "description": "Engine parity testing harness - executes fixtures against official Screeps engine",
+  "private": true,
+  "main": "test-runner/run-fixture.js",
+  "scripts": {
+    "clone:repos": "cd scripts && bash clone-repos.sh",
+    "test": "node test-runner/run-fixture.js"
+  },
+  "engines": {
+    "node": ">=10.13.0 <=12.999.999"
+  },
+  "dependencies": {
+    "screeps": "file:./screeps-modules/screeps",
+    "@screeps/driver": "file:./screeps-modules/@screeps/driver",
+    "@screeps/common": "file:./screeps-modules/@screeps/common",
+    "mongodb": "^4.17.2"
+  },
+  "author": "ScreepsDotNet Contributors",
+  "license": "MIT"
+}

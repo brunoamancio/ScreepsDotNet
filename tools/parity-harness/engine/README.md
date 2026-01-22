@@ -51,7 +51,7 @@ cd engine/scripts
 pwsh ./clone-repos.ps1
 ```
 
-This will clone the official Screeps repositories (engine, driver, common) into `../screeps-modules/` (gitignored at root level).
+This will clone the official Screeps repositories (engine, driver, common) into `screeps-modules/` directory.
 
 ### 3. Start MongoDB
 

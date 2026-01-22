@@ -285,7 +285,7 @@ public sealed partial class ParityTestPrerequisites : IAsyncLifetime
 
     private async Task EnsureScreepsReposCloned()
     {
-        var reposPath = Path.Combine(HarnessDirectory, "repos");
+        var reposPath = Path.Combine(HarnessDirectory, "screeps-modules");
 
         if (Directory.Exists(reposPath) && Directory.EnumerateDirectories(reposPath).Any())
             return; // Repos already cloned
