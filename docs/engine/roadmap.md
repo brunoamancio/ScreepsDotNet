@@ -148,7 +148,9 @@ This document tracks the Engine subsystem roadmap and implementation status. For
 - ✅ Node.js harness: Fixture loader, processor executor, output serializer
 - ✅ .NET test runner: 14 processor steps operational (6 deferred pending test doubles)
 - ✅ Comparison engine: ParityComparator, DivergenceReporter, NodeJsHarnessRunner
-- ✅ Tests: 6 parity tests passing (5 comparator tests + 1 harvest proof-of-concept)
+- ✅ Fluent test builder: ParityFixtureBuilder (programmatic fixture creation)
+- ✅ Core mechanics fixtures: HarvestParityTests (2), ControllerParityTests (3), TransferParityTests (3)
+- ✅ Tests: 13 parity tests passing (5 comparator tests + 8 mechanics tests)
 
 **Prerequisites:**
 - ✅ All E2 features complete (including 4 E5-blocked features)
@@ -264,7 +266,7 @@ This document tracks the Engine subsystem roadmap and implementation status. For
 - ✅ E8 Phase 3: HTTP diagnostics (8 tests, 4 endpoints with authentication)
 - ✅ E8 Phase 4: Operator playbooks (7 comprehensive debugging workflows)
 
-**Test Status:** 787/787 passing (443 Engine [+6 parity] + 70 Driver + 64 CLI + 210 HTTP)
+**Test Status:** 794/794 passing (450 Engine [+13 parity] + 70 Driver + 64 CLI + 210 HTTP)
 
 **Remaining Work:**
 - 📋 E7: Parity validation (depends on: E1-E6 complete ✅, E8 complete ✅)

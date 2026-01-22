@@ -106,7 +106,7 @@ public static class ParityTestRunner
             new ControllerDowngradeStep(),
 
             // Structure Decay ✅
-            new StructureDecayStep(),
+            new StructureDecayStep()
 
             // Creep Lifecycle (TTL/Death) - Deferred (needs ICreepDeathProcessor)
             // Spawn Spawning - Deferred (needs ISpawnStateReader, ICreepDeathProcessor)
