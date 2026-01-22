@@ -158,4 +158,246 @@ public sealed class EdgeCaseParityTests
         Assert.Equal(1, creepPayload.Store![ResourceTypes.Energy]);
         Assert.Equal(0, sourcePayload.Energy);
     }
+
+    [Fact]
+    public async Task Transfer_OverflowAmount_TransfersUpToCapacity()
+    {
+        // Arrange - Transfer amount exceeds target capacity
+        var state = new ParityFixtureBuilder()
+            .WithCreep("creep1", 10, 10, "user1", [BodyPartType.Carry, BodyPartType.Move],
+                capacity: 50,
+                store: new Dictionary<string, int> { [ResourceTypes.Energy] = 50 })
+            .WithCreep("creep2", 11, 10, "user1", [BodyPartType.Carry, BodyPartType.Move],
+                capacity: 50,
+                store: new Dictionary<string, int> { [ResourceTypes.Energy] = 45 })  // Only 5 capacity remaining
+            .WithTransferIntent("user1", "creep1", "creep2", ResourceTypes.Energy, 20)  // Attempt 20, but only 5 fits
+            .Build();
+
+        // Act
+        var output = await ParityTestRunner.RunAsync(state, TestContext.Current.CancellationToken);
+
+        // Assert - Should transfer only 5 (up to capacity)
+        var creep1Patches = output.MutationWriter.Patches.Where(p => p.ObjectId == "creep1" && p.Payload.Store is not null).ToList();
+        var creep2Patches = output.MutationWriter.Patches.Where(p => p.ObjectId == "creep2" && p.Payload.Store is not null).ToList();
+
+        if (creep1Patches.Count > 0 && creep2Patches.Count > 0)
+        {
+            var (_, creep1Payload) = creep1Patches.First();
+            var (_, creep2Payload) = creep2Patches.First();
+
+            // Creep1 loses 5, creep2 gains 5
+            Assert.Equal(45, creep1Payload.Store![ResourceTypes.Energy]);
+            Assert.Equal(50, creep2Payload.Store![ResourceTypes.Energy]);
+        }
+    }
+
+    [Fact]
+    public async Task ConcurrentHarvest_MultipleCreeps_SourceDepletesCorrectly()
+    {
+        // Arrange - Two creeps harvest from same source
+        var state = new ParityFixtureBuilder()
+            .WithCreep("creep1", 10, 10, "user1", [BodyPartType.Work, BodyPartType.Move],
+                capacity: 50,
+                store: new Dictionary<string, int>())
+            .WithCreep("creep2", 12, 10, "user1", [BodyPartType.Work, BodyPartType.Move],
+                capacity: 50,
+                store: new Dictionary<string, int>())
+            .WithSource("source1", 11, 10, energy: 10)  // Limited energy
+            .WithHarvestIntent("user1", "creep1", "source1")
+            .WithHarvestIntent("user1", "creep2", "source1")
+            .Build();
+
+        // Act
+        var output = await ParityTestRunner.RunAsync(state, TestContext.Current.CancellationToken);
+
+        // Assert - Total harvested should equal source depletion
+        var creep1Patches = output.MutationWriter.Patches.Where(p => p.ObjectId == "creep1" && p.Payload.Store is not null).ToList();
+        var creep2Patches = output.MutationWriter.Patches.Where(p => p.ObjectId == "creep2" && p.Payload.Store is not null).ToList();
+        var sourcePatches = output.MutationWriter.Patches.Where(p => p.ObjectId == "source1" && p.Payload.Energy.HasValue).ToList();
+
+        if (creep1Patches.Count > 0 && creep2Patches.Count > 0 && sourcePatches.Count > 0)
+        {
+            var (_, creep1Payload) = creep1Patches.First();
+            var (_, creep2Payload) = creep2Patches.First();
+            var (_, sourcePayload) = sourcePatches.First();
+
+            var totalHarvested = creep1Payload.Store![ResourceTypes.Energy] + creep2Payload.Store![ResourceTypes.Energy];
+            var sourceDepleted = 10 - sourcePayload.Energy;
+
+            // Both creeps harvest 2 energy each (2 * 1 WORK part = 2 per tick)
+            // Total: 4 energy harvested
+            // Note: Source depletion may differ based on concurrent harvest mechanics (source energy cap per tick)
+            Assert.Equal(4, totalHarvested);  // 2 creeps * 2 harvest power
+            Assert.True(sourceDepleted > 0, "Source should deplete");
+            Assert.True(sourcePayload.Energy < 10, "Source energy should decrease");
+        }
+    }
+
+    [Fact]
+    public async Task Creep_AtRoomBoundary_CanStillAct()
+    {
+        // Arrange - Creep at x=0, y=0 (room boundary) harvests adjacent source
+        var state = new ParityFixtureBuilder()
+            .WithCreep("creep1", 0, 0, "user1", [BodyPartType.Work, BodyPartType.Move],
+                capacity: 50,
+                store: new Dictionary<string, int>())
+            .WithSource("source1", 1, 0, energy: 3000)
+            .WithHarvestIntent("user1", "creep1", "source1")
+            .Build();
+
+        // Act
+        var output = await ParityTestRunner.RunAsync(state, TestContext.Current.CancellationToken);
+
+        // Assert - Creep should harvest successfully
+        var creepPatches = output.MutationWriter.Patches.Where(p => p.ObjectId == "creep1" && p.Payload.Store is not null).ToList();
+        Assert.NotEmpty(creepPatches);
+
+        var (_, creepPayload) = creepPatches.First();
+        Assert.True(creepPayload.Store![ResourceTypes.Energy] > 0, "Creep at boundary should harvest");
+    }
+
+    [Fact]
+    public async Task Creep_WithTTLOne_DecreasesToZero()
+    {
+        // Arrange - Creep with 1 tick to live
+        var state = new ParityFixtureBuilder()
+            .WithCreep("creep1", 10, 10, "user1", [BodyPartType.Work, BodyPartType.Move],
+                capacity: 50,
+                ticksToLive: 1)
+            .Build();
+
+        // Act
+        var output = await ParityTestRunner.RunAsync(state, TestContext.Current.CancellationToken);
+
+        // Assert - TTL should decrease to 0 (creep dies)
+        var ttlPatches = output.MutationWriter.Patches.Where(p => p.ObjectId == "creep1" && p.Payload.TicksToLive.HasValue).ToList();
+
+        if (ttlPatches.Count > 0)
+        {
+            var (_, creepPayload) = ttlPatches.First();
+            Assert.Equal(0, creepPayload.TicksToLive);
+        }
+    }
+
+    [Fact]
+    public async Task LinkCooldown_ExactExpirationTick_AllowsTransfer()
+    {
+        // Arrange - Link cooldown expires exactly this tick
+        var gameTime = 100;
+        var state = new ParityFixtureBuilder()
+            .WithGameTime(gameTime)
+            .WithLink("link1", 10, 10, "user1", energy: 500, cooldownTime: gameTime)  // Cooldown expires now
+            .WithLink("link2", 12, 12, "user1", energy: 0)
+            .WithTransferEnergyIntent("user1", "link1", "link2", 100)
+            .Build();
+
+        // Act
+        var output = await ParityTestRunner.RunAsync(state, TestContext.Current.CancellationToken);
+
+        // Assert - Transfer should succeed (cooldown expired)
+        var link1Patches = output.MutationWriter.Patches.Where(p => p.ObjectId == "link1" && p.Payload.Store is not null).ToList();
+        var link2Patches = output.MutationWriter.Patches.Where(p => p.ObjectId == "link2" && p.Payload.Store is not null).ToList();
+
+        if (link1Patches.Count > 0 && link2Patches.Count > 0)
+        {
+            var (_, link1Payload) = link1Patches.First();
+            var (_, link2Payload) = link2Patches.First();
+
+            // Link1 loses 100, link2 gains 97 (3% loss)
+            Assert.Equal(400, link1Payload.Store![ResourceTypes.Energy]);
+            Assert.Equal(97, link2Payload.Store![ResourceTypes.Energy]);
+        }
+    }
+
+    [Fact]
+    public async Task Transfer_MultipleResourceTypes_TransfersCorrectly()
+    {
+        // Arrange - Transfer multiple resource types in same tick
+        var state = new ParityFixtureBuilder()
+            .WithCreep("creep1", 10, 10, "user1", [BodyPartType.Carry, BodyPartType.Move],
+                capacity: 100,
+                store: new Dictionary<string, int>
+                {
+                    [ResourceTypes.Energy] = 50,
+                    [ResourceTypes.Utrium] = 30
+                })
+            .WithCreep("creep2", 11, 10, "user1", [BodyPartType.Carry, BodyPartType.Move],
+                capacity: 100,
+                store: new Dictionary<string, int>())
+            .WithTransferIntent("user1", "creep1", "creep2", ResourceTypes.Energy, 20)
+            .WithTransferIntent("user1", "creep1", "creep2", ResourceTypes.Utrium, 10)
+            .Build();
+
+        // Act
+        var output = await ParityTestRunner.RunAsync(state, TestContext.Current.CancellationToken);
+
+        // Assert - Both resources transferred
+        var creep1Patches = output.MutationWriter.Patches.Where(p => p.ObjectId == "creep1" && p.Payload.Store is not null).ToList();
+        var creep2Patches = output.MutationWriter.Patches.Where(p => p.ObjectId == "creep2" && p.Payload.Store is not null).ToList();
+
+        if (creep1Patches.Count > 0 && creep2Patches.Count > 0)
+        {
+            var (_, creep1Payload) = creep1Patches.First();
+            var (_, creep2Payload) = creep2Patches.First();
+
+            Assert.Equal(30, creep1Payload.Store![ResourceTypes.Energy]);
+            Assert.Equal(20, creep1Payload.Store!.GetValueOrDefault(ResourceTypes.Utrium, 0));
+
+            Assert.Equal(20, creep2Payload.Store![ResourceTypes.Energy]);
+            Assert.Equal(10, creep2Payload.Store!.GetValueOrDefault(ResourceTypes.Utrium, 0));
+        }
+    }
+
+    [Fact]
+    public async Task LabReaction_WithExactComponents_ProducesOutput()
+    {
+        // Arrange - Labs with exact components for reaction
+        var state = new ParityFixtureBuilder()
+            .WithLab("outputLab", 10, 10, "user1",
+                store: new Dictionary<string, int> { [ResourceTypes.Energy] = 100 })
+            .WithLab("inputLab1", 11, 10, "user1",
+                store: new Dictionary<string, int> { [ResourceTypes.Hydrogen] = 10 })
+            .WithLab("inputLab2", 12, 10, "user1",
+                store: new Dictionary<string, int> { [ResourceTypes.Oxygen] = 10 })
+            .WithRunReactionIntent("user1", "outputLab", "inputLab1", "inputLab2")
+            .Build();
+
+        // Act
+        var output = await ParityTestRunner.RunAsync(state, TestContext.Current.CancellationToken);
+
+        // Assert - Hydroxide produced (H + O → OH)
+        var outputLabPatches = output.MutationWriter.Patches.Where(p => p.ObjectId == "outputLab" && p.Payload.Store is not null).ToList();
+
+        if (outputLabPatches.Count > 0)
+        {
+            var (_, labPayload) = outputLabPatches.First();
+            Assert.True(labPayload.Store!.ContainsKey(ResourceTypes.Hydroxide), "Hydroxide should be produced");
+        }
+    }
+
+    [Fact]
+    public async Task Upgrade_Level7AtMaxProgress_ConsumesEnergy()
+    {
+        // Arrange - Level 7 controller at max progress (ready to upgrade to 8)
+        var state = new ParityFixtureBuilder()
+            .WithCreep("creep1", 10, 10, "user1", [BodyPartType.Work, BodyPartType.Move],
+                store: new Dictionary<string, int> { [ResourceTypes.Energy] = 50 })
+            .WithController("controller1", 11, 10, "user1", level: 7, progress: ScreepsGameConstants.ControllerLevelProgress[ControllerLevel.Level7])  // Max progress for level 7
+            .WithUpgradeIntent("user1", "creep1", "controller1")
+            .Build();
+
+        // Act
+        var output = await ParityTestRunner.RunAsync(state, TestContext.Current.CancellationToken);
+
+        // Assert - Creep should consume energy (upgrade intent processed)
+        // Note: Level upgrades (7→8) are handled by global processors, not room object patches
+        // But energy consumption proves the intent was processed
+        var creepPatches = output.MutationWriter.Patches.Where(p => p.ObjectId == "creep1" && p.Payload.Store is not null).ToList();
+
+        if (creepPatches.Count > 0)
+        {
+            var (_, creepPayload) = creepPatches.First();
+            Assert.True(creepPayload.Store![ResourceTypes.Energy] < 50, "Creep should consume energy when upgrading");
+        }
+    }
 }

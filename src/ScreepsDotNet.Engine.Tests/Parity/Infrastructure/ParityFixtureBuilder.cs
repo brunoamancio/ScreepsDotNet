@@ -632,6 +632,163 @@ public sealed class ParityFixtureBuilder
         return this;
     }
 
+    public ParityFixtureBuilder WithNuker(string id, int x, int y, string userId, int energy, int ghodium, int? cooldownTime = null)
+    {
+        var nuker = new RoomObjectSnapshot(
+            id,
+            RoomObjectTypes.Nuker,
+            _roomName,
+            _shard,
+            userId,
+            x,
+            y,
+            Hits: ScreepsGameConstants.NukerHits,
+            HitsMax: ScreepsGameConstants.NukerHits,
+            Fatigue: null,
+            TicksToLive: null,
+            Name: null,
+            Level: null,
+            Density: null,
+            MineralType: null,
+            DepositType: null,
+            StructureType: RoomObjectTypes.Nuker,
+            Store: new Dictionary<string, int>(StringComparer.Ordinal)
+            {
+                [ResourceTypes.Energy] = energy,
+                [ResourceTypes.Ghodium] = ghodium
+            },
+            StoreCapacity: ScreepsGameConstants.NukerEnergyCapacity + ScreepsGameConstants.NukerGhodiumCapacity,
+            StoreCapacityResource: new Dictionary<string, int>(StringComparer.Ordinal)
+            {
+                [ResourceTypes.Energy] = ScreepsGameConstants.NukerEnergyCapacity,
+                [ResourceTypes.Ghodium] = ScreepsGameConstants.NukerGhodiumCapacity
+            },
+            Reservation: null,
+            Sign: null,
+            Structure: null,
+            Effects: new Dictionary<PowerTypes, PowerEffectSnapshot>(),
+            Spawning: null,
+            Body: [],
+            CooldownTime: cooldownTime
+        );
+
+        _objects.Add(nuker);
+        return this;
+    }
+
+    public ParityFixtureBuilder WithPowerSpawn(string id, int x, int y, string userId, int energy, int power)
+    {
+        var powerSpawn = new RoomObjectSnapshot(
+            id,
+            RoomObjectTypes.PowerSpawn,
+            _roomName,
+            _shard,
+            userId,
+            x,
+            y,
+            Hits: ScreepsGameConstants.PowerSpawnHits,
+            HitsMax: ScreepsGameConstants.PowerSpawnHits,
+            Fatigue: null,
+            TicksToLive: null,
+            Name: null,
+            Level: null,
+            Density: null,
+            MineralType: null,
+            DepositType: null,
+            StructureType: RoomObjectTypes.PowerSpawn,
+            Store: new Dictionary<string, int>(StringComparer.Ordinal)
+            {
+                [ResourceTypes.Energy] = energy,
+                [ResourceTypes.Power] = power
+            },
+            StoreCapacity: ScreepsGameConstants.PowerSpawnEnergyCapacity + ScreepsGameConstants.PowerSpawnPowerCapacity,
+            StoreCapacityResource: new Dictionary<string, int>(StringComparer.Ordinal)
+            {
+                [ResourceTypes.Energy] = ScreepsGameConstants.PowerSpawnEnergyCapacity,
+                [ResourceTypes.Power] = ScreepsGameConstants.PowerSpawnPowerCapacity
+            },
+            Reservation: null,
+            Sign: null,
+            Structure: null,
+            Effects: new Dictionary<PowerTypes, PowerEffectSnapshot>(),
+            Spawning: null,
+            Body: []
+        );
+
+        _objects.Add(powerSpawn);
+        return this;
+    }
+
+    public ParityFixtureBuilder WithFactory(string id, int x, int y, string userId, Dictionary<string, int> store, int? cooldownTime = null, int? level = null)
+    {
+        var factory = new RoomObjectSnapshot(
+            id,
+            RoomObjectTypes.Factory,
+            _roomName,
+            _shard,
+            userId,
+            x,
+            y,
+            Hits: ScreepsGameConstants.FactoryHits,
+            HitsMax: ScreepsGameConstants.FactoryHits,
+            Fatigue: null,
+            TicksToLive: null,
+            Name: null,
+            Level: level,
+            Density: null,
+            MineralType: null,
+            DepositType: null,
+            StructureType: RoomObjectTypes.Factory,
+            Store: store,
+            StoreCapacity: ScreepsGameConstants.FactoryCapacity,
+            StoreCapacityResource: new Dictionary<string, int>(StringComparer.Ordinal),
+            Reservation: null,
+            Sign: null,
+            Structure: null,
+            Effects: new Dictionary<PowerTypes, PowerEffectSnapshot>(),
+            Spawning: null,
+            Body: [],
+            CooldownTime: cooldownTime
+        );
+
+        _objects.Add(factory);
+        return this;
+    }
+
+    public ParityFixtureBuilder WithLaunchNukeIntent(string userId, string nukerId, string targetRoomName, int targetX, int targetY)
+    {
+        var argument = new IntentArgument(new Dictionary<string, IntentFieldValue>(StringComparer.Ordinal)
+        {
+            [NukerIntentFields.RoomName] = new(IntentFieldValueKind.Text, TextValue: targetRoomName),
+            [NukerIntentFields.X] = new(IntentFieldValueKind.Number, NumberValue: targetX),
+            [NukerIntentFields.Y] = new(IntentFieldValueKind.Number, NumberValue: targetY)
+        });
+
+        var record = new IntentRecord(IntentKeys.LaunchNuke, [argument]);
+        AddIntent(userId, nukerId, record);
+        return this;
+    }
+
+    public ParityFixtureBuilder WithProcessPowerIntent(string userId, string powerSpawnId)
+    {
+        var argument = new IntentArgument(new Dictionary<string, IntentFieldValue>(StringComparer.Ordinal));
+        var record = new IntentRecord(IntentKeys.ProcessPower, [argument]);
+        AddIntent(userId, powerSpawnId, record);
+        return this;
+    }
+
+    public ParityFixtureBuilder WithProduceIntent(string userId, string factoryId, string resourceType)
+    {
+        var argument = new IntentArgument(new Dictionary<string, IntentFieldValue>(StringComparer.Ordinal)
+        {
+            [IntentKeys.ResourceType] = new(IntentFieldValueKind.Text, TextValue: resourceType)
+        });
+
+        var record = new IntentRecord(IntentKeys.Produce, [argument]);
+        AddIntent(userId, factoryId, record);
+        return this;
+    }
+
     private void AddIntent(string userId, string objectId, IntentRecord record)
     {
         if (!_userIntents.TryGetValue(userId, out var envelope))
