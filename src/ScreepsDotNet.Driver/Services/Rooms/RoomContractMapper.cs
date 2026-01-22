@@ -93,7 +93,9 @@ internal static class RoomContractMapper
             document.SafeModeAvailable,
             MapPortalDestination(document.Destination),
             MapSend(document.Send),
-            null);
+            null,
+            document.MemorySourceId,
+            MapMemoryMove(document.MemoryMove));
     }
 
     public static IReadOnlyDictionary<string, UserState> MapUsers(IReadOnlyDictionary<string, UserDocument> users)
@@ -237,6 +239,31 @@ internal static class RoomContractMapper
             : null;
 
         var result = new TerminalSendSnapshot(targetRoomName, resourceType, amount, description);
+        return result;
+    }
+
+    private static KeeperMoveMemory? MapMemoryMove(BsonDocument? memoryMove)
+    {
+        if (memoryMove is null || memoryMove.ElementCount == 0)
+            return null;
+
+        var dest = memoryMove.TryGetValue(RoomDocumentFields.RoomObject.MemoryMoveFields.Dest, out var destValue) && destValue.IsString
+            ? destValue.AsString
+            : null;
+
+        var path = memoryMove.TryGetValue(RoomDocumentFields.RoomObject.MemoryMoveFields.Path, out var pathValue) && pathValue.IsString
+            ? pathValue.AsString
+            : null;
+
+        var time = memoryMove.TryGetValue(RoomDocumentFields.RoomObject.MemoryMoveFields.Time, out var timeValue) && timeValue.IsInt32
+            ? timeValue.AsInt32
+            : (int?)null;
+
+        var lastMove = memoryMove.TryGetValue(RoomDocumentFields.RoomObject.MemoryMoveFields.LastMove, out var lastMoveValue) && lastMoveValue.IsInt32
+            ? lastMoveValue.AsInt32
+            : (int?)null;
+
+        var result = new KeeperMoveMemory(dest, path, time, lastMove);
         return result;
     }
 
@@ -480,7 +507,9 @@ internal static class RoomContractMapper
             CooldownTime = snapshot.CooldownTime,
             NextRegenerationTime = snapshot.NextRegenerationTime,
             Destination = MapPortalDestination(snapshot.PortalDestination),
-            Send = MapSendToBson(snapshot.Send)
+            Send = MapSendToBson(snapshot.Send),
+            MemorySourceId = snapshot.MemorySourceId,
+            MemoryMove = MapMemoryMoveToBson(snapshot.MemoryMove)
         };
 
         return document;
@@ -521,6 +550,25 @@ internal static class RoomContractMapper
             document[RoomDocumentFields.RoomObject.SendFields.Description] = send.Description;
 
         return document;
+    }
+
+    private static BsonDocument? MapMemoryMoveToBson(KeeperMoveMemory? memoryMove)
+    {
+        if (memoryMove is null)
+            return null;
+
+        var document = new BsonDocument();
+        if (memoryMove.Dest is not null)
+            document[RoomDocumentFields.RoomObject.MemoryMoveFields.Dest] = memoryMove.Dest;
+        if (memoryMove.Path is not null)
+            document[RoomDocumentFields.RoomObject.MemoryMoveFields.Path] = memoryMove.Path;
+        if (memoryMove.Time.HasValue)
+            document[RoomDocumentFields.RoomObject.MemoryMoveFields.Time] = memoryMove.Time.Value;
+        if (memoryMove.LastMove.HasValue)
+            document[RoomDocumentFields.RoomObject.MemoryMoveFields.LastMove] = memoryMove.LastMove.Value;
+
+        var result = document.ElementCount == 0 ? null : document;
+        return result;
     }
 
     private static RoomSpawnSpawningSnapshot? MapSpawning(BsonValue? spawning)
@@ -784,6 +832,24 @@ internal static class RoomContractMapper
         }
         else if (patch.ClearSpawning) {
             document[RoomDocumentFields.RoomObject.Spawning] = BsonNull.Value;
+        }
+
+        if (patch.MemorySourceId is not null)
+            document[RoomDocumentFields.RoomObject.MemorySourceId] = patch.MemorySourceId;
+
+        if (patch.MemoryMove is not null) {
+            var memoryMoveDoc = new BsonDocument();
+            if (patch.MemoryMove.Dest is not null)
+                memoryMoveDoc[RoomDocumentFields.RoomObject.MemoryMoveFields.Dest] = patch.MemoryMove.Dest;
+            if (patch.MemoryMove.Path is not null)
+                memoryMoveDoc[RoomDocumentFields.RoomObject.MemoryMoveFields.Path] = patch.MemoryMove.Path;
+            if (patch.MemoryMove.Time.HasValue)
+                memoryMoveDoc[RoomDocumentFields.RoomObject.MemoryMoveFields.Time] = patch.MemoryMove.Time.Value;
+            if (patch.MemoryMove.LastMove.HasValue)
+                memoryMoveDoc[RoomDocumentFields.RoomObject.MemoryMoveFields.LastMove] = patch.MemoryMove.LastMove.Value;
+
+            if (memoryMoveDoc.ElementCount > 0)
+                document[RoomDocumentFields.RoomObject.MemoryMove] = memoryMoveDoc;
         }
 
         return document;

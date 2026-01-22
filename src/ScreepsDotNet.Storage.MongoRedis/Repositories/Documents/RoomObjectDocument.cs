@@ -191,6 +191,12 @@ public sealed class RoomObjectDocument
 
     [BsonElement(RoomDocumentFields.RoomObject.Send)]
     public BsonDocument? Send { get; set; }
+
+    [BsonElement(RoomDocumentFields.RoomObject.MemorySourceId)]
+    public string? MemorySourceId { get; set; }
+
+    [BsonElement(RoomDocumentFields.RoomObject.MemoryMove)]
+    public BsonDocument? MemoryMove { get; set; }
 }
 
 [BsonIgnoreExtraElements]

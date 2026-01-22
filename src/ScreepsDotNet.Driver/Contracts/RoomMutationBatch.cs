@@ -51,6 +51,8 @@ public sealed record RoomObjectPatchPayload : IRoomObjectPatchPayload
     public int? SafeModeAvailable { get; init; }
     public IReadOnlyDictionary<PowerTypes, PowerEffectSnapshot>? Effects { get; init; }
     public IReadOnlyDictionary<PowerTypes, PowerCreepPowerSnapshot>? Powers { get; init; }
+    public string? MemorySourceId { get; init; }
+    public KeeperMoveMemory? MemoryMove { get; init; }
 
     public bool HasChanges =>
         Hits.HasValue ||
@@ -83,7 +85,9 @@ public sealed record RoomObjectPatchPayload : IRoomObjectPatchPayload
         SafeMode.HasValue ||
         SafeModeAvailable.HasValue ||
         (Effects is { Count: > 0 }) ||
-        (Powers is { Count: > 0 });
+        (Powers is { Count: > 0 }) ||
+        MemorySourceId is not null ||
+        MemoryMove is not null;
 }
 
 public sealed record RoomObjectPositionPatch(int? X = null, int? Y = null)

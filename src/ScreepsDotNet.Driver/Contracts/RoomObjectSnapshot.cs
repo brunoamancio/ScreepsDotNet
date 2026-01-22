@@ -61,7 +61,9 @@ public sealed record RoomObjectSnapshot(
     int? SafeModeAvailable = null,
     RoomPortalDestinationSnapshot? PortalDestination = null,
     TerminalSendSnapshot? Send = null,
-    IReadOnlyDictionary<PowerTypes, PowerCreepPowerSnapshot>? Powers = null)
+    IReadOnlyDictionary<PowerTypes, PowerCreepPowerSnapshot>? Powers = null,
+    string? MemorySourceId = null,
+    KeeperMoveMemory? MemoryMove = null)
 {
     public int? MoveBodyParts => GetStoreValue(IntentKeys.Move);
     public int? ControllerDowngradeTimer => GetStoreValue(StoreKeys.DowngradeTimer);
@@ -101,3 +103,9 @@ public sealed record RoomSpawnSpawningSnapshot(
 public sealed record CreepBodyPartSnapshot(BodyPartType Type, int Hits, string? Boost);
 
 public sealed record RoomPortalDestinationSnapshot(string RoomName, int X, int Y, string? Shard);
+
+public sealed record KeeperMoveMemory(
+    string? Dest,
+    string? Path,
+    int? Time,
+    int? LastMove);

@@ -55,6 +55,8 @@ public static class RoomDocumentFields
         public const string ProgressTotal = "progressTotal";
         public const string Reservation = "reservation";
         public const string Effects = "effects";
+        public const string MemorySourceId = "memory_sourceId";
+        public const string MemoryMove = "memory_move";
 
         public static class ActionLogFields
         {
@@ -140,6 +142,14 @@ public static class RoomDocumentFields
             public const string ResourceType = "resourceType";
             public const string Amount = "amount";
             public const string Description = "description";
+        }
+
+        public static class MemoryMoveFields
+        {
+            public const string Dest = "dest";
+            public const string Path = "path";
+            public const string Time = "time";
+            public const string LastMove = "lastMove";
         }
     }
 
