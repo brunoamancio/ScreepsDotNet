@@ -1,19 +1,15 @@
 namespace ScreepsDotNet.Engine.Tests.Parity.Integration;
 
+using ScreepsDotNet.TestCommon.Containers;
 using Testcontainers.MongoDb;
 
 /// <summary>
 /// Test fixture that provides MongoDB container for parity testing with Node.js harness.
-/// Uses Testcontainers to automatically start/stop MongoDB.
+/// Uses centralized <see cref="MongoDbTestContainerBuilder"/> for consistency across test projects.
 /// </summary>
 public sealed class MongoDbParityFixture : IAsyncLifetime
 {
-    private const string MongoImage = "mongo:7.0";
-    private const int MongoPort = 27017;
-
-    private readonly MongoDbContainer _mongoContainer = new MongoDbBuilder(MongoImage)
-        .WithPortBinding(MongoPort, MongoPort) // Fixed port so Node.js harness can connect
-        .Build();
+    private readonly MongoDbContainer _mongoContainer = MongoDbTestContainerBuilder.CreateForParityTests();
 
     public string ConnectionString { get; private set; } = string.Empty;
 

@@ -15,10 +15,6 @@ using ScreepsDotNet.Engine.Tests.Parity.Infrastructure;
 [Collection(nameof(Integration.MongoDbParityCollection))]
 public sealed class EndToEndParityTests(Integration.MongoDbParityFixture mongoFixture, Integration.ParityTestPrerequisites prerequisites)
 {
-    // Fixtures injected by xUnit for setup/teardown (suppress unused warnings)
-    private readonly Integration.MongoDbParityFixture _ = mongoFixture;
-    private readonly Integration.ParityTestPrerequisites __ = prerequisites;
-
     [Fact]
     public async Task Harvest_Basic_DotNetProducesMutations()
     {
@@ -69,7 +65,7 @@ public sealed class EndToEndParityTests(Integration.MongoDbParityFixture mongoFi
 
         // Act - Execute through both engines
         var dotnetOutput = await ParityTestRunner.RunAsync(state, TestContext.Current.CancellationToken);
-        var nodejsOutput = await NodeJsHarnessRunner.RunFixtureAsync(fixturePath, TestContext.Current.CancellationToken);
+        var nodejsOutput = await NodeJsHarnessRunner.RunFixtureAsync(fixturePath, prerequisites.HarnessDirectory, mongoFixture.ConnectionString, TestContext.Current.CancellationToken);
 
         // Assert - Compare mutations field-by-field
         var comparison = Comparison.ParityComparator.Compare(dotnetOutput, nodejsOutput);
@@ -138,7 +134,7 @@ public sealed class EndToEndParityTests(Integration.MongoDbParityFixture mongoFi
         var state = await JsonFixtureLoader.LoadFromFileAsync(fixturePath, TestContext.Current.CancellationToken);
 
         var dotnetOutput = await ParityTestRunner.RunAsync(state, TestContext.Current.CancellationToken);
-        var nodejsOutput = await NodeJsHarnessRunner.RunFixtureAsync(fixturePath, TestContext.Current.CancellationToken);
+        var nodejsOutput = await NodeJsHarnessRunner.RunFixtureAsync(fixturePath, prerequisites.HarnessDirectory, mongoFixture.ConnectionString, TestContext.Current.CancellationToken);
 
         var comparison = Comparison.ParityComparator.Compare(dotnetOutput, nodejsOutput);
         if (comparison.HasDivergences) {
@@ -153,7 +149,7 @@ public sealed class EndToEndParityTests(Integration.MongoDbParityFixture mongoFi
         var state = await JsonFixtureLoader.LoadFromFileAsync(fixturePath, TestContext.Current.CancellationToken);
 
         var dotnetOutput = await ParityTestRunner.RunAsync(state, TestContext.Current.CancellationToken);
-        var nodejsOutput = await NodeJsHarnessRunner.RunFixtureAsync(fixturePath, TestContext.Current.CancellationToken);
+        var nodejsOutput = await NodeJsHarnessRunner.RunFixtureAsync(fixturePath, prerequisites.HarnessDirectory, mongoFixture.ConnectionString, TestContext.Current.CancellationToken);
 
         var comparison = Comparison.ParityComparator.Compare(dotnetOutput, nodejsOutput);
         if (comparison.HasDivergences) {
@@ -168,7 +164,7 @@ public sealed class EndToEndParityTests(Integration.MongoDbParityFixture mongoFi
         var state = await JsonFixtureLoader.LoadFromFileAsync(fixturePath, TestContext.Current.CancellationToken);
 
         var dotnetOutput = await ParityTestRunner.RunAsync(state, TestContext.Current.CancellationToken);
-        var nodejsOutput = await NodeJsHarnessRunner.RunFixtureAsync(fixturePath, TestContext.Current.CancellationToken);
+        var nodejsOutput = await NodeJsHarnessRunner.RunFixtureAsync(fixturePath, prerequisites.HarnessDirectory, mongoFixture.ConnectionString, TestContext.Current.CancellationToken);
 
         var comparison = Comparison.ParityComparator.Compare(dotnetOutput, nodejsOutput);
         if (comparison.HasDivergences) {

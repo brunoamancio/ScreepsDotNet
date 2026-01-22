@@ -9,17 +9,15 @@ using System.Text.Json;
 /// </summary>
 public static class NodeJsHarnessRunner
 {
-    private static readonly string HarnessPath = Path.Combine("..", "..", "..", "..", "..", "..", "tools", "parity-harness", "engine");
-
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         PropertyNameCaseInsensitive = true,
         AllowTrailingCommas = true
     };
 
-    public static async Task<JsonDocument> RunFixtureAsync(string fixturePath, CancellationToken cancellationToken = default)
+    public static async Task<JsonDocument> RunFixtureAsync(string fixturePath, string harnessDirectory, string mongoConnectionString, CancellationToken cancellationToken = default)
     {
-        var absoluteHarnessPath = Path.GetFullPath(HarnessPath);
+        var absoluteHarnessPath = Path.GetFullPath(harnessDirectory);
         var absoluteFixturePath = Path.GetFullPath(fixturePath);
 
         // Check if harness exists
@@ -33,7 +31,7 @@ public static class NodeJsHarnessRunner
         var startInfo = new ProcessStartInfo
         {
             FileName = "node",
-            Arguments = $"test-runner/run-fixture.js \"{absoluteFixturePath}\"",
+            Arguments = $"test-runner/run-fixture.js \"{absoluteFixturePath}\" --mongo \"{mongoConnectionString}\"",
             WorkingDirectory = absoluteHarnessPath,
             RedirectStandardOutput = true,
             RedirectStandardError = true,
@@ -75,14 +73,27 @@ public static class NodeJsHarnessRunner
             throw new InvalidOperationException("Node.js harness produced no output");
         }
 
+        // Extract JSON from stdout (between first '{' and last '}')
+        // Node.js harness outputs debug messages mixed with JSON
+        var firstBrace = output.IndexOf('{');
+        var lastBrace = output.LastIndexOf('}');
+
+        if (firstBrace == -1 || lastBrace == -1 || firstBrace >= lastBrace) {
+            throw new InvalidOperationException(
+                $"Failed to extract JSON from Node.js output (no JSON object found)\n" +
+                $"Output: {output}");
+        }
+
+        var jsonOutput = output.Substring(firstBrace, lastBrace - firstBrace + 1);
+
         // Parse and return as JsonDocument for parity comparison
         try {
-            return JsonDocument.Parse(output);
+            return JsonDocument.Parse(jsonOutput);
         }
         catch (JsonException ex) {
             throw new InvalidOperationException(
                 $"Failed to parse Node.js output as JSON: {ex.Message}\n" +
-                $"Output: {output}",
+                $"Extracted JSON: {jsonOutput}",
                 ex);
         }
     }

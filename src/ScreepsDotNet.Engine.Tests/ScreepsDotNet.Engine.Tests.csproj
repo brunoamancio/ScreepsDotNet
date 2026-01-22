@@ -18,6 +18,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\ScreepsDotNet.Engine\ScreepsDotNet.Engine.csproj" />
+    <ProjectReference Include="..\ScreepsDotNet.TestCommon\ScreepsDotNet.TestCommon.csproj" />
   </ItemGroup>
 
   <ItemGroup>

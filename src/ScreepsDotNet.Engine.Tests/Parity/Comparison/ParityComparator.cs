@@ -1,6 +1,7 @@
 namespace ScreepsDotNet.Engine.Tests.Parity.Comparison;
 
 using System.Text.Json;
+using ScreepsDotNet.Driver.Contracts;
 using ScreepsDotNet.Engine.Tests.Parity.Infrastructure;
 
 /// <summary>
@@ -47,8 +48,11 @@ public static class ParityComparator
                 }
             }
 
-            var dotnetPatchMap = dotnetOutput.MutationWriter.Patches
-                .ToDictionary(p => p.ObjectId, p => p.Payload, StringComparer.Ordinal);
+            // Build .NET patch map manually to handle duplicates (last write wins)
+            var dotnetPatchMap = new Dictionary<string, RoomObjectPatchPayload>(StringComparer.Ordinal);
+            foreach (var (objectId, payload) in dotnetOutput.MutationWriter.Patches) {
+                dotnetPatchMap[objectId] = payload;
+            }
 
             // Check for patches in .NET but not in Node.js
             foreach (var (objectId, _) in dotnetPatchMap) {

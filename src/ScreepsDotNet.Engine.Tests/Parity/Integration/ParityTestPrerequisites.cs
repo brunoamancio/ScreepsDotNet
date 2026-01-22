@@ -87,7 +87,7 @@ public sealed partial class ParityTestPrerequisites : IAsyncLifetime
                 StartInfo = new ProcessStartInfo
                 {
                     FileName = isWindows ? "nvm" : "bash",
-                    Arguments = isWindows ? "version" : "-c \"command -v nvm\"",
+                    Arguments = isWindows ? "version" : "-c \"source ~/.nvm/nvm.sh 2>/dev/null || source ~/.config/nvm/nvm.sh 2>/dev/null; command -v nvm\"",
                     RedirectStandardOutput = true,
                     RedirectStandardError = true,
                     UseShellExecute = false,
@@ -162,31 +162,28 @@ public sealed partial class ParityTestPrerequisites : IAsyncLifetime
                 $"Available versions:\n{nvmListOutput.Trim()}");
         }
 
-        // Activate the suitable version
+        // Activate the suitable version by modifying PATH
         Console.WriteLine($"Using Node.js {suitableVersionString} via nvm...");
 
-        var useProcess = new Process
-        {
-            StartInfo = new ProcessStartInfo
-            {
-                FileName = isWindows ? "nvm" : "bash",
-                Arguments = isWindows ? $"use {suitableVersionString}" : $"-c \"source ~/.nvm/nvm.sh 2>/dev/null || source ~/.config/nvm/nvm.sh 2>/dev/null; nvm use {suitableVersionString}\"",
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-                CreateNoWindow = true
-            }
-        };
+        // Construct path to nvm Node.js bin directory
+        var nvmNodePath = isWindows
+            ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "AppData", "Roaming", "nvm", $"v{suitableVersionString}")
+            : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".nvm", "versions", "node", $"v{suitableVersionString}", "bin");
 
-        useProcess.Start();
-        await useProcess.StandardOutput.ReadToEndAsync();
-        await useProcess.WaitForExitAsync();
-
-        if (useProcess.ExitCode != 0) {
+        if (!Directory.Exists(nvmNodePath)) {
             throw new InvalidOperationException(
-                $"Failed to activate Node.js {suitableVersionString} via nvm.\n" +
-                $"Try manually: {(isWindows ? $"nvm use {suitableVersionString}" : $"nvm use {suitableVersionString}")}");
+                $"nvm Node.js directory not found: {nvmNodePath}\n" +
+                $"Expected structure:\n" +
+                $"  Linux/Mac: ~/.nvm/versions/node/v{suitableVersionString}/bin\n" +
+                $"  Windows: %USERPROFILE%\\AppData\\Roaming\\nvm\\v{suitableVersionString}");
         }
+
+        // Prepend nvm Node.js path to PATH environment variable
+        var currentPath = Environment.GetEnvironmentVariable("PATH") ?? string.Empty;
+        var newPath = $"{nvmNodePath}{Path.PathSeparator}{currentPath}";
+        Environment.SetEnvironmentVariable("PATH", newPath);
+
+        Console.WriteLine($"Set PATH to use Node.js from: {nvmNodePath}");
 
         // Verify node is now available with correct version
         await EnsureNodeViaDirectCheck();

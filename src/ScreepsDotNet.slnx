@@ -8,8 +8,9 @@
   </Folder>
   <Project Path="ScreepsDotNet.Common/ScreepsDotNet.Common.csproj" />
   <Project Path="ScreepsDotNet.Driver/ScreepsDotNet.Driver.csproj" />
-  <Project Path="ScreepsDotNet.Driver.Tests/ScreepsDotNet.Driver.Tests.csproj"/>
+  <Project Path="ScreepsDotNet.Driver.Tests/ScreepsDotNet.Driver.Tests.csproj" />
   <Project Path="ScreepsDotNet.Engine/ScreepsDotNet.Engine.csproj" />
   <Project Path="ScreepsDotNet.Engine.Tests/ScreepsDotNet.Engine.Tests.csproj" />
   <Project Path="ScreepsDotNet.Storage.MongoRedis/ScreepsDotNet.Storage.MongoRedis.csproj" />
+  <Project Path="ScreepsDotNet.TestCommon/ScreepsDotNet.TestCommon.csproj" />
 </Solution>

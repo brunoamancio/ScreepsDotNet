@@ -8,7 +8,11 @@
     "test:engine": "cd engine/test-runner && node run-fixture.js",
     "test:all": "npm run test:engine"
   },
-  "keywords": ["screeps", "parity", "testing"],
+  "keywords": [
+    "screeps",
+    "parity",
+    "testing"
+  ],
   "license": "MIT",
   "dependencies": {
     "mongodb": "^4.17.0"
