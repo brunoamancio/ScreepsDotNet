@@ -11,6 +11,7 @@ using ScreepsDotNet.Backend.Http.Tests.TestSupport;
 using ScreepsDotNet.Common.Constants;
 
 [Collection(IntegrationTestSuiteDefinition.Name)]
+[Trait("Category", "Integration")]
 public sealed class IntentEndpointsIntegrationTests(IntegrationTestHarness harness) : IAsyncLifetime
 {
     private readonly TestHttpClient _client = new(harness.Factory.CreateClient());

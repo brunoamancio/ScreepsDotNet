@@ -8,6 +8,7 @@ using ScreepsDotNet.Backend.Http.Tests.Web;
 
 namespace ScreepsDotNet.Backend.Http.Tests.Endpoints;
 
+[Trait("Category", "Integration")]
 public sealed class WorldEndpointTests(TestWebApplicationFactory factory) : IClassFixture<TestWebApplicationFactory>
 {
     private const string RoomQuery = "?room=W1N1";

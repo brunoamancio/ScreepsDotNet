@@ -11,6 +11,7 @@ using ScreepsDotNet.Backend.Http.Routing;
 using ScreepsDotNet.Backend.Http.Tests.TestSupport;
 
 [Collection(IntegrationTestSuiteDefinition.Name)]
+[Trait("Category", "Integration")]
 public sealed class InvaderEndpointsIntegrationTests(IntegrationTestHarness harness) : IAsyncLifetime
 {
     private readonly TestHttpClient _client = new(harness.Factory.CreateClient());

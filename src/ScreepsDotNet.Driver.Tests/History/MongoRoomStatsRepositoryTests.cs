@@ -7,6 +7,7 @@ using ScreepsDotNet.Storage.MongoRedis.Repositories.Documents;
 
 namespace ScreepsDotNet.Driver.Tests.History;
 
+[Trait("Category", "Integration")]
 public sealed class MongoRoomStatsRepositoryTests(MongoRedisFixture fixture) : IClassFixture<MongoRedisFixture>
 {
     [Fact]

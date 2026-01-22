@@ -6,6 +6,7 @@ using ScreepsDotNet.Backend.Http.Tests.Web;
 
 namespace ScreepsDotNet.Backend.Http.Tests.Endpoints;
 
+[Trait("Category", "Integration")]
 public class AuthEndpointTests(TestWebApplicationFactory factory) : IClassFixture<TestWebApplicationFactory>
 {
     private const string InvalidTokenValue = "invalid";

@@ -9,6 +9,7 @@ using ScreepsDotNet.Backend.Core.Seeding;
 using ScreepsDotNet.Storage.MongoRedis.Repositories.Documents;
 using ScreepsDotNet.Storage.MongoRedis.Services;
 
+[Trait("Category", "Integration")]
 public sealed class InvaderCommandsIntegrationTests(MongoMapIntegrationFixture fixture) : IClassFixture<MongoMapIntegrationFixture>
 {
     [Fact]

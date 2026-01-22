@@ -59,9 +59,7 @@ public static class JsonFixtureLoader
 
         var storeCapacityResource = new Dictionary<string, int>(StringComparer.Ordinal);
 
-        var body = obj.Body is not null
-            ? obj.Body.Select(b => ConvertBodyPart(b)).ToList()
-            : new List<CreepBodyPartSnapshot>();
+        var body = obj.Body is not null ? obj.Body.Select(ConvertBodyPart).ToList() : [];
 
         var roomObject = new RoomObjectSnapshot(
             Id: obj.Id,

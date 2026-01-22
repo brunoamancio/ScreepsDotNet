@@ -8,6 +8,7 @@ using StackExchange.Redis;
 
 namespace ScreepsDotNet.Driver.Tests.Notifications;
 
+[Trait("Category", "Integration")]
 public sealed class NotificationServiceTests(MongoRedisFixture fixture) : IClassFixture<MongoRedisFixture>
 {
     private NotificationService CreateService() => new(fixture.MongoProvider, fixture.RedisProvider);

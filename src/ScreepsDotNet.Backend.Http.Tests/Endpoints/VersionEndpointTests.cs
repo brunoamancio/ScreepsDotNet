@@ -5,6 +5,8 @@ using ScreepsDotNet.Backend.Http.Tests.Web;
 
 namespace ScreepsDotNet.Backend.Http.Tests.Endpoints;
 
+[Trait("Category", "Integration")]
+[Trait("Category", "Smoke")]
 public class VersionEndpointTests(TestWebApplicationFactory factory) : IClassFixture<TestWebApplicationFactory>
 {
     private readonly TestHttpClient _client = new(factory.CreateClient());

@@ -8,6 +8,7 @@ using ScreepsDotNet.Backend.Core.Services;
 using ScreepsDotNet.Storage.MongoRedis.Repositories;
 using ScreepsDotNet.Storage.MongoRedis.Services;
 
+[Trait("Category", "Integration")]
 public sealed class StrongholdCommandsIntegrationTests(MongoMapIntegrationFixture fixture) : IClassFixture<MongoMapIntegrationFixture>
 {
     [Fact]

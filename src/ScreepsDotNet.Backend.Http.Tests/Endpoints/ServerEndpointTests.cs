@@ -5,6 +5,8 @@ using ScreepsDotNet.Backend.Http.Routing;
 using ScreepsDotNet.Backend.Http.Tests.TestSupport;
 using ScreepsDotNet.Backend.Http.Tests.Web;
 
+[Trait("Category", "Integration")]
+[Trait("Category", "Smoke")]
 public class ServerEndpointTests(TestWebApplicationFactory factory) : IClassFixture<TestWebApplicationFactory>
 {
     private readonly TestHttpClient _client = new(factory.CreateClient());

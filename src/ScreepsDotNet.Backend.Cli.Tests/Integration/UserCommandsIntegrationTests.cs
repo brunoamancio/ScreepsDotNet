@@ -9,6 +9,7 @@ using ScreepsDotNet.Storage.MongoRedis.Repositories;
 using ScreepsDotNet.Storage.MongoRedis.Repositories.Documents;
 using Spectre.Console;
 
+[Trait("Category", "Integration")]
 public sealed class UserCommandsIntegrationTests(MongoMapIntegrationFixture fixture) : IClassFixture<MongoMapIntegrationFixture>
 {
     [Fact]

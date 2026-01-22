@@ -6,6 +6,7 @@ using ScreepsDotNet.Backend.Cli.Formatting;
 using ScreepsDotNet.Storage.MongoRedis.Adapters;
 using Spectre.Console;
 
+[Trait("Category", "Integration")]
 public sealed class StorageCommandsIntegrationTests(SystemCommandsIntegrationFixture fixture) : IClassFixture<SystemCommandsIntegrationFixture>
 {
     [Fact]

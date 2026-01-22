@@ -11,6 +11,7 @@ using ScreepsDotNet.Backend.Http.Tests.TestSupport;
 using StackExchange.Redis;
 
 [Collection(IntegrationTestSuiteDefinition.Name)]
+[Trait("Category", "Integration")]
 public sealed class SystemEndpointsIntegrationTests(IntegrationTestHarness harness) : IAsyncLifetime
 {
     private readonly TestHttpClient _client = new(harness.Factory.CreateClient());

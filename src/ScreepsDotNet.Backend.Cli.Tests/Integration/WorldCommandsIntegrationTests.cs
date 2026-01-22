@@ -8,6 +8,7 @@ using ScreepsDotNet.Backend.Core.Seeding;
 using ScreepsDotNet.Storage.MongoRedis.Repositories;
 using Spectre.Console;
 
+[Trait("Category", "Integration")]
 public sealed class WorldCommandsIntegrationTests(MongoMapIntegrationFixture fixture) : IClassFixture<MongoMapIntegrationFixture>
 {
     [Fact]

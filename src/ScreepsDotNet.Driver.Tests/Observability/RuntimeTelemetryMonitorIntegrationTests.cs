@@ -13,6 +13,7 @@ using ScreepsDotNet.Driver.Tests.TestSupport;
 
 namespace ScreepsDotNet.Driver.Tests.Observability;
 
+[Trait("Category", "Integration")]
 public sealed class RuntimeTelemetryMonitorIntegrationTests
 {
     [Fact]

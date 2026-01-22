@@ -6,6 +6,7 @@ using ScreepsDotNet.Driver.Services.Pathfinding;
 
 namespace ScreepsDotNet.Driver.Tests.Pathfinding;
 
+[Trait("Category", "Integration")]
 public sealed class PathfinderNativeIntegrationTests
 {
     private const int RoomArea = 50 * 50;

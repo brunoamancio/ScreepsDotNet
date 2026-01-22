@@ -10,6 +10,7 @@ using Spectre.Console.Cli;
 using StackExchange.Redis;
 using SystemControlConstants = Core.Constants.SystemControlConstants;
 
+[Trait("Category", "Integration")]
 public sealed class SystemCommandsIntegrationTests(SystemCommandsIntegrationFixture fixture) : IClassFixture<SystemCommandsIntegrationFixture>
 {
     [Fact]

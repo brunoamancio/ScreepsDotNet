@@ -160,11 +160,12 @@ This document tracks the Engine subsystem roadmap and implementation status. For
 - ✅ **Phase 5 Integration** (2026-01-22):
   - ✅ NodeJsOutputSchema: Strongly-typed schema for Node.js harness JSON output
   - ✅ NodeJsHarnessRunner: Executes Node.js harness and returns JsonDocument (1 test)
-  - ✅ EndToEndParityTests: 3 tests demonstrating .NET Engine execution
+  - ✅ EndToEndParityTests: 3 tests demonstrating .NET Engine execution + 4 manual integration tests
   - ✅ ParityFixtureBuilder enhanced: WithController() now supports progressTotal parameter
   - ✅ **Comparison infrastructure wired**: NodeJsHarnessRunner → ParityComparator.Compare() integration complete
   - ✅ Field-by-field comparison: Existing ParityComparator (5 tests) validates comparison logic
-  - 📋 MongoDB + Node.js harness setup pending (external dependencies for live parity tests)
+  - ✅ **MongoDB integration implemented**: Manual integration tests with setup guide (`mongodb-parity-setup.md`)
+  - ✅ **Full parity flow operational**: Load JSON fixture → Execute both engines → Compare → Report divergences
   - 📋 CI/CD automation pending (Phase 6)
 - ✅ **Tests: 44 parity + infrastructure tests passing** (5 comparator + 15 mechanics + 6 edge cases + 7 validation + 7 JsonFixtureLoader + 1 NodeJsHarnessRunner + 3 EndToEnd)
 

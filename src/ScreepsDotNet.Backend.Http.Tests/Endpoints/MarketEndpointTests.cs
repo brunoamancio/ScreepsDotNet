@@ -7,6 +7,7 @@ using ScreepsDotNet.Common.Constants;
 
 namespace ScreepsDotNet.Backend.Http.Tests.Endpoints;
 
+[Trait("Category", "Integration")]
 public sealed class MarketEndpointTests(TestWebApplicationFactory factory) : IClassFixture<TestWebApplicationFactory>
 {
     private static readonly string ResourceTypeQuery = $"?resourceType={ResourceTypes.Energy}";

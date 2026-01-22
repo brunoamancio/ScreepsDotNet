@@ -10,6 +10,7 @@ using ScreepsDotNet.Backend.Http.Tests.TestSupport;
 using ScreepsDotNet.Storage.MongoRedis.Repositories.Documents;
 
 [Collection(IntegrationTestSuiteDefinition.Name)]
+[Trait("Category", "Integration")]
 public sealed class StructureEndpointsIntegrationTests(IntegrationTestHarness harness) : IAsyncLifetime
 {
     private readonly TestHttpClient _client = new(harness.Factory.CreateClient());

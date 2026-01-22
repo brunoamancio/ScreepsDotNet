@@ -185,13 +185,85 @@ dotnet run --project src/ScreepsDotNet.Backend.Http/ScreepsDotNet.Backend.Http.c
 
 # Before committing
 cd src && dotnet format style --exclude-diagnostics IDE0051 IDE0052 IDE0060 ScreepsDotNet.slnx
-cd src && dotnet test ScreepsDotNet.slnx
+cd src && dotnet test --filter "Category!=Parity"  # Skip parity tests (faster)
+# Or run all tests: cd src && dotnet test ScreepsDotNet.slnx
 git status  # Verify ScreepsNodeJs/ is not included
 ```
 
 ### Manual Testing
 **HTTP routes:** Use `.http` files in `src/ScreepsDotNet.Backend.Http/`
 **CLI commands:** `./src/cli.sh storage list-users` (Linux/Mac) or `pwsh ./src/cli.ps1 storage list-users` (Windows)
+
+### Parity Testing
+**Quick Start:**
+```bash
+# Run parity tests comparing .NET Engine vs Node.js engine
+dotnet test --filter Category=Parity
+
+# First run automatically:
+# - Detects nvm (if installed), activates Node.js 10.13.0-12.x version
+# - Checks Node.js 10.13.0 to 12.x ONLY (rejects Node 13+)
+# - Checks Docker running (fails if not running)
+# - Clones official Screeps repos (30-60s)
+# - Runs npm install (20-30s)
+# - Starts MongoDB via Testcontainers
+# - Runs 7 parity tests
+
+# Regular tests (skip parity for speed)
+dotnet test --filter "Category!=Parity"  # 533 tests in ~250ms
+```
+
+**Prerequisites (install once):**
+- **Node.js 10.13.0 to 12.x** - Download from https://nodejs.org/dist/latest-v12.x/
+  - ⚠️ **Node 13+ NOT supported** - Screeps engine is incompatible
+  - 💡 Recommended: Use nvm - `nvm install 12.22.12`
+- **Docker** - Download from https://www.docker.com/get-started
+
+**nvm Support:**
+- Tests auto-detect nvm (Linux/Mac/Windows)
+- Tests find highest Node version in range 10.13.0-12.x
+- Tests automatically activate via `nvm use`
+- Tests reject Node 13+ with helpful error
+
+**Documentation:** `docs/engine/mongodb-parity-setup.md`
+
+### Test Categories
+
+Tests are organized by category using `[Trait("Category", "...")]` attributes:
+
+| Category | Count | Description | Run Command |
+|----------|-------|-------------|-------------|
+| **Unit** | 637 | Pure unit tests (no external dependencies, fast) | `dotnet test --filter "Category!=Integration&Category!=Parity"` |
+| **Integration** | 240 | Tests using Testcontainers (MongoDB, Redis, WebApplicationFactory) | `dotnet test --filter Category=Integration` |
+| **Smoke** | 3 | Quick smoke tests (health, server info, version) | `dotnet test --filter Category=Smoke` |
+| **Parity** | 7 | Parity tests comparing .NET vs Node.js engine | `dotnet test --filter Category=Parity` |
+
+**Common workflows:**
+```bash
+# Fast feedback loop - unit tests only (~250ms)
+dotnet test --filter "Category!=Integration&Category!=Parity"
+
+# Integration tests (~5-10s with Testcontainers)
+dotnet test --filter Category=Integration
+
+# Quick smoke test (~1-2s)
+dotnet test --filter Category=Smoke
+
+# Parity tests (~30-60s first run, requires Node.js 10.13.0-12.x)
+dotnet test --filter Category=Parity
+
+# All tests except parity (~5-10s)
+dotnet test --filter "Category!=Parity"
+
+# All tests including parity (~35-70s)
+dotnet test
+```
+
+**Category Guidelines:**
+- `Unit` - Implicit for tests without categories, no external dependencies
+- `Integration` - Tests that use `IClassFixture<>` with Testcontainers
+- `Smoke` - Subset of Integration tests for basic sanity checks (health, version, server info)
+- `Parity` - Engine parity tests (also tagged as Integration)
 
 ### Debugging
 **HTTP backend:** Breakpoint in `src/ScreepsDotNet.Backend.Http/Endpoints/` → F5 → Send request via `.http` file
