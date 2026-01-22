@@ -1,0 +1,14 @@
+# E7 Parity Testing - Cloned official Screeps repositories
+# These are external git repos and should not be committed to our repo
+screeps-modules/
+
+# Node.js dependencies
+node_modules/
+
+# Test outputs
+*.node.json
+*.dotnet.json
+
+# Logs
+*.log
+npm-debug.log*

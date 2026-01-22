@@ -1,0 +1,20 @@
+{
+  "name": "screeps-parity-harness",
+  "version": "1.0.0",
+  "description": "Multi-layer parity testing harness for ScreepsDotNet (Engine, Driver, Backend, Common)",
+  "private": true,
+  "main": "engine/test-runner/run-fixture.js",
+  "scripts": {
+    "clone:engine": "cd engine/scripts && bash clone-repos.sh",
+    "test:engine": "node engine/test-runner/run-fixture.js"
+  },
+  "engines": {
+    "node": ">=10.13.0"
+  },
+  "dependencies": {
+    "mongodb": "^4.17.2"
+  },
+  "devDependencies": {},
+  "author": "ScreepsDotNet Contributors",
+  "license": "MIT"
+}

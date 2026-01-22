@@ -1,0 +1,24 @@
+{
+  "engine": {
+    "pinningEnabled": false,
+    "pins": {
+      "engine": "master",
+      "driver": "master",
+      "common": "master"
+    },
+    "lastValidated": "2026-01-22",
+    "notes": "Engine parity harness. Using latest repos. Update pins after validating upstream changes."
+  },
+  "driver": {
+    "enabled": false,
+    "notes": "Driver parity harness not yet implemented."
+  },
+  "backend": {
+    "enabled": false,
+    "notes": "Backend parity harness not yet implemented."
+  },
+  "common": {
+    "enabled": false,
+    "notes": "Common parity harness not yet implemented."
+  }
+}

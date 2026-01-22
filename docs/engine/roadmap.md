@@ -134,7 +134,7 @@ This document tracks the Engine subsystem roadmap and implementation status. For
 
 ## E7: Compatibility & Parity Validation 📋
 
-**Status:** Not Started
+**Status:** 🚧 In Progress (Phase 1/6 complete)
 
 **Planned Deliverables:**
 - Lockstep testing framework (run same fixture through both engines)
@@ -149,9 +149,32 @@ This document tracks the Engine subsystem roadmap and implementation status. For
 - ✅ E4 simulation kernel complete
 - ✅ E5 all phases complete (user stats tracking, power effects, keeper lairs, nuker operations)
 - ✅ E6 orchestration complete
+- ✅ E8 observability complete
 - ✅ Legacy Node.js engine repo access
 
-**Details:** See `e2.md` for parity-critical feature status, `e3.md` for deferred E3 parity validation
+**Features Ready for Parity Testing:**
+- ✅ E1: All game mechanics catalogued
+- ✅ E2: All 11 intent handler families (240 tests) - movement, harvest, build, combat, transfer, controller, lab, power, spawn, factory, terminal, tower, observer
+- ✅ E3: Intent validation (range, resource, permission, state, schema)
+- ✅ E4: Simulation kernel (passive regen, decay, TTL, fatigue, cooldowns)
+- ✅ E5: Global systems (GCL updates, power processing, keeper lair spawning, nuke landing)
+- ✅ E6: Engine orchestration (IEngineHost integration)
+- ✅ E8: Observability (telemetry, diagnostics)
+
+**Features NOT Ready for Parity Testing:**
+- ❌ **E9: NPC AI Logic** - Keeper/invader AI pathfinding, targeting, combat behavior (not implemented)
+- ⚠️ **E2 Deferred (Non-Parity-Critical):**
+  - Event log emissions (EVENT_TRANSFER, EVENT_UPGRADE_CONTROLLER, etc.) - visualization only
+  - Level-up notifications - UX notifications on controller level-up
+  - Stats recording - power processed, resources transferred (analytics only)
+- ⚠️ **E8.1 Enhancements (Future):**
+  - Real telemetry aggregation (stub services in place)
+  - Real room state provider (stub services in place)
+  - Performance profiling hooks (not implemented)
+
+**Impact:** E7 parity tests will cover ~95% of gameplay mechanics. E9 AI and E2 deferred features will be added to parity suite when implemented.
+
+**Details:** See `e7.md` for implementation plan, `e2.md` for deferred features, `e9.md` for AI logic plan
 
 ---
 
