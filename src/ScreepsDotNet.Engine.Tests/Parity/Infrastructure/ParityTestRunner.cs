@@ -106,6 +106,9 @@ public static class ParityTestRunner
             // Keeper Lair ✅
             new KeeperLairStep(),
 
+            // Keeper AI ✅
+            new KeeperAiStep(),
+
             // Nuke Landing ✅
             new NukeLandingStep(),
 
