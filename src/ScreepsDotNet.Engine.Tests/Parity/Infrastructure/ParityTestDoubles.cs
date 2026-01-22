@@ -21,14 +21,9 @@ internal static class ParityTestDoubles
     /// </summary>
     internal sealed class StubCreepDeathProcessor : ICreepDeathProcessor
     {
-        public void Process(RoomProcessorContext context, RoomObjectSnapshot creep, CreepDeathOptions options, IDictionary<string, int> energyLedger)
-        {
+        public void Process(RoomProcessorContext context, RoomObjectSnapshot creep, CreepDeathOptions options, IDictionary<string, int> energyLedger) =>
             // Minimal death processing: just remove the creep
-            context.MutationWriter.Remove(creep.Id);
-
-            // No tombstone creation, no energy drops, no stats tracking
-            // This is sufficient for parity tests that don't focus on death mechanics
-        }
+            context.MutationWriter.Remove(creep.Id);// No tombstone creation, no energy drops, no stats tracking// This is sufficient for parity tests that don't focus on death mechanics
     }
 
     /// <summary>
