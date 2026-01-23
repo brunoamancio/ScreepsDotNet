@@ -1,0 +1,114 @@
+name: Update Parity Pins
+
+on:
+  schedule:
+    - cron: '0 3 * * 1'  # Every Monday at 3 AM UTC
+  workflow_dispatch:
+
+jobs:
+  check-updates:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js 12.x
+        uses: actions/setup-node@v6.2.0
+        with:
+          node-version: '12.x'
+          cache: 'npm'
+          cache-dependency-path: 'tools/parity-harness/package-lock.json'
+
+      - name: Install parity harness dependencies
+        run: |
+          cd tools/parity-harness
+          npm install
+
+      - name: Clone official Screeps repositories (latest)
+        run: |
+          cd tools/parity-harness
+          npm run clone:engine
+
+      - name: Check for official repo updates
+        id: check
+        run: |
+          cd tools/parity-harness
+
+          # Get current commit SHAs from cloned repos
+          ENGINE_SHA=$(cd screeps-modules/engine && git rev-parse HEAD)
+          DRIVER_SHA=$(cd screeps-modules/driver && git rev-parse HEAD)
+          COMMON_SHA=$(cd screeps-modules/common && git rev-parse HEAD)
+
+          # Get pinned versions from versions.json
+          PINNED_ENGINE=$(jq -r '.engine.pins.engine' versions.json)
+          PINNED_DRIVER=$(jq -r '.engine.pins.driver' versions.json)
+          PINNED_COMMON=$(jq -r '.engine.pins.common' versions.json)
+
+          echo "Current SHAs:"
+          echo "  Engine: $ENGINE_SHA (pinned: $PINNED_ENGINE)"
+          echo "  Driver: $DRIVER_SHA (pinned: $PINNED_DRIVER)"
+          echo "  Common: $COMMON_SHA (pinned: $PINNED_COMMON)"
+
+          # Check if any updates are available
+          if [ "$ENGINE_SHA" != "$PINNED_ENGINE" ] || \
+             [ "$DRIVER_SHA" != "$PINNED_DRIVER" ] || \
+             [ "$COMMON_SHA" != "$PINNED_COMMON" ]; then
+            echo "updates_found=true" >> $GITHUB_OUTPUT
+            echo "engine_sha=$ENGINE_SHA" >> $GITHUB_OUTPUT
+            echo "driver_sha=$DRIVER_SHA" >> $GITHUB_OUTPUT
+            echo "common_sha=$COMMON_SHA" >> $GITHUB_OUTPUT
+            echo "✅ Updates found!"
+          else
+            echo "updates_found=false" >> $GITHUB_OUTPUT
+            echo "✅ Already up to date - no changes needed"
+          fi
+
+      - name: Update versions.json
+        if: steps.check.outputs.updates_found == 'true'
+        run: |
+          cd tools/parity-harness
+          jq --arg engine "${{ steps.check.outputs.engine_sha }}" \
+             --arg driver "${{ steps.check.outputs.driver_sha }}" \
+             --arg common "${{ steps.check.outputs.common_sha }}" \
+             --arg date "$(date +%Y-%m-%d)" \
+             '.engine.pins.engine = $engine |
+              .engine.pins.driver = $driver |
+              .engine.pins.common = $common |
+              .engine.lastValidated = $date' \
+             versions.json > versions.json.tmp
+          mv versions.json.tmp versions.json
+
+          echo "Updated versions.json:"
+          cat versions.json
+
+      - name: Create Pull Request
+        if: steps.check.outputs.updates_found == 'true'
+        uses: peter-evans/create-pull-request@v7
+        with:
+          commit-message: "chore: update parity test pins to latest official Screeps commits"
+          title: "Update Parity Test Pins"
+          body: |
+            Automated update of parity test version pins to latest official Screeps commits.
+
+            **Updated commits:**
+            - **Engine:** `${{ steps.check.outputs.engine_sha }}`
+            - **Driver:** `${{ steps.check.outputs.driver_sha }}`
+            - **Common:** `${{ steps.check.outputs.common_sha }}`
+
+            **What happens next:**
+            1. ✅ Parity tests will run automatically on this PR
+            2. ✅ If tests pass → official repos still compatible
+            3. ⚠️ If tests fail → divergence detected, needs investigation
+
+            **Review checklist:**
+            - [ ] Check parity test results (see Actions tab)
+            - [ ] Review any divergence reports in test output
+            - [ ] Update E10.md if new architectural differences found
+            - [ ] Merge if all tests pass
+          branch: chore/update-parity-pins
+          delete-branch: true
+          labels: |
+            dependencies
+            automated
