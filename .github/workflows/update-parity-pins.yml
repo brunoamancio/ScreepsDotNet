@@ -19,7 +19,9 @@ jobs:
         with:
           node-version: '12.x'
           cache: 'npm'
-          cache-dependency-path: 'tools/parity-harness/package-lock.json'
+          cache-dependency-path: |
+            tools/parity-harness/package-lock.json
+            tools/parity-harness/engine/package-lock.json
 
       - name: Install parity harness dependencies
         run: |
