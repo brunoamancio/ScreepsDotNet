@@ -40,21 +40,32 @@ async function serializeOutput(db, fixture, processorOutput) {
 
 /**
  * Converts bulk updates to patch format (field-level changes)
+ * Merges multiple updates for the same object into a single patch
  * @param {Array<{id: string, changes: any}>} updates
  * @returns {Array<any>}
  */
 function convertUpdatesToPatchFormat(updates) {
-    const patches = [];
+    // Group updates by object ID and merge them
+    const patchMap = new Map();
 
     for (const update of updates) {
-        const patch = {
-            objectId: update.id,
-            ...flattenChanges(update.changes)
-        };
-        patches.push(patch);
+        const existingPatch = patchMap.get(update.id);
+        const newFields = flattenChanges(update.changes);
+
+        if (existingPatch) {
+            // Merge into existing patch (shallow merge - last write wins)
+            Object.assign(existingPatch, newFields);
+        } else {
+            // Create new patch entry
+            patchMap.set(update.id, {
+                objectId: update.id,
+                ...newFields
+            });
+        }
     }
 
-    return patches;
+    // Convert map to array
+    return Array.from(patchMap.values());
 }
 
 /**

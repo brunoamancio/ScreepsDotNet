@@ -30,6 +30,7 @@ public sealed class ParityTests(Integration.MongoDbParityFixture mongoFixture, I
         "lab_boost_creep.json",
         "link_source_empty.json",
         "build_without_work.json",
+        "build_without_energy.json",
         "validation_link_no_controller.json"
     };
 
@@ -226,7 +227,8 @@ public sealed class ParityTests(Integration.MongoDbParityFixture mongoFixture, I
         {
             "lab_boost_creep.json",      // Lab validation → Node.js patches creep
             "link_source_empty.json",    // Link with no energy → Node.js patches both links
-            "build_without_work.json"    // Build without work parts → Node.js patches creep AND construction site
+            "build_without_work.json",   // Build without work parts → Node.js patches creep AND construction site
+            "build_without_energy.json"  // Build without energy → Node.js patches creep
         };
 
         foreach (var fixtureName in fixtures) {
