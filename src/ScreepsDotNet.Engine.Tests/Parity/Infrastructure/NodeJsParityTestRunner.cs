@@ -69,11 +69,16 @@ public static class NodeJsParityTestRunner
 
         await process.WaitForExitAsync(cancellationToken);
 
+        var stderrOutput = errorBuilder.ToString();
+        if (!string.IsNullOrWhiteSpace(stderrOutput)) {
+            Console.WriteLine($"[NodeJsHarnessRunner] Stderr output:\n{stderrOutput}");
+        }
+
         if (process.ExitCode != 0) {
             throw new InvalidOperationException(
                 $"Node.js harness failed with exit code {process.ExitCode}\n" +
                 $"Connection string: {mongoConnectionString}\n" +
-                $"Error: {errorBuilder}");
+                $"Error: {stderrOutput}");
         }
 
         var output = outputBuilder.ToString();
