@@ -9,9 +9,9 @@ Validate that the .NET Engine produces **identical simulation results** to the N
 **What's Tested:**
 - ✅ E1-E6: All core gameplay (movement, harvest, combat, controller, global systems)
 - ✅ E8: Observability (telemetry, diagnostics)
+- ✅ E9: NPC AI logic (keeper/invader pathfinding, targeting, combat)
 
-**What's NOT Tested (Not Implemented Yet):**
-- ❌ E9: NPC AI logic (keeper/invader pathfinding, targeting, combat)
+**What's NOT Tested:**
 - ⚠️ E2 Deferred: Event logs, notifications, stats recording (non-gameplay)
 
 **Note:** This harness is built as part of the **E7 milestone** (infrastructure), but tests **all engine features** from all milestones, not just E7. E9 AI will be added to the parity suite when implemented.

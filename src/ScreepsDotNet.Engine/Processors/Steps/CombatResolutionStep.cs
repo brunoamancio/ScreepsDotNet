@@ -1,5 +1,6 @@
 namespace ScreepsDotNet.Engine.Processors.Steps;
 
+using ScreepsDotNet.Common.Types;
 using ScreepsDotNet.Driver.Contracts;
 using ScreepsDotNet.Engine.Processors;
 using ScreepsDotNet.Engine.Processors.Helpers;
@@ -17,16 +18,35 @@ internal sealed class CombatResolutionStep(ICreepDeathProcessor deathProcessor) 
 
         var hitsUpdates = new Dictionary<string, int>();
         var removals = new HashSet<string>(StringComparer.Ordinal);
+        var creepActors = new HashSet<string>(StringComparer.Ordinal);
 
         foreach (var envelope in intents.Users.Values) {
             if (envelope?.CreepIntents is null || envelope.CreepIntents.Count == 0)
                 continue;
-            foreach (var (_, creepIntent) in envelope.CreepIntents) {
-                ApplyAttack(creepIntent?.Attack, hitsUpdates, removals);
-                ApplyAttack(creepIntent?.RangedAttack, hitsUpdates, removals);
+            foreach (var (creepId, creepIntent) in envelope.CreepIntents) {
+                if (!context.State.Objects.TryGetValue(creepId, out var creep))
+                    continue;
+
+                var performedAction = false;
+                performedAction |= ApplyAttack(context, creep, creepIntent?.Attack, hitsUpdates, removals, isRanged: false);
+                performedAction |= ApplyAttack(context, creep, creepIntent?.RangedAttack, hitsUpdates, removals, isRanged: true);
+                performedAction |= ApplyHeal(context, creepId, creepIntent?.Heal);
+
+                if (performedAction)
+                    creepActors.Add(creepId);
             }
         }
 
+        // Patch creeps that performed actions (attacker/healer)
+        foreach (var creepId in creepActors) {
+            if (!context.State.Objects.ContainsKey(creepId))
+                continue;
+
+            // Create empty patch to signal this creep acted
+            context.MutationWriter.Patch(creepId, new RoomObjectPatchPayload());
+        }
+
+        // Patch targets that took damage
         foreach (var (objectId, hits) in hitsUpdates) {
             if (!context.State.Objects.TryGetValue(objectId, out var obj))
                 continue;
@@ -67,12 +87,74 @@ internal sealed class CombatResolutionStep(ICreepDeathProcessor deathProcessor) 
         return Task.CompletedTask;
     }
 
-    private static void ApplyAttack(AttackIntent? intent, IDictionary<string, int> hitsUpdates, ISet<string> removals)
+    private static bool ApplyAttack(RoomProcessorContext context, RoomObjectSnapshot attacker, AttackIntent? intent, IDictionary<string, int> hitsUpdates, ISet<string> removals, bool isRanged)
     {
         if (intent is null || string.IsNullOrWhiteSpace(intent.TargetId))
-            return;
+            return false;
 
-        var damage = intent.Damage ?? 30;
+        // Get target object
+        if (!context.State.Objects.TryGetValue(intent.TargetId!, out var target))
+            return false;
+
+        // Calculate damage based on active attack body parts (only parts with hits > 0 contribute)
+        var damage = intent.Damage ?? CalculateAttackPower(attacker, isRanged);
+
+        // Always track damage (even 0) to match Node.js behavior which patches target even with 0 damage
         hitsUpdates[intent.TargetId!] = hitsUpdates.TryGetValue(intent.TargetId!, out var existing) ? existing + damage : damage;
+        return true;
+    }
+
+    private static int CalculateAttackPower(RoomObjectSnapshot attacker, bool isRanged)
+    {
+        // Only count attack body parts that have hits > 0 (active parts)
+        // This matches Node.js behavior where damaged/destroyed parts don't contribute
+        var bodyPartType = isRanged ? BodyPartType.RangedAttack : BodyPartType.Attack;
+        var powerPerPart = isRanged ? 10 : 30;
+        var activeParts = attacker.Body.Count(p => p.Type == bodyPartType && p.Hits > 0);
+        return activeParts * powerPerPart;
+    }
+
+    private static bool ApplyHeal(RoomProcessorContext context, string healerId, HealIntent? intent)
+    {
+        if (intent is null || string.IsNullOrWhiteSpace(intent.TargetId))
+            return false;
+
+        if (!context.State.Objects.TryGetValue(intent.TargetId!, out var target))
+            return false;
+
+        // Calculate heal amount based on active heal body parts (only parts with hits > 0 contribute)
+        var healAmount = intent.Amount;
+        if (!healAmount.HasValue && context.State.Objects.TryGetValue(healerId, out var healer))
+        {
+            healAmount = CalculateHealPower(healer);
+        }
+
+        // If no heal amount, still return true (heal action performed but no effect)
+        if (!healAmount.HasValue || healAmount.Value == 0)
+            return true;
+
+        var currentHits = target.Hits ?? 0;
+        var maxHits = target.HitsMax ?? 0;
+        var newHits = Math.Min(currentHits + healAmount.Value, maxHits);
+
+        // Only patch if healing actually changed hits
+        if (newHits != currentHits)
+        {
+            context.MutationWriter.Patch(intent.TargetId!, new RoomObjectPatchPayload
+            {
+                Hits = newHits
+            });
+        }
+
+        return true;
+    }
+
+    private static int CalculateHealPower(RoomObjectSnapshot healer)
+    {
+        // Only count heal body parts that have hits > 0 (active parts)
+        // This matches Node.js behavior where damaged/destroyed parts don't contribute
+        const int healPowerPerPart = 12;
+        var activeParts = healer.Body.Count(p => p.Type == BodyPartType.Heal && p.Hits > 0);
+        return activeParts * healPowerPerPart;
     }
 }

@@ -29,16 +29,16 @@ ScreepsDotNet Stack          Official Screeps Stack
 
 Test that .NET Engine produces identical room states, mutations, and stats when processing the same intents and room data as the Node.js engine. Validates **all implemented milestones** (E1-E6, and future E8-E9 as completed).
 
-**Coverage (Implemented Milestones - ~95% of gameplay):**
+**Coverage (Implemented Milestones - ~100% of gameplay):**
 - ✅ **E1-E2:** All 11 intent handler families (movement, harvest, build, combat, transfer, etc.)
 - ✅ **E3:** Intent validation (range checks, resource checks, permission checks)
 - ✅ **E4:** Simulation kernel (passive regen, decay, TTL, fatigue, cooldowns)
 - ✅ **E5:** Global systems (GCL updates, power processing, keeper lair spawning, nuke landing)
 - ✅ **E6:** Engine orchestration (IEngineHost integration)
 - ✅ **E8:** Observability (telemetry emission, diagnostics)
+- ✅ **E9:** NPC AI logic (keeper/invader pathfinding, targeting, combat)
 
-**NOT Covered (Not Yet Implemented):**
-- ❌ **E9:** NPC AI logic (keeper/invader pathfinding, targeting, combat) - will be added when E9 complete
+**NOT Covered:**
 - ⚠️ **E2 Deferred:** Event logs, notifications, stats recording (non-gameplay features, non-parity-critical)
 
 **Note:** E7 is the *milestone name* for building this parity infrastructure, not a feature set being tested

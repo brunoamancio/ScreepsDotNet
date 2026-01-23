@@ -44,6 +44,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IRoomProcessorStep, MineralRegenerationStep>();
         services.AddSingleton<IRoomProcessorStep, KeeperLairStep>();
         services.AddSingleton<IRoomProcessorStep, KeeperAiStep>();
+        services.AddSingleton<IRoomProcessorStep, InvaderAiStep>();
         services.AddSingleton<IRoomProcessorStep, ResourceTransferIntentStep>();
         services.AddSingleton<IRoomProcessorStep, LabIntentStep>();
         services.AddSingleton<IRoomProcessorStep, LinkIntentStep>();

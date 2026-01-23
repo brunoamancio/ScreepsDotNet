@@ -73,6 +73,7 @@ public sealed class CombatResolutionStepTests
             ["attacker"] = new(null,
                                new AttackIntent(targetId, damage),
                                null,
+                               null,
                                new Dictionary<string, object?>(StringComparer.Ordinal))
         };
 

@@ -353,6 +353,7 @@ public sealed class MovementIntentStepTests
                     move,
                     null,
                     null,
+                    null,
                     new Dictionary<string, object?>(0));
             }
 

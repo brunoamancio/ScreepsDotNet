@@ -13,9 +13,10 @@ internal static class CreepIntentMapper
             Move: TryMapMove(document),
             Attack: TryMapAttack(document, IntentKeys.Attack),
             RangedAttack: TryMapAttack(document, IntentKeys.RangedAttack),
+            Heal: TryMapHeal(document),
             AdditionalFields: ExtractResidual(document));
 
-        return envelope.Move is not null || envelope.Attack is not null || envelope.RangedAttack is not null || envelope.AdditionalFields.Count > 0;
+        return envelope.Move is not null || envelope.Attack is not null || envelope.RangedAttack is not null || envelope.Heal is not null || envelope.AdditionalFields.Count > 0;
     }
 
     private static MoveIntent? TryMapMove(BsonDocument document)
@@ -47,11 +48,26 @@ internal static class CreepIntentMapper
         return new AttackIntent(targetStr.Value, damage);
     }
 
+    private static HealIntent? TryMapHeal(BsonDocument document)
+    {
+        if (!document.TryGetValue(IntentKeys.Heal, out var healValue) || healValue is not BsonDocument healDoc)
+            return null;
+
+        if (!healDoc.TryGetValue(IntentKeys.TargetId, out var targetValue) || targetValue is not BsonString targetStr)
+            return null;
+
+        var amount = healDoc.TryGetValue(IntentKeys.Amount, out var amountValue) && amountValue.IsInt32
+            ? amountValue.AsInt32
+            : (int?)null;
+
+        return new HealIntent(targetStr.Value, amount);
+    }
+
     private static IReadOnlyDictionary<string, object?> ExtractResidual(BsonDocument document)
     {
         var result = new Dictionary<string, object?>(StringComparer.Ordinal);
         foreach (var element in document.Elements) {
-            if (element.Name is IntentKeys.Move or IntentKeys.Attack or IntentKeys.RangedAttack)
+            if (element.Name is IntentKeys.Move or IntentKeys.Attack or IntentKeys.RangedAttack or IntentKeys.Heal)
                 continue;
 
             result[element.Name] = ConvertBsonValue(element.Value);

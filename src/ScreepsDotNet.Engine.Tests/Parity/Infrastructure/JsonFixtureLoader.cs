@@ -112,6 +112,7 @@ public static class JsonFixtureLoader
             _ => throw new ArgumentException($"Unknown body part type: {bodyPart.Type}")
         };
 
+        // Use hits as-is from JSON - 0 means inactive/destroyed, missing property defaults to 0
         var result = new CreepBodyPartSnapshot(bodyPartType, bodyPart.Hits, bodyPart.Boost);
         return result;
     }
@@ -146,17 +147,60 @@ public static class JsonFixtureLoader
 
         foreach (var (userId, objectIntents) in intents) {
             var objectIntentRecords = new Dictionary<string, IReadOnlyList<IntentRecord>>(StringComparer.Ordinal);
+            var creepIntents = new Dictionary<string, CreepIntentEnvelope>(StringComparer.Ordinal);
 
             foreach (var (objectId, intentList) in objectIntents) {
-                var records = intentList.Select(ConvertIntent).ToList();
-                objectIntentRecords[objectId] = records;
+                // Separate combat intents (attack, ranged_attack, heal) from other intents
+                var combatIntents = new List<JsonIntent>();
+                var otherIntents = new List<JsonIntent>();
+
+                foreach (var intent in intentList) {
+                    if (intent.Intent is IntentKeys.Attack or IntentKeys.RangedAttack or IntentKeys.Heal)
+                        combatIntents.Add(intent);
+                    else
+                        otherIntents.Add(intent);
+                }
+
+                // Map combat intents to CreepIntentEnvelope
+                if (combatIntents.Count > 0) {
+                    AttackIntent? attackIntent = null;
+                    AttackIntent? rangedAttackIntent = null;
+                    HealIntent? healIntent = null;
+
+                    foreach (var intent in combatIntents) {
+                        switch (intent.Intent) {
+                            case IntentKeys.Attack:
+                                attackIntent = new AttackIntent(intent.Id!, null);
+                                break;
+                            case IntentKeys.RangedAttack:
+                                rangedAttackIntent = new AttackIntent(intent.Id!, null);
+                                break;
+                            case IntentKeys.Heal:
+                                healIntent = new HealIntent(intent.Id!, null);
+                                break;
+                        }
+                    }
+
+                    creepIntents[objectId] = new CreepIntentEnvelope(
+                        Move: null,
+                        Attack: attackIntent,
+                        RangedAttack: rangedAttackIntent,
+                        Heal: healIntent,
+                        AdditionalFields: new Dictionary<string, object?>(StringComparer.Ordinal));
+                }
+
+                // Keep other intents in ObjectIntents
+                if (otherIntents.Count > 0) {
+                    var records = otherIntents.Select(ConvertIntent).ToList();
+                    objectIntentRecords[objectId] = records;
+                }
             }
 
             var envelope = new IntentEnvelope(
                 userId,
                 objectIntentRecords,
                 new Dictionary<string, SpawnIntentEnvelope>(StringComparer.Ordinal),
-                new Dictionary<string, CreepIntentEnvelope>(StringComparer.Ordinal));
+                creepIntents);
 
             userIntents[userId] = envelope;
         }

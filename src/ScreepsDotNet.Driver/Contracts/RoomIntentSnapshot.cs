@@ -41,11 +41,14 @@ public sealed record CreepIntentEnvelope(
     MoveIntent? Move,
     AttackIntent? Attack,
     AttackIntent? RangedAttack,
+    HealIntent? Heal,
     IReadOnlyDictionary<string, object?> AdditionalFields);
 
 public sealed record MoveIntent(int X, int Y);
 
 public sealed record AttackIntent(string TargetId, int? Damage);
+
+public sealed record HealIntent(string TargetId, int? Amount);
 
 public sealed record TerminalIntentEnvelope(TerminalSendIntent? Send);
 
