@@ -12,10 +12,12 @@
       "user": "user1",
       "body": [
         {
-          "type": "carry"
+          "type": "carry",
+          "hits": 100
         },
         {
-          "type": "move"
+          "type": "move",
+          "hits": 100
         }
       ],
       "store": {
@@ -33,10 +35,12 @@
       "user": "user1",
       "body": [
         {
-          "type": "carry"
+          "type": "carry",
+          "hits": 100
         },
         {
-          "type": "move"
+          "type": "move",
+          "hits": 100
         }
       ],
       "store": {

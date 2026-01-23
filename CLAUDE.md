@@ -8,6 +8,7 @@ Modern .NET rewrite of the Screeps private server backend. Exposes legacy HTTP +
 
 ✅ **ALWAYS:**
 - Use Context7 MCP for library/API documentation without being asked
+- **Use cloned Screeps repos for legacy code reference** - Official Screeps engine/driver/common repos are cloned to `tools/parity-harness/engine/screeps-modules/` during first parity test run. Read Node.js source directly instead of guessing behavior. If repos don't exist, parity tests will auto-clone them on first run.
 - Use `var` for all variable declarations (never explicit types)
 - Use collection expressions `[]` (never `new List<T>()`)
 - Use primary constructors (never classic constructor syntax)

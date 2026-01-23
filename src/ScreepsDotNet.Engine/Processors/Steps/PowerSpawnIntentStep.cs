@@ -4,6 +4,7 @@ using ScreepsDotNet.Common.Constants;
 using ScreepsDotNet.Common.Types;
 using ScreepsDotNet.Driver.Contracts;
 using ScreepsDotNet.Engine.Processors;
+using ScreepsDotNet.Engine.Processors.Helpers;
 
 /// <summary>
 /// Processes power spawn processPower intents.
@@ -64,6 +65,11 @@ internal sealed class PowerSpawnIntentStep : IRoomProcessorStep
 
         // Validate power spawn type
         if (!string.Equals(powerSpawn.Type, RoomObjectTypes.PowerSpawn, StringComparison.Ordinal))
+            return;
+
+        // Check structure activation (requires controller ownership and RCL limits)
+        var controller = StructureActivationHelper.FindController(context.State.Objects);
+        if (!StructureActivationHelper.IsStructureActive(powerSpawn, context.State.Objects, controller))
             return;
 
         // Get current store from ledger
