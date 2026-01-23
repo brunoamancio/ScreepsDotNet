@@ -1,0 +1,48 @@
+name: Parity Tests
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  parity-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js 12.x
+        uses: actions/setup-node@v6.2.0
+        with:
+          node-version: '12.x'
+          cache: 'npm'
+          cache-dependency-path: 'tools/parity-harness/package-lock.json'
+
+      - name: Install parity harness dependencies
+        run: |
+          cd tools/parity-harness
+          npm install
+
+      - name: Clone official Screeps repositories
+        run: |
+          cd tools/parity-harness
+          npm run clone:engine
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v5.0.2
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('src/**/*.csproj', 'src/Directory.Build.props') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
+
+      - name: Restore .NET solution
+        run: dotnet restore src/ScreepsDotNet.slnx
+
+      - name: Run parity tests
+        run: dotnet test src/ScreepsDotNet.slnx --filter Category=Parity --nologo --verbosity normal

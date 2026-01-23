@@ -279,19 +279,20 @@ This document tracks the Engine subsystem roadmap and implementation status. For
 
 ## E10: Full Parity Test Coverage 🚧
 
-**Status:** Phase 3 ✅ Complete, Phase 4 (CI/CD) Pending
+**Status:** Phase 3 ✅ Complete, Phase 4-5 Pending
 
 **Summary:**
-- ✅ 94 JSON fixtures created (314% of 25-30 target)
-- ✅ 87 test methods covering all 94 fixtures (100% coverage)
+- ✅ 99 JSON fixtures created (330% of 25-30 target)
+- ✅ 91 test methods covering all 99 fixtures (100% coverage)
 - ✅ 11 architectural differences explicitly documented with dedicated tests
 - ✅ Option C implemented: Structure activation + ActionLog optimization documented
 - ✅ All P0 (Critical) systems complete
-- ⏳ CI/CD automation pending (Phase 4)
+- ⏳ CI/CD automation pending (Phase 4, 2-3 hours)
+- ⏳ Additional mechanics fixtures pending (Phase 5, 6-7 hours)
 
 **Phase Breakdown:**
 1. ✅ **Phase 0: Keeper AI Tests** - 10 programmatic tests (5 hours)
-2. ✅ **Phase 1: Core Fixtures** - 94 JSON fixtures created (8 hours, 314% of target)
+2. ✅ **Phase 1: Core Fixtures** - 99 JSON fixtures created (8 hours, 330% of target)
 3. ✅ **Phase 2: Test Implementation** - Single Theory test with auto-discovery (2 hours, saved 13.7 hours)
 4. ✅ **Phase 3: Divergence Resolution** - 100% complete (32 hours total)
    - ✅ P0.1 Combat System: 9/9 COMPLETE
@@ -302,29 +303,37 @@ This document tracks the Engine subsystem roadmap and implementation status. For
    - ✅ P1 Structures: ALL COMPLETE (PowerSpawn activation fix + ActionLog optimization)
    - ✅ Architectural Decisions: 4 documented (timer, JS bug, ActionLog, structure activation)
 5. ⏳ **Phase 4: CI/CD Automation** - GitHub Actions workflow (2-3 hours, TODO)
-6. ✅ **Phase 5: Documentation** - E7/E10/divergence analysis complete
+6. ⏳ **Phase 5: Additional Mechanics Fixtures** - Edge cases + complex scenarios (6-7 hours, TODO)
+   - Combat: 8 fixtures (simultaneous attacks, overkill, rampart protection, tower falloff, heal priority, mass attack)
+   - Movement: 6 fixtures (terrain costs, fatigue decay, collisions, portals, pull chains)
+   - Build/Repair: 5 fixtures (multiple sites, partial progress, priority, caps)
+   - Spawn/Factory/Nuker: 6 fixtures (queue, name collision, recipes, landing damage)
+   - Transfer/Resources: 4 fixtures (tombstones, multiple resources, empty containers, drop/pickup)
+   - **Target:** 128 fixtures (98-99% coverage)
+7. ✅ **Phase 6: Documentation** - E7/E10/divergence analysis complete
 
 **Current State:**
-- ✅ 94 JSON fixtures (Combat, Movement, Resources, Structures, Controller, Edge Cases, Validation, AI)
-- ✅ 87/87 test methods passing (100%)
-- ✅ 83 tests with perfect parity + 4 dedicated tests for architectural differences
+- ✅ 99 JSON fixtures (Combat, Movement, Resources, Structures, Controller, Edge Cases, Validation, AI)
+- ✅ 91/91 test methods passing (100%)
+- ✅ 80 tests with perfect parity + 11 dedicated tests for architectural differences
 - ✅ Single Theory test with auto-discovery eliminates ~1000+ lines of duplicate code
 - ✅ ALL systems at 100% coverage: Combat, Build, Repair, Movement, Controller, Harvest, Factory, Nuker, Spawn, Transfer, PowerSpawn, Lab, Link, Keeper AI, Invader AI
 - ✅ Node.js harness infrastructure complete
 - ✅ Comparison engine operational
-- ✅ All tests passing (total test count varies by test run)
+- ✅ All tests passing (509 Engine tests total, includes 91 parity)
 
 **Success Criteria:**
-- ✅ 94 JSON fixtures covering all major intent types (achieved 314% of goal)
-- 🚧 All parity tests passing (58/94 passing, 36 divergences remaining)
-- ⏳ CI/CD workflow automated (TODO - Phase 4)
-- ✅ Coverage: 95% of E1-E6 features (24/26 processors)
-- ✅ Documentation updated (E7.md, E10.md, parity-divergences.md)
+- ✅ 99 JSON fixtures covering all major intent types (achieved 330% of goal)
+- ✅ All parity tests passing (91/91, 100%)
+- ⏳ CI/CD workflow automated (TODO - Phase 4, 2-3 hours)
+- ⏳ Additional mechanics fixtures (TODO - Phase 5, 6-7 hours, target 128 fixtures)
+- ✅ Coverage: 95% of E1-E6 features (all 26 processors)
+- ✅ Documentation updated (E7.md, E10.md, roadmap.md)
 
 **Timeline:**
-- **Invested:** ~21 hours (Phases 0-2 complete, Phase 3 partial)
-- **Remaining:** 19-27 hours (divergence fixes + CI/CD)
-- **Total Estimate:** 48-71 hours (on track for realistic 22-24 hour total)
+- **Invested:** 47 hours (Phases 0-3 complete, 6 pre-existing test failures fixed)
+- **Remaining:** 8-10 hours (CI/CD + additional fixtures)
+- **Total Estimate:** 55-57 hours
 
 **Dependencies:**
 - ✅ E7 infrastructure complete (Node.js harness, comparison engine, test runner)
@@ -338,14 +347,12 @@ This document tracks the Engine subsystem roadmap and implementation status. For
 - ✅ Comprehensive divergence analysis and categorization
 
 **Deferred:**
-- ⚠️ Build/Repair validation edge cases (6 tests) - ActionLog emission philosophy differs
 - ⚠️ Stats comparison in parity tests - Node.js harness doesn't capture stats yet
   - Disabled in `ParityComparator.cs` line 28
   - Re-enablement instructions documented in `ParityComparator.cs` comments (lines 19-28)
   - Affected test assertions commented out in `ParityComparatorTests.cs` (lines 92, 103-108, 184, 223, 226)
-  - See `e10.md` section 3.1.3 for complete re-enablement checklist
-- ❌ Observer mechanics (`observeRoom` - E9 dependency)
-- ❌ Terminal.send global (would require GlobalParityTestRunner)
+- ❌ Observer mechanics (`observeRoom` - E9 dependency, included in Phase 5)
+- ❌ Terminal.send global (requires GlobalParityTestRunner, included in Phase 5)
 
 **Details:** See `e10.md` for complete implementation plan and divergence analysis
 
@@ -377,13 +384,13 @@ This document tracks the Engine subsystem roadmap and implementation status. For
 **Remaining Work:**
 - 📋 E7: Parity validation (depends on: E1-E6 complete ✅, E8 complete ✅)
 - 📋 E9: NPC AI logic (depends on: E5 Phase 3 ✅, E6 complete ✅, E7-E8 pending)
-- 🚧 E10: Full parity test coverage (IN PROGRESS - 58/94 tests passing, 19-27 hours remaining)
-  - ✅ Combat system COMPLETE (9/9 tests - January 23)
-  - ✅ Build/Repair basic COMPLETE (2/8 tests - January 23)
-  - 🚧 Movement, Controller, Harvest, Pull, Link, PowerSpawn pending
+- 🚧 E10: Full parity test coverage (IN PROGRESS - Phase 3 ✅, Phase 4-5 pending, 8-10 hours remaining)
+  - ✅ Phase 3: All systems COMPLETE (91/91 tests passing - January 23)
+  - ⏳ Phase 4: CI/CD automation (2-3 hours)
+  - ⏳ Phase 5: Additional mechanics fixtures (6-7 hours, 29 new fixtures)
 - 📋 E8.1: Telemetry aggregation & analytics (enhancement: replace stub services with real implementations)
 
-**Next Milestone:** E10 Phase 3 completion (Movement, Controller, Harvest systems)
+**Next Milestone:** E10 Phase 4 (CI/CD automation) → Phase 5 (Additional mechanics fixtures)
 
 **Reference Documents:**
 - E1 (Legacy surface mapping): `e1.md`
