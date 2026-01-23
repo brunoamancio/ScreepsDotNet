@@ -158,6 +158,22 @@ public sealed class FactoryIntentStepTests
     }
 
     [Fact]
+    public async Task WithNoController_DoesNotProcess()
+    {
+        // Arrange
+        var factory = CreateFactory("f1", 10, 10, "user1", level: 0, energy: 600);
+        var context = CreateContext([factory],
+            CreateProduceIntent("user1", factory.Id, ResourceTypes.Battery), gameTime: 100, includeController: false);
+        var writer = (FakeMutationWriter)context.MutationWriter;
+
+        // Act
+        await _step.ExecuteAsync(context, TestContext.Current.CancellationToken);
+
+        // Assert - No patches emitted (factory not active without controller)
+        Assert.Empty(writer.Patches);
+    }
+
+    [Fact]
     public async Task WithOperateFactoryEffectLevel1_AllowsLevel1Commodity()
     {
         // Arrange - Level 0 factory with effect level 1 can produce level 1 commodity (Switch)
@@ -509,9 +525,16 @@ public sealed class FactoryIntentStepTests
         return result;
     }
 
-    private static RoomProcessorContext CreateContext(IEnumerable<RoomObjectSnapshot> objects, RoomIntentSnapshot? intents = null, int gameTime = 100)
+    private static RoomProcessorContext CreateContext(IEnumerable<RoomObjectSnapshot> objects, RoomIntentSnapshot? intents = null, int gameTime = 100, bool includeController = true)
     {
         var objectMap = objects.ToDictionary(o => o.Id, o => o, StringComparer.Ordinal);
+
+        // Add controller for structure activation validation (RCL 8 by default)
+        if (includeController)
+        {
+            var controller = CreateController("controller1", 30, 30, "user1", level: 8);
+            objectMap[controller.Id] = controller;
+        }
 
         var state = new RoomState(
             "W1N1",
@@ -524,6 +547,63 @@ public sealed class FactoryIntentStepTests
             []);
 
         var result = new RoomProcessorContext(state, new FakeMutationWriter(), new FakeCreepStatsSink(), new NullGlobalMutationWriter());
+        return result;
+    }
+
+    private static RoomObjectSnapshot CreateController(string id, int x, int y, string userId, int level)
+    {
+        var result = new RoomObjectSnapshot(
+            id,
+            RoomObjectTypes.Controller,
+            "W1N1",
+            "shard0",
+            userId,
+            x,
+            y,
+            Hits: 0,
+            HitsMax: 0,
+            Fatigue: null,
+            TicksToLive: null,
+            Name: null,
+            Level: level,
+            Density: null,
+            MineralType: null,
+            DepositType: null,
+            StructureType: RoomObjectTypes.Controller,
+            Store: new Dictionary<string, int>(StringComparer.Ordinal),
+            StoreCapacity: null,
+            StoreCapacityResource: new Dictionary<string, int>(StringComparer.Ordinal),
+            Reservation: null,
+            Sign: null,
+            Structure: null,
+            Effects: new Dictionary<PowerTypes, PowerEffectSnapshot>(),
+            Spawning: null,
+            Body: [],
+            IsSpawning: null,
+            UserSummoned: null,
+            IsPublic: null,
+            StrongholdId: null,
+            DeathTime: null,
+            DecayTime: null,
+            CreepId: null,
+            CreepName: null,
+            CreepTicksToLive: null,
+            CreepSaying: null,
+            ResourceType: null,
+            ResourceAmount: null,
+            Progress: 0,
+            ProgressTotal: 100000,
+            ActionLog: null,
+            Energy: null,
+            MineralAmount: null,
+            InvaderHarvested: null,
+            Harvested: null,
+            Cooldown: null,
+            CooldownTime: null,
+            SafeMode: null,
+            SafeModeAvailable: null,
+            PortalDestination: null,
+            Send: null);
         return result;
     }
 

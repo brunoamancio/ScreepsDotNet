@@ -91,8 +91,7 @@ internal sealed class ControllerIntentStep : IRoomProcessorStep
         if (!string.Equals(controller.Type, RoomObjectTypes.Controller, StringComparison.Ordinal))
             return;
 
-        if (!IsInRange(creep, controller, 3))
-        {
+        if (!IsInRange(creep, controller, 3)) {
             // Emit ActionLog on creep for validation failure (standard pattern)
             context.MutationWriter.Patch(creep.Id, new RoomObjectPatchPayload
             {
@@ -101,8 +100,7 @@ internal sealed class ControllerIntentStep : IRoomProcessorStep
             return;
         }
 
-        if (!string.Equals(controller.UserId, creep.UserId, StringComparison.Ordinal))
-        {
+        if (!string.Equals(controller.UserId, creep.UserId, StringComparison.Ordinal)) {
             // Emit ActionLog on creep for validation failure (standard pattern)
             context.MutationWriter.Patch(creep.Id, new RoomObjectPatchPayload
             {
@@ -112,8 +110,7 @@ internal sealed class ControllerIntentStep : IRoomProcessorStep
         }
 
         var upgradeBlocked = controller.Store.GetValueOrDefault(RoomDocumentFields.RoomObject.UpgradeBlocked, 0);
-        if (upgradeBlocked > 0)
-        {
+        if (upgradeBlocked > 0) {
             // Emit ActionLog on creep for validation failure (standard pattern)
             context.MutationWriter.Patch(creep.Id, new RoomObjectPatchPayload
             {
@@ -123,8 +120,7 @@ internal sealed class ControllerIntentStep : IRoomProcessorStep
         }
 
         var workParts = CalculateBaseWorkParts(creep);
-        if (workParts <= 0)
-        {
+        if (workParts <= 0) {
             // Emit ActionLog on creep for validation failure (standard pattern)
             context.MutationWriter.Patch(creep.Id, new RoomObjectPatchPayload
             {
@@ -137,8 +133,7 @@ internal sealed class ControllerIntentStep : IRoomProcessorStep
             ? ledgerEnergy
             : creep.Store.GetValueOrDefault(ResourceTypes.Energy, 0);
 
-        if (availableEnergy <= 0)
-        {
+        if (availableEnergy <= 0) {
             // Emit ActionLog on creep for validation failure (standard pattern)
             // Node.js emits on creep for all validation failures, even though empty store {} bypasses validation
             // due to JavaScript quirk (undefined <= 0 is false). We normalize this by treating both cases as validation failures.

@@ -1,6 +1,6 @@
 # Engine Roadmap (E1-E10)
 
-**Last Updated:** January 23, 2026 (E10 Phase 3 complete - All architectural decisions documented)
+**Last Updated:** January 23, 2026 (E10 Phase 3 complete - All structure activation implemented, factory parity achieved)
 
 This document tracks the Engine subsystem roadmap and implementation status. For detailed handler tracking, see `e2.md`. For E5 blockers, see `e5.md`.
 
@@ -19,7 +19,7 @@ This document tracks the Engine subsystem roadmap and implementation status. For
 | E7 | 📋 | Compatibility & Parity Validation | Lockstep testing vs. Node engine, automated divergence detection | Prior steps, legacy engine repo |
 | E8 | ✅ | Observability & Tooling | Engine metrics flow to telemetry, diagnostics commands, operator playbooks | D8 (✅), D4 hooks (✅), E6 (✅) |
 | E9 | 📋 | NPC AI Logic | Keeper and invader AI implemented with pathfinding, targeting, and combat logic | E5 Phase 3 (spawning), E6-E8 complete |
-| E10 | 🚧 | Full Parity Test Coverage | Phase 3 ✅ Complete: 87/87 test methods (100%), 94/94 fixtures covered, 11 architectural differences documented. Phase 4 (CI/CD) pending. | E7 infrastructure (✅), E1-E6 features (✅) |
+| E10 | 🚧 | Full Parity Test Coverage | Phase 3 ✅ Complete: 91/91 test methods (100%), 95/95 fixtures covered, 11 architectural differences documented, all structure activation implemented. Phase 4 (CI/CD) pending. | E7 infrastructure (✅), E1-E6 features (✅) |
 
 ---
 

@@ -65,8 +65,7 @@ internal sealed class CreepBuildRepairStep(IStructureBlueprintProvider blueprint
         if (!TryResolveTarget(context.State.Objects, record, objectOverrides, out var target))
             return;
 
-        if (target.Hits is null || target.HitsMax is null || target.Hits >= target.HitsMax)
-        {
+        if (target.Hits is null || target.HitsMax is null || target.Hits >= target.HitsMax) {
             // Emit ActionLog for already-full-hits attempt
             context.MutationWriter.Patch(creep.Id, new RoomObjectPatchPayload
             {
@@ -76,8 +75,7 @@ internal sealed class CreepBuildRepairStep(IStructureBlueprintProvider blueprint
             return;
         }
 
-        if (!WorkPartHelper.TryGetActiveWorkParts(creep, out var workParts))
-        {
+        if (!WorkPartHelper.TryGetActiveWorkParts(creep, out var workParts)) {
             // Emit ActionLog for no-work-parts attempt
             context.MutationWriter.Patch(creep.Id, new RoomObjectPatchPayload
             {
@@ -88,8 +86,7 @@ internal sealed class CreepBuildRepairStep(IStructureBlueprintProvider blueprint
         }
 
         var availableEnergy = GetAvailableEnergy(creep, energyLedger);
-        if (availableEnergy <= 0)
-        {
+        if (availableEnergy <= 0) {
             // Emit ActionLog for no-energy attempt
             context.MutationWriter.Patch(creep.Id, new RoomObjectPatchPayload
             {
@@ -99,8 +96,7 @@ internal sealed class CreepBuildRepairStep(IStructureBlueprintProvider blueprint
             return;
         }
 
-        if (!IsInRange(creep, target))
-        {
+        if (!IsInRange(creep, target)) {
             // Emit ActionLog for out-of-range attempt
             context.MutationWriter.Patch(creep.Id, new RoomObjectPatchPayload
             {
@@ -162,8 +158,7 @@ internal sealed class CreepBuildRepairStep(IStructureBlueprintProvider blueprint
         if (target.Progress is null || target.ProgressTotal is null)
             return;
 
-        if (target.Progress >= target.ProgressTotal)
-        {
+        if (target.Progress >= target.ProgressTotal) {
             // Emit ActionLog for already-complete attempt
             context.MutationWriter.Patch(creep.Id, new RoomObjectPatchPayload
             {
@@ -173,8 +168,7 @@ internal sealed class CreepBuildRepairStep(IStructureBlueprintProvider blueprint
             return;
         }
 
-        if (!WorkPartHelper.TryGetActiveWorkParts(creep, out var workParts))
-        {
+        if (!WorkPartHelper.TryGetActiveWorkParts(creep, out var workParts)) {
             // Emit ActionLog for no-work-parts attempt
             context.MutationWriter.Patch(creep.Id, new RoomObjectPatchPayload
             {
@@ -185,8 +179,7 @@ internal sealed class CreepBuildRepairStep(IStructureBlueprintProvider blueprint
         }
 
         var availableEnergy = GetAvailableEnergy(creep, energyLedger);
-        if (availableEnergy <= 0)
-        {
+        if (availableEnergy <= 0) {
             // Emit ActionLog for no-energy attempt
             context.MutationWriter.Patch(creep.Id, new RoomObjectPatchPayload
             {
@@ -196,8 +189,7 @@ internal sealed class CreepBuildRepairStep(IStructureBlueprintProvider blueprint
             return;
         }
 
-        if (!IsInRange(creep, target))
-        {
+        if (!IsInRange(creep, target)) {
             // Emit ActionLog for out-of-range attempt
             context.MutationWriter.Patch(creep.Id, new RoomObjectPatchPayload
             {

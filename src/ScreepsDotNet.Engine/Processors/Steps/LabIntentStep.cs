@@ -4,6 +4,7 @@ using ScreepsDotNet.Common.Constants;
 using ScreepsDotNet.Common.Types;
 using ScreepsDotNet.Driver.Contracts;
 using ScreepsDotNet.Engine.Processors;
+using ScreepsDotNet.Engine.Processors.Helpers;
 
 /// <summary>
 /// Processes lab-related intents: runReaction and boostCreep.
@@ -43,6 +44,13 @@ internal sealed class LabIntentStep : IRoomProcessorStep
 
                 if (!context.State.Objects.TryGetValue(objectId, out var obj))
                     continue;
+
+                // Check structure activation for labs (requires controller ownership and RCL limits)
+                if (string.Equals(obj.Type, RoomObjectTypes.Lab, StringComparison.Ordinal)) {
+                    var controller = StructureActivationHelper.FindController(context.State.Objects);
+                    if (!StructureActivationHelper.IsStructureActive(obj, context.State.Objects, controller))
+                        continue;
+                }
 
                 foreach (var record in records) {
                     switch (record.Name) {

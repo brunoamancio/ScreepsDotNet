@@ -48,6 +48,11 @@ internal sealed class SpawnIntentStep(
         SpawnIntentEnvelope rawIntent,
         Dictionary<string, int> energyLedger)
     {
+        // Check structure activation (requires controller ownership and RCL limits)
+        var controller = StructureActivationHelper.FindController(context.State.Objects);
+        if (!StructureActivationHelper.IsStructureActive(spawn, context.State.Objects, controller))
+            return;
+
         var parsed = parser.Parse(rawIntent);
         if (!parsed.Success || !parsed.HasIntents)
             return;

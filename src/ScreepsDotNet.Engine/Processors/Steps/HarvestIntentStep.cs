@@ -65,8 +65,7 @@ internal sealed class HarvestIntentStep(IResourceDropHelper resourceDropHelper) 
         if (!context.State.Objects.TryGetValue(targetId, out var target))
             return;
 
-        if (!IsAdjacent(creep, target))
-        {
+        if (!IsAdjacent(creep, target)) {
             // Emit ActionLog for out-of-range attempt
             context.MutationWriter.Patch(creep.Id, new RoomObjectPatchPayload
             {
@@ -106,8 +105,7 @@ internal sealed class HarvestIntentStep(IResourceDropHelper resourceDropHelper) 
         // Sources must go through at least one regeneration cycle before they can be harvested
         var sourceCapacity = source.StoreCapacityResource.GetValueOrDefault(ResourceTypes.Energy, 0);
         var isUninitializedSource = !source.NextRegenerationTime.HasValue && source.Energy >= sourceCapacity && sourceCapacity > 0;
-        if (isUninitializedSource)
-        {
+        if (isUninitializedSource) {
             // Emit ActionLog for uninitialized source attempt
             context.MutationWriter.Patch(creep.Id, new RoomObjectPatchPayload
             {
@@ -118,8 +116,7 @@ internal sealed class HarvestIntentStep(IResourceDropHelper resourceDropHelper) 
         }
 
         // Prevent harvest if source is currently regenerating
-        if (source.NextRegenerationTime.HasValue && source.NextRegenerationTime.Value > context.State.GameTime)
-        {
+        if (source.NextRegenerationTime.HasValue && source.NextRegenerationTime.Value > context.State.GameTime) {
             // Emit ActionLog for regenerating source attempt
             context.MutationWriter.Patch(creep.Id, new RoomObjectPatchPayload
             {
@@ -129,8 +126,7 @@ internal sealed class HarvestIntentStep(IResourceDropHelper resourceDropHelper) 
             return;
         }
 
-        if (!CanHarvestSource(roomController, creep.UserId))
-        {
+        if (!CanHarvestSource(roomController, creep.UserId)) {
             // Emit ActionLog for not-owner/reserved attempt
             context.MutationWriter.Patch(creep.Id, new RoomObjectPatchPayload
             {
@@ -140,8 +136,7 @@ internal sealed class HarvestIntentStep(IResourceDropHelper resourceDropHelper) 
             return;
         }
 
-        if (!WorkPartHelper.TryGetActiveWorkParts(creep, out var workParts))
-        {
+        if (!WorkPartHelper.TryGetActiveWorkParts(creep, out var workParts)) {
             // Emit ActionLog for no-work-parts attempt
             context.MutationWriter.Patch(creep.Id, new RoomObjectPatchPayload
             {
@@ -171,15 +166,13 @@ internal sealed class HarvestIntentStep(IResourceDropHelper resourceDropHelper) 
         // This matches behavior where sources must be "active" before tracking state changes
         var isInitializedSource = source.NextRegenerationTime.HasValue || source.Energy < source.StoreCapacityResource.GetValueOrDefault(ResourceTypes.Energy, 0);
 
-        if (isInitializedSource || shouldTrackInvaderHarvest)
-        {
+        if (isInitializedSource || shouldTrackInvaderHarvest) {
             var sourcePatch = new RoomObjectPatchPayload
             {
                 Energy = remainingEnergy
             };
 
-            if (shouldTrackInvaderHarvest)
-            {
+            if (shouldTrackInvaderHarvest) {
                 var invaderHarvested = (source.InvaderHarvested ?? 0) + amount;
                 sourcePatch = sourcePatch with { InvaderHarvested = invaderHarvested };
             }

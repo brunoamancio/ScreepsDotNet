@@ -891,9 +891,54 @@ public sealed class LabIntentStepTests
         return result;
     }
 
-    private static RoomProcessorContext CreateContext(IEnumerable<RoomObjectSnapshot> objects, RoomIntentSnapshot? intents = null, int gameTime = 100)
+    private static RoomProcessorContext CreateContext(IEnumerable<RoomObjectSnapshot> objects, RoomIntentSnapshot? intents = null, int gameTime = 100, bool includeController = true)
     {
         var objectMap = objects.ToDictionary(o => o.Id, o => o, StringComparer.Ordinal);
+
+        // Add controller for structure activation validation (RCL 8 by default)
+        if (includeController) {
+            var controller = new RoomObjectSnapshot(
+                "controller1",
+                RoomObjectTypes.Controller,
+                "W1N1",
+                "shard0",
+                "user1",
+                25,
+                25,
+                Hits: null,
+                HitsMax: null,
+                Fatigue: null,
+                TicksToLive: null,
+                Name: null,
+                Level: 8,
+                Density: null,
+                MineralType: null,
+                DepositType: null,
+                StructureType: null,
+                Store: new Dictionary<string, int>(StringComparer.Ordinal),
+                StoreCapacity: null,
+                StoreCapacityResource: new Dictionary<string, int>(StringComparer.Ordinal),
+                Reservation: null,
+                Sign: null,
+                Structure: null,
+                Effects: new Dictionary<PowerTypes, PowerEffectSnapshot>(),
+                Body: [],
+                Spawning: null,
+                IsSpawning: null,
+                UserSummoned: null,
+                IsPublic: null,
+                StrongholdId: null,
+                DeathTime: null,
+                DecayTime: null,
+                CreepId: null,
+                CreepName: null,
+                CreepTicksToLive: null,
+                CreepSaying: null,
+                ResourceType: null,
+                ResourceAmount: null);
+
+            objectMap[controller.Id] = controller;
+        }
 
         var state = new RoomState(
             "W1N1",

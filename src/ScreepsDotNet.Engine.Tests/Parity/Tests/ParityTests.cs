@@ -29,7 +29,8 @@ public sealed class ParityTests(Integration.MongoDbParityFixture mongoFixture, I
         "movement_without_move_part.json",
         "lab_boost_creep.json",
         "link_source_empty.json",
-        "build_without_work.json"
+        "build_without_work.json",
+        "validation_link_no_controller.json"
     };
 
     /// <summary>
@@ -182,11 +183,11 @@ public sealed class ParityTests(Integration.MongoDbParityFixture mongoFixture, I
             "validation_transfer_invalid_target.json", // Target doesn't exist → Node.js patches creep
             "pull_out_of_range.json",                // Pull validation → Node.js patches creep
             "movement_without_move_part.json",       // Movement without move parts → Node.js patches creep
-            "edgecase_ttl_one.json"                  // TTL edge case → Node.js patches creep
+            "edgecase_ttl_one.json",                 // TTL edge case → Node.js patches creep
+            "validation_link_no_controller.json"     // Link without controller → Node.js patches both links (actionLog only, transfer blocked)
         };
 
-        foreach (var fixtureName in fixtures)
-        {
+        foreach (var fixtureName in fixtures) {
             var fixturePath = ParityFixturePaths.GetFixturePath(fixtureName);
             var state = await JsonFixtureLoader.LoadFromFileAsync(fixturePath, TestContext.Current.CancellationToken);
 
@@ -203,8 +204,7 @@ public sealed class ParityTests(Integration.MongoDbParityFixture mongoFixture, I
             // Verify ONLY ActionLog divergences exist
             var otherDivergences = comparison.Divergences.Except(actionLogDivergences).ToList();
 
-            if (otherDivergences.Count > 0)
-            {
+            if (otherDivergences.Count > 0) {
                 Assert.Fail($"❌ {fixtureName} has unexpected divergences beyond ActionLog optimization:\n\n{Comparison.DivergenceReporter.FormatReport(new Comparison.ParityComparisonResult(otherDivergences), fixtureName)}");
             }
 
@@ -229,8 +229,7 @@ public sealed class ParityTests(Integration.MongoDbParityFixture mongoFixture, I
             "build_without_work.json"    // Build without work parts → Node.js patches creep AND construction site
         };
 
-        foreach (var fixtureName in fixtures)
-        {
+        foreach (var fixtureName in fixtures) {
             var fixturePath = ParityFixturePaths.GetFixturePath(fixtureName);
             var state = await JsonFixtureLoader.LoadFromFileAsync(fixturePath, TestContext.Current.CancellationToken);
 
@@ -246,12 +245,12 @@ public sealed class ParityTests(Integration.MongoDbParityFixture mongoFixture, I
 
             var otherDivergences = comparison.Divergences.Except(actionLogDivergences).ToList();
 
-            if (otherDivergences.Count > 0)
-            {
+            if (otherDivergences.Count > 0) {
                 Assert.Fail($"❌ {fixtureName} has unexpected divergences beyond ActionLog optimization:\n\n{Comparison.DivergenceReporter.FormatReport(new Comparison.ParityComparisonResult(otherDivergences), fixtureName)}");
             }
 
             Assert.True(actionLogDivergences.Count > 0, $"✅ {fixtureName}: Expected ActionLog divergence (Node.js patches touched objects, .NET optimizes)");
         }
     }
+
 }

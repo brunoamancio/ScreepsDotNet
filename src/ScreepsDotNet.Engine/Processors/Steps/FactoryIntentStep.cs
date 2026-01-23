@@ -4,6 +4,7 @@ using ScreepsDotNet.Common.Constants;
 using ScreepsDotNet.Common.Types;
 using ScreepsDotNet.Driver.Contracts;
 using ScreepsDotNet.Engine.Processors;
+using ScreepsDotNet.Engine.Processors.Helpers;
 
 /// <summary>
 /// Processes factory produce intents.
@@ -70,6 +71,11 @@ internal sealed class FactoryIntentStep : IRoomProcessorStep
     {
         // Validate factory type
         if (!string.Equals(factory.Type, RoomObjectTypes.Factory, StringComparison.Ordinal))
+            return;
+
+        // Check structure activation (requires controller ownership and RCL limits)
+        var controller = StructureActivationHelper.FindController(context.State.Objects);
+        if (!StructureActivationHelper.IsStructureActive(factory, context.State.Objects, controller))
             return;
 
         // Check cooldown from snapshot (previous tick only)

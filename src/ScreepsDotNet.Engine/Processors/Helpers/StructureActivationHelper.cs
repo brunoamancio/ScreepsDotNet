@@ -58,8 +58,7 @@ internal static class StructureActivationHelper
         var structureDistance = CalculateChebyshevDistance(structure, controller);
         var closerStructuresCount = 0;
 
-        foreach (var obj in roomObjects.Values)
-        {
+        foreach (var obj in roomObjects.Values) {
             if (!string.Equals(obj.Type, structure.Type, StringComparison.Ordinal))
                 continue;
 
@@ -72,13 +71,11 @@ internal static class StructureActivationHelper
             var objDistance = CalculateChebyshevDistance(obj, controller);
 
             // If another structure is closer, increment counter
-            if (objDistance < structureDistance)
-            {
+            if (objDistance < structureDistance) {
                 closerStructuresCount++;
             }
             // If same distance, use ID comparison for deterministic ordering
-            else if (objDistance == structureDistance)
-            {
+            else if (objDistance == structureDistance) {
                 var comparison = string.Compare(obj.Id, structure.Id, StringComparison.Ordinal);
                 if (comparison < 0)
                     closerStructuresCount++;
@@ -97,8 +94,7 @@ internal static class StructureActivationHelper
     /// <returns>The controller, or null if none exists.</returns>
     public static RoomObjectSnapshot? FindController(IReadOnlyDictionary<string, RoomObjectSnapshot> roomObjects)
     {
-        foreach (var obj in roomObjects.Values)
-        {
+        foreach (var obj in roomObjects.Values) {
             if (string.Equals(obj.Type, RoomObjectTypes.Controller, StringComparison.Ordinal))
                 return obj;
         }

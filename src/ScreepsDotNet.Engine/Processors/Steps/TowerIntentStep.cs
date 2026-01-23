@@ -31,6 +31,11 @@ internal sealed class TowerIntentStep(ICreepDeathProcessor deathProcessor) : IRo
                 if (!string.Equals(tower.Type, RoomObjectTypes.Tower, StringComparison.Ordinal))
                     continue;
 
+                // Check structure activation (requires controller ownership and RCL limits)
+                var controller = StructureActivationHelper.FindController(context.State.Objects);
+                if (!StructureActivationHelper.IsStructureActive(tower, context.State.Objects, controller))
+                    continue;
+
                 foreach (var record in records)
                     ProcessRecord(context, tower, record, energyLedger, deathEnergyLedger);
             }

@@ -5,6 +5,7 @@ using ScreepsDotNet.Common.Types;
 using ScreepsDotNet.Common.Utilities;
 using ScreepsDotNet.Driver.Contracts;
 using ScreepsDotNet.Engine.Processors;
+using ScreepsDotNet.Engine.Processors.Helpers;
 
 /// <summary>
 /// Processes nuker launchNuke intents.
@@ -40,6 +41,11 @@ internal sealed class NukerIntentStep : IRoomProcessorStep
 
     private static void ProcessLaunchNuke(RoomProcessorContext context, RoomObjectSnapshot nuker, IntentRecord record)
     {
+        // Check structure activation (requires controller ownership and RCL limits)
+        var controller = StructureActivationHelper.FindController(context.State.Objects);
+        if (!StructureActivationHelper.IsStructureActive(nuker, context.State.Objects, controller))
+            return;
+
         // Get intent arguments
         var arg = record.Arguments[0];
 

@@ -3,6 +3,7 @@ namespace ScreepsDotNet.Engine.Processors.Steps;
 using ScreepsDotNet.Common.Constants;
 using ScreepsDotNet.Driver.Contracts;
 using ScreepsDotNet.Engine.Processors;
+using ScreepsDotNet.Engine.Processors.Helpers;
 
 /// <summary>
 /// Processes link transferEnergy intents.
@@ -69,6 +70,11 @@ internal sealed class LinkIntentStep : IRoomProcessorStep
     {
         // Validate source is a link
         if (!string.Equals(link.Type, RoomObjectTypes.Link, StringComparison.Ordinal))
+            return;
+
+        // Check structure activation (requires controller ownership and RCL limits)
+        var controller = StructureActivationHelper.FindController(context.State.Objects);
+        if (!StructureActivationHelper.IsStructureActive(link, context.State.Objects, controller))
             return;
 
         // Check cooldown (countdown ticker, not absolute time)
