@@ -530,8 +530,7 @@ public sealed class FactoryIntentStepTests
         var objectMap = objects.ToDictionary(o => o.Id, o => o, StringComparer.Ordinal);
 
         // Add controller for structure activation validation (RCL 8 by default)
-        if (includeController)
-        {
+        if (includeController) {
             var controller = CreateController("controller1", 30, 30, "user1", level: 8);
             objectMap[controller.Id] = controller;
         }

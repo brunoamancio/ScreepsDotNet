@@ -25,16 +25,33 @@ public sealed class HarvestIntentStepTests
 
         await _step.ExecuteAsync(context, TestContext.Current.CancellationToken);
 
-        var (ObjectId, Payload) = writer.Patches.Single(p => p.ObjectId == source.Id);
-        Assert.Equal(296, Payload.Energy);
-        Assert.Equal(4, Payload.InvaderHarvested);
+        var (objectId, payload) = writer.Patches.Single(p => p.ObjectId == source.Id);
+        Assert.Equal(296, payload.Energy);
 
-        var creepPatch = writer.Patches.Single(p => p.ObjectId == creep.Id && p.Payload.Store is not null && p.Payload.ActionLog is not null);
-        Assert.Equal(4, creepPatch.Payload.Store![ResourceTypes.Energy]);
-        Assert.Equal(11, creepPatch.Payload.ActionLog!.Harvest!.X);
-        Assert.Equal(10, creepPatch.Payload.ActionLog.Harvest!.Y);
+        var (_, creepPayload) = writer.Patches.Single(p => p.ObjectId == creep.Id && p.Payload.Store is not null && p.Payload.ActionLog is not null);
+        Assert.Equal(4, creepPayload.Store![ResourceTypes.Energy]);
+        Assert.Equal(11, creepPayload.ActionLog!.Harvest!.X);
+        Assert.Equal(10, creepPayload.ActionLog.Harvest!.Y);
 
         Assert.Equal(4, _statsSink.EnergyHarvested["user1"]);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_HarvestInKeeperRoom_TracksInvaderHarvested()
+    {
+        var creep = CreateCreep("creep1", 10, 10, "user1", [BodyPartType.Work, BodyPartType.Work], capacity: 50);
+        var source = CreateSource("source1", 11, 10, energy: 300);
+        var context = CreateContext([creep, source], CreateHarvestIntents("user1", creep.Id, source.Id), roomType: RoomType.Keeper);
+        var writer = (FakeMutationWriter)context.MutationWriter;
+
+        await _step.ExecuteAsync(context, TestContext.Current.CancellationToken);
+
+        var (objectId, payload) = writer.Patches.Single(p => p.ObjectId == source.Id);
+        Assert.Equal(296, payload.Energy);
+        Assert.Equal(4, payload.InvaderHarvested);
+
+        var (_, creepPayload) = writer.Patches.Single(p => p.ObjectId == creep.Id && p.Payload.Store is not null && p.Payload.ActionLog is not null);
+        Assert.Equal(4, creepPayload.Store![ResourceTypes.Energy]);
     }
 
     [Fact]
@@ -98,7 +115,8 @@ public sealed class HarvestIntentStepTests
         RoomIntentSnapshot intents,
         int gameTime = 100,
         ICreepStatsSink? statsSink = null,
-        bool includeController = false)  // Default false since one test creates its own controller
+        bool includeController = false,  // Default false since one test creates its own controller
+        RoomType roomType = RoomType.Unknown)
     {
         var objectMap = objects.ToDictionary(o => o.Id, o => o, StringComparer.Ordinal);
 
@@ -147,10 +165,25 @@ public sealed class HarvestIntentStepTests
             objectMap[controller.Id] = controller;
         }
 
+        var roomInfo = new RoomInfoSnapshot(
+            RoomName: "W1N1",
+            Shard: "shard0",
+            Status: null,
+            IsNoviceArea: null,
+            IsRespawnArea: null,
+            OpenTime: null,
+            OwnerUserId: null,
+            ControllerLevel: null,
+            EnergyAvailable: null,
+            NextNpcMarketOrder: null,
+            PowerBankTime: null,
+            InvaderGoal: null,
+            Type: roomType);
+
         var state = new RoomState(
             "W1N1",
             gameTime,
-            null,
+            roomInfo,
             objectMap,
             new Dictionary<string, UserState>(StringComparer.Ordinal),
             intents,
@@ -243,7 +276,7 @@ public sealed class HarvestIntentStepTests
             StructureType: RoomObjectTypes.Source,
             Store: new Dictionary<string, int>(StringComparer.Ordinal),
             StoreCapacity: null,
-            StoreCapacityResource: new Dictionary<string, int>(StringComparer.Ordinal),
+            StoreCapacityResource: new Dictionary<string, int>(StringComparer.Ordinal) { [ResourceTypes.Energy] = 3000 },
             Reservation: null,
             Sign: null,
             Structure: null,
@@ -264,7 +297,8 @@ public sealed class HarvestIntentStepTests
             ProgressTotal: null,
             ActionLog: null,
             Energy: energy,
-            InvaderHarvested: 0);
+            InvaderHarvested: 0,
+            NextRegenerationTime: 50);  // Initialized source (past regeneration time)
 
     private static RoomObjectSnapshot CreateMineral(string id, int x, int y, string resourceType, int amount)
         => new(

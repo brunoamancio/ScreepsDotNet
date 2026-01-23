@@ -1,6 +1,6 @@
 # Engine Roadmap (E1-E10)
 
-**Last Updated:** January 23, 2026 (E10 Phase 3 complete - All structure activation implemented, factory parity achieved)
+**Last Updated:** January 23, 2026 (Pre-existing test failures fixed: 6 fixed + 1 test added = 509 Engine tests passing)
 
 This document tracks the Engine subsystem roadmap and implementation status. For detailed handler tracking, see `e2.md`. For E5 blockers, see `e5.md`.
 
@@ -112,7 +112,7 @@ This document tracks the Engine subsystem roadmap and implementation status. For
 - ✅ Modified `MainLoopGlobalProcessor` to **require** `IEngineHost` and use `RunGlobalAsync` exclusively
 - ✅ Added error handling and recovery logic for engine failures
 - ✅ **Removed legacy fallback code** - Engine is now the only processing path (385 lines removed)
-- ✅ All 754 tests passing (428 Engine + 70 Driver + 54 CLI + 202 HTTP)
+- ✅ All 853 tests passing (509 Engine + 70 Driver + 64 CLI + 210 HTTP)
 
 **Architecture:**
 - `IEngineHost` serves as the high-level orchestration interface for driver loops
@@ -127,9 +127,9 @@ This document tracks the Engine subsystem roadmap and implementation status. For
 
 **Notes:**
 - Engine orchestration is **mandatory** - no legacy code paths remain
-- The managed .NET Engine (E1-E5) is production-ready with 428 passing tests
+- The managed .NET Engine (E1-E5) is production-ready with 509 passing tests
 - All game mechanics are now handled exclusively by the Engine subsystem
-- End-to-end integration validated through existing 428 engine tests
+- End-to-end integration validated through existing 509 engine tests
 
 ---
 
@@ -235,7 +235,7 @@ This document tracks the Engine subsystem roadmap and implementation status. For
 - ✅ CLI commands: `engine status`, `engine room-state`, `engine validation-stats`
 - ✅ HTTP endpoints: GET `/api/game/engine/status`, GET `/api/game/engine/room-state`, GET/POST `/api/game/engine/validation-stats`
 - ✅ Operator playbooks: 7 debugging workflows (high rejection rate, slow processing, memory leaks, intent errors, validation reference, CLI/HTTP quick references)
-- ✅ All 781 tests passing (437 Engine + 70 Driver + 64 CLI + 210 HTTP)
+- ✅ All 853 tests passing (509 Engine + 70 Driver + 64 CLI + 210 HTTP)
 
 **Deferred to E8.1:**
 - 📋 Real telemetry aggregation (replace `StubEngineDiagnosticsService` with live analytics)
@@ -370,7 +370,9 @@ This document tracks the Engine subsystem roadmap and implementation status. For
 - ✅ E8 Phase 3: HTTP diagnostics (8 tests, 4 endpoints with authentication)
 - ✅ E8 Phase 4: Operator playbooks (7 comprehensive debugging workflows)
 
-**Test Status:** 970/970 passing (58/94 parity [61.7%] + 481 Engine unit + 70 Driver + 64 CLI + 210 HTTP + 87 other)
+**Test Status:** 853/853 passing (509 Engine + 70 Driver + 64 CLI + 210 HTTP)
+- ✅ Engine: 509 tests (includes 91 parity + 418 unit tests)
+- ✅ All pre-existing test failures fixed (6 tests: 2 combat, 1 harvest, 3 controller)
 
 **Remaining Work:**
 - 📋 E7: Parity validation (depends on: E1-E6 complete ✅, E8 complete ✅)

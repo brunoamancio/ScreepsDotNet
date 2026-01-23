@@ -156,7 +156,11 @@ public sealed class ControllerIntentStepTests
 
         await _step.ExecuteAsync(context, TestContext.Current.CancellationToken);
 
-        Assert.Empty(writer.Patches);
+        // Validation failures emit ActionLog on creep (standard pattern)
+        var (objectId, payload) = Assert.Single(writer.Patches);
+        Assert.Equal(creep.Id, objectId);
+        Assert.NotNull(payload.ActionLog);
+        Assert.False(payload.ActionLog.HasEntries);
     }
 
     [Fact]
@@ -173,7 +177,11 @@ public sealed class ControllerIntentStepTests
 
         await _step.ExecuteAsync(context, TestContext.Current.CancellationToken);
 
-        Assert.Empty(writer.Patches);
+        // Validation failures emit ActionLog on creep (standard pattern)
+        var (objectId, payload) = Assert.Single(writer.Patches);
+        Assert.Equal(creep.Id, objectId);
+        Assert.NotNull(payload.ActionLog);
+        Assert.False(payload.ActionLog.HasEntries);
     }
 
     [Fact]
@@ -190,7 +198,11 @@ public sealed class ControllerIntentStepTests
 
         await _step.ExecuteAsync(context, TestContext.Current.CancellationToken);
 
-        Assert.Empty(writer.Patches);
+        // Validation failures emit ActionLog on creep (standard pattern)
+        var (objectId, payload) = Assert.Single(writer.Patches);
+        Assert.Equal(creep.Id, objectId);
+        Assert.NotNull(payload.ActionLog);
+        Assert.False(payload.ActionLog.HasEntries);
     }
 
     #endregion

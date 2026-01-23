@@ -15,9 +15,10 @@ public sealed class CombatResolutionStepTests
     [Fact]
     public async Task ExecuteAsync_KillsCreep_InvokesDeathProcessor()
     {
+        var attacker = CreateCreep("attacker", hits: 100);
         var creep = CreateCreep("creep1", hits: 50);
         var intents = CreateIntents(creep.Id, 50);
-        var context = CreateContext([creep], intents);
+        var context = CreateContext([attacker, creep], intents);
         var writer = (FakeMutationWriter)context.MutationWriter;
         var deathProcessor = new RecordingDeathProcessor();
         var step = new CombatResolutionStep(deathProcessor);
@@ -33,9 +34,10 @@ public sealed class CombatResolutionStepTests
     [Fact]
     public async Task ExecuteAsync_KillsStructure_RemovesDirectly()
     {
+        var attacker = CreateCreep("attacker", hits: 100);
         var structure = CreateStructure("wall1", hits: 10);
         var intents = CreateIntents(structure.Id, 10);
-        var context = CreateContext([structure], intents);
+        var context = CreateContext([attacker, structure], intents);
         var writer = (FakeMutationWriter)context.MutationWriter;
         var deathProcessor = new RecordingDeathProcessor();
         var step = new CombatResolutionStep(deathProcessor);
