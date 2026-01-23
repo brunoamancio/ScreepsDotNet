@@ -96,8 +96,8 @@ public sealed class StructureDecayStepTests
         await step.ExecuteAsync(context, TestContext.Current.CancellationToken);
 
         // Assert - Should set hits to 0 and remove
-        var patch = writer.Patches.Single(p => p.ObjectId == rampart.Id && p.Payload.Hits.HasValue);
-        Assert.Equal(0, patch.Payload.Hits);
+        var (ObjectId, Payload) = writer.Patches.Single(p => p.ObjectId == rampart.Id && p.Payload.Hits.HasValue);
+        Assert.Equal(0, Payload.Hits);
         Assert.Contains(rampart.Id, writer.Removals);
     }
 
@@ -156,8 +156,8 @@ public sealed class StructureDecayStepTests
         // Assert - Only rampart1, road, and wall should decay (rampart2's time not reached)
         Assert.Equal(3, writer.Patches.Count);
 
-        var rampart1Patch = writer.Patches.Single(p => p.ObjectId == rampart1.Id);
-        Assert.Equal(700, rampart1Patch.Payload.Hits);
+        var (ObjectId, Payload) = writer.Patches.Single(p => p.ObjectId == rampart1.Id);
+        Assert.Equal(700, Payload.Hits);
 
         var roadPatch = writer.Patches.Single(p => p.ObjectId == road.Id);
         Assert.Equal(4900, roadPatch.Payload.Hits);

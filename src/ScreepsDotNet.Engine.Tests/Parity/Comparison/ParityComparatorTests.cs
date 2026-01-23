@@ -87,9 +87,9 @@ public sealed class ParityComparatorTests
         // Act
         var result = ParityComparator.Compare(dotnetOutput, nodeOutput);
 
-        // Assert
+        // Assert - Only mutation divergences are detected (stats comparison is disabled)
         Assert.True(result.HasDivergences);
-        Assert.Equal(3, result.Divergences.Count); // source energy, creep energy, stats
+        Assert.Equal(2, result.Divergences.Count); // TODO: Change to 3 when stats comparison is re-enabled (see ParityComparator.cs line 28)
 
         var sourceEnergyDivergence = result.Divergences.First(d => d.Path == "mutations.patches[source1].energy");
         Assert.Equal(2997, sourceEnergyDivergence.NodeValue);
@@ -99,9 +99,12 @@ public sealed class ParityComparatorTests
         Assert.Equal(3, creepEnergyDivergence.NodeValue);
         Assert.Equal(2, creepEnergyDivergence.DotNetValue);
 
-        var statDivergence = result.Divergences.First(d => d.Path == "stats.user1.energyHarvested");
-        Assert.Equal(3, statDivergence.NodeValue);
-        Assert.Equal(2, statDivergence.DotNetValue);
+        // TODO: Uncomment when stats comparison is re-enabled in ParityComparator.cs (line 28)
+        // Stats comparison is temporarily disabled because Node.js harness doesn't capture stats yet
+        // (deferred per tools/parity-harness/README.md line 42)
+        // var statDivergence = result.Divergences.First(d => d.Path == "stats.user1.energyHarvested");
+        // Assert.Equal(3, statDivergence.NodeValue);
+        // Assert.Equal(2, statDivergence.DotNetValue);
     }
 
     [Fact]
@@ -181,7 +184,7 @@ public sealed class ParityComparatorTests
 
         // Assert
         Assert.Contains("❌ Parity Test Failed: harvest_basic.json", report);
-        Assert.Contains("Divergences (3)", report);
+        Assert.Contains("Divergences (2)", report); // TODO: Change to (3) when stats comparison is re-enabled (see ParityComparator.cs line 28)
         Assert.Contains("mutations.patches[source1].energy", report);
         Assert.Contains("Node.js: 2997", report);
         Assert.Contains(".NET:    2998", report);
@@ -219,10 +222,11 @@ public sealed class ParityComparatorTests
         // Act
         var summary = DivergenceReporter.FormatSummary(result);
 
-        // Assert
-        Assert.Contains("❌ 3 divergence(s)", summary);
+        // Assert - Stats comparison is disabled, so only mutation divergences are reported
+        Assert.Contains("❌ 2 divergence(s)", summary); // TODO: Change to "3 divergence(s)" when stats comparison is re-enabled (see ParityComparator.cs line 28)
         Assert.Contains("Mutation: 2", summary);
-        Assert.Contains("Stats: 1", summary);
+        // TODO: Uncomment when stats comparison is re-enabled in ParityComparator.cs (line 28)
+        // Assert.Contains("Stats: 1", summary);
     }
 
     private static ParityTestOutput CreateDotNetOutput(int energyHarvested, int sourceEnergy, int creepEnergy)

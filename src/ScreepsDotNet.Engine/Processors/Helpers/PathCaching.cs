@@ -1,3 +1,4 @@
+using ScreepsDotNet.Common.Extensions;
 using ScreepsDotNet.Common.Types;
 using ScreepsDotNet.Driver.Contracts;
 
@@ -122,19 +123,8 @@ internal static class PathCaching
         var ndx = Math.Clamp(dx, -1, 1);
         var ndy = Math.Clamp(dy, -1, 1);
 
-        // Map to direction
-        var result = (ndx, ndy) switch
-        {
-            (0, -1) => Direction.Top,
-            (1, -1) => Direction.TopRight,
-            (1, 0) => Direction.Right,
-            (1, 1) => Direction.BottomRight,
-            (0, 1) => Direction.Bottom,
-            (-1, 1) => Direction.BottomLeft,
-            (-1, 0) => Direction.Left,
-            (-1, -1) => Direction.TopLeft,
-            _ => (Direction?)null
-        };
+        // Map to direction using centralized extension
+        var result = DirectionExtensions.ToDirection(ndx, ndy);
         return result;
     }
 

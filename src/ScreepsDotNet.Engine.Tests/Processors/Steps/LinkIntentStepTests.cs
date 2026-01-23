@@ -34,9 +34,9 @@ public sealed class LinkIntentStepTests
         var expectedCooldown = ScreepsGameConstants.LinkCooldown * Math.Max(Math.Abs(15 - 10), Math.Abs(15 - 10));
         Assert.Equal(expectedCooldown, payload.Cooldown);  // Countdown ticker, not absolute time
 
-        var targetPatch = writer.Patches.Single(p => p.ObjectId == targetLink.Id);
+        var (ObjectId, Payload) = writer.Patches.Single(p => p.ObjectId == targetLink.Id);
         var transferredWithLoss = 100 - (int)Math.Ceiling(100 * ScreepsGameConstants.LinkLossRatio);
-        Assert.Equal(200 + transferredWithLoss, targetPatch.Payload.Store![ResourceTypes.Energy]);
+        Assert.Equal(200 + transferredWithLoss, Payload.Store![ResourceTypes.Energy]);
     }
 
     [Fact]
@@ -53,10 +53,10 @@ public sealed class LinkIntentStepTests
         await _step.ExecuteAsync(context, TestContext.Current.CancellationToken);
 
         // Assert
-        var targetPatch = writer.Patches.Single(p => p.ObjectId == targetLink.Id);
+        var (ObjectId, Payload) = writer.Patches.Single(p => p.ObjectId == targetLink.Id);
         var loss = (int)Math.Ceiling(100 * ScreepsGameConstants.LinkLossRatio);
         var expectedTarget = 100 - loss;
-        Assert.Equal(expectedTarget, targetPatch.Payload.Store![ResourceTypes.Energy]);
+        Assert.Equal(expectedTarget, Payload.Store![ResourceTypes.Energy]);
         Assert.Equal(97, expectedTarget);
     }
 
@@ -74,8 +74,8 @@ public sealed class LinkIntentStepTests
         await _step.ExecuteAsync(context, TestContext.Current.CancellationToken);
 
         // Assert
-        var sourcePatch = writer.Patches.Single(p => p.ObjectId == sourceLink.Id);
-        Assert.Equal(900, sourcePatch.Payload.Store![ResourceTypes.Energy]);
+        var (ObjectId, Payload) = writer.Patches.Single(p => p.ObjectId == sourceLink.Id);
+        Assert.Equal(900, Payload.Store![ResourceTypes.Energy]);
 
         var targetPatch = writer.Patches.Single(p => p.ObjectId == targetLink.Id);
         var transferredWithLoss = 100 - (int)Math.Ceiling(100 * ScreepsGameConstants.LinkLossRatio);
@@ -169,11 +169,11 @@ public sealed class LinkIntentStepTests
         await _step.ExecuteAsync(context, TestContext.Current.CancellationToken);
 
         // Assert
-        var sourcePatch = writer.Patches.Single(p => p.ObjectId == sourceLink.Id);
-        Assert.NotNull(sourcePatch.Payload.ActionLog);
-        Assert.NotNull(sourcePatch.Payload.ActionLog!.TransferEnergy);
-        Assert.Equal(15, sourcePatch.Payload.ActionLog!.TransferEnergy!.X);
-        Assert.Equal(15, sourcePatch.Payload.ActionLog!.TransferEnergy!.Y);
+        var (ObjectId, Payload) = writer.Patches.Single(p => p.ObjectId == sourceLink.Id);
+        Assert.NotNull(Payload.ActionLog);
+        Assert.NotNull(Payload.ActionLog!.TransferEnergy);
+        Assert.Equal(15, Payload.ActionLog!.TransferEnergy!.X);
+        Assert.Equal(15, Payload.ActionLog!.TransferEnergy!.Y);
     }
 
     #region Helper Methods

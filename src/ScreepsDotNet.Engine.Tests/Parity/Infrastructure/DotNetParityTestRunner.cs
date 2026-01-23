@@ -1,5 +1,6 @@
 namespace ScreepsDotNet.Engine.Tests.Parity.Infrastructure;
 
+using ScreepsDotNet.Common.Structures;
 using ScreepsDotNet.Driver.Contracts;
 using ScreepsDotNet.Engine.Data.GlobalMutations;
 using ScreepsDotNet.Engine.Data.Models;
@@ -48,8 +49,8 @@ public static class DotNetParityTestRunner
         var spawnIntentParser = new ParityTestDoubles.StubSpawnIntentParser();
         var spawnStateReader = new ParityTestDoubles.StubSpawnStateReader();
         var spawnEnergyCharger = new ParityTestDoubles.StubSpawnEnergyCharger();
-        var blueprintProvider = new ParityTestDoubles.StubStructureBlueprintProvider();
-        var structureFactory = new ParityTestDoubles.StubStructureSnapshotFactory();
+        var blueprintProvider = new StructureBlueprintProvider();
+        var structureFactory = new StructureSnapshotFactory();
 
         var steps = new List<IRoomProcessorStep>
         {

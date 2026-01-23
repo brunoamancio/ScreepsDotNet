@@ -1,6 +1,7 @@
 namespace ScreepsDotNet.Engine.Tests.Processors.Steps;
 
 using ScreepsDotNet.Common.Constants;
+using ScreepsDotNet.Common.Extensions;
 using ScreepsDotNet.Common.Types;
 using ScreepsDotNet.Driver.Contracts;
 using ScreepsDotNet.Engine.Data.Bulk;
@@ -162,7 +163,7 @@ public sealed class SpawnSpawningStepTests
     private static IReadOnlyList<RoomObjectSnapshot> CreateRingOfWalls(RoomObjectSnapshot spawn, RoomObjectSnapshot? skip = null)
     {
         var walls = new List<RoomObjectSnapshot>();
-        foreach (var (X, Y) in SpawnSpawningStep.DirectionOffsets.Values) {
+        foreach (var (X, Y) in DirectionExtensions.GetAllOffsets().Values) {
             var targetX = spawn.X + X;
             var targetY = spawn.Y + Y;
             if (skip is not null && skip.X == targetX && skip.Y == targetY)

@@ -1,6 +1,7 @@
 namespace ScreepsDotNet.Engine.Tests.Parity.Infrastructure;
 
 using ScreepsDotNet.Common.Constants;
+using ScreepsDotNet.Common.Extensions;
 using ScreepsDotNet.Common.Types;
 using ScreepsDotNet.Driver.Contracts;
 using ScreepsDotNet.Engine.Data.Models;
@@ -374,19 +375,7 @@ public sealed class ParityFixtureBuilder
             ?? throw new InvalidOperationException($"Creep {creepId} not found. Add creep before adding intent.");
 
         // Calculate destination X,Y from direction
-        var (dx, dy) = direction switch
-        {
-            Direction.Top => (0, -1),
-            Direction.TopRight => (1, -1),
-            Direction.Right => (1, 0),
-            Direction.BottomRight => (1, 1),
-            Direction.Bottom => (0, 1),
-            Direction.BottomLeft => (-1, 1),
-            Direction.Left => (-1, 0),
-            Direction.TopLeft => (-1, -1),
-            _ => throw new ArgumentException($"Invalid direction: {direction}", nameof(direction))
-        };
-
+        var (dx, dy) = direction.ToOffset();
         var targetX = creep.X + dx;
         var targetY = creep.Y + dy;
 

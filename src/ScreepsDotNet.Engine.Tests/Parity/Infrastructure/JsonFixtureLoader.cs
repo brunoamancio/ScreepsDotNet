@@ -2,6 +2,7 @@ namespace ScreepsDotNet.Engine.Tests.Parity.Infrastructure;
 
 using System.Text.Json;
 using ScreepsDotNet.Common.Constants;
+using ScreepsDotNet.Common.Extensions;
 using ScreepsDotNet.Common.Types;
 using ScreepsDotNet.Driver.Contracts;
 using ScreepsDotNet.Engine.Data.Models;
@@ -35,7 +36,7 @@ public static class JsonFixtureLoader
     {
         var objects = fixture.Objects.ToDictionary(o => o.Id, o => ConvertToRoomObject(o, fixture.Room, fixture.Shard), StringComparer.Ordinal);
         var users = ConvertUsers(fixture.Users);
-        var intents = ConvertIntents(fixture.Intents, fixture.Room, fixture.Shard);
+        var intents = ConvertIntents(fixture.Intents, fixture.Objects, fixture.Room, fixture.Shard);
         var terrain = ParseTerrain(fixture.Terrain, fixture.Room);
 
         var roomState = new RoomState(
@@ -78,7 +79,7 @@ public static class JsonFixtureLoader
             Density: obj.Density,
             MineralType: obj.MineralType,
             DepositType: null,
-            StructureType: IsStructure(obj.Type) ? obj.Type : null,
+            StructureType: obj.StructureType ?? (IsStructure(obj.Type) ? obj.Type : null),
             Store: store,
             StoreCapacity: obj.StoreCapacity,
             StoreCapacityResource: storeCapacityResource,
@@ -112,8 +113,9 @@ public static class JsonFixtureLoader
             _ => throw new ArgumentException($"Unknown body part type: {bodyPart.Type}")
         };
 
-        // Use hits as-is from JSON - 0 means inactive/destroyed, missing property defaults to 0
-        var result = new CreepBodyPartSnapshot(bodyPartType, bodyPart.Hits, bodyPart.Boost);
+        // Default to full HP (100) if hits not specified in fixture JSON
+        var hits = bodyPart.Hits ?? ScreepsGameConstants.BodyPartHitPoints;
+        var result = new CreepBodyPartSnapshot(bodyPartType, hits, bodyPart.Boost);
         return result;
     }
 
@@ -138,11 +140,12 @@ public static class JsonFixtureLoader
         return result;
     }
 
-    private static RoomIntentSnapshot? ConvertIntents(Dictionary<string, Dictionary<string, List<JsonIntent>>> intents, string roomName, string shard)
+    private static RoomIntentSnapshot? ConvertIntents(Dictionary<string, Dictionary<string, List<JsonIntent>>> intents, List<JsonRoomObject> objects, string roomName, string shard)
     {
         if (intents.Count == 0)
             return null;
 
+        var objectMap = objects.ToDictionary(o => o.Id, StringComparer.Ordinal);
         var userIntents = new Dictionary<string, IntentEnvelope>(StringComparer.Ordinal);
 
         foreach (var (userId, objectIntents) in intents) {
@@ -150,25 +153,32 @@ public static class JsonFixtureLoader
             var creepIntents = new Dictionary<string, CreepIntentEnvelope>(StringComparer.Ordinal);
 
             foreach (var (objectId, intentList) in objectIntents) {
-                // Separate combat intents (attack, ranged_attack, heal) from other intents
-                var combatIntents = new List<JsonIntent>();
+                // Separate creep-specific intents (move, attack, ranged_attack, heal) from other intents
+                var creepSpecificIntents = new List<JsonIntent>();
                 var otherIntents = new List<JsonIntent>();
 
                 foreach (var intent in intentList) {
-                    if (intent.Intent is IntentKeys.Attack or IntentKeys.RangedAttack or IntentKeys.Heal)
-                        combatIntents.Add(intent);
+                    if (intent.Intent is IntentKeys.Move or IntentKeys.Attack or IntentKeys.RangedAttack or IntentKeys.Heal)
+                        creepSpecificIntents.Add(intent);
                     else
                         otherIntents.Add(intent);
                 }
 
-                // Map combat intents to CreepIntentEnvelope
-                if (combatIntents.Count > 0) {
+                // Map creep-specific intents to CreepIntentEnvelope
+                if (creepSpecificIntents.Count > 0) {
+                    MoveIntent? moveIntent = null;
                     AttackIntent? attackIntent = null;
                     AttackIntent? rangedAttackIntent = null;
                     HealIntent? healIntent = null;
 
-                    foreach (var intent in combatIntents) {
+                    foreach (var intent in creepSpecificIntents) {
                         switch (intent.Intent) {
+                            case IntentKeys.Move:
+                                if (intent.Direction.HasValue && objectMap.TryGetValue(objectId, out var creep)) {
+                                    var (dx, dy) = DirectionExtensions.ToOffset(intent.Direction.Value);
+                                    moveIntent = new MoveIntent(creep.X + dx, creep.Y + dy);
+                                }
+                                break;
                             case IntentKeys.Attack:
                                 attackIntent = new AttackIntent(intent.Id!, null);
                                 break;
@@ -182,7 +192,7 @@ public static class JsonFixtureLoader
                     }
 
                     creepIntents[objectId] = new CreepIntentEnvelope(
-                        Move: null,
+                        Move: moveIntent,
                         Attack: attackIntent,
                         RangedAttack: rangedAttackIntent,
                         Heal: healIntent,

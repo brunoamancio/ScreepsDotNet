@@ -1,6 +1,7 @@
 namespace ScreepsDotNet.Engine.Processors.Steps;
 
 using ScreepsDotNet.Common.Constants;
+using ScreepsDotNet.Common.Extensions;
 using ScreepsDotNet.Common.Types;
 using ScreepsDotNet.Common.Utilities;
 using ScreepsDotNet.Driver.Contracts;
@@ -25,18 +26,6 @@ internal sealed class SpawnSpawningStep(ISpawnStateReader spawnStateReader, ICre
         Direction.Left,
         Direction.TopLeft
     ];
-
-    internal static readonly IReadOnlyDictionary<Direction, (int X, int Y)> DirectionOffsets = new Dictionary<Direction, (int X, int Y)>
-    {
-        [Direction.Top] = (0, -1),
-        [Direction.TopRight] = (1, -1),
-        [Direction.Right] = (1, 0),
-        [Direction.BottomRight] = (1, 1),
-        [Direction.Bottom] = (0, 1),
-        [Direction.BottomLeft] = (-1, 1),
-        [Direction.Left] = (-1, 0),
-        [Direction.TopLeft] = (-1, -1)
-    };
 
     private static readonly HashSet<string> BlockingStructures = new(StringComparer.Ordinal)
     {
@@ -121,10 +110,8 @@ internal sealed class SpawnSpawningStep(ISpawnStateReader spawnStateReader, ICre
         var hostileCoord = default(TileCoord?);
 
         foreach (var direction in preferred) {
-            if (!DirectionOffsets.TryGetValue(direction, out var offset))
-                continue;
-
-            var target = new TileCoord(spawn.X + offset.X, spawn.Y + offset.Y);
+            var (dx, dy) = direction.ToOffset();
+            var target = new TileCoord(spawn.X + dx, spawn.Y + dy);
             if (!IsWithinBounds(target))
                 continue;
 
@@ -162,10 +149,8 @@ internal sealed class SpawnSpawningStep(ISpawnStateReader spawnStateReader, ICre
             if (preferred.Contains(direction))
                 continue;
 
-            if (!DirectionOffsets.TryGetValue(direction, out var offset))
-                continue;
-
-            var target = new TileCoord(spawn.X + offset.X, spawn.Y + offset.Y);
+            var (dx, dy) = direction.ToOffset();
+            var target = new TileCoord(spawn.X + dx, spawn.Y + dy);
             if (!IsWithinBounds(target))
                 continue;
 

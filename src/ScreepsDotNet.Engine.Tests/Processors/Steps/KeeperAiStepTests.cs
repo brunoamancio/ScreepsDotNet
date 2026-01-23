@@ -28,8 +28,8 @@ public sealed class KeeperAiStepTests
         await step.ExecuteAsync(context, TestContext.Current.CancellationToken);
 
         // Assert - keeper assigns target (may also move and cache path)
-        var targetAssignment = writer.Patches.Single(p => p.ObjectId == keeper.Id && p.Payload.MemorySourceId is not null);
-        Assert.Equal(source1.Id, targetAssignment.Payload.MemorySourceId);
+        var (ObjectId, Payload) = writer.Patches.Single(p => p.ObjectId == keeper.Id && p.Payload.MemorySourceId is not null);
+        Assert.Equal(source1.Id, Payload.MemorySourceId);
     }
 
     [Fact]
@@ -205,9 +205,9 @@ public sealed class KeeperAiStepTests
 
         // Assert - both hostiles should be damaged
         Assert.Equal(2, writer.Patches.Count(p => p.Payload.Hits.HasValue));
-        var h1Patch = writer.Patches.Single(p => p.ObjectId == hostile1.Id);
+        var (ObjectId, Payload) = writer.Patches.Single(p => p.ObjectId == hostile1.Id);
         var h2Patch = writer.Patches.Single(p => p.ObjectId == hostile2.Id);
-        Assert.Equal(92, h1Patch.Payload.Hits); // 100 - (4 * 2) = 92 (range 2 damage)
+        Assert.Equal(92, Payload.Hits); // 100 - (4 * 2) = 92 (range 2 damage)
         Assert.Equal(92, h2Patch.Payload.Hits); // 100 - (4 * 2) = 92 (range 2 damage)
     }
 

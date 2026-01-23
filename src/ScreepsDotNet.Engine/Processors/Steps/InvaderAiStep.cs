@@ -1,4 +1,5 @@
 using ScreepsDotNet.Common.Constants;
+using ScreepsDotNet.Common.Extensions;
 using ScreepsDotNet.Common.Types;
 using ScreepsDotNet.Driver.Contracts;
 using ScreepsDotNet.Engine.Processors.Helpers;
@@ -268,18 +269,7 @@ internal sealed class InvaderAiStep : IRoomProcessorStep
 
     private static (int X, int Y) CalculateNewPosition(int x, int y, Direction direction)
     {
-        var (dx, dy) = direction switch
-        {
-            Direction.Top => (0, -1),
-            Direction.TopRight => (1, -1),
-            Direction.Right => (1, 0),
-            Direction.BottomRight => (1, 1),
-            Direction.Bottom => (0, 1),
-            Direction.BottomLeft => (-1, 1),
-            Direction.Left => (-1, 0),
-            Direction.TopLeft => (-1, -1),
-            _ => (0, 0)
-        };
+        var (dx, dy) = direction.ToOffset();
 
         var result = (x + dx, y + dy);
         return result;

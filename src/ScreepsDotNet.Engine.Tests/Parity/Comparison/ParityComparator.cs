@@ -16,8 +16,16 @@ public static class ParityComparator
         // Phase 3.1: Compare mutations
         divergences.AddRange(CompareMutations(dotnetOutput, nodeOutput));
 
-        // Phase 3.1: Compare stats
-        divergences.AddRange(CompareStats(dotnetOutput, nodeOutput));
+        // Phase 3.1: Compare stats (TEMPORARILY DISABLED - stats recording deferred in Node.js harness)
+        // Stats comparison is deferred per tools/parity-harness/README.md line 42
+        // TODO: Re-enable once Node.js harness implements stats capture
+        // When re-enabling, also update ParityComparatorTests.cs:
+        //   - Line 92: Change Assert.Equal(2, ...) to Assert.Equal(3, ...)
+        //   - Lines 103-106: Uncomment stat divergence assertions
+        //   - Line 184: Change "Divergences (2)" to "Divergences (3)"
+        //   - Line 223: Change "2 divergence(s)" to "3 divergence(s)"
+        //   - Line 226: Uncomment Assert.Contains("Stats: 1", ...)
+        // divergences.AddRange(CompareStats(dotnetOutput, nodeOutput));
 
         // Phase 3+: Compare action logs (future)
         // Phase 3+: Compare final state (future)

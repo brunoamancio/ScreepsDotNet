@@ -38,11 +38,12 @@ public sealed record JsonRoomObject(
     [property: JsonPropertyName("cooldownTime")] int? CooldownTime = null,
     [property: JsonPropertyName("mineralAmount")] int? MineralAmount = null,
     [property: JsonPropertyName("mineralType")] string? MineralType = null,
-    [property: JsonPropertyName("density")] int? Density = null);
+    [property: JsonPropertyName("density")] int? Density = null,
+    [property: JsonPropertyName("structureType")] string? StructureType = null);
 
 public sealed record JsonBodyPart(
     [property: JsonPropertyName("type")] string Type,
-    [property: JsonPropertyName("hits")] int Hits,
+    [property: JsonPropertyName("hits")] int? Hits = null,
     [property: JsonPropertyName("boost")] string? Boost = null);
 
 public sealed record JsonIntent(
