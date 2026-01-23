@@ -34,7 +34,7 @@ public static class JsonFixtureLoader
 
     private static RoomState ConvertToRoomState(JsonFixture fixture)
     {
-        var objects = fixture.Objects.ToDictionary(o => o.Id, o => ConvertToRoomObject(o, fixture.Room, fixture.Shard), StringComparer.Ordinal);
+        var objects = fixture.Objects.ToDictionary(o => o.Id, o => ConvertToRoomObject(o, fixture.Room, fixture.Shard, fixture.GameTime), StringComparer.Ordinal);
         var users = ConvertUsers(fixture.Users);
         var intents = ConvertIntents(fixture.Intents, fixture.Objects, fixture.Room, fixture.Shard);
         var terrain = ParseTerrain(fixture.Terrain, fixture.Room);
@@ -52,15 +52,22 @@ public static class JsonFixtureLoader
         return roomState;
     }
 
-    private static RoomObjectSnapshot ConvertToRoomObject(JsonRoomObject obj, string roomName, string shard)
+    private static RoomObjectSnapshot ConvertToRoomObject(JsonRoomObject obj, string roomName, string shard, int gameTime)
     {
         var store = obj.Store is not null
             ? new Dictionary<string, int>(obj.Store, StringComparer.Ordinal)
             : new Dictionary<string, int>(StringComparer.Ordinal);
 
         var storeCapacityResource = new Dictionary<string, int>(StringComparer.Ordinal);
+        if (obj.EnergyCapacity.HasValue) {
+            storeCapacityResource[ResourceTypes.Energy] = obj.EnergyCapacity.Value;
+        }
 
         var body = obj.Body is not null ? obj.Body.Select(ConvertBodyPart).ToList() : [];
+
+        var nextRegenerationTime = obj.TicksToRegeneration.HasValue
+            ? (int?)(gameTime + obj.TicksToRegeneration.Value)
+            : null;
 
         var roomObject = new RoomObjectSnapshot(
             Id: obj.Id,
@@ -92,6 +99,7 @@ public static class JsonFixtureLoader
             MineralAmount: obj.MineralAmount,
             Cooldown: obj.Cooldown,
             CooldownTime: obj.CooldownTime,
+            NextRegenerationTime: nextRegenerationTime,
             Progress: obj.Progress,
             ProgressTotal: obj.ProgressTotal);
 

@@ -66,17 +66,49 @@ internal sealed class CreepBuildRepairStep(IStructureBlueprintProvider blueprint
             return;
 
         if (target.Hits is null || target.HitsMax is null || target.Hits >= target.HitsMax)
+        {
+            // Emit ActionLog for already-full-hits attempt
+            context.MutationWriter.Patch(creep.Id, new RoomObjectPatchPayload
+            {
+                ActionLog = new RoomObjectActionLogPatch(
+                    Repair: new RoomObjectActionLogRepair(target.X, target.Y))
+            });
             return;
+        }
 
         if (!WorkPartHelper.TryGetActiveWorkParts(creep, out var workParts))
+        {
+            // Emit ActionLog for no-work-parts attempt
+            context.MutationWriter.Patch(creep.Id, new RoomObjectPatchPayload
+            {
+                ActionLog = new RoomObjectActionLogPatch(
+                    Repair: new RoomObjectActionLogRepair(target.X, target.Y))
+            });
             return;
+        }
 
         var availableEnergy = GetAvailableEnergy(creep, energyLedger);
         if (availableEnergy <= 0)
+        {
+            // Emit ActionLog for no-energy attempt
+            context.MutationWriter.Patch(creep.Id, new RoomObjectPatchPayload
+            {
+                ActionLog = new RoomObjectActionLogPatch(
+                    Repair: new RoomObjectActionLogRepair(target.X, target.Y))
+            });
             return;
+        }
 
         if (!IsInRange(creep, target))
+        {
+            // Emit ActionLog for out-of-range attempt
+            context.MutationWriter.Patch(creep.Id, new RoomObjectPatchPayload
+            {
+                ActionLog = new RoomObjectActionLogPatch(
+                    Repair: new RoomObjectActionLogRepair(target.X, target.Y))
+            });
             return;
+        }
 
         var repairPower = workParts.Count * ScreepsGameConstants.RepairPower;
         if (repairPower <= 0)
@@ -131,17 +163,49 @@ internal sealed class CreepBuildRepairStep(IStructureBlueprintProvider blueprint
             return;
 
         if (target.Progress >= target.ProgressTotal)
+        {
+            // Emit ActionLog for already-complete attempt
+            context.MutationWriter.Patch(creep.Id, new RoomObjectPatchPayload
+            {
+                ActionLog = new RoomObjectActionLogPatch(
+                    Build: new RoomObjectActionLogBuild(target.X, target.Y))
+            });
             return;
+        }
 
         if (!WorkPartHelper.TryGetActiveWorkParts(creep, out var workParts))
+        {
+            // Emit ActionLog for no-work-parts attempt
+            context.MutationWriter.Patch(creep.Id, new RoomObjectPatchPayload
+            {
+                ActionLog = new RoomObjectActionLogPatch(
+                    Build: new RoomObjectActionLogBuild(target.X, target.Y))
+            });
             return;
+        }
 
         var availableEnergy = GetAvailableEnergy(creep, energyLedger);
         if (availableEnergy <= 0)
+        {
+            // Emit ActionLog for no-energy attempt
+            context.MutationWriter.Patch(creep.Id, new RoomObjectPatchPayload
+            {
+                ActionLog = new RoomObjectActionLogPatch(
+                    Build: new RoomObjectActionLogBuild(target.X, target.Y))
+            });
             return;
+        }
 
         if (!IsInRange(creep, target))
+        {
+            // Emit ActionLog for out-of-range attempt
+            context.MutationWriter.Patch(creep.Id, new RoomObjectPatchPayload
+            {
+                ActionLog = new RoomObjectActionLogPatch(
+                    Build: new RoomObjectActionLogBuild(target.X, target.Y))
+            });
             return;
+        }
 
         var buildPower = workParts.Count * ScreepsGameConstants.BuildPower;
         if (buildPower <= 0)
