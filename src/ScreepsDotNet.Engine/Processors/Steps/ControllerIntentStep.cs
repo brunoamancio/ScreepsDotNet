@@ -92,25 +92,60 @@ internal sealed class ControllerIntentStep : IRoomProcessorStep
             return;
 
         if (!IsInRange(creep, controller, 3))
+        {
+            // Emit ActionLog for out-of-range attempt
+            context.MutationWriter.Patch(creep.Id, new RoomObjectPatchPayload
+            {
+                ActionLog = new RoomObjectActionLogPatch()
+            });
             return;
+        }
 
         if (!string.Equals(controller.UserId, creep.UserId, StringComparison.Ordinal))
+        {
+            // Emit ActionLog for wrong-owner attempt
+            context.MutationWriter.Patch(creep.Id, new RoomObjectPatchPayload
+            {
+                ActionLog = new RoomObjectActionLogPatch()
+            });
             return;
+        }
 
         var upgradeBlocked = controller.Store.GetValueOrDefault(RoomDocumentFields.RoomObject.UpgradeBlocked, 0);
         if (upgradeBlocked > 0)
+        {
+            // Emit ActionLog for upgrade-blocked attempt
+            context.MutationWriter.Patch(creep.Id, new RoomObjectPatchPayload
+            {
+                ActionLog = new RoomObjectActionLogPatch()
+            });
             return;
+        }
 
         var workParts = CalculateBaseWorkParts(creep);
         if (workParts <= 0)
+        {
+            // Emit ActionLog for no-work-parts attempt
+            context.MutationWriter.Patch(creep.Id, new RoomObjectPatchPayload
+            {
+                ActionLog = new RoomObjectActionLogPatch()
+            });
             return;
+        }
 
         var availableEnergy = energyLedger.TryGetValue(creep.Id, out var ledgerEnergy)
             ? ledgerEnergy
             : creep.Store.GetValueOrDefault(ResourceTypes.Energy, 0);
 
         if (availableEnergy <= 0)
+        {
+            // Emit ActionLog for no-energy attempt
+            context.MutationWriter.Patch(creep.Id, new RoomObjectPatchPayload
+            {
+                ActionLog = new RoomObjectActionLogPatch()
+            });
             return;
+        }
 
         var level = controller.Level ?? 0;
         var maxPerTick = level == 8 ? ScreepsGameConstants.ControllerMaxUpgradePerTick : workParts;
