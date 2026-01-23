@@ -62,8 +62,8 @@ public sealed class KeeperAiIntegrationTests
         var hostilePatches = writer.Patches.Where(p => p.ObjectId == hostile.Id && p.Payload.Hits.HasValue).ToList();
         Assert.NotEmpty(hostilePatches);
         // Verify keeper attacked the hostile (damage was dealt)
-        var finalPatch = hostilePatches.Last();
-        Assert.True(finalPatch.Payload.Hits < 100, "Hostile should have taken damage");
+        var finalHostilePatch = hostilePatches.Last();
+        Assert.True(finalHostilePatch.Payload.Hits < 100, "Hostile should have taken damage");
     }
 
     [Fact]
@@ -80,7 +80,7 @@ public sealed class KeeperAiIntegrationTests
         var step = new KeeperAiStep();
         await step.ExecuteAsync(context1, TestContext.Current.CancellationToken);
 
-        var tick1Movement = writer1.Patches.Single(p => p.ObjectId == keeper1.Id && p.Payload.Position is not null);
+        var tick1Position = writer1.Patches.Single(p => p.ObjectId == keeper1.Id && p.Payload.Position is not null);
         var tick1MemoryMove = writer1.Patches.Single(p => p.ObjectId == keeper1.Id && p.Payload.MemoryMove is not null);
         Assert.NotNull(tick1MemoryMove.Payload.MemoryMove);
         Assert.Equal(gameTime, tick1MemoryMove.Payload.MemoryMove!.Time);
@@ -88,8 +88,8 @@ public sealed class KeeperAiIntegrationTests
         // Tick 2: Keeper at new position, should reuse cached path
         var keeper2 = keeper1 with
         {
-            X = tick1Movement.Payload.Position!.X!.Value,
-            Y = tick1Movement.Payload.Position!.Y!.Value,
+            X = tick1Position.Payload.Position!.X!.Value,
+            Y = tick1Position.Payload.Position!.Y!.Value,
             MemorySourceId = source.Id,
             MemoryMove = tick1MemoryMove.Payload.MemoryMove
         };
@@ -128,9 +128,9 @@ public sealed class KeeperAiIntegrationTests
         await step.ExecuteAsync(context, TestContext.Current.CancellationToken);
 
         // Assert - Should recalculate path (new MemoryMove patch with updated time)
-        var memoryPatch = writer.Patches.Single(p => p.ObjectId == keeper.Id && p.Payload.MemoryMove is not null);
-        Assert.NotNull(memoryPatch.Payload.MemoryMove);
-        Assert.Equal(gameTime, memoryPatch.Payload.MemoryMove!.Time); // New timestamp
+        var memoryMovePatch = writer.Patches.Single(p => p.ObjectId == keeper.Id && p.Payload.MemoryMove is not null);
+        Assert.NotNull(memoryMovePatch.Payload.MemoryMove);
+        Assert.Equal(gameTime, memoryMovePatch.Payload.MemoryMove!.Time); // New timestamp
     }
 
     [Fact]
@@ -153,8 +153,7 @@ public sealed class KeeperAiIntegrationTests
         var damagedHostiles = writer.Patches.Where(p => p.Payload.Hits.HasValue).ToList();
         Assert.Equal(3, damagedHostiles.Count);
 
-        foreach (var patch in damagedHostiles)
-        {
+        foreach (var patch in damagedHostiles) {
             var expectedDamage = 2 * 4; // 2 ranged parts × 4 damage (range 2)
             var expectedHits = 100 - expectedDamage;
             Assert.Equal(expectedHits, patch.Payload.Hits);
@@ -242,8 +241,8 @@ public sealed class KeeperAiIntegrationTests
         await step.ExecuteAsync(context, TestContext.Current.CancellationToken);
 
         // Assert - Keeper should choose nearest source
-        var sourceAssignment = writer.Patches.Single(p => p.ObjectId == keeper.Id && p.Payload.MemorySourceId is not null);
-        Assert.Equal(nearSource.Id, sourceAssignment.Payload.MemorySourceId);
+        var sourceChoice = writer.Patches.Single(p => p.ObjectId == keeper.Id && p.Payload.MemorySourceId is not null);
+        Assert.Equal(nearSource.Id, sourceChoice.Payload.MemorySourceId);
     }
 
     [Fact]

@@ -6,12 +6,17 @@ using ScreepsDotNet.Driver.Contracts;
 using ScreepsDotNet.Engine.Processors;
 
 /// <summary>
-/// Applies passive decay to walls/ramparts/roads to mimic legacy structure upkeep.
+/// Applies passive decay to walls/ramparts/roads based on decay intervals.
+/// Ramparts: Lose 300 hits every 100 ticks.
+/// Walls: Lose 1 hit per tick (no interval).
+/// Roads: Lose 100 hits every 1000 ticks.
 /// </summary>
 internal sealed class StructureDecayStep : IRoomProcessorStep
 {
     public Task ExecuteAsync(RoomProcessorContext context, CancellationToken token = default)
     {
+        var gameTime = context.State.GameTime;
+
         foreach (var structure in context.State.Objects.Values) {
             if (structure.Type is not (RoomObjectTypes.Wall or RoomObjectTypes.Rampart or RoomObjectTypes.Road))
                 continue;
@@ -19,23 +24,55 @@ internal sealed class StructureDecayStep : IRoomProcessorStep
             if (structure.Hits is not > 0)
                 continue;
 
-            var decay = structure.Type switch
+            // Get decay configuration for this structure type
+            var (decayAmount, decayInterval, requiresDecayTime) = structure.Type switch
             {
-                RoomObjectTypes.Wall => 1,
-                RoomObjectTypes.Rampart => 100,
-                _ => 50
+                RoomObjectTypes.Rampart => (ScreepsGameConstants.RampartDecayAmount, ScreepsGameConstants.RampartDecayInterval, true),
+                RoomObjectTypes.Road => (ScreepsGameConstants.RoadDecayAmount, ScreepsGameConstants.RoadDecayInterval, true),
+                RoomObjectTypes.Wall => (1, 1, false), // Walls decay 1 hit per tick (no interval)
+                _ => (0, 1, false)
             };
 
-            var nextHits = Math.Max(structure.Hits.Value - decay, 0);
-            if (nextHits == structure.Hits)
+            // Structures without intervals (walls) decay every tick
+            if (!requiresDecayTime) {
+                var nextHits = Math.Max(structure.Hits.Value - decayAmount, 0);
+                if (nextHits == structure.Hits)
+                    continue;
+
+                context.MutationWriter.Patch(structure.Id, new RoomObjectPatchPayload
+                {
+                    Hits = nextHits
+                });
+
+                continue;
+            }
+
+            // Structures with intervals (ramparts, roads) use DecayTime property
+            // Check if DecayTime is missing or if it's time to decay
+            // NOTE: Node.js uses `gameTime >= nextDecayTime-1`, causing decay 1 tick early (parity quirk)
+            var shouldDecay = !structure.DecayTime.HasValue || gameTime >= structure.DecayTime.Value - 1;
+            if (!shouldDecay)
                 continue;
 
-            var patch = new RoomObjectPatchPayload
-            {
-                Hits = nextHits
-            };
+            // Apply decay
+            var newHits = Math.Max(structure.Hits.Value - decayAmount, 0);
+            var nextDecayTime = gameTime + decayInterval;
 
-            context.MutationWriter.Patch(structure.Id, patch);
+            // If structure is destroyed, don't set nextDecayTime (will be removed)
+            if (newHits == 0) {
+                context.MutationWriter.Patch(structure.Id, new RoomObjectPatchPayload
+                {
+                    Hits = 0
+                });
+                context.MutationWriter.Remove(structure.Id);
+            }
+            else {
+                context.MutationWriter.Patch(structure.Id, new RoomObjectPatchPayload
+                {
+                    Hits = newHits,
+                    DecayTime = nextDecayTime
+                });
+            }
         }
 
         return Task.CompletedTask;

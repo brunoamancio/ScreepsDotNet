@@ -53,10 +53,10 @@ public sealed class LinkIntentStepTests
         await _step.ExecuteAsync(context, TestContext.Current.CancellationToken);
 
         // Assert
-        var (ObjectId, Payload) = writer.Patches.Single(p => p.ObjectId == targetLink.Id);
+        var targetPatch = writer.Patches.Single(p => p.ObjectId == targetLink.Id);
         var loss = (int)Math.Ceiling(100 * ScreepsGameConstants.LinkLossRatio);
         var expectedTarget = 100 - loss;
-        Assert.Equal(expectedTarget, Payload.Store![ResourceTypes.Energy]);
+        Assert.Equal(expectedTarget, targetPatch.Payload.Store![ResourceTypes.Energy]);
         Assert.Equal(97, expectedTarget);
     }
 
@@ -74,8 +74,8 @@ public sealed class LinkIntentStepTests
         await _step.ExecuteAsync(context, TestContext.Current.CancellationToken);
 
         // Assert
-        var (ObjectId, Payload) = writer.Patches.Single(p => p.ObjectId == sourceLink.Id);
-        Assert.Equal(900, Payload.Store![ResourceTypes.Energy]);
+        var sourcePatch = writer.Patches.Single(p => p.ObjectId == sourceLink.Id);
+        Assert.Equal(900, sourcePatch.Payload.Store![ResourceTypes.Energy]);
 
         var targetPatch = writer.Patches.Single(p => p.ObjectId == targetLink.Id);
         var transferredWithLoss = 100 - (int)Math.Ceiling(100 * ScreepsGameConstants.LinkLossRatio);
@@ -169,11 +169,11 @@ public sealed class LinkIntentStepTests
         await _step.ExecuteAsync(context, TestContext.Current.CancellationToken);
 
         // Assert
-        var (ObjectId, Payload) = writer.Patches.Single(p => p.ObjectId == sourceLink.Id);
-        Assert.NotNull(Payload.ActionLog);
-        Assert.NotNull(Payload.ActionLog!.TransferEnergy);
-        Assert.Equal(15, Payload.ActionLog!.TransferEnergy!.X);
-        Assert.Equal(15, Payload.ActionLog!.TransferEnergy!.Y);
+        var sourcePatch = writer.Patches.Single(p => p.ObjectId == sourceLink.Id);
+        Assert.NotNull(sourcePatch.Payload.ActionLog);
+        Assert.NotNull(sourcePatch.Payload.ActionLog!.TransferEnergy);
+        Assert.Equal(15, sourcePatch.Payload.ActionLog!.TransferEnergy!.X);
+        Assert.Equal(15, sourcePatch.Payload.ActionLog!.TransferEnergy!.Y);
     }
 
     #region Helper Methods

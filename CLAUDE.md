@@ -271,6 +271,22 @@ dotnet test
 **Tests:** `dotnet test src/ScreepsDotNet.slnx` or `--filter "FullyQualifiedName~TestName"`
 **Docker logs:** `docker compose -f src/docker-compose.yml logs -f mongo`
 
+**Test Output Capturing (xunit v3):**
+All test projects support `Console.WriteLine()` for debugging via `[assembly: CaptureConsole]` and `[assembly: CaptureTrace]`:
+
+```csharp
+[Fact]
+public void MyTest()
+{
+    Console.WriteLine("Debug info appears in test output!");
+    Assert.True(true);
+}
+```
+
+View output: `dotnet test --filter "MyTest" --logger "console;verbosity=detailed"`
+
+See `.claude/docs/testing-output-capture.md` and `src/ScreepsDotNet.Engine.Tests/_Examples/` for examples.
+
 ### Plan Maintenance
 
 When working on tasks that follow a documented plan (e.g., `.claude/plans/*.md`, `docs/engine/*.md`):

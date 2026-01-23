@@ -28,8 +28,8 @@ public sealed class KeeperAiStepTests
         await step.ExecuteAsync(context, TestContext.Current.CancellationToken);
 
         // Assert - keeper assigns target (may also move and cache path)
-        var memoryPatch = writer.Patches.Single(p => p.ObjectId == keeper.Id && p.Payload.MemorySourceId is not null);
-        Assert.Equal(source1.Id, memoryPatch.Payload.MemorySourceId);
+        var targetAssignment = writer.Patches.Single(p => p.ObjectId == keeper.Id && p.Payload.MemorySourceId is not null);
+        Assert.Equal(source1.Id, targetAssignment.Payload.MemorySourceId);
     }
 
     [Fact]

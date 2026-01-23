@@ -110,8 +110,8 @@ internal sealed class CombatResolutionStep(ICreepDeathProcessor deathProcessor) 
         // This matches Node.js behavior where damaged/destroyed parts don't contribute
         var bodyPartType = isRanged ? BodyPartType.RangedAttack : BodyPartType.Attack;
         var powerPerPart = isRanged ? 10 : 30;
-        var activeParts = attacker.Body.Count(p => p.Type == bodyPartType && p.Hits > 0);
-        return activeParts * powerPerPart;
+        var result = attacker.Body.Count(p => p.Type == bodyPartType && p.Hits > 0) * powerPerPart;
+        return result;
     }
 
     private static bool ApplyHeal(RoomProcessorContext context, string healerId, HealIntent? intent)
@@ -124,27 +124,23 @@ internal sealed class CombatResolutionStep(ICreepDeathProcessor deathProcessor) 
 
         // Calculate heal amount based on active heal body parts (only parts with hits > 0 contribute)
         var healAmount = intent.Amount;
-        if (!healAmount.HasValue && context.State.Objects.TryGetValue(healerId, out var healer))
-        {
+        if (!healAmount.HasValue && context.State.Objects.TryGetValue(healerId, out var healer)) {
             healAmount = CalculateHealPower(healer);
         }
 
-        // If no heal amount, still return true (heal action performed but no effect)
-        if (!healAmount.HasValue || healAmount.Value == 0)
-            return true;
+        // Default to 0 if not calculated
+        var finalHealAmount = healAmount ?? 0;
 
         var currentHits = target.Hits ?? 0;
         var maxHits = target.HitsMax ?? 0;
-        var newHits = Math.Min(currentHits + healAmount.Value, maxHits);
+        var newHits = Math.Min(currentHits + finalHealAmount, maxHits);
 
-        // Only patch if healing actually changed hits
-        if (newHits != currentHits)
+        // Always patch target to match Node.js behavior (even if healAmount is 0 or hits don't change)
+        // Node.js sets target._healToApply regardless of heal power
+        context.MutationWriter.Patch(intent.TargetId!, new RoomObjectPatchPayload
         {
-            context.MutationWriter.Patch(intent.TargetId!, new RoomObjectPatchPayload
-            {
-                Hits = newHits
-            });
-        }
+            Hits = newHits
+        });
 
         return true;
     }

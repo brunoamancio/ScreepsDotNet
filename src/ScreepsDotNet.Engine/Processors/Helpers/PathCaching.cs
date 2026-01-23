@@ -19,9 +19,9 @@ internal static class PathCaching
     /// </summary>
     public static string PackPosition(int x, int y)
     {
-        if (x < 0 || x > MaxCoordinate)
+        if (x is < 0 or > MaxCoordinate)
             throw new ArgumentOutOfRangeException(nameof(x), x, $"X must be between 0 and {MaxCoordinate}");
-        if (y < 0 || y > MaxCoordinate)
+        if (y is < 0 or > MaxCoordinate)
             throw new ArgumentOutOfRangeException(nameof(y), y, $"Y must be between 0 and {MaxCoordinate}");
 
         var packed = (x << CoordinateBits) | y;

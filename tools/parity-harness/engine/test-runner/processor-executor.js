@@ -245,6 +245,45 @@ async function executeProcessor(db, fixture) {
     }
     console.log(`  ✓ Processed ${tickCount} creep ticks`);
 
+    // Run tick processors for structures (decay, regeneration, etc.)
+    console.log(`  Running tick processors for structures...`);
+    let structureTickCount = 0;
+
+    // Map structure types to their tick processor paths
+    const structureTickProcessors = {
+        'rampart': 'intents/ramparts/tick',
+        'road': 'intents/roads/tick',
+        'constructedWall': 'intents/constructedWalls/tick',
+        'container': 'intents/containers/tick',
+        'link': 'intents/links/tick',
+        'tower': 'intents/towers/tick',
+        'extension': 'intents/extensions/tick',
+        'storage': 'intents/storages/tick',
+        'energy': 'intents/energy/tick',
+        'nuke': 'intents/nukes/tick'
+    };
+
+    const enginePath = path.resolve(__dirname, '../screeps-modules/engine/src/processor');
+
+    for (const object of Object.values(roomObjects)) {
+        const processorPath = structureTickProcessors[object.type];
+        if (processorPath) {
+            try {
+                const fullPath = path.join(enginePath, processorPath);
+                const tickProcessor = require(fullPath);
+                if (tickProcessor) {
+                    tickProcessor(object, scope);
+                    structureTickCount++;
+                }
+            } catch (error) {
+                console.error(`    ERROR in ${object.type} tick for ${object._id}:`, error.message);
+                console.error(`    Stack:`, error.stack);
+            }
+        }
+    }
+
+    console.log(`  ✓ Processed ${structureTickCount} structure ticks`);
+
     console.log(`  ✓ Captured ${bulkMutations.updates.length} updates, ${bulkMutations.inserts.length} inserts, ${bulkMutations.deletes.length} deletes`);
 
     return {

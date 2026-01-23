@@ -21,8 +21,7 @@ public sealed class ParityTests(Integration.MongoDbParityFixture mongoFixture, I
         var fixtureFiles = Directory.GetFiles(fixturesDir, "*.json", SearchOption.TopDirectoryOnly);
 
         var theoryData = new TheoryData<string>();
-        foreach (var fileName in fixtureFiles.Select(Path.GetFileName).Where(name => name is not null).OrderBy(name => name))
-        {
+        foreach (var fileName in fixtureFiles.Select(Path.GetFileName).Where(name => name is not null).OrderBy(name => name)) {
             theoryData.Add(fileName!);
         }
 
