@@ -17,7 +17,8 @@ public sealed class ParityTests(Integration.MongoDbParityFixture mongoFixture, I
     /// </summary>
     private static readonly HashSet<string> FixturesWithKnownDivergences = new(StringComparer.OrdinalIgnoreCase)
     {
-        "harvest_basic.json"  // Timer representation difference (Node.js countdown vs .NET absolute timestamp)
+        "harvest_basic.json",  // Timer representation difference (Node.js countdown vs .NET absolute timestamp)
+        "edgecase_upgrade_no_energy.json"  // Node.js bug: undefined <= 0 is false, creates patches with NaN values
     };
 
     /// <summary>
@@ -104,6 +105,52 @@ public sealed class ParityTests(Integration.MongoDbParityFixture mongoFixture, I
         else {
             // Perfect match - test passes (Node.js harness might have been updated to match .NET behavior)
             Assert.True(true, "✅ harvest_basic.json: Perfect match with Node.js (no divergences)");
+        }
+    }
+
+    /// <summary>
+    /// NODE.JS BUG TEST: edgecase_upgrade_no_energy.json exposes JavaScript type coercion bug.
+    /// Node.js: Empty store {} bypasses validation (undefined &lt;= 0 is false), creates patches with NaN values.
+    /// .NET: Correctly treats empty store as zero energy, validation fails, no controller patch.
+    /// This test validates that .NET handles the edge case correctly by NOT matching the buggy behavior.
+    /// Decision: Keep .NET implementation (correct validation), document Node.js bug (e10.md and parity-divergences.md).
+    /// </summary>
+    [Fact]
+    public async Task EdgecaseUpgradeNoEnergy_NodeJsBugWithEmptyStore_DotNetCorrectlyValidates()
+    {
+        var fixturePath = ParityFixturePaths.GetFixturePath("edgecase_upgrade_no_energy.json");
+        var state = await JsonFixtureLoader.LoadFromFileAsync(fixturePath, TestContext.Current.CancellationToken);
+
+        var dotnetOutput = await DotNetParityTestRunner.RunAsync(state, TestContext.Current.CancellationToken);
+        var nodejsOutput = await NodeJsParityTestRunner.RunFixtureAsync(fixturePath, prerequisites.HarnessDirectory, mongoFixture.ConnectionString, TestContext.Current.CancellationToken);
+
+        var comparison = Comparison.ParityComparator.Compare(dotnetOutput, nodejsOutput);
+
+        // Expected divergence: Controller patch exists in Node.js but not in .NET
+        // Node.js bug: undefined <= 0 is false, so validation passes and creates patches with NaN progress
+        // .NET: GetValueOrDefault returns 0, validation fails correctly, no controller patch
+        var expectedDivergence = comparison.Divergences.FirstOrDefault(d =>
+            d.Path.Contains("mutations.patches[") &&
+            d.Path.Contains("controller") &&
+            d.Message.Contains("Patch exists in Node.js but not in .NET"));
+
+        if (expectedDivergence is not null) {
+            // Remove expected divergence and check if any unexpected divergences remain
+            var unexpectedDivergences = comparison.Divergences.Where(d => d != expectedDivergence).ToList();
+            if (unexpectedDivergences.Count > 0) {
+                Assert.Fail($"❌ edgecase_upgrade_no_energy.json has unexpected divergences beyond Node.js bug:\\n\\n{Comparison.DivergenceReporter.FormatReport(new Comparison.ParityComparisonResult(unexpectedDivergences), "edgecase_upgrade_no_energy.json")}");
+            }
+
+            // Test passes - only expected Node.js bug divergence found
+            Assert.True(true, "✅ edgecase_upgrade_no_energy.json: Only expected Node.js bug divergence (undefined <= 0 bypasses validation)");
+        }
+        else if (comparison.HasDivergences) {
+            // No expected divergence, but other divergences exist - fail with details
+            Assert.Fail(Comparison.DivergenceReporter.FormatReport(comparison, "edgecase_upgrade_no_energy.json"));
+        }
+        else {
+            // Perfect match - test passes (Node.js harness might have been fixed)
+            Assert.True(true, "✅ edgecase_upgrade_no_energy.json: Perfect match with Node.js (bug might be fixed)");
         }
     }
 }
