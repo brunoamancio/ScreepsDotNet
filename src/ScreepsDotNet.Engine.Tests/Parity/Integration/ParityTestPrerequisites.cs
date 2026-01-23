@@ -69,13 +69,23 @@ public sealed partial class ParityTestPrerequisites : IAsyncLifetime
 
     private static async Task EnsureNodeInstalled()
     {
-        // Check if nvm is available first
+        // Try direct check first (works with setup-node in CI, system Node.js, or nvm-activated Node.js)
+        try {
+            await EnsureNodeViaDirectCheck();
+            return; // Success - Node.js is available and compatible
+        }
+        catch {
+            // Direct check failed - try nvm as fallback
+        }
+
+        // Check if nvm is available as fallback
         var nvmAvailable = await IsNvmAvailable();
 
         if (nvmAvailable) {
             await EnsureNodeViaNvm();
         }
         else {
+            // No nvm and direct check failed - throw the original error
             await EnsureNodeViaDirectCheck();
         }
     }
