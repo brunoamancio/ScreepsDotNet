@@ -74,7 +74,14 @@ clone_or_update() {
 
     echo "  Installing npm dependencies..."
     cd "$MODULES_DIR/$name"
-    npm install --ignore-scripts --legacy-peer-deps
+
+    # Detect npm version (--legacy-peer-deps only exists in npm 7+)
+    NPM_VERSION=$(npm --version | cut -d. -f1)
+    if [ "$NPM_VERSION" -ge 7 ]; then
+        npm install --ignore-scripts --legacy-peer-deps
+    else
+        npm install --ignore-scripts
+    fi
 
     # Reset package-lock.json changes (npm install may update it)
     # We don't want to modify the official repos - only use them as-is
