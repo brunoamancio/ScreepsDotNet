@@ -41,7 +41,9 @@ public sealed record CreepIntentEnvelope(
     MoveIntent? Move,
     AttackIntent? Attack,
     AttackIntent? RangedAttack,
+    bool RangedMassAttack,
     HealIntent? Heal,
+    HealIntent? RangedHeal,
     IReadOnlyDictionary<string, object?> AdditionalFields);
 
 public sealed record MoveIntent(int X, int Y);

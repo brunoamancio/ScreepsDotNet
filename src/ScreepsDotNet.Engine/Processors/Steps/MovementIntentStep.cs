@@ -43,11 +43,12 @@ internal sealed class MovementIntentStep(ICreepDeathProcessor deathProcessor) : 
         var terrain = BuildTerrainCache(context);
         var safeModeOwner = DetermineSafeModeOwner(context);
 
-        var (acceptedMoves, crashes, transfers) = ResolveMoves(requests, tiles, terrain, safeModeOwner, context.ExitTopology);
+        var (acceptedMoves, crashes, transfers, blockers) = ResolveMoves(requests, tiles, terrain, safeModeOwner, context.ExitTopology);
 
         ApplyAcceptedMoves(context, acceptedMoves);
         var transferIds = ProcessTransfers(context, transfers);
         ProcessCrashes(context, crashes);
+        PatchBlockers(context, blockers);
         ProcessIdlePortalTransfers(context, tiles, transferIds);
 
         return Task.CompletedTask;
@@ -61,6 +62,14 @@ internal sealed class MovementIntentStep(ICreepDeathProcessor deathProcessor) : 
         var energyLedger = new Dictionary<string, int>(Comparer);
         foreach (var creep in crashes)
             deathProcessor.Process(context, creep, new CreepDeathOptions(ViolentDeath: true), energyLedger);
+    }
+
+    private static void PatchBlockers(RoomProcessorContext context, IReadOnlySet<string> blockers)
+    {
+        // Patch creeps that blocked movement (Node.js patches blockers even when they don't move)
+        foreach (var blockerId in blockers) {
+            context.MutationWriter.Patch(blockerId, new RoomObjectPatchPayload());
+        }
     }
 
     private static HashSet<string> ProcessTransfers(RoomProcessorContext context, IReadOnlyList<InterRoomTransfer> transfers)
@@ -143,7 +152,7 @@ internal sealed class MovementIntentStep(ICreepDeathProcessor deathProcessor) : 
         }
     }
 
-    private static (Dictionary<string, TileCoord>, List<RoomObjectSnapshot>, List<InterRoomTransfer>) ResolveMoves(
+    private static (Dictionary<string, TileCoord>, List<RoomObjectSnapshot>, List<InterRoomTransfer>, HashSet<string>) ResolveMoves(
         IReadOnlyList<MoveCandidate> candidates,
         Dictionary<TileCoord, TileInfo> tiles,
         TerrainCache terrain,
@@ -152,17 +161,18 @@ internal sealed class MovementIntentStep(ICreepDeathProcessor deathProcessor) : 
     {
         var matrix = BuildMatrix(candidates);
         if (matrix.Count == 0)
-            return (new Dictionary<string, TileCoord>(Comparer), [], []);
+            return (new Dictionary<string, TileCoord>(Comparer), [], [], []);
 
         var resolved = BuildResolvedMatrix(matrix);
         var plannedMoves = resolved.Values.ToDictionary(a => a.Candidate.Creep.Id, a => a.Target, Comparer);
         var crashes = new Dictionary<string, RoomObjectSnapshot>(Comparer);
         var transfers = new List<InterRoomTransfer>();
+        var blockers = new HashSet<string>(Comparer);
 
         foreach (var target in resolved.Keys.ToList())
             ValidateAssignment(target);
 
-        return (plannedMoves, crashes.Values.ToList(), transfers);
+        return (plannedMoves, crashes.Values.ToList(), transfers, blockers);
 
         void ValidateAssignment(TileCoord target)
         {
@@ -198,13 +208,18 @@ internal sealed class MovementIntentStep(ICreepDeathProcessor deathProcessor) : 
                 return;
             }
 
-            var obstacle = EvaluateObstacle(target, candidate, tiles, plannedMoves, safeModeOwner, terrain, out var portalTransfer);
+            var obstacle = EvaluateObstacle(target, candidate, tiles, plannedMoves, safeModeOwner, terrain, out var portalTransfer, out var blocker);
+
             if (obstacle == ObstacleEvaluation.Fatal) {
                 RemoveAssignment(target, fatal: true);
                 return;
             }
 
             if (obstacle == ObstacleEvaluation.Blocked) {
+                // Track blocker so we can patch it (Node.js patches blockers even when they don't move)
+                if (blocker is not null)
+                    blockers.Add(blocker.Id);
+
                 RemoveAssignment(target);
                 return;
             }
@@ -374,9 +389,12 @@ internal sealed class MovementIntentStep(ICreepDeathProcessor deathProcessor) : 
         IReadOnlyDictionary<string, TileCoord> plannedMoves,
         string? safeModeOwner,
         TerrainCache terrain,
-        out RoomObjectInterRoomPatch? portalTransfer)
+        out RoomObjectInterRoomPatch? portalTransfer,
+        out RoomObjectSnapshot? blocker)
     {
         portalTransfer = null;
+        blocker = null;
+
         if (!tiles.TryGetValue(target, out var tile)) {
             var result = terrain.IsWall(target.X, target.Y) ? ObstacleEvaluation.Fatal : ObstacleEvaluation.None;
             return result;
@@ -398,8 +416,10 @@ internal sealed class MovementIntentStep(ICreepDeathProcessor deathProcessor) : 
             if (plannedMoves.TryGetValue(occupant.Id, out var future) && !future.Equals(target))
                 continue;
 
-            if (CreepBlocks(occupant, candidate.Creep, safeModeOwner))
+            if (CreepBlocks(occupant, candidate.Creep, safeModeOwner)) {
+                blocker = occupant;
                 return ObstacleEvaluation.Blocked;
+            }
         }
 
         var evaluation = terrain.IsWall(target.X, target.Y) && !tile.HasRoad ? ObstacleEvaluation.Fatal : ObstacleEvaluation.None;

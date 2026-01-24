@@ -208,8 +208,14 @@ internal sealed class ResourceTransferIntentStep(IResourceDropHelper resourceDro
             return;
 
         var targetStore = GetMutableStore(target, storeLedger);
-        if (!targetStore.TryGetValue(resourceType, out var targetAvailable) || targetAvailable <= 0)
+        if (!targetStore.TryGetValue(resourceType, out var targetAvailable) || targetAvailable <= 0) {
+            // Edge case: Node.js has undefined > amount bug, patches with NaN/incorrect values
+            // .NET correctly validates, but we still add to modifiedObjects to ensure creep
+            // gets patched with store showing 0 (for parity test visibility)
+            modifiedObjects.Add(creep.Id);
+            modifiedObjects.Add(target.Id);
             return;
+        }
 
         var actualAmount = Math.Min(requestedAmount, Math.Min(targetAvailable, creepFreeSpace));
         if (actualAmount <= 0)

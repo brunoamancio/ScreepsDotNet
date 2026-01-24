@@ -99,6 +99,7 @@ public static class JsonFixtureLoader
             MineralAmount: obj.MineralAmount,
             Cooldown: obj.Cooldown,
             CooldownTime: obj.CooldownTime,
+            DecayTime: obj.NextDecayTime,
             NextRegenerationTime: nextRegenerationTime,
             Progress: obj.Progress,
             ProgressTotal: obj.ProgressTotal);
@@ -166,7 +167,7 @@ public static class JsonFixtureLoader
                 var otherIntents = new List<JsonIntent>();
 
                 foreach (var intent in intentList) {
-                    if (intent.Intent is IntentKeys.Move or IntentKeys.Attack or IntentKeys.RangedAttack or IntentKeys.Heal)
+                    if (intent.Intent is IntentKeys.Move or IntentKeys.Attack or IntentKeys.RangedAttack or IntentKeys.RangedMassAttack or IntentKeys.Heal or IntentKeys.RangedHeal)
                         creepSpecificIntents.Add(intent);
                     else
                         otherIntents.Add(intent);
@@ -177,7 +178,9 @@ public static class JsonFixtureLoader
                     MoveIntent? moveIntent = null;
                     AttackIntent? attackIntent = null;
                     AttackIntent? rangedAttackIntent = null;
+                    var rangedMassAttack = false;
                     HealIntent? healIntent = null;
+                    HealIntent? rangedHealIntent = null;
 
                     foreach (var intent in creepSpecificIntents) {
                         switch (intent.Intent) {
@@ -193,8 +196,14 @@ public static class JsonFixtureLoader
                             case IntentKeys.RangedAttack:
                                 rangedAttackIntent = new AttackIntent(intent.Id!, null);
                                 break;
+                            case IntentKeys.RangedMassAttack:
+                                rangedMassAttack = true;
+                                break;
                             case IntentKeys.Heal:
                                 healIntent = new HealIntent(intent.Id!, null);
+                                break;
+                            case IntentKeys.RangedHeal:
+                                rangedHealIntent = new HealIntent(intent.Id!, null);
                                 break;
                         }
                     }
@@ -203,7 +212,9 @@ public static class JsonFixtureLoader
                         Move: moveIntent,
                         Attack: attackIntent,
                         RangedAttack: rangedAttackIntent,
+                        RangedMassAttack: rangedMassAttack,
                         Heal: healIntent,
+                        RangedHeal: rangedHealIntent,
                         AdditionalFields: new Dictionary<string, object?>(StringComparer.Ordinal));
                 }
 

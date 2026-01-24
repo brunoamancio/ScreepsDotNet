@@ -396,7 +396,9 @@ public sealed class ParityFixtureBuilder
             Move: moveIntent,
             Attack: null,
             RangedAttack: null,
+            RangedMassAttack: false,
             Heal: null,
+            RangedHeal: null,
             AdditionalFields: new Dictionary<string, object?>(StringComparer.Ordinal)
         );
         creepIntents[creepId] = creepIntent;

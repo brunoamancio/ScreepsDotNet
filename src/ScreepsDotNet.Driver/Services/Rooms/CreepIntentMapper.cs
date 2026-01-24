@@ -13,10 +13,12 @@ internal static class CreepIntentMapper
             Move: TryMapMove(document),
             Attack: TryMapAttack(document, IntentKeys.Attack),
             RangedAttack: TryMapAttack(document, IntentKeys.RangedAttack),
-            Heal: TryMapHeal(document),
+            RangedMassAttack: document.Contains(IntentKeys.RangedMassAttack),
+            Heal: TryMapHeal(document, IntentKeys.Heal),
+            RangedHeal: TryMapHeal(document, IntentKeys.RangedHeal),
             AdditionalFields: ExtractResidual(document));
 
-        return envelope.Move is not null || envelope.Attack is not null || envelope.RangedAttack is not null || envelope.Heal is not null || envelope.AdditionalFields.Count > 0;
+        return envelope.Move is not null || envelope.Attack is not null || envelope.RangedAttack is not null || envelope.RangedMassAttack || envelope.Heal is not null || envelope.RangedHeal is not null || envelope.AdditionalFields.Count > 0;
     }
 
     private static MoveIntent? TryMapMove(BsonDocument document)
@@ -48,9 +50,9 @@ internal static class CreepIntentMapper
         return new AttackIntent(targetStr.Value, damage);
     }
 
-    private static HealIntent? TryMapHeal(BsonDocument document)
+    private static HealIntent? TryMapHeal(BsonDocument document, string field)
     {
-        if (!document.TryGetValue(IntentKeys.Heal, out var healValue) || healValue is not BsonDocument healDoc)
+        if (!document.TryGetValue(field, out var healValue) || healValue is not BsonDocument healDoc)
             return null;
 
         if (!healDoc.TryGetValue(IntentKeys.TargetId, out var targetValue) || targetValue is not BsonString targetStr)
@@ -67,7 +69,7 @@ internal static class CreepIntentMapper
     {
         var result = new Dictionary<string, object?>(StringComparer.Ordinal);
         foreach (var element in document.Elements) {
-            if (element.Name is IntentKeys.Move or IntentKeys.Attack or IntentKeys.RangedAttack or IntentKeys.Heal)
+            if (element.Name is IntentKeys.Move or IntentKeys.Attack or IntentKeys.RangedAttack or IntentKeys.RangedMassAttack or IntentKeys.Heal or IntentKeys.RangedHeal)
                 continue;
 
             result[element.Name] = ConvertBsonValue(element.Value);

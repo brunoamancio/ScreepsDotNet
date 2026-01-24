@@ -389,6 +389,8 @@ public sealed class MovementIntentStepTests
                     move,
                     null,
                     null,
+                    false,
+                    null,
                     null,
                     new Dictionary<string, object?>(0));
             }

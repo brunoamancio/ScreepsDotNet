@@ -15,6 +15,7 @@ public sealed class ParityTests(Integration.MongoDbParityFixture mongoFixture, I
     private const string HarvestBasicFixture = "harvest_basic.json";
     private const string EdgecaseUpgradeNoEnergyFixture = "edgecase_upgrade_no_energy.json";
     private const string PullLoopPreventionFixture = "pull_loop_prevention.json";
+    private const string WithdrawContainerEmptyFixture = "withdraw_container_empty.json";
 
     // ActionLog optimization fixtures - validation failures
     private const string EdgecaseTransferZeroFixture = "edgecase_transfer_zero.json";
@@ -30,6 +31,14 @@ public sealed class ParityTests(Integration.MongoDbParityFixture mongoFixture, I
     private const string LinkSourceEmptyFixture = "link_source_empty.json";
     private const string BuildWithoutWorkFixture = "build_without_work.json";
 
+    // ActionLog optimization fixtures - creep lifecycle (all creeps get actionLog in Node.js)
+    private const string CombatOverkillDamageFixture = "combat_overkill_damage.json";
+    private const string CombatSimultaneousAttacksFixture = "combat_simultaneous_attacks.json";
+    private const string MovementBlockedCollisionFixture = "movement_blocked_collision.json";
+    private const string SpawnNameCollisionFixture = "spawn_name_collision.json";
+    private const string NukerLandingDamageFixture = "nuker_landing_damage.json";
+    private const string NukerLandingMultipleFixture = "nuker_landing_multiple.json";
+
     /// <summary>
     /// Fixtures with known architectural differences that have dedicated test methods.
     /// These are excluded from the common parity test to avoid false failures.
@@ -39,6 +48,7 @@ public sealed class ParityTests(Integration.MongoDbParityFixture mongoFixture, I
         HarvestBasicFixture,              // Timer representation difference (Node.js countdown vs .NET absolute timestamp)
         EdgecaseUpgradeNoEnergyFixture,   // Node.js bug: undefined <= 0 is false, creates patches with NaN values
         PullLoopPreventionFixture,        // Node.js bug: circular pulls cause infinite loop in movement processor (just confirmed!)
+        WithdrawContainerEmptyFixture,    // Node.js bug: withdraw from empty container succeeds (undefined > amount is false)
 
         // ActionLog optimization divergences (Node.js patches touched objects, .NET optimizes)
         EdgecaseTransferZeroFixture,
@@ -50,7 +60,13 @@ public sealed class ParityTests(Integration.MongoDbParityFixture mongoFixture, I
         LabBoostCreepFixture,
         LinkSourceEmptyFixture,
         BuildWithoutWorkFixture,
-        ValidationLinkNoControllerFixture
+        ValidationLinkNoControllerFixture,
+        CombatOverkillDamageFixture,
+        CombatSimultaneousAttacksFixture,
+        MovementBlockedCollisionFixture,
+        SpawnNameCollisionFixture,
+        NukerLandingDamageFixture,
+        NukerLandingMultipleFixture
     };
 
     /// <summary>
@@ -187,6 +203,52 @@ public sealed class ParityTests(Integration.MongoDbParityFixture mongoFixture, I
     }
 
     /// <summary>
+    /// NODE.JS BUG TEST: withdraw_container_empty.json exposes JavaScript type coercion bug in withdraw validation.
+    /// Node.js: When target.store[resourceType] is undefined (resource not in store), comparison (amount > undefined) is false,
+    ///          allowing withdrawal to proceed with full requested amount, giving creep resources from thin air.
+    /// .NET: TryGetValue correctly identifies missing resource, validation fails, creep gets 0 energy (correct behavior).
+    /// This test validates that .NET handles empty containers correctly by NOT matching the buggy behavior.
+    /// Decision: Keep .NET implementation (correct validation), document Node.js bug (e10.md and parity-divergences.md).
+    /// </summary>
+    [Fact]
+    public async Task WithdrawContainerEmpty_NodeJsBugWithUndefinedResource_DotNetCorrectlyValidates()
+    {
+        var fixturePath = ParityFixturePaths.GetFixturePath(WithdrawContainerEmptyFixture);
+        var state = await JsonFixtureLoader.LoadFromFileAsync(fixturePath, TestContext.Current.CancellationToken);
+
+        var dotnetOutput = await DotNetParityTestRunner.RunAsync(state, TestContext.Current.CancellationToken);
+        var nodejsOutput = await NodeJsParityTestRunner.RunFixtureAsync(fixturePath, prerequisites.HarnessDirectory, mongoFixture.ConnectionString, TestContext.Current.CancellationToken);
+
+        var comparison = Comparison.ParityComparator.Compare(dotnetOutput, nodejsOutput);
+
+        // Expected divergence: Carrier creep has different energy amounts
+        // Node.js bug: undefined > amount is false, so withdrawal proceeds with 50 energy from empty container
+        // .NET: TryGetValue returns false, validation fails correctly, creep gets 0 energy
+        var expectedDivergence = comparison.Divergences.FirstOrDefault(d =>
+            d.Path.Contains("mutations.patches[carrier].store.energy") &&
+            d.Message.Contains("Store amount differs"));
+
+        if (expectedDivergence is not null) {
+            // Remove expected divergence and check if any unexpected divergences remain
+            var unexpectedDivergences = comparison.Divergences.Where(d => d != expectedDivergence).ToList();
+            if (unexpectedDivergences.Count > 0) {
+                Assert.Fail($"❌ {WithdrawContainerEmptyFixture} has unexpected divergences beyond Node.js bug:\n\n{Comparison.DivergenceReporter.FormatReport(new Comparison.ParityComparisonResult(unexpectedDivergences), WithdrawContainerEmptyFixture)}");
+            }
+
+            // Test passes - only expected Node.js bug divergence found
+            Assert.True(true, $"✅ {WithdrawContainerEmptyFixture}: Only expected Node.js bug divergence (undefined > amount bypasses validation)");
+        }
+        else if (comparison.HasDivergences) {
+            // No expected divergence, but other divergences exist - fail with details
+            Assert.Fail(Comparison.DivergenceReporter.FormatReport(comparison, WithdrawContainerEmptyFixture));
+        }
+        else {
+            // Perfect match - test passes (Node.js harness might have been fixed)
+            Assert.True(true, $"✅ {WithdrawContainerEmptyFixture}: Perfect match with Node.js (bug might be fixed)");
+        }
+    }
+
+    /// <summary>
     /// ACTIONLOG OPTIMIZATION TEST: Validation failure edge cases where Node.js patches touched objects.
     /// Node.js: Initializes empty actionLog for ALL creeps at tick start, patches ALL touched objects (even on validation failure).
     /// .NET: Only emits patches when actual state changes occur (early return on validation failure = no patches).
@@ -270,6 +332,52 @@ public sealed class ParityTests(Integration.MongoDbParityFixture mongoFixture, I
             }
 
             Assert.True(actionLogDivergences.Count > 0, $"✅ {fixtureName}: Expected ActionLog divergence (Node.js patches touched objects, .NET optimizes)");
+        }
+    }
+
+    /// <summary>
+    /// ACTIONLOG OPTIMIZATION TEST: Creep lifecycle cases where Node.js patches ALL creeps.
+    /// Node.js: Initializes empty actionLog object for EVERY creep at tick start (processor.js line 51-65),
+    ///          then patches ALL creeps whose actionLog differs from previous tick (tick.js line 98-100).
+    ///          This includes creeps that didn't act or weren't involved in any intent.
+    /// .NET: Only patches creeps that actually have state changes (combat participants, movers, etc.).
+    /// This test validates that ONLY ActionLog divergences exist (uninvolved creep patches missing in .NET output).
+    /// Decision: Keep .NET optimization (reduces DB writes significantly), document as intentional difference (e10.md).
+    /// </summary>
+    [Fact]
+    public async Task CreepLifecycle_NodeJsPatchesAllCreeps_DotNetOptimizesPatches()
+    {
+        var fixtures = new[]
+        {
+            CombatOverkillDamageFixture,        // Combat: "adjacent" creep gets actionLog patch in Node.js (uninvolved)
+            CombatSimultaneousAttacksFixture,   // Combat: "target" creep gets actionLog patch in Node.js before dying
+            MovementBlockedCollisionFixture,    // Movement: "blocker" creep gets actionLog patch in Node.js (uninvolved)
+            SpawnNameCollisionFixture,          // Spawn: "existing" creep gets actionLog patch in Node.js (uninvolved)
+            NukerLandingDamageFixture,          // Nuke: All creeps get actionLog patch in Node.js before removal
+            NukerLandingMultipleFixture         // Nuke: All creeps get actionLog patch in Node.js before removal
+        };
+
+        foreach (var fixtureName in fixtures) {
+            var fixturePath = ParityFixturePaths.GetFixturePath(fixtureName);
+            var state = await JsonFixtureLoader.LoadFromFileAsync(fixturePath, TestContext.Current.CancellationToken);
+
+            var dotnetOutput = await DotNetParityTestRunner.RunAsync(state, TestContext.Current.CancellationToken);
+            var nodejsOutput = await NodeJsParityTestRunner.RunFixtureAsync(fixturePath, prerequisites.HarnessDirectory, mongoFixture.ConnectionString, TestContext.Current.CancellationToken);
+
+            var comparison = Comparison.ParityComparator.Compare(dotnetOutput, nodejsOutput);
+
+            // Expected: Node.js patches ALL creeps with actionLog, .NET only patches creeps with state changes
+            var actionLogDivergences = comparison.Divergences.Where(d =>
+                d.Path.Contains("mutations.patches") &&
+                d.Message.Contains("Patch exists in Node.js but not in .NET")).ToList();
+
+            var otherDivergences = comparison.Divergences.Except(actionLogDivergences).ToList();
+
+            if (otherDivergences.Count > 0) {
+                Assert.Fail($"❌ {fixtureName} has unexpected divergences beyond ActionLog optimization:\n\n{Comparison.DivergenceReporter.FormatReport(new Comparison.ParityComparisonResult(otherDivergences), fixtureName)}");
+            }
+
+            Assert.True(actionLogDivergences.Count > 0, $"✅ {fixtureName}: Expected ActionLog divergence (Node.js patches all creeps, .NET optimizes)");
         }
     }
 

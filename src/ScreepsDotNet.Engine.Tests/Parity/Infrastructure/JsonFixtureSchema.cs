@@ -31,6 +31,7 @@ public sealed record JsonRoomObject(
     [property: JsonPropertyName("energy")] int? Energy = null,
     [property: JsonPropertyName("energyCapacity")] int? EnergyCapacity = null,
     [property: JsonPropertyName("ticksToRegeneration")] int? TicksToRegeneration = null,
+    [property: JsonPropertyName("nextDecayTime")] int? NextDecayTime = null,
     [property: JsonPropertyName("level")] int? Level = null,
     [property: JsonPropertyName("progress")] int? Progress = null,
     [property: JsonPropertyName("progressTotal")] int? ProgressTotal = null,

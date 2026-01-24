@@ -9,6 +9,7 @@ public static class IntentKeys
 
     public const string Attack = "attack";
     public const string RangedAttack = "rangedAttack";
+    public const string RangedMassAttack = "rangedMassAttack";
     public const string Heal = "heal";
     public const string RangedHeal = "rangedHeal";
     public const string Dismantle = "dismantle";

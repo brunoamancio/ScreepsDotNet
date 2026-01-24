@@ -92,7 +92,8 @@ public static class ParityComparator
                 if (nodePatch.TryGetProperty("store", out var nodeStore) && dotnetPatch.Store is not null) {
                     foreach (var storeProp in nodeStore.EnumerateObject()) {
                         var resource = storeProp.Name;
-                        var nodeAmount = storeProp.Value.GetInt32();
+                        // Handle null values from Node.js (represents 0 or absent resource)
+                        var nodeAmount = storeProp.Value.ValueKind == System.Text.Json.JsonValueKind.Null ? 0 : storeProp.Value.GetInt32();
                         var dotnetAmount = dotnetPatch.Store.GetValueOrDefault(resource, 0);
 
                         if (nodeAmount != dotnetAmount) {
