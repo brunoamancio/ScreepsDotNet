@@ -299,6 +299,9 @@ public sealed class StructureDecayStepTests
         public void IncrementUserPower(string userId, double amount) { }
         public void DecrementUserPower(string userId, double amount) { }
         public Task FlushAsync(CancellationToken token = default) => Task.CompletedTask;
+#pragma warning disable CA1822 // Method cannot be static as it implements interface member
+        public bool TryGetPendingPatch(string objectId, out RoomObjectPatchPayload patch) { patch = new RoomObjectPatchPayload(); return false; }
+
         public void Reset() { }
     }
 

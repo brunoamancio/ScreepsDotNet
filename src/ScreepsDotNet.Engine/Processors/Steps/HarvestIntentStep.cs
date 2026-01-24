@@ -101,20 +101,6 @@ internal sealed class HarvestIntentStep(IResourceDropHelper resourceDropHelper) 
         if (source.Energy is null or <= 0)
             return;
 
-        // Prevent harvest if source has never been initialized (no regeneration timer ever set)
-        // Sources must go through at least one regeneration cycle before they can be harvested
-        var sourceCapacity = source.StoreCapacityResource.GetValueOrDefault(ResourceTypes.Energy, 0);
-        var isUninitializedSource = !source.NextRegenerationTime.HasValue && source.Energy >= sourceCapacity && sourceCapacity > 0;
-        if (isUninitializedSource) {
-            // Emit ActionLog for uninitialized source attempt
-            context.MutationWriter.Patch(creep.Id, new RoomObjectPatchPayload
-            {
-                ActionLog = new RoomObjectActionLogPatch(
-                    Harvest: new RoomObjectActionLogHarvest(source.X, source.Y))
-            });
-            return;
-        }
-
         // Prevent harvest if source is currently regenerating
         if (source.NextRegenerationTime.HasValue && source.NextRegenerationTime.Value > context.State.GameTime) {
             // Emit ActionLog for regenerating source attempt
@@ -158,27 +144,19 @@ internal sealed class HarvestIntentStep(IResourceDropHelper resourceDropHelper) 
 
         var remainingEnergy = Math.Max(source.Energy.Value - amount, 0);
 
+        var sourcePatch = new RoomObjectPatchPayload
+        {
+            Energy = remainingEnergy
+        };
+
         // Only track InvaderHarvested for Source Keeper rooms (used for invader spawning)
         var roomType = context.State.Info?.Type ?? RoomType.Unknown;
-        var shouldTrackInvaderHarvest = roomType == RoomType.Keeper;
-
-        // Node.js skips patching uninitialized sources (sources without regeneration timer set)
-        // This matches behavior where sources must be "active" before tracking state changes
-        var isInitializedSource = source.NextRegenerationTime.HasValue || source.Energy < source.StoreCapacityResource.GetValueOrDefault(ResourceTypes.Energy, 0);
-
-        if (isInitializedSource || shouldTrackInvaderHarvest) {
-            var sourcePatch = new RoomObjectPatchPayload
-            {
-                Energy = remainingEnergy
-            };
-
-            if (shouldTrackInvaderHarvest) {
-                var invaderHarvested = (source.InvaderHarvested ?? 0) + amount;
-                sourcePatch = sourcePatch with { InvaderHarvested = invaderHarvested };
-            }
-
-            context.MutationWriter.Patch(source.Id, sourcePatch);
+        if (roomType == RoomType.Keeper) {
+            var invaderHarvested = (source.InvaderHarvested ?? 0) + amount;
+            sourcePatch = sourcePatch with { InvaderHarvested = invaderHarvested };
         }
+
+        context.MutationWriter.Patch(source.Id, sourcePatch);
 
         var store = GetMutableStore(creep, storeLedger);
         var newAmount = store.TryGetValue(ResourceTypes.Energy, out var current)

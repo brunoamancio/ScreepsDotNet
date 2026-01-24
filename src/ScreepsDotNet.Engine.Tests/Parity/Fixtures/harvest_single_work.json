@@ -12,7 +12,8 @@
       "user": "user1",
       "body": [
         {
-          "type": "work"
+          "type": "work",
+          "hits": 100
         }
       ],
       "store": {},

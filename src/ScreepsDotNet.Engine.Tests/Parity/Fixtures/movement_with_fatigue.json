@@ -12,10 +12,12 @@
       "user": "user1",
       "body": [
         {
-          "type": "move"
+          "type": "move",
+          "hits": 100
         },
         {
-          "type": "move"
+          "type": "move",
+          "hits": 100
         }
       ],
       "store": {},

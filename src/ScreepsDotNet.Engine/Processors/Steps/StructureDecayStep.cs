@@ -54,8 +54,14 @@ internal sealed class StructureDecayStep : IRoomProcessorStep
             if (!shouldDecay)
                 continue;
 
+            // Get current hits value, accounting for pending patches from earlier steps (e.g., CombatResolutionStep)
+            // Node.js modifies hits in-place, so later processors see modified values. We emulate this by checking pending patches.
+            var currentHits = context.MutationWriter.TryGetPendingPatch(structure.Id, out var pendingPatch) && pendingPatch.Hits.HasValue
+                ? pendingPatch.Hits.Value
+                : structure.Hits.Value;
+
             // Apply decay
-            var newHits = Math.Max(structure.Hits.Value - decayAmount, 0);
+            var newHits = Math.Max(currentHits - decayAmount, 0);
             var nextDecayTime = gameTime + decayInterval;
 
             // If structure is destroyed, don't set nextDecayTime (will be removed)

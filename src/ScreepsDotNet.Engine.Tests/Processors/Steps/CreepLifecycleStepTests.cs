@@ -166,6 +166,9 @@ public sealed class CreepLifecycleStepTests
 
         public Task FlushAsync(CancellationToken token = default) => Task.CompletedTask;
 
+#pragma warning disable CA1822 // Method cannot be static as it implements interface member
+        public bool TryGetPendingPatch(string objectId, out RoomObjectPatchPayload patch) { patch = new RoomObjectPatchPayload(); return false; }
+
         public void Reset()
             => Patches.Clear();
     }

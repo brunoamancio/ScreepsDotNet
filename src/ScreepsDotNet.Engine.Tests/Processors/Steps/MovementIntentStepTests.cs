@@ -324,6 +324,42 @@ public sealed class MovementIntentStepTests
     }
 
     [Fact]
+    public async Task ExecuteAsync_PreventsCircularPullLoops()
+    {
+        // Arrange: creep1 pulls creep2, creep2 pulls creep1 (circular dependency)
+        // This prevents the infinite loop bug that exists in Node.js engine
+        var creep1 = CreateCreep("creep1", 10, 10);
+        var creep2 = CreateCreep("creep2", 11, 10);
+
+        var objectIntents = new[]
+        {
+            ("user1", "creep1", CreateTargetIntentRecord(IntentKeys.Pull, "creep2")),
+            ("user1", "creep2", CreateTargetIntentRecord(IntentKeys.Pull, "creep1"))
+        };
+
+        var intents = CreateIntentSnapshot(
+            [
+                ("user1", "creep1", new MoveIntent(11, 10)),
+                ("user1", "creep2", new MoveIntent(10, 10))
+            ],
+            objectIntents);
+
+        var state = CreateState([creep1, creep2], intents);
+        var writer = new RecordingMutationWriter();
+        var step = new MovementIntentStep(new NullDeathProcessor());
+
+        // Act
+        await step.ExecuteAsync(new RoomProcessorContext(state, writer, new NullCreepStatsSink(), new NullGlobalMutationWriter()), TestContext.Current.CancellationToken);
+
+        // Assert: Circular pulls should be prevented
+        // Both creeps should execute their move intents normally (no pull effect)
+        // The CreatesPullLoop logic should detect the cycle and reject both pull intents
+        Assert.Equal(2, writer.Patches.Count);
+        Assert.Contains(writer.Patches, p => p.ObjectId == "creep1" && p.Payload.Position?.X == 11 && p.Payload.Position?.Y == 10);
+        Assert.Contains(writer.Patches, p => p.ObjectId == "creep2" && p.Payload.Position?.X == 10 && p.Payload.Position?.Y == 10);
+    }
+
+    [Fact]
     public async Task ExecuteAsync_PowerCreepCrashesOnPortal()
     {
         var powerCreep = CreatePowerCreep("pc1", 10, 10);
@@ -592,6 +628,9 @@ public sealed class MovementIntentStepTests
 
         public Task FlushAsync(CancellationToken token = default) => Task.CompletedTask;
 
+#pragma warning disable CA1822 // Method cannot be static as it implements interface member
+        public bool TryGetPendingPatch(string objectId, out RoomObjectPatchPayload patch) { patch = new RoomObjectPatchPayload(); return false; }
+
         public void Reset() => Patches.Clear();
     }
 
@@ -606,6 +645,9 @@ public sealed class MovementIntentStepTests
 
         public void Process(RoomProcessorContext context, RoomObjectSnapshot creep, CreepDeathOptions options, IDictionary<string, int> energyLedger)
             => Creeps.Add(creep);
+
+#pragma warning disable CA1822 // Method cannot be static as it implements interface member
+        public bool TryGetPendingPatch(string objectId, out RoomObjectPatchPayload patch) { patch = new RoomObjectPatchPayload(); return false; }
 
         public void Reset() => Creeps.Clear();
     }

@@ -11,6 +11,7 @@ public interface IRoomMutationWriter
     void SetEventLog(IRoomEventLogPayload? eventLog);
     void SetMapView(IRoomMapViewPayload? mapView);
     int GetMutationCount();
+    bool TryGetPendingPatch(string objectId, out RoomObjectPatchPayload patch);
     Task FlushAsync(CancellationToken token = default);
     void Reset();
 }

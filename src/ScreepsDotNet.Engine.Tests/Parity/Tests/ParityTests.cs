@@ -11,27 +11,46 @@ using ScreepsDotNet.Engine.Tests.Parity.Infrastructure;
 [Collection(nameof(Integration.MongoDbParityCollection))]
 public sealed class ParityTests(Integration.MongoDbParityFixture mongoFixture, Integration.ParityTestPrerequisites prerequisites)
 {
+    // Architectural difference fixtures (have dedicated test methods)
+    private const string HarvestBasicFixture = "harvest_basic.json";
+    private const string EdgecaseUpgradeNoEnergyFixture = "edgecase_upgrade_no_energy.json";
+    private const string PullLoopPreventionFixture = "pull_loop_prevention.json";
+
+    // ActionLog optimization fixtures - validation failures
+    private const string EdgecaseTransferZeroFixture = "edgecase_transfer_zero.json";
+    private const string ValidationTransferOutOfRangeFixture = "validation_transfer_out_of_range.json";
+    private const string ValidationTransferInvalidTargetFixture = "validation_transfer_invalid_target.json";
+    private const string PullOutOfRangeFixture = "pull_out_of_range.json";
+    private const string MovementWithoutMovePartFixture = "movement_without_move_part.json";
+    private const string EdgecaseTtlOneFixture = "edgecase_ttl_one.json";
+    private const string ValidationLinkNoControllerFixture = "validation_link_no_controller.json";
+
+    // ActionLog optimization fixtures - structure intent validations
+    private const string LabBoostCreepFixture = "lab_boost_creep.json";
+    private const string LinkSourceEmptyFixture = "link_source_empty.json";
+    private const string BuildWithoutWorkFixture = "build_without_work.json";
+
     /// <summary>
     /// Fixtures with known architectural differences that have dedicated test methods.
     /// These are excluded from the common parity test to avoid false failures.
     /// </summary>
     private static readonly HashSet<string> FixturesWithKnownDivergences = new(StringComparer.OrdinalIgnoreCase)
     {
-        "harvest_basic.json",  // Timer representation difference (Node.js countdown vs .NET absolute timestamp)
-        "edgecase_upgrade_no_energy.json",  // Node.js bug: undefined <= 0 is false, creates patches with NaN values
+        HarvestBasicFixture,              // Timer representation difference (Node.js countdown vs .NET absolute timestamp)
+        EdgecaseUpgradeNoEnergyFixture,   // Node.js bug: undefined <= 0 is false, creates patches with NaN values
+        PullLoopPreventionFixture,        // Node.js bug: circular pulls cause infinite loop in movement processor (just confirmed!)
 
         // ActionLog optimization divergences (Node.js patches touched objects, .NET optimizes)
-        "edgecase_transfer_zero.json",
-        "validation_transfer_out_of_range.json",
-        "validation_transfer_invalid_target.json",
-        "edgecase_ttl_one.json",
-        "pull_out_of_range.json",
-        "movement_without_move_part.json",
-        "lab_boost_creep.json",
-        "link_source_empty.json",
-        "build_without_work.json",
-        "build_without_energy.json",
-        "validation_link_no_controller.json"
+        EdgecaseTransferZeroFixture,
+        ValidationTransferOutOfRangeFixture,
+        ValidationTransferInvalidTargetFixture,
+        EdgecaseTtlOneFixture,
+        PullOutOfRangeFixture,
+        MovementWithoutMovePartFixture,
+        LabBoostCreepFixture,
+        LinkSourceEmptyFixture,
+        BuildWithoutWorkFixture,
+        ValidationLinkNoControllerFixture
     };
 
     /// <summary>
@@ -85,7 +104,7 @@ public sealed class ParityTests(Integration.MongoDbParityFixture mongoFixture, I
     [Fact]
     public async Task HarvestBasic_HasKnownTimerDivergence_AllOtherBehaviorMatches()
     {
-        var fixturePath = ParityFixturePaths.GetFixturePath("harvest_basic.json");
+        var fixturePath = ParityFixturePaths.GetFixturePath(HarvestBasicFixture);
         var state = await JsonFixtureLoader.LoadFromFileAsync(fixturePath, TestContext.Current.CancellationToken);
 
         var dotnetOutput = await DotNetParityTestRunner.RunAsync(state, TestContext.Current.CancellationToken);
@@ -105,19 +124,19 @@ public sealed class ParityTests(Integration.MongoDbParityFixture mongoFixture, I
             // Remove expected divergence and check if any unexpected divergences remain
             var unexpectedDivergences = comparison.Divergences.Where(d => d != expectedDivergence).ToList();
             if (unexpectedDivergences.Count > 0) {
-                Assert.Fail($"❌ harvest_basic.json has unexpected divergences beyond timer representation:\n\n{Comparison.DivergenceReporter.FormatReport(new Comparison.ParityComparisonResult(unexpectedDivergences), "harvest_basic.json")}");
+                Assert.Fail($"❌ {HarvestBasicFixture} has unexpected divergences beyond timer representation:\n\n{Comparison.DivergenceReporter.FormatReport(new Comparison.ParityComparisonResult(unexpectedDivergences), HarvestBasicFixture)}");
             }
 
             // Test passes - only expected timer divergence found
-            Assert.True(true, "✅ harvest_basic.json: Only expected timer representation difference found (Node.js countdown vs .NET absolute timestamp)");
+            Assert.True(true, $"✅ {HarvestBasicFixture}: Only expected timer representation difference found (Node.js countdown vs .NET absolute timestamp)");
         }
         else if (comparison.HasDivergences) {
             // No expected divergence, but other divergences exist - fail with details
-            Assert.Fail(Comparison.DivergenceReporter.FormatReport(comparison, "harvest_basic.json"));
+            Assert.Fail(Comparison.DivergenceReporter.FormatReport(comparison, HarvestBasicFixture));
         }
         else {
             // Perfect match - test passes (Node.js harness might have been updated to match .NET behavior)
-            Assert.True(true, "✅ harvest_basic.json: Perfect match with Node.js (no divergences)");
+            Assert.True(true, $"✅ {HarvestBasicFixture}: Perfect match with Node.js (no divergences)");
         }
     }
 
@@ -131,7 +150,7 @@ public sealed class ParityTests(Integration.MongoDbParityFixture mongoFixture, I
     [Fact]
     public async Task EdgecaseUpgradeNoEnergy_NodeJsBugWithEmptyStore_DotNetCorrectlyValidates()
     {
-        var fixturePath = ParityFixturePaths.GetFixturePath("edgecase_upgrade_no_energy.json");
+        var fixturePath = ParityFixturePaths.GetFixturePath(EdgecaseUpgradeNoEnergyFixture);
         var state = await JsonFixtureLoader.LoadFromFileAsync(fixturePath, TestContext.Current.CancellationToken);
 
         var dotnetOutput = await DotNetParityTestRunner.RunAsync(state, TestContext.Current.CancellationToken);
@@ -151,19 +170,19 @@ public sealed class ParityTests(Integration.MongoDbParityFixture mongoFixture, I
             // Remove expected divergence and check if any unexpected divergences remain
             var unexpectedDivergences = comparison.Divergences.Where(d => d != expectedDivergence).ToList();
             if (unexpectedDivergences.Count > 0) {
-                Assert.Fail($"❌ edgecase_upgrade_no_energy.json has unexpected divergences beyond Node.js bug:\\n\\n{Comparison.DivergenceReporter.FormatReport(new Comparison.ParityComparisonResult(unexpectedDivergences), "edgecase_upgrade_no_energy.json")}");
+                Assert.Fail($"❌ {EdgecaseUpgradeNoEnergyFixture} has unexpected divergences beyond Node.js bug:\n\n{Comparison.DivergenceReporter.FormatReport(new Comparison.ParityComparisonResult(unexpectedDivergences), EdgecaseUpgradeNoEnergyFixture)}");
             }
 
             // Test passes - only expected Node.js bug divergence found
-            Assert.True(true, "✅ edgecase_upgrade_no_energy.json: Only expected Node.js bug divergence (undefined <= 0 bypasses validation)");
+            Assert.True(true, $"✅ {EdgecaseUpgradeNoEnergyFixture}: Only expected Node.js bug divergence (undefined <= 0 bypasses validation)");
         }
         else if (comparison.HasDivergences) {
             // No expected divergence, but other divergences exist - fail with details
-            Assert.Fail(Comparison.DivergenceReporter.FormatReport(comparison, "edgecase_upgrade_no_energy.json"));
+            Assert.Fail(Comparison.DivergenceReporter.FormatReport(comparison, EdgecaseUpgradeNoEnergyFixture));
         }
         else {
             // Perfect match - test passes (Node.js harness might have been fixed)
-            Assert.True(true, "✅ edgecase_upgrade_no_energy.json: Perfect match with Node.js (bug might be fixed)");
+            Assert.True(true, $"✅ {EdgecaseUpgradeNoEnergyFixture}: Perfect match with Node.js (bug might be fixed)");
         }
     }
 
@@ -179,13 +198,13 @@ public sealed class ParityTests(Integration.MongoDbParityFixture mongoFixture, I
     {
         var fixtures = new[]
         {
-            "edgecase_transfer_zero.json",           // Transfer with 0 amount → Node.js patches both creeps
-            "validation_transfer_out_of_range.json", // Transfer out of range → Node.js patches both creeps
-            "validation_transfer_invalid_target.json", // Target doesn't exist → Node.js patches creep
-            "pull_out_of_range.json",                // Pull validation → Node.js patches creep
-            "movement_without_move_part.json",       // Movement without move parts → Node.js patches creep
-            "edgecase_ttl_one.json",                 // TTL edge case → Node.js patches creep
-            "validation_link_no_controller.json"     // Link without controller → Node.js patches both links (actionLog only, transfer blocked)
+            EdgecaseTransferZeroFixture,           // Transfer with 0 amount → Node.js patches both creeps
+            ValidationTransferOutOfRangeFixture,   // Transfer out of range → Node.js patches both creeps
+            ValidationTransferInvalidTargetFixture, // Target doesn't exist → Node.js patches creep
+            PullOutOfRangeFixture,                 // Pull validation → Node.js patches creep
+            MovementWithoutMovePartFixture,        // Movement without move parts → Node.js patches creep
+            EdgecaseTtlOneFixture,                 // TTL edge case → Node.js patches creep
+            ValidationLinkNoControllerFixture      // Link without controller → Node.js patches both links (actionLog only, transfer blocked)
         };
 
         foreach (var fixtureName in fixtures) {
@@ -225,10 +244,9 @@ public sealed class ParityTests(Integration.MongoDbParityFixture mongoFixture, I
     {
         var fixtures = new[]
         {
-            "lab_boost_creep.json",      // Lab validation → Node.js patches creep
-            "link_source_empty.json",    // Link with no energy → Node.js patches both links
-            "build_without_work.json",   // Build without work parts → Node.js patches creep AND construction site
-            "build_without_energy.json"  // Build without energy → Node.js patches creep
+            LabBoostCreepFixture,      // Lab validation → Node.js patches creep
+            LinkSourceEmptyFixture,    // Link with no energy → Node.js patches both links
+            BuildWithoutWorkFixture    // Build without work parts → Node.js patches creep AND construction site
         };
 
         foreach (var fixtureName in fixtures) {

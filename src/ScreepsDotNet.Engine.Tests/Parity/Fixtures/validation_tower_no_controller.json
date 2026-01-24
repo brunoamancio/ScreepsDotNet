@@ -25,10 +25,12 @@
       "user": "user2",
       "body": [
         {
-          "type": "tough"
+          "type": "tough",
+          "hits": 100
         },
         {
-          "type": "move"
+          "type": "move",
+          "hits": 100
         }
       ],
       "store": {},

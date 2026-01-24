@@ -37,10 +37,12 @@
       "user": "user2",
       "body": [
         {
-          "type": "work"
+          "type": "work",
+          "hits": 100
         },
         {
-          "type": "move"
+          "type": "move",
+          "hits": 100
         }
       ],
       "store": {},

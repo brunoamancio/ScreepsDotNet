@@ -36,6 +36,9 @@ public sealed class CapturingMutationWriter : IRoomMutationWriter
     public int GetMutationCount()
         => Patches.Count + Upserts.Count + Removals.Count;
 
+    public bool TryGetPendingPatch(string objectId, out RoomObjectPatchPayload patch)
+        => PendingPatchHelper.TryFindLastPatch(Patches, objectId, out patch);
+
     public Task FlushAsync(CancellationToken token = default)
         => Task.CompletedTask;
 
