@@ -1,6 +1,6 @@
 # Engine Roadmap (E1-E10)
 
-**Last Updated:** January 23, 2026 (Pre-existing test failures fixed: 6 fixed + 1 test added = 509 Engine tests passing)
+**Last Updated:** January 24, 2026 (StructureDecayStep fixed, TryGetPendingPatch refactored, 90/90 parity tests passing)
 
 This document tracks the Engine subsystem roadmap and implementation status. For detailed handler tracking, see `e2.md`. For E5 blockers, see `e5.md`.
 
@@ -19,7 +19,7 @@ This document tracks the Engine subsystem roadmap and implementation status. For
 | E7 | 📋 | Compatibility & Parity Validation | Lockstep testing vs. Node engine, automated divergence detection | Prior steps, legacy engine repo |
 | E8 | ✅ | Observability & Tooling | Engine metrics flow to telemetry, diagnostics commands, operator playbooks | D8 (✅), D4 hooks (✅), E6 (✅) |
 | E9 | 📋 | NPC AI Logic | Keeper and invader AI implemented with pathfinding, targeting, and combat logic | E5 Phase 3 (spawning), E6-E8 complete |
-| E10 | 🚧 | Full Parity Test Coverage | Phase 3 ✅ Complete: 91/91 test methods (100%), 95/95 fixtures covered, 11 architectural differences documented, all structure activation implemented. Phase 4 (CI/CD) pending. | E7 infrastructure (✅), E1-E6 features (✅) |
+| E10 | ✅ | Full Parity Test Coverage | Phase 3-4 Complete: 90/90 parity tests passing, 99 JSON fixtures, 13 architectural differences documented, CI/CD automated. Phase 5 (additional mechanics) pending. | E7 infrastructure (✅), E1-E6 features (✅) |
 
 ---
 
@@ -277,17 +277,17 @@ This document tracks the Engine subsystem roadmap and implementation status. For
 
 ---
 
-## E10: Full Parity Test Coverage 🚧
+## E10: Full Parity Test Coverage ✅
 
-**Status:** Phase 3 ✅ Complete, Phase 4-5 Pending
+**Status:** Phase 3-4 ✅ Complete, Phase 5 Pending
 
 **Summary:**
 - ✅ 99 JSON fixtures created (330% of 25-30 target)
-- ✅ 91 test methods covering all 99 fixtures (100% coverage)
-- ✅ 11 architectural differences explicitly documented with dedicated tests
-- ✅ Option C implemented: Structure activation + ActionLog optimization documented
+- ✅ 90/90 parity tests passing (89 active comparisons + 1 Node.js bug documented)
+- ✅ 5 test methods (1 Theory auto-discovery + 4 dedicated architectural tests)
+- ✅ 13 architectural differences explicitly documented (timer, JS bugs, ActionLog, circular pull)
 - ✅ All P0 (Critical) systems complete
-- ⏳ CI/CD automation pending (Phase 4, 2-3 hours)
+- ✅ CI/CD automation complete (Phase 4)
 - ⏳ Additional mechanics fixtures pending (Phase 5, 6-7 hours)
 
 **Phase Breakdown:**
@@ -297,12 +297,12 @@ This document tracks the Engine subsystem roadmap and implementation status. For
 4. ✅ **Phase 3: Divergence Resolution** - 100% complete (32 hours total)
    - ✅ P0.1 Combat System: 9/9 COMPLETE
    - ✅ P0.2 Build/Repair: ALL COMPLETE (ActionLog optimization documented)
-   - ✅ P0.3 Movement: 9/9 COMPLETE
+   - ✅ P0.3 Movement: 9/9 COMPLETE (Circular pull prevention added)
    - ✅ P0.4 Controller: 7/7 COMPLETE
    - ✅ P0.5 Harvest: 9/9 COMPLETE
    - ✅ P1 Structures: ALL COMPLETE (PowerSpawn activation fix + ActionLog optimization)
-   - ✅ Architectural Decisions: 4 documented (timer, JS bug, ActionLog, structure activation)
-5. ⏳ **Phase 4: CI/CD Automation** - GitHub Actions workflow (2-3 hours, TODO)
+   - ✅ Architectural Decisions: 4 categories documented (timer, JS bugs, ActionLog, circular pull)
+5. ✅ **Phase 4: CI/CD Automation** - GitHub Actions workflow (30 minutes, January 23, 2026)
 6. ⏳ **Phase 5: Additional Mechanics Fixtures** - Edge cases + complex scenarios (6-7 hours, TODO)
    - Combat: 8 fixtures (simultaneous attacks, overkill, rampart protection, tower falloff, heal priority, mass attack)
    - Movement: 6 fixtures (terrain costs, fatigue decay, collisions, portals, pull chains)
@@ -314,26 +314,27 @@ This document tracks the Engine subsystem roadmap and implementation status. For
 
 **Current State:**
 - ✅ 99 JSON fixtures (Combat, Movement, Resources, Structures, Controller, Edge Cases, Validation, AI)
-- ✅ 91/91 test methods passing (100%)
-- ✅ 80 tests with perfect parity + 11 dedicated tests for architectural differences
+- ✅ 90/90 parity tests passing (89 active Node.js comparisons + 1 Node.js bug documented)
+- ✅ 5 test methods (1 Theory auto-discovery + 4 dedicated architectural tests)
+- ✅ 77 fixtures with perfect parity + 13 fixtures with documented architectural differences
 - ✅ Single Theory test with auto-discovery eliminates ~1000+ lines of duplicate code
 - ✅ ALL systems at 100% coverage: Combat, Build, Repair, Movement, Controller, Harvest, Factory, Nuker, Spawn, Transfer, PowerSpawn, Lab, Link, Keeper AI, Invader AI
 - ✅ Node.js harness infrastructure complete
 - ✅ Comparison engine operational
-- ✅ All tests passing (509 Engine tests total, includes 91 parity)
+- ✅ All tests passing (509 Engine tests total, includes 90 parity + 1 circular pull unit test)
 
 **Success Criteria:**
 - ✅ 99 JSON fixtures covering all major intent types (achieved 330% of goal)
-- ✅ All parity tests passing (91/91, 100%)
-- ⏳ CI/CD workflow automated (TODO - Phase 4, 2-3 hours)
+- ✅ All parity tests passing (90/90, 100%)
+- ✅ CI/CD workflow automated (Phase 4 complete)
 - ⏳ Additional mechanics fixtures (TODO - Phase 5, 6-7 hours, target 128 fixtures)
 - ✅ Coverage: 95% of E1-E6 features (all 26 processors)
 - ✅ Documentation updated (E7.md, E10.md, roadmap.md)
 
 **Timeline:**
-- **Invested:** 47 hours (Phases 0-3 complete, 6 pre-existing test failures fixed)
-- **Remaining:** 8-10 hours (CI/CD + additional fixtures)
-- **Total Estimate:** 55-57 hours
+- **Invested:** 47.5 hours (Phases 0-4 complete, StructureDecayStep fix, TryGetPendingPatch refactoring)
+- **Remaining:** 6-7 hours (Phase 5: additional mechanics fixtures)
+- **Total Estimate:** 53.5-54.5 hours
 
 **Dependencies:**
 - ✅ E7 infrastructure complete (Node.js harness, comparison engine, test runner)
@@ -360,7 +361,7 @@ This document tracks the Engine subsystem roadmap and implementation status. For
 
 ## Summary
 
-**Overall Engine Progress:** E1-E6, E8 complete ✅ | E7, E9, E10 pending 📋
+**Overall Engine Progress:** E1-E6, E8, E10 (Phase 3-4) complete ✅ | E7, E9, E10 (Phase 5) pending 📋
 
 **Completed Milestones:**
 - ✅ E1: Legacy engine surface mapped
@@ -378,19 +379,20 @@ This document tracks the Engine subsystem roadmap and implementation status. For
 - ✅ E8 Phase 4: Operator playbooks (7 comprehensive debugging workflows)
 
 **Test Status:** 853/853 passing (509 Engine + 70 Driver + 64 CLI + 210 HTTP)
-- ✅ Engine: 509 tests (includes 91 parity + 418 unit tests)
-- ✅ All pre-existing test failures fixed (6 tests: 2 combat, 1 harvest, 3 controller)
+- ✅ Engine: 509 tests (includes 90 parity + 1 circular pull unit test + 418 other tests)
+- ✅ All pre-existing test failures fixed (6 tests: 2 combat, 1 harvest, 3 controller - January 23)
+- ✅ StructureDecayStep fix (3 combat/decay fixtures working - January 24)
 
 **Remaining Work:**
 - 📋 E7: Parity validation (depends on: E1-E6 complete ✅, E8 complete ✅)
 - 📋 E9: NPC AI logic (depends on: E5 Phase 3 ✅, E6 complete ✅, E7-E8 pending)
-- 🚧 E10: Full parity test coverage (IN PROGRESS - Phase 3 ✅, Phase 4-5 pending, 8-10 hours remaining)
-  - ✅ Phase 3: All systems COMPLETE (91/91 tests passing - January 23)
-  - ⏳ Phase 4: CI/CD automation (2-3 hours)
+- 🚧 E10: Full parity test coverage (Phase 3-4 ✅ COMPLETE, Phase 5 pending, 6-7 hours remaining)
+  - ✅ Phase 3: All systems COMPLETE (90/90 tests passing - January 24)
+  - ✅ Phase 4: CI/CD automation COMPLETE (January 23)
   - ⏳ Phase 5: Additional mechanics fixtures (6-7 hours, 29 new fixtures)
 - 📋 E8.1: Telemetry aggregation & analytics (enhancement: replace stub services with real implementations)
 
-**Next Milestone:** E10 Phase 4 (CI/CD automation) → Phase 5 (Additional mechanics fixtures)
+**Next Milestone:** E10 Phase 5 (Additional mechanics fixtures: 29 new fixtures, 6-7 hours)
 
 **Reference Documents:**
 - E1 (Legacy surface mapping): `e1.md`
