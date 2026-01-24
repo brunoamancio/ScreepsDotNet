@@ -4,6 +4,8 @@
 
 Rebuild the legacy Screeps simulation kernel (processor) in managed .NET. Ports all game mechanics (creep actions, structure logic, combat, market, etc.) from the Node.js engine while maintaining API compatibility with the Driver layer. The Engine consumes Driver abstractions and NEVER accesses Mongo/Redis directly.
 
+**Parity Status:** ✅ 114/114 tests passing (100% core gameplay) - See [`tools/parity-harness/docs/parity-analysis.md`](../../../tools/parity-harness/docs/parity-analysis.md) for comprehensive comparison with Node.js engine.
+
 ## Dependencies
 
 ### This Subsystem Depends On
@@ -264,12 +266,13 @@ public class ControllerProcessor
 
 ## Current Status
 
-**E2 is 95% Complete** - 11/11 handler families implemented (240/240 tests passing), 4 features blocked by E5.
+**Engine Complete! 🎉** - 10/10 milestones (E1-E10), 114/114 parity tests passing (100%)
 
 For detailed roadmap and status tracking, see:
-- **Roadmap:** `../../docs/engine/roadmap.md` (E1-E8 milestones, progress tracking)
-- **E2.3 Handlers:** `../../docs/engine/e2.md` (detailed handler breakdown)
-- **E5 Blockers:** `../../docs/engine/e5.md` (global mutation infrastructure)
+- **Roadmap:** `../../docs/engine/roadmap.md` (E1-E10 milestones, all complete ✅)
+- **Parity Analysis:** `../../../tools/parity-harness/docs/parity-analysis.md` (comprehensive Node.js vs .NET comparison)
+- **Divergence Analysis:** `../../../tools/parity-harness/docs/parity-divergences.md` (documented optimizations)
+- **E10 Details:** `../../docs/engine/e10.md` (final parity test coverage)
 
 ## Common Tasks
 

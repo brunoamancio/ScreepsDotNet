@@ -451,7 +451,7 @@ This file provides **solution-wide** context. For subsystem-specific details:
 4. **Documentation** - Keep docs in sync with feature changes
 
 **Roadmaps:**
-- Engine: `docs/engine/roadmap.md` (E1-E8 milestones)
+- Engine: `docs/engine/roadmap.md` (E1-E10 milestones, all complete ✅) | `tools/parity-harness/docs/parity-analysis.md` (comprehensive parity comparison)
 - Driver: `src/ScreepsDotNet.Driver/CLAUDE.md` (D1-D10 inline)
 - Pathfinder: `src/native/pathfinder/CLAUDE.md` (build/test instructions)
 
@@ -470,7 +470,7 @@ This file provides **solution-wide** context. For subsystem-specific details:
 - `docs/common-tasks.md` - Step-by-step development guides
 - **Backend:** `docs/backend/overview.md` - HTTP API coverage | `docs/backend/http-api.md` - Route reference | `docs/backend/cli.md` - CLI commands
 - **Driver:** `docs/driver/roadmap.md` - D1-D10 milestones (complete ✅) | `docs/driver/d1-d10.md` - Individual milestone docs
-- **Engine:** `docs/engine/roadmap.md` - E1-E9 milestones | `docs/engine/e1-e9.md` - Individual milestone docs | `docs/engine/data-model.md` - Data contracts
+- **Engine:** `docs/engine/roadmap.md` - E1-E10 milestones (all complete ✅) | `tools/parity-harness/docs/parity-analysis.md` - Parity comparison | `docs/engine/data-model.md` - Data contracts
 - **Storage:** `docs/storage/overview.md` - MongoDB/Redis architecture | `docs/storage/mongodb.md` - Collection schemas | `docs/storage/redis.md` - Queue patterns | `docs/storage/seeding.md` - Seed data
 
 ## When Stuck
