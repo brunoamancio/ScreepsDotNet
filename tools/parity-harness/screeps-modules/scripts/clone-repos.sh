@@ -6,7 +6,7 @@ echo "Cloning official Screeps repositories..."
 echo "  (for Engine parity harness)"
 echo "========================================="
 
-# Get script directory and navigate to engine harness root
+# Get script directory and navigate to screeps-modules directory
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR/.."
 
@@ -43,8 +43,8 @@ else
     echo "Using latest versions from master branches"
 fi
 
-MODULES_DIR="screeps-modules"
-mkdir -p "$MODULES_DIR"
+# We're already in screeps-modules directory, clone into current directory
+MODULES_DIR="."
 
 # Function to clone or update a repository
 clone_or_update() {
@@ -63,13 +63,13 @@ clone_or_update() {
         if [ "$ref" = "master" ]; then
             git pull origin master
         fi
-        cd ../..
+        cd ..
     else
         echo "  Cloning repository..."
         git clone "$url" "$MODULES_DIR/$name"
         cd "$MODULES_DIR/$name"
         git checkout "$ref"
-        cd ../..
+        cd ..
     fi
 
     echo "  Installing npm dependencies..."
@@ -88,7 +88,7 @@ clone_or_update() {
     if [ -f "package-lock.json" ]; then
         git restore package-lock.json 2>/dev/null || true
     fi
-    cd ../..
+    cd ..
 
     echo "  ✓ $name ready"
 }

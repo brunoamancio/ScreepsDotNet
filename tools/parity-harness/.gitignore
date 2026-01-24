@@ -1,6 +1,9 @@
 # E7 Parity Testing - Cloned official Screeps repositories
 # These are external git repos and should not be committed to our repo
-screeps-modules/
+# BUT we DO want to commit driver-shim.js (our custom shim file)
+screeps-modules/driver/
+screeps-modules/engine/
+screeps-modules/common/
 
 # Node.js dependencies
 node_modules/

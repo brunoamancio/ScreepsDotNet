@@ -38,20 +38,25 @@ npm install
 
 ### 2. Clone Official Screeps Repositories
 
-**Linux/Mac:**
+**From parity-harness root:**
 ```bash
 npm run clone:engine
-# or
-cd engine/scripts && ./clone-repos.sh
 ```
 
-**Windows (PowerShell):**
+**Or manually:**
+
+Linux/Mac:
+```bash
+cd screeps-modules/scripts && ./clone-repos.sh
+```
+
+Windows (PowerShell):
 ```powershell
-cd engine/scripts
+cd screeps-modules/scripts
 pwsh ./clone-repos.ps1
 ```
 
-This will clone the official Screeps repositories (engine, driver, common) into `screeps-modules/` directory.
+This will clone the official Screeps repositories (engine, driver, common) into the `screeps-modules/` directory.
 
 ### 3. Start MongoDB
 
@@ -78,23 +83,29 @@ npm run test:engine engine/examples/harvest_basic.json -- --output harvest.node.
 ## Directory Structure
 
 ```
-engine/
-├── README.md                    # This file
-├── scripts/
-│   ├── clone-repos.sh           # Clones official Screeps repos (Linux/Mac)
-│   └── clone-repos.ps1          # Clones official Screeps repos (Windows)
-├── test-runner/
-│   ├── fixture-loader.js        # Loads JSON fixtures into MongoDB
-│   ├── processor-executor.js    # Executes Node.js processor
-│   ├── output-serializer.js     # Serializes output to JSON
-│   └── run-fixture.js           # CLI wrapper (main entry point)
-├── fixtures/                    # Test fixtures (Phase 4)
-│   ├── Movement/
-│   ├── Harvest/
-│   ├── Build/
-│   └── ... (organized by mechanic)
-└── examples/
-    └── harvest_basic.json       # Example fixture
+tools/parity-harness/
+├── screeps-modules/
+│   ├── scripts/
+│   │   ├── clone-repos.sh       # Clones official Screeps repos (Linux/Mac)
+│   │   └── clone-repos.ps1      # Clones official Screeps repos (Windows)
+│   ├── driver-shim.js           # Driver shim for parity testing
+│   ├── driver/                  # Cloned official driver repo
+│   ├── engine/                  # Cloned official engine repo
+│   └── common/                  # Cloned official common repo
+└── engine/
+    ├── README.md                # This file
+    ├── test-runner/
+    │   ├── fixture-loader.js    # Loads JSON fixtures into MongoDB
+    │   ├── processor-executor.js # Executes Node.js processor
+    │   ├── output-serializer.js # Serializes output to JSON
+    │   └── run-fixture.js       # CLI wrapper (main entry point)
+    ├── fixtures/                # Test fixtures (Phase 4)
+    │   ├── Movement/
+    │   ├── Harvest/
+    │   ├── Build/
+    │   └── ... (organized by mechanic)
+    └── examples/
+        └── harvest_basic.json   # Example fixture
 ```
 
 ## Fixture Format

@@ -5,7 +5,7 @@
   "private": true,
   "main": "engine/test-runner/run-fixture.js",
   "scripts": {
-    "clone:engine": "cd engine/scripts && bash clone-repos.sh",
+    "clone:engine": "cd screeps-modules/scripts && bash clone-repos.sh",
     "test:engine": "node engine/test-runner/run-fixture.js"
   },
   "engines": {

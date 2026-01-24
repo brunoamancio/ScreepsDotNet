@@ -3,7 +3,7 @@ const { loadRoomObjects, loadRoomTerrain } = require('./fixture-loader');
 
 // Set driver module path before loading any Screeps modules
 // This tells the engine to use our driver-shim instead of @screeps/core
-process.env.DRIVER_MODULE = path.join(__dirname, '../screeps-modules/driver-shim.js');
+process.env.DRIVER_MODULE = path.join(__dirname, '../../screeps-modules/driver-shim.js');
 
 /**
  * Executes Node.js processor with fixture data
@@ -263,7 +263,7 @@ async function executeProcessor(db, fixture) {
         'nuke': 'intents/nukes/tick'
     };
 
-    const enginePath = path.resolve(__dirname, '../screeps-modules/engine/src/processor');
+    const enginePath = path.resolve(__dirname, '../../screeps-modules/engine/src/processor');
 
     for (const object of Object.values(roomObjects)) {
         const processorPath = structureTickProcessors[object.type];
@@ -299,7 +299,7 @@ async function executeProcessor(db, fixture) {
  * @returns {Function|null}
  */
 function requireIntentProcessor(intentName) {
-    const enginePath = path.resolve(__dirname, '../screeps-modules/engine/src/processor');
+    const enginePath = path.resolve(__dirname, '../../screeps-modules/engine/src/processor');
 
     // Intent name mapping (Node.js processor file paths)
     const intentMap = {
@@ -391,7 +391,7 @@ function requireIntentProcessor(intentName) {
  * @returns {Function|null}
  */
 function requirePretickProcessor(npcType) {
-    const enginePath = path.resolve(__dirname, '../screeps-modules/engine/src/processor');
+    const enginePath = path.resolve(__dirname, '../../screeps-modules/engine/src/processor');
 
     const pretickMap = {
         'keepers': 'intents/creeps/keepers/pretick',
@@ -418,7 +418,7 @@ function requirePretickProcessor(npcType) {
  * @returns {Function|null}
  */
 function requireTickProcessor(tickType) {
-    const enginePath = path.resolve(__dirname, '../screeps-modules/engine/src/processor');
+    const enginePath = path.resolve(__dirname, '../../screeps-modules/engine/src/processor');
 
     const tickMap = {
         'creeps': 'intents/creeps/tick',

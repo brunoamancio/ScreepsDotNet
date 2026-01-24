@@ -15,7 +15,7 @@ Pins official Screeps repositories (engine, driver, common) to specific commit h
 When you run clone scripts:
 ```bash
 # Linux/Mac
-cd tools/parity-harness/engine/scripts
+cd tools/parity-harness/screeps-modules/scripts
 ./clone-repos.sh
 
 # Windows
@@ -36,7 +36,7 @@ dotnet test --filter Category=Parity
 ```
 
 The `ParityTestPrerequisites` fixture:
-1. Checks if repos exist in `tools/parity-harness/engine/screeps-modules/`
+1. Checks if repos exist in `tools/parity-harness/screeps-modules/`
 2. If missing, runs clone scripts (uses pinned commits)
 3. Executes tests against pinned versions
 
@@ -56,13 +56,13 @@ Update pins when:
 
 **Linux/Mac:**
 ```bash
-cd tools/parity-harness/engine/scripts
+cd tools/parity-harness/screeps-modules/scripts
 ./update-pins.sh
 ```
 
 **Windows:**
 ```powershell
-cd tools/parity-harness/engine/scripts
+cd tools/parity-harness/screeps-modules/scripts
 pwsh ./update-pins.ps1
 ```
 
@@ -125,7 +125,7 @@ If you need to pin to a specific commit (e.g., bisecting an issue):
 
 3. Delete screeps-modules to force re-clone:
    ```bash
-   rm -rf tools/parity-harness/engine/screeps-modules
+   rm -rf tools/parity-harness/screeps-modules
    ```
 
 4. Run parity tests:
@@ -139,7 +139,7 @@ If you need to pin to a specific commit (e.g., bisecting an issue):
 
 ```bash
 # 1. Update pins to latest
-cd tools/parity-harness/engine/scripts
+cd tools/parity-harness/screeps-modules/scripts
 ./update-pins.sh
 
 # 2. Run parity tests
@@ -169,7 +169,7 @@ git commit -m "chore: update Screeps repo pins after parity fix"
 # Edit versions.json with older commit hash
 
 # 3. Delete repos to force re-clone
-rm -rf tools/parity-harness/engine/screeps-modules
+rm -rf tools/parity-harness/screeps-modules
 
 # 4. Test
 dotnet test --filter Category=Parity
@@ -228,14 +228,14 @@ If you want to always use latest (e.g., for development against bleeding edge):
 
 **Solution:** Delete screeps-modules and re-clone:
 ```bash
-rm -rf tools/parity-harness/engine/screeps-modules
+rm -rf tools/parity-harness/screeps-modules
 dotnet test --filter Category=Parity  # Will auto-clone with new pins
 ```
 
 ### Want to see what commit is currently checked out
 
 ```bash
-cd tools/parity-harness/engine/screeps-modules/engine
+cd tools/parity-harness/screeps-modules/engine
 git log -1 --oneline
 
 cd ../driver
