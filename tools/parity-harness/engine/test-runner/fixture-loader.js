@@ -43,10 +43,19 @@ async function loadFixture(fixturePath, mongoUrl = 'mongodb://localhost:27017') 
 
     // Insert room objects
     if (fixture.objects && fixture.objects.length > 0) {
-        const roomObjects = fixture.objects.map(obj => ({
-            ...obj,
-            room: fixture.room
-        }));
+        const roomObjects = fixture.objects.map(obj => {
+            // Normalize body parts to have default hits (100) when not specified
+            const normalizedBody = obj.body ? obj.body.map(part => ({
+                ...part,
+                hits: part.hits !== undefined ? part.hits : 100
+            })) : undefined;
+
+            return {
+                ...obj,
+                room: fixture.room,
+                ...(normalizedBody && { body: normalizedBody })
+            };
+        });
         await db.collection('rooms.objects').insertMany(roomObjects);
         console.log(`    ✓ Inserted ${roomObjects.length} room objects`);
     }
