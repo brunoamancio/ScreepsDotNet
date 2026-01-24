@@ -24,7 +24,7 @@ public sealed partial class ParityTestPrerequisites : IAsyncLifetime
     private const string MinNodeVersion = "10.13.0";
     private const string MaxNodeVersion = "12.999.999"; // Accept any Node 12.x, reject 13+
     private const string RecommendedVersion = "12.22.12"; // LTS version for testing
-    private const string HarnessRelativePath = "tools/parity-harness/engine";
+    private const string HarnessRelativePath = "tools/parity-harness";
 
     [GeneratedRegex(@"v?(\d+\.\d+\.\d+)")]
     private static partial Regex NodeVersionRegex();
@@ -302,7 +302,7 @@ public sealed partial class ParityTestPrerequisites : IAsyncLifetime
 
         Console.WriteLine("Cloning official Screeps repositories... (this may take 30-60 seconds)");
 
-        var scriptsPath = Path.Combine(HarnessDirectory, "scripts");
+        var scriptsPath = Path.Combine(HarnessDirectory, "screeps-modules", "scripts");
         var isWindows = OperatingSystem.IsWindows();
         var scriptName = isWindows ? "clone-repos.ps1" : "clone-repos.sh";
         var scriptPath = Path.Combine(scriptsPath, scriptName);

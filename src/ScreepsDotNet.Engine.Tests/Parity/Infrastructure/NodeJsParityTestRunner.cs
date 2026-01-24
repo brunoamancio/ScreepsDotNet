@@ -24,7 +24,7 @@ public static class NodeJsParityTestRunner
         if (!Directory.Exists(absoluteHarnessPath)) {
             throw new InvalidOperationException(
                 $"Node.js harness not found at: {absoluteHarnessPath}\n" +
-                "Run 'cd tools/parity-harness/engine && npm install' first");
+                "Run 'cd tools/parity-harness && npm install' first");
         }
 
         // Run Node.js harness with driver shim (real constants, no native modules)
@@ -33,7 +33,7 @@ public static class NodeJsParityTestRunner
         var startInfo = new ProcessStartInfo
         {
             FileName = "node",
-            Arguments = $"test-runner/run-fixture.js \"{absoluteFixturePath}\" --mongo \"{mongoConnectionString}\"",
+            Arguments = $"engine/test-runner/run-fixture.js \"{absoluteFixturePath}\" --mongo \"{mongoConnectionString}\"",
             WorkingDirectory = absoluteHarnessPath,
             RedirectStandardOutput = true,
             RedirectStandardError = true,
