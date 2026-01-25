@@ -65,6 +65,12 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IRoomProcessorStep, PowerEffectDecayStep>();
         services.AddSingleton<IRoomProcessorStep, PowerAbilityStep>();
         services.AddSingleton<IRoomProcessorStep, PowerAbilityCooldownStep>();
+
+        // Decay systems (passive resource/object removal)
+        services.AddSingleton<IRoomProcessorStep, TombstoneDecayStep>();
+        services.AddSingleton<IRoomProcessorStep, RuinDecayStep>();
+        services.AddSingleton<IRoomProcessorStep, EnergyDecayStep>();
+
         services.AddSingleton<IRoomProcessorStep, NukeLandingStep>();
         services.AddSingleton<IRoomProcessorStep, RoomIntentEventLogStep>();
         services.AddSingleton<IBodyAnalysisHelper, BodyAnalysisHelper>();

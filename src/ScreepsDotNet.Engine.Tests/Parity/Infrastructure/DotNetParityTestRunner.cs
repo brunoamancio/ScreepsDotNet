@@ -104,6 +104,11 @@ public static class DotNetParityTestRunner
             // Power Effect Decay ✅
             new PowerEffectDecayStep(),
 
+            // Decay systems (passive resource/object removal) ✅
+            new TombstoneDecayStep(resourceDropHelper),
+            new RuinDecayStep(resourceDropHelper),
+            new EnergyDecayStep(),
+
             // Keeper Lair ✅
             new KeeperLairStep(),
 

@@ -115,10 +115,23 @@ Core engine complete! These optional features can be implemented as needed:
   - Tests: 8 comprehensive unit tests passing
   - Parity: `observer_observe_room.json` parity test passing (validates .NET vs Node.js behavior)
   - Impact: Provides vision into distant rooms (core gameplay mechanic)
+- ✅ **Rampart.setPublic** (2026-01-25)
+  - Implementation: `RampartIntentStep` for processing setPublic intents
+  - Validation: ownership check, rampart type validation
+  - Tests: Comprehensive unit test coverage
+  - Impact: Allows rampart owners to toggle public access for allied units
+- ✅ **Decay Systems** (2026-01-25)
+  - Implementation: `TombstoneDecayStep`, `RuinDecayStep`, `EnergyDecayStep` for passive object removal
+  - Added `ResourceAmount` field to `RoomObjectPatchPayload` for energy decay mutations
+  - Tombstone/Ruin decay: Checks `gameTime >= decayTime - 1`, drops all resources via `IResourceDropHelper`, removes object
+  - Energy/resource decay: Formula `newAmount = amount - ceil(amount / 1000)`, removes if amount <= 0
+  - Construction site decay: NOT implemented (Node.js has empty tick handler)
+  - Note: Ruins are not currently created when structures are destroyed (future feature)
+  - Tests: 26 comprehensive unit tests passing (8 tombstone + 8 ruin + 10 energy)
+  - Parity: Matches Node.js engine decay behavior exactly
+  - Impact: Passive cleanup of decayed objects and resources
 
 **Deferred:**
-- 📋 Rampart setPublic
-- 📋 Tombstone/ruin/energy/constructionSite decay systems
 - 📋 InvaderCore intents/AI
 - 📋 Room management intents (createConstructionSite, createFlag, destroyStructure, etc.)
 
