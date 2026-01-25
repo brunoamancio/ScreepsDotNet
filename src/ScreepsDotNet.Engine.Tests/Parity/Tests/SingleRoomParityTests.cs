@@ -9,7 +9,7 @@ using ScreepsDotNet.Engine.Tests.Parity.Infrastructure;
 /// </summary>
 [Trait("Category", "Parity")]
 [Collection(nameof(Integration.MongoDbParityCollection))]
-public sealed class ParityTests(Integration.MongoDbParityFixture mongoFixture, Integration.ParityTestPrerequisites prerequisites)
+public sealed class SingleRoomParityTests(Integration.MongoDbParityFixture mongoFixture, Integration.ParityTestPrerequisites prerequisites)
 {
     // Architectural difference fixtures (have dedicated test methods)
     private const string HarvestBasicFixture = "harvest_basic.json";
@@ -73,6 +73,7 @@ public sealed class ParityTests(Integration.MongoDbParityFixture mongoFixture, I
     /// Auto-discovers all JSON fixture files in the Parity/Fixtures directory.
     /// New fixtures are automatically included without code changes.
     /// Excludes fixtures with known architectural differences (see FixturesWithKnownDivergences).
+    /// Excludes multi-room fixtures (those are tested by MultiRoomParityTests).
     /// </summary>
     public static TheoryData<string> AllFixtures()
     {
@@ -82,11 +83,25 @@ public sealed class ParityTests(Integration.MongoDbParityFixture mongoFixture, I
         var theoryData = new TheoryData<string>();
         foreach (var fileName in fixtureFiles.Select(Path.GetFileName).Where(name => name is not null).OrderBy(name => name)) {
             if (!FixturesWithKnownDivergences.Contains(fileName!)) {
-                theoryData.Add(fileName!);
+                // Skip multi-room fixtures (those are tested by MultiRoomParityTests)
+                var filePath = Path.Combine(fixturesDir, fileName!);
+                if (!IsMultiRoomFixture(filePath)) {
+                    theoryData.Add(fileName!);
+                }
             }
         }
 
         return theoryData;
+    }
+
+    /// <summary>
+    /// Detects if a fixture is multi-room format by checking for "rooms" property.
+    /// </summary>
+    private static bool IsMultiRoomFixture(string filePath)
+    {
+        using var doc = System.Text.Json.JsonDocument.Parse(File.ReadAllText(filePath));
+        var isMultiRoom = doc.RootElement.TryGetProperty("rooms", out _);
+        return isMultiRoom;
     }
 
     /// <summary>

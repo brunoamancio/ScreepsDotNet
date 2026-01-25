@@ -57,7 +57,9 @@ public sealed record JsonIntent(
     [property: JsonPropertyName("direction")] int? Direction = null,
     [property: JsonPropertyName("lab1Id")] string? Lab1Id = null,
     [property: JsonPropertyName("lab2Id")] string? Lab2Id = null,
-    [property: JsonPropertyName("bodyPartsCount")] int? BodyPartsCount = null);
+    [property: JsonPropertyName("bodyPartsCount")] int? BodyPartsCount = null,
+    [property: JsonPropertyName("targetRoomName")] string? TargetRoomName = null,
+    [property: JsonPropertyName("description")] string? Description = null);
 
 public sealed record JsonUserState(
     [property: JsonPropertyName("gcl")] JsonGclState Gcl,
@@ -69,3 +71,22 @@ public sealed record JsonGclState(
     [property: JsonPropertyName("level")] int Level,
     [property: JsonPropertyName("progress")] int Progress,
     [property: JsonPropertyName("progressTotal")] int ProgressTotal);
+
+/// <summary>
+/// Multi-room fixture format for testing cross-room operations like Terminal.send.
+/// Uses a dictionary of rooms instead of a single room.
+/// </summary>
+public sealed record JsonMultiRoomFixture(
+    [property: JsonPropertyName("gameTime")] int GameTime,
+    [property: JsonPropertyName("shard")] string Shard,
+    [property: JsonPropertyName("rooms")] Dictionary<string, JsonRoomData> Rooms,
+    [property: JsonPropertyName("intents")] Dictionary<string, Dictionary<string, Dictionary<string, List<JsonIntent>>>> Intents,
+    [property: JsonPropertyName("users")] Dictionary<string, JsonUserState> Users);
+
+/// <summary>
+/// Room data for a single room in a multi-room fixture.
+/// Contains terrain and objects for that room.
+/// </summary>
+public sealed record JsonRoomData(
+    [property: JsonPropertyName("terrain")] string Terrain,
+    [property: JsonPropertyName("objects")] List<JsonRoomObject> Objects);

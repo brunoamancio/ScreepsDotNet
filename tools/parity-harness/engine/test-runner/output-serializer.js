@@ -10,32 +10,187 @@ const { loadRoomObjects } = require('./fixture-loader');
 async function serializeOutput(db, fixture, processorOutput) {
     console.log('Serializing output...');
 
-    // Apply mutations to get final state
-    const finalState = await computeFinalState(db, fixture, processorOutput.mutations);
+    const isMultiRoom = fixture.rooms !== undefined;
 
-    // Extract action logs from mutations
-    const actionLogs = extractActionLogs(processorOutput.mutations);
+    if (isMultiRoom) {
+        // Multi-room output format
+        const output = await serializeMultiRoomOutput(db, fixture, processorOutput);
+        return output;
+    } else {
+        // Single-room output format (original logic)
+        const finalState = await computeFinalState(db, fixture, processorOutput.mutations);
+        const actionLogs = extractActionLogs(processorOutput.mutations);
 
-    // Build output structure
+        const output = {
+            mutations: {
+                patches: convertUpdatesToPatchFormat(processorOutput.mutations.updates),
+                upserts: processorOutput.mutations.inserts,
+                removals: processorOutput.mutations.deletes
+            },
+            stats: processorOutput.stats,
+            actionLogs: actionLogs,
+            finalState: finalState,
+            transactions: processorOutput.mutations.transactions || [],
+            userMoney: processorOutput.mutations.userMoney || {},
+            metadata: {
+                room: fixture.room,
+                gameTime: fixture.gameTime,
+                timestamp: new Date().toISOString()
+            }
+        };
+
+        console.log(`  ✓ Serialized ${Object.keys(finalState).length} objects in final state`);
+
+        return output;
+    }
+}
+
+/**
+ * Serializes multi-room output with mutations grouped by room
+ * @param {any} db - MongoDB database
+ * @param {any} fixture - Multi-room fixture
+ * @param {any} processorOutput - Output from executeProcessor
+ * @returns {Promise<any>}
+ */
+async function serializeMultiRoomOutput(db, fixture, processorOutput) {
+    const roomNames = Object.keys(fixture.rooms);
+
+    // Group mutations by room
+    const mutationsByRoom = groupMutationsByRoom(processorOutput.mutations, roomNames);
+
+    // Compute final state per room
+    const finalStateByRoom = {};
+    for (const roomName of roomNames) {
+        finalStateByRoom[roomName] = await computeFinalStateForRoom(db, roomName, mutationsByRoom[roomName] || { updates: [], inserts: [], deletes: [] });
+    }
+
+    // Build multi-room output structure
+    const mutations = {};
+    for (const roomName of roomNames) {
+        const roomMutations = mutationsByRoom[roomName] || { updates: [], inserts: [], deletes: [] };
+        mutations[roomName] = {
+            patches: convertUpdatesToPatchFormat(roomMutations.updates),
+            upserts: roomMutations.inserts,
+            removals: roomMutations.deletes
+        };
+    }
+
     const output = {
-        mutations: {
-            patches: convertUpdatesToPatchFormat(processorOutput.mutations.updates),
-            upserts: processorOutput.mutations.inserts,
-            removals: processorOutput.mutations.deletes
-        },
+        mutations: mutations,
         stats: processorOutput.stats,
-        actionLogs: actionLogs,
-        finalState: finalState,
+        actionLogs: extractActionLogs(processorOutput.mutations),
+        finalState: finalStateByRoom,
+        transactions: processorOutput.mutations.transactions || [],
+        userMoney: processorOutput.mutations.userMoney || {},
         metadata: {
-            room: fixture.room,
+            rooms: roomNames,
             gameTime: fixture.gameTime,
             timestamp: new Date().toISOString()
         }
     };
 
-    console.log(`  ✓ Serialized ${Object.keys(finalState).length} objects in final state`);
+    const totalObjects = Object.values(finalStateByRoom).reduce((sum, roomState) => sum + Object.keys(roomState).length, 0);
+    console.log(`  ✓ Serialized ${totalObjects} objects across ${roomNames.length} rooms`);
 
     return output;
+}
+
+/**
+ * Groups mutations by room based on object's room property
+ * @param {any} mutations - All mutations
+ * @param {string[]} roomNames - List of room names
+ * @returns {any}
+ */
+function groupMutationsByRoom(mutations, roomNames) {
+    const byRoom = {};
+
+    // Initialize empty mutation sets for each room
+    for (const roomName of roomNames) {
+        byRoom[roomName] = {
+            updates: [],
+            inserts: [],
+            deletes: []
+        };
+    }
+
+    // Group updates by room
+    for (const update of mutations.updates) {
+        // Find the room this object belongs to by checking changes.room or looking up in inserts
+        const room = update.changes.room || findObjectRoom(update.id, mutations);
+        if (room && byRoom[room]) {
+            byRoom[room].updates.push(update);
+        }
+    }
+
+    // Group inserts by room
+    for (const insert of mutations.inserts) {
+        const room = insert.room;
+        if (room && byRoom[room]) {
+            byRoom[room].inserts.push(insert);
+        }
+    }
+
+    // Group deletes - need to track which room they came from
+    // For now, deletes go to all rooms (they'll be filtered by object existence)
+    for (const deleteId of mutations.deletes) {
+        for (const roomName of roomNames) {
+            byRoom[roomName].deletes.push(deleteId);
+        }
+    }
+
+    return byRoom;
+}
+
+/**
+ * Finds which room an object belongs to
+ * @param {string} objectId - Object ID
+ * @param {any} mutations - All mutations
+ * @returns {string|null}
+ */
+function findObjectRoom(objectId, mutations) {
+    // Check if object was inserted (will have room property)
+    const insert = mutations.inserts.find(i => i._id === objectId);
+    if (insert && insert.room) {
+        return insert.room;
+    }
+
+    // Check if any update has room property
+    const update = mutations.updates.find(u => u.id === objectId && u.changes.room);
+    if (update) {
+        return update.changes.room;
+    }
+
+    return null;
+}
+
+/**
+ * Computes final state for a specific room
+ * @param {any} db - MongoDB database
+ * @param {string} roomName - Room name
+ * @param {any} mutations - Mutations for this room
+ * @returns {Promise<any>}
+ */
+async function computeFinalStateForRoom(db, roomName, mutations) {
+    const roomObjects = await loadRoomObjects(db, roomName);
+
+    // Apply updates
+    for (const update of mutations.updates) {
+        if (roomObjects[update.id]) {
+            Object.assign(roomObjects[update.id], update.changes);
+        }
+    }
+
+    // Apply inserts
+    for (const insert of mutations.inserts) {
+        roomObjects[insert._id] = insert;
+    }
+
+    // Apply deletes
+    for (const deleteId of mutations.deletes) {
+        delete roomObjects[deleteId];
+    }
+
+    return roomObjects;
 }
 
 /**

@@ -169,6 +169,97 @@ Or directly:
 node engine/test-runner/run-fixture.js engine/examples/harvest_basic.json --output harvest.node.json
 ```
 
+## Multi-Room Support
+
+### Overview
+
+The harness now supports multi-room fixtures for testing cross-room operations like Terminal.send. Both single-room and multi-room fixtures are automatically detected and processed correctly.
+
+### Single-Room vs Multi-Room Fixtures
+
+**Single-Room Format** (original):
+```json
+{
+  "gameTime": 100,
+  "room": "W1N1",
+  "shard": "shard0",
+  "terrain": "000...",
+  "objects": [...],
+  "intents": {
+    "user1": {
+      "creep1": [...]
+    }
+  },
+  "users": {...}
+}
+```
+
+**Multi-Room Format** (new):
+```json
+{
+  "gameTime": 100,
+  "shard": "shard0",
+  "rooms": {
+    "W1N1": {
+      "terrain": "000...",
+      "objects": [...]
+    },
+    "W2N2": {
+      "terrain": "000...",
+      "objects": [...]
+    }
+  },
+  "intents": {
+    "W1N1": {
+      "user1": {
+        "terminal1": [...]
+      }
+    }
+  },
+  "users": {...}
+}
+```
+
+**Key Differences:**
+- Multi-room uses `rooms` dictionary instead of single `room` field
+- Intents nested by room: `intents[roomName][userId][objectId]`
+- Output mutations grouped by room
+
+### Running Multi-Room Tests
+
+Test multi-room fixture detection:
+```bash
+node test-multi-room.js
+```
+
+Run Terminal.send parity test:
+```bash
+node engine/test-runner/run-fixture.js \
+  ../../src/ScreepsDotNet.Engine.Tests/Parity/Fixtures/terminal_send.json \
+  --mongo mongodb://localhost:27017
+```
+
+### Supported Cross-Room Operations
+
+- ✅ Terminal.send (MarketIntentStep)
+- ✅ Observer.observeRoom (when implemented in E8)
+- ✅ Inter-shard portals (future)
+- ✅ Any cross-room game mechanics
+
+### Implementation Details
+
+The multi-room implementation:
+1. **Auto-detects** fixture format based on `rooms` field presence
+2. **Loads all rooms** into a single flat object map (matching Screeps engine behavior)
+3. **Processes intents** across all rooms
+4. **Groups mutations** by room in output
+5. **Backward compatible** - single-room fixtures still work
+
+Modified files:
+- `engine/test-runner/fixture-loader.js` - Multi-room fixture loading
+- `engine/test-runner/processor-executor.js` - Multi-room intent processing
+- `engine/test-runner/output-serializer.js` - Multi-room output grouping
+
 ## Version Pinning
 
 The `versions.json` file controls which official Screeps repository versions to use per layer:

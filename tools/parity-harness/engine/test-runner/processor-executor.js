@@ -12,14 +12,37 @@ process.env.DRIVER_MODULE = path.join(__dirname, '../../screeps-modules/driver-s
  * @returns {Promise<{mutations: any, stats: any, eventLog: any}>}
  */
 async function executeProcessor(db, fixture) {
-    console.log(`Executing processor for room ${fixture.room}...`);
+    const isMultiRoom = fixture.rooms !== undefined;
 
-    // Load room data
-    const roomObjects = await loadRoomObjects(db, fixture.room);
-    const roomTerrain = await loadRoomTerrain(db, fixture.room);
+    if (isMultiRoom) {
+        console.log(`Executing processor for ${Object.keys(fixture.rooms).length} rooms...`);
+    } else {
+        console.log(`Executing processor for room ${fixture.room}...`);
+    }
 
-    // Find controller if it exists
-    const roomController = Object.values(roomObjects).find(obj => obj.type === 'controller');
+    // Load room data (support both single-room and multi-room fixtures)
+    let roomObjects, roomTerrain, roomController;
+
+    if (isMultiRoom) {
+        // Multi-room: load all rooms into single flat object map
+        roomObjects = {};
+        const allRoomNames = Object.keys(fixture.rooms);
+
+        for (const roomName of allRoomNames) {
+            const roomObjs = await loadRoomObjects(db, roomName);
+            Object.assign(roomObjects, roomObjs);
+        }
+
+        // Use terrain from first room for controller lookup (if needed)
+        const firstRoom = allRoomNames[0];
+        roomTerrain = await loadRoomTerrain(db, firstRoom);
+        roomController = Object.values(roomObjects).find(obj => obj.type === 'controller' && obj.room === firstRoom) || null;
+    } else {
+        // Single-room: original logic
+        roomObjects = await loadRoomObjects(db, fixture.room);
+        roomTerrain = await loadRoomTerrain(db, fixture.room);
+        roomController = Object.values(roomObjects).find(obj => obj.type === 'controller') || null;
+    }
 
     // Mock bulk writer to capture mutations
     const bulkMutations = {
@@ -195,30 +218,64 @@ async function executeProcessor(db, fixture) {
     }
     console.log(`  ✓ Processed ${pretickIntentCount} pretick intents`);
 
-    console.log(`  Processing ${Object.keys(fixture.intents || {}).length} users with intents...`);
-
-    // Execute all intents
+    // Process intents (handle both single-room and multi-room formats)
     let intentCount = 0;
-    for (const [userId, userIntents] of Object.entries(fixture.intents || {})) {
-        for (const [objectId, intents] of Object.entries(userIntents)) {
-            const object = scope.roomObjects[objectId];
-            if (!object) {
-                console.warn(`    WARNING: Object ${objectId} not found in room objects`);
-                continue;
-            }
 
-            for (const intent of intents) {
-                try {
-                    const intentProcessor = requireIntentProcessor(intent.intent);
-                    if (intentProcessor) {
-                        intentProcessor(object, intent, scope);
-                        intentCount++;
-                    } else {
-                        console.warn(`    WARNING: No processor found for intent: ${intent.intent}`);
+    if (isMultiRoom) {
+        // Multi-room format: fixture.intents[roomName][userId][objectId]
+        console.log(`  Processing intents from ${Object.keys(fixture.intents || {}).length} rooms...`);
+
+        for (const [roomName, roomIntents] of Object.entries(fixture.intents || {})) {
+            for (const [userId, userIntents] of Object.entries(roomIntents)) {
+                for (const [objectId, intents] of Object.entries(userIntents)) {
+                    const object = scope.roomObjects[objectId];
+                    if (!object) {
+                        console.warn(`    WARNING: Object ${objectId} not found in room objects (room ${roomName})`);
+                        continue;
                     }
-                } catch (error) {
-                    console.error(`    ERROR processing intent ${intent.intent} for ${objectId}:`, error.message);
-                    console.error(`    Stack:`, error.stack);
+
+                    for (const intent of intents) {
+                        try {
+                            const intentProcessor = requireIntentProcessor(intent.intent);
+                            if (intentProcessor) {
+                                intentProcessor(object, intent, scope);
+                                intentCount++;
+                            } else {
+                                console.warn(`    WARNING: No processor found for intent: ${intent.intent}`);
+                            }
+                        } catch (error) {
+                            console.error(`    ERROR processing intent ${intent.intent} for ${objectId}:`, error.message);
+                            console.error(`    Stack:`, error.stack);
+                        }
+                    }
+                }
+            }
+        }
+    } else {
+        // Single-room format: fixture.intents[userId][objectId]
+        console.log(`  Processing ${Object.keys(fixture.intents || {}).length} users with intents...`);
+
+        for (const [userId, userIntents] of Object.entries(fixture.intents || {})) {
+            for (const [objectId, intents] of Object.entries(userIntents)) {
+                const object = scope.roomObjects[objectId];
+                if (!object) {
+                    console.warn(`    WARNING: Object ${objectId} not found in room objects`);
+                    continue;
+                }
+
+                for (const intent of intents) {
+                    try {
+                        const intentProcessor = requireIntentProcessor(intent.intent);
+                        if (intentProcessor) {
+                            intentProcessor(object, intent, scope);
+                            intentCount++;
+                        } else {
+                            console.warn(`    WARNING: No processor found for intent: ${intent.intent}`);
+                        }
+                    } catch (error) {
+                        console.error(`    ERROR processing intent ${intent.intent} for ${objectId}:`, error.message);
+                        console.error(`    Stack:`, error.stack);
+                    }
                 }
             }
         }
@@ -284,6 +341,10 @@ async function executeProcessor(db, fixture) {
 
     console.log(`  ✓ Processed ${structureTickCount} structure ticks`);
 
+    // Run global processors (market, power, etc.) for multi-room operations like Terminal.send
+    console.log(`  Running global processors...`);
+    runGlobalProcessors(fixture, roomObjects, bulkMutations, stats);
+
     console.log(`  ✓ Captured ${bulkMutations.updates.length} updates, ${bulkMutations.inserts.length} inserts, ${bulkMutations.deletes.length} deletes`);
 
     return {
@@ -291,6 +352,133 @@ async function executeProcessor(db, fixture) {
         stats: stats,
         eventLog: eventLog
     };
+}
+
+/**
+ * Runs global processors (market, power) for cross-room operations
+ * @param {any} fixture - Test fixture
+ * @param {any} roomObjects - All room objects (flat map)
+ * @param {any} bulkMutations - Bulk mutations to update
+ * @param {any} stats - Stats object
+ */
+function runGlobalProcessors(fixture, roomObjects, bulkMutations, stats) {
+    const path = require('path');
+    const enginePath = path.resolve(__dirname, '../../screeps-modules/engine/src/processor');
+
+    // Load lodash from engine's node_modules
+    const engineNodeModulesPath = path.resolve(__dirname, '../../screeps-modules/engine/node_modules');
+    const _ = require(path.join(engineNodeModulesPath, 'lodash'));
+
+    // Load market processor
+    const marketProcessor = require(path.join(enginePath, 'global-intents/market'));
+
+    // Build parameters for market processor
+    const roomObjectsByType = _.groupBy(Object.values(roomObjects), 'type');
+    const gameTime = fixture.gameTime;
+
+    // Mock bulk writers for global processor
+    const bulkObjects = {
+        update: function(obj, changes) {
+            let existingUpdate = bulkMutations.updates.find(u => u.id === obj._id);
+            if (!existingUpdate) {
+                existingUpdate = { id: obj._id, changes: {} };
+                bulkMutations.updates.push(existingUpdate);
+            }
+
+            // Track the room for multi-room grouping
+            // The room isn't part of changes, but we need it to group mutations correctly
+            if (obj.room && !existingUpdate.changes.room) {
+                existingUpdate.changes.room = obj.room;
+            }
+
+            // Handle store updates specially - merge instead of replace
+            if (changes.store) {
+                if (!existingUpdate.changes.store) {
+                    existingUpdate.changes.store = {};
+                }
+                Object.assign(existingUpdate.changes.store, changes.store);
+
+                // Update object in-place (merge store)
+                if (!obj.store) {
+                    obj.store = {};
+                }
+                Object.assign(obj.store, changes.store);
+
+                // Remove store from changes for Object.assign below
+                const { store, ...otherChanges } = changes;
+                Object.assign(existingUpdate.changes, otherChanges);
+                Object.assign(obj, otherChanges);
+            } else {
+                Object.assign(existingUpdate.changes, changes);
+                Object.assign(obj, changes);
+            }
+        }
+    };
+
+    const bulkTransactions = {
+        insert: function(transaction) {
+            // Store transactions for parity comparison
+            if (!bulkMutations.transactions) {
+                bulkMutations.transactions = [];
+            }
+            bulkMutations.transactions.push(transaction);
+        }
+    };
+
+    const bulkUsers = {
+        update: function(user, changes) {
+            // No-op for parity testing
+        }
+    };
+
+    const bulkUsersMoney = {
+        inc: function(userId, amount) {
+            // Track user money changes
+            if (!bulkMutations.userMoney) {
+                bulkMutations.userMoney = {};
+            }
+            bulkMutations.userMoney[userId] = (bulkMutations.userMoney[userId] || 0) + amount;
+        }
+    };
+
+    const bulkUsersResources = {
+        update: function(userId, resourceType, amount) {
+            // No-op for parity testing
+        }
+    };
+
+    const bulkMarketOrders = {
+        update: function(orderId, changes) {
+            // No-op for parity testing (no market orders in terminal send fixture)
+        },
+        remove: function(orderId) {
+            // No-op for parity testing
+        }
+    };
+
+    const bulkMarketIntershardOrders = {
+        update: function(orderId, changes) {
+            // No-op for parity testing
+        }
+    };
+
+    // Call market processor
+    marketProcessor({
+        orders: [],  // No market orders in terminal send fixtures
+        userIntents: [],  // User intents are processed via room objects (terminal.send property)
+        usersById: fixture.users || {},
+        gameTime: gameTime,
+        roomObjectsByType: roomObjectsByType,
+        bulkObjects: bulkObjects,
+        bulkUsers: bulkUsers,
+        bulkTransactions: bulkTransactions,
+        bulkUsersMoney: bulkUsersMoney,
+        bulkUsersResources: bulkUsersResources,
+        bulkMarketOrders: bulkMarketOrders,
+        bulkMarketIntershardOrders: bulkMarketIntershardOrders
+    });
+
+    console.log(`    ✓ Market processor complete - captured ${bulkMutations.updates.length} updates, ${(bulkMutations.transactions || []).length} transactions`);
 }
 
 /**

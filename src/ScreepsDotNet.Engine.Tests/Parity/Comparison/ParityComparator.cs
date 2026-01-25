@@ -227,4 +227,216 @@ public static class ParityComparator
             }
         }
     }
+
+    /// <summary>
+    /// Compares multi-room .NET Engine global processor output with Node.js engine multi-room output.
+    /// Validates cross-room operations like Terminal.send, Observer.observeRoom, etc.
+    /// </summary>
+    public static ParityComparisonResult CompareMultiRoom(MultiRoomParityTestOutput dotnetOutput, JsonDocument nodeOutput)
+    {
+        var divergences = new List<ParityDivergence>();
+
+        // Extract Node.js mutations (multi-room format: mutations[roomName])
+        if (!nodeOutput.RootElement.TryGetProperty("mutations", out var nodeMutations)) {
+            divergences.Add(new ParityDivergence(
+                "mutations",
+                null,
+                dotnetOutput.GlobalMutationWriter,
+                $"Node.js output missing 'mutations' property. Found properties: {string.Join(", ", nodeOutput.RootElement.EnumerateObject().Select(p => p.Name))}",
+                DivergenceCategory.Mutation
+            ));
+            return new ParityComparisonResult(divergences);
+        }
+
+        // Compare room object patches across all rooms
+        divergences.AddRange(CompareMultiRoomPatches(dotnetOutput.GlobalMutationWriter, nodeMutations));
+
+        // Compare transactions
+        divergences.AddRange(CompareTransactions(dotnetOutput.GlobalMutationWriter, nodeOutput));
+
+        // Compare user money adjustments (if present in Node.js output)
+        if (nodeOutput.RootElement.TryGetProperty("userMoney", out var nodeUserMoney)) {
+            divergences.AddRange(CompareUserMoney(dotnetOutput.GlobalMutationWriter, nodeUserMoney));
+        }
+
+        return new ParityComparisonResult(divergences);
+    }
+
+    private static IEnumerable<ParityDivergence> CompareMultiRoomPatches(CapturingGlobalMutationWriter dotnetWriter, JsonElement nodeMutations)
+    {
+        // Build .NET room object patch map (objectId -> patch)
+        var dotnetPatchMap = new Dictionary<string, GlobalRoomObjectPatch>(StringComparer.Ordinal);
+        foreach (var (objectId, patch) in dotnetWriter.RoomObjectPatches) {
+            dotnetPatchMap[objectId] = patch;
+        }
+
+        // Build Node.js room object patch map (aggregate across all rooms)
+        var nodePatchMap = new Dictionary<string, JsonElement>(StringComparer.Ordinal);
+        foreach (var roomProp in nodeMutations.EnumerateObject()) {
+            if (roomProp.Value.TryGetProperty("patches", out var roomPatches)) {
+                foreach (var patch in roomPatches.EnumerateArray()) {
+                    if (patch.TryGetProperty("objectId", out var objectId)) {
+                        nodePatchMap[objectId.GetString()!] = patch;
+                    }
+                }
+            }
+        }
+
+        // Check for patches in .NET but not in Node.js
+        foreach (var (objectId, _) in dotnetPatchMap) {
+            if (!nodePatchMap.ContainsKey(objectId)) {
+                yield return new ParityDivergence(
+                    $"mutations.*.patches[{objectId}]",
+                    null,
+                    objectId,
+                    "Patch exists in .NET but not in Node.js",
+                    DivergenceCategory.Mutation
+                );
+            }
+        }
+
+        // Check for patches in Node.js but not in .NET
+        foreach (var (objectId, nodePatch) in nodePatchMap) {
+            if (!dotnetPatchMap.TryGetValue(objectId, out var dotnetPatch)) {
+                yield return new ParityDivergence(
+                    $"mutations.*.patches[{objectId}]",
+                    objectId,
+                    null,
+                    "Patch exists in Node.js but not in .NET",
+                    DivergenceCategory.Mutation
+                );
+                continue;
+            }
+
+            // Compare store (most common for Terminal.send)
+            if (nodePatch.TryGetProperty("store", out var nodeStore) && dotnetPatch.Store is not null) {
+                foreach (var storeProp in nodeStore.EnumerateObject()) {
+                    var resource = storeProp.Name;
+                    var nodeAmount = storeProp.Value.ValueKind == JsonValueKind.Null ? 0 : storeProp.Value.GetInt32();
+                    var dotnetAmount = dotnetPatch.Store.GetValueOrDefault(resource, 0);
+
+                    if (nodeAmount != dotnetAmount) {
+                        yield return new ParityDivergence(
+                            $"mutations.*.patches[{objectId}].store.{resource}",
+                            nodeAmount,
+                            dotnetAmount,
+                            $"Store amount differs: Node.js={nodeAmount}, .NET={dotnetAmount}",
+                            DivergenceCategory.Mutation
+                        );
+                    }
+                }
+
+                // Check for resources in .NET store but not in Node.js
+                foreach (var (resource, dotnetAmount) in dotnetPatch.Store) {
+                    if (!nodeStore.TryGetProperty(resource, out _) && dotnetAmount != 0) {
+                        yield return new ParityDivergence(
+                            $"mutations.*.patches[{objectId}].store.{resource}",
+                            0,
+                            dotnetAmount,
+                            $"Store resource exists in .NET but not in Node.js: .NET={dotnetAmount}",
+                            DivergenceCategory.Mutation
+                        );
+                    }
+                }
+            }
+
+            // Compare cooldownTime (Terminal.send sets this)
+            if (nodePatch.TryGetProperty("cooldownTime", out var nodeCooldown) && dotnetPatch.CooldownTime.HasValue) {
+                var nodeCooldownValue = nodeCooldown.GetInt32();
+                var dotnetCooldownValue = dotnetPatch.CooldownTime.Value;
+
+                if (nodeCooldownValue != dotnetCooldownValue) {
+                    yield return new ParityDivergence(
+                        $"mutations.*.patches[{objectId}].cooldownTime",
+                        nodeCooldownValue,
+                        dotnetCooldownValue,
+                        $"CooldownTime differs: Node.js={nodeCooldownValue}, .NET={dotnetCooldownValue}",
+                        DivergenceCategory.Mutation
+                    );
+                }
+            }
+        }
+    }
+
+    private static IEnumerable<ParityDivergence> CompareTransactions(CapturingGlobalMutationWriter dotnetWriter, JsonDocument nodeOutput)
+    {
+        // Extract Node.js transactions (if present)
+        if (!nodeOutput.RootElement.TryGetProperty("transactions", out var nodeTransactions)) {
+            if (dotnetWriter.Transactions.Count > 0) {
+                yield return new ParityDivergence(
+                    "transactions",
+                    null,
+                    dotnetWriter.Transactions,
+                    $"Node.js output missing transactions, .NET has {dotnetWriter.Transactions.Count}",
+                    DivergenceCategory.Mutation
+                );
+            }
+            yield break;
+        }
+
+        var nodeTransactionList = nodeTransactions.EnumerateArray().ToList();
+
+        // Compare transaction counts
+        if (dotnetWriter.Transactions.Count != nodeTransactionList.Count) {
+            yield return new ParityDivergence(
+                "transactions",
+                nodeTransactionList.Count,
+                dotnetWriter.Transactions.Count,
+                $"Transaction count differs: Node.js={nodeTransactionList.Count}, .NET={dotnetWriter.Transactions.Count}",
+                DivergenceCategory.Mutation
+            );
+        }
+
+        // For now, just compare counts. Field-by-field comparison can be added later if needed.
+        // Terminal.send creates one transaction per transfer, so count comparison is sufficient for basic validation.
+    }
+
+    private static IEnumerable<ParityDivergence> CompareUserMoney(CapturingGlobalMutationWriter dotnetWriter, JsonElement nodeUserMoney)
+    {
+        // Build .NET user money map
+        var dotnetMoneyMap = new Dictionary<string, double>(StringComparer.Ordinal);
+        foreach (var (userId, newBalance) in dotnetWriter.UserMoneyAdjustments) {
+            dotnetMoneyMap[userId] = newBalance;
+        }
+
+        // Compare with Node.js user money
+        foreach (var userProp in nodeUserMoney.EnumerateObject()) {
+            var userId = userProp.Name;
+            var nodeBalance = userProp.Value.GetDouble();
+
+            if (!dotnetMoneyMap.TryGetValue(userId, out var dotnetBalance)) {
+                yield return new ParityDivergence(
+                    $"userMoney.{userId}",
+                    nodeBalance,
+                    null,
+                    "User money adjustment exists in Node.js but not in .NET",
+                    DivergenceCategory.Mutation
+                );
+                continue;
+            }
+
+            if (Math.Abs(nodeBalance - dotnetBalance) > 0.01) {
+                yield return new ParityDivergence(
+                    $"userMoney.{userId}",
+                    nodeBalance,
+                    dotnetBalance,
+                    $"User money differs: Node.js={nodeBalance}, .NET={dotnetBalance}",
+                    DivergenceCategory.Mutation
+                );
+            }
+        }
+
+        // Check for .NET user money not in Node.js
+        foreach (var (userId, dotnetBalance) in dotnetMoneyMap) {
+            if (!nodeUserMoney.TryGetProperty(userId, out _)) {
+                yield return new ParityDivergence(
+                    $"userMoney.{userId}",
+                    null,
+                    dotnetBalance,
+                    "User money adjustment exists in .NET but not in Node.js",
+                    DivergenceCategory.Mutation
+                );
+            }
+        }
+    }
 }

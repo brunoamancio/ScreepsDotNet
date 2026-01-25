@@ -88,3 +88,10 @@ exports.pathFinder = {
 };
 
 exports.config = common.configManager.config;
+
+// World size for room distance calculations (Terminal.send energy cost)
+// Default world size is 202 (rooms from -100 to +100 inclusive: 201 rooms, but the size is 202)
+// This matches the official Screeps world size
+exports.getWorldSize = function() {
+    return 202;
+};

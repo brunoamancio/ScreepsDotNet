@@ -14,6 +14,9 @@ async function loadFixture(fixturePath, mongoUrl = 'mongodb://localhost:27017') 
     const fixtureContent = fs.readFileSync(fixturePath, 'utf8');
     const fixture = JSON.parse(fixtureContent);
 
+    // Detect multi-room vs single-room format
+    const isMultiRoom = fixture.rooms !== undefined;
+
     // Validate fixture structure
     validateFixture(fixture);
 
@@ -27,11 +30,22 @@ async function loadFixture(fixturePath, mongoUrl = 'mongodb://localhost:27017') 
 
     console.log('  Clearing existing data...');
 
-    // Clear collections for this room
-    await db.collection('rooms.objects').deleteMany({ room: fixture.room });
-    await db.collection('rooms.intents').deleteMany({ room: fixture.room });
-    await db.collection('rooms.terrain').deleteMany({ room: fixture.room });
-    await db.collection('rooms').deleteMany({ _id: fixture.room });
+    if (isMultiRoom) {
+        // Multi-room fixture: clear data for all rooms
+        const roomNames = Object.keys(fixture.rooms);
+        for (const roomName of roomNames) {
+            await db.collection('rooms.objects').deleteMany({ room: roomName });
+            await db.collection('rooms.intents').deleteMany({ room: roomName });
+            await db.collection('rooms.terrain').deleteMany({ room: roomName });
+            await db.collection('rooms').deleteMany({ _id: roomName });
+        }
+    } else {
+        // Single-room fixture: clear data for single room
+        await db.collection('rooms.objects').deleteMany({ room: fixture.room });
+        await db.collection('rooms.intents').deleteMany({ room: fixture.room });
+        await db.collection('rooms.terrain').deleteMany({ room: fixture.room });
+        await db.collection('rooms').deleteMany({ _id: fixture.room });
+    }
 
     // Clear user data
     const userIds = Object.keys(fixture.users || {});
@@ -41,35 +55,104 @@ async function loadFixture(fixturePath, mongoUrl = 'mongodb://localhost:27017') 
 
     console.log('  Inserting fixture data...');
 
-    // Insert room objects
-    if (fixture.objects && fixture.objects.length > 0) {
-        const roomObjects = fixture.objects.map(obj => ({
-            ...obj,
-            room: fixture.room
-        }));
-        await db.collection('rooms.objects').insertMany(roomObjects);
-        console.log(`    ✓ Inserted ${roomObjects.length} room objects`);
-    }
+    if (isMultiRoom) {
+        // Multi-room fixture: insert data for each room
+        let totalObjects = 0;
+        for (const [roomName, roomData] of Object.entries(fixture.rooms)) {
+            // Insert room objects
+            if (roomData.objects && roomData.objects.length > 0) {
+                const roomObjects = roomData.objects.map(obj => ({
+                    ...obj,
+                    room: roomName
+                }));
+                await db.collection('rooms.objects').insertMany(roomObjects);
+                totalObjects += roomObjects.length;
+            }
 
-    // Insert room metadata
-    await db.collection('rooms').insertOne({
-        _id: fixture.room,
-        status: 'normal',
-        active: true
-    });
+            // Insert room metadata
+            await db.collection('rooms').insertOne({
+                _id: roomName,
+                status: 'normal',
+                active: true
+            });
 
-    // Insert terrain
-    if (fixture.terrain) {
-        await db.collection('rooms.terrain').insertOne({
+            // Insert terrain
+            if (roomData.terrain) {
+                await db.collection('rooms.terrain').insertOne({
+                    _id: roomName,
+                    room: roomName,
+                    terrain: roomData.terrain,
+                    type: 'terrain'
+                });
+            }
+        }
+        console.log(`    ✓ Inserted ${totalObjects} room objects across ${Object.keys(fixture.rooms).length} rooms`);
+
+        // Insert intents per room
+        if (fixture.intents) {
+            let totalIntents = 0;
+            for (const [roomName, roomIntents] of Object.entries(fixture.intents)) {
+                const intentCount = Object.values(roomIntents).reduce((sum, userIntents) => {
+                    return sum + Object.values(userIntents).reduce((userSum, objIntents) => {
+                        return userSum + objIntents.length;
+                    }, 0);
+                }, 0);
+
+                await db.collection('rooms.intents').insertOne({
+                    room: roomName,
+                    intents: roomIntents
+                });
+                totalIntents += intentCount;
+            }
+            console.log(`    ✓ Inserted ${totalIntents} intents`);
+        }
+    } else {
+        // Single-room fixture: insert data for single room
+        // Insert room objects
+        if (fixture.objects && fixture.objects.length > 0) {
+            const roomObjects = fixture.objects.map(obj => ({
+                ...obj,
+                room: fixture.room
+            }));
+            await db.collection('rooms.objects').insertMany(roomObjects);
+            console.log(`    ✓ Inserted ${roomObjects.length} room objects`);
+        }
+
+        // Insert room metadata
+        await db.collection('rooms').insertOne({
             _id: fixture.room,
-            room: fixture.room,
-            terrain: fixture.terrain,
-            type: 'terrain'
+            status: 'normal',
+            active: true
         });
-        console.log(`    ✓ Inserted terrain`);
+
+        // Insert terrain
+        if (fixture.terrain) {
+            await db.collection('rooms.terrain').insertOne({
+                _id: fixture.room,
+                room: fixture.room,
+                terrain: fixture.terrain,
+                type: 'terrain'
+            });
+            console.log(`    ✓ Inserted terrain`);
+        }
+
+        // Store intents in format expected by processor
+        if (fixture.intents) {
+            const intentCount = Object.values(fixture.intents).reduce((sum, userIntents) => {
+                return sum + Object.values(userIntents).reduce((userSum, objIntents) => {
+                    return userSum + objIntents.length;
+                }, 0);
+            }, 0);
+
+            await db.collection('rooms.intents').insertOne({
+                room: fixture.room,
+                intents: fixture.intents
+            });
+            console.log(`    ✓ Inserted ${intentCount} intents`);
+        }
     }
 
-    // Insert users
+    // Insert users (same for both single and multi-room)
     for (const [userId, userData] of Object.entries(fixture.users || {})) {
         await db.collection('users').insertOne({
             _id: userId,
@@ -78,21 +161,6 @@ async function loadFixture(fixturePath, mongoUrl = 'mongodb://localhost:27017') 
     }
     if (userIds.length > 0) {
         console.log(`    ✓ Inserted ${userIds.length} users`);
-    }
-
-    // Store intents in format expected by processor
-    if (fixture.intents) {
-        const intentCount = Object.values(fixture.intents).reduce((sum, userIntents) => {
-            return sum + Object.values(userIntents).reduce((userSum, objIntents) => {
-                return userSum + objIntents.length;
-            }, 0);
-        }, 0);
-
-        await db.collection('rooms.intents').insertOne({
-            room: fixture.room,
-            intents: fixture.intents
-        });
-        console.log(`    ✓ Inserted ${intentCount} intents`);
     }
 
     console.log('  ✓ Fixture loaded successfully');
@@ -105,17 +173,38 @@ async function loadFixture(fixturePath, mongoUrl = 'mongodb://localhost:27017') 
  * @param {any} fixture - Parsed fixture object
  */
 function validateFixture(fixture) {
-    if (!fixture.room) {
-        throw new Error('Fixture missing required field: room');
-    }
+    const isMultiRoom = fixture.rooms !== undefined;
+
     if (typeof fixture.gameTime !== 'number') {
         throw new Error('Fixture missing required field: gameTime (must be number)');
     }
-    if (!fixture.objects || !Array.isArray(fixture.objects)) {
-        throw new Error('Fixture missing required field: objects (must be array)');
-    }
+
     if (!fixture.users || typeof fixture.users !== 'object') {
         throw new Error('Fixture missing required field: users (must be object)');
+    }
+
+    if (isMultiRoom) {
+        // Multi-room fixture validation
+        if (!fixture.rooms || typeof fixture.rooms !== 'object') {
+            throw new Error('Multi-room fixture missing required field: rooms (must be object)');
+        }
+
+        for (const [roomName, roomData] of Object.entries(fixture.rooms)) {
+            if (!roomData.objects || !Array.isArray(roomData.objects)) {
+                throw new Error(`Room ${roomName} missing required field: objects (must be array)`);
+            }
+            if (!roomData.terrain || typeof roomData.terrain !== 'string') {
+                throw new Error(`Room ${roomName} missing required field: terrain (must be string)`);
+            }
+        }
+    } else {
+        // Single-room fixture validation
+        if (!fixture.room) {
+            throw new Error('Single-room fixture missing required field: room');
+        }
+        if (!fixture.objects || !Array.isArray(fixture.objects)) {
+            throw new Error('Single-room fixture missing required field: objects (must be array)');
+        }
     }
 }
 

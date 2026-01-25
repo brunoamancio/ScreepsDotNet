@@ -1,6 +1,6 @@
 # Engine Roadmap (E1-E10)
 
-**Last Updated:** January 24, 2026 (ALL milestones complete ✅, 114/114 parity tests passing, 100% core gameplay)
+**Last Updated:** January 25, 2026 (ALL milestones complete ✅, 115/115 parity tests passing, 100% core gameplay + multi-room)
 
 This document tracks the Engine subsystem roadmap and implementation status. For detailed handler tracking, see `e2.md`. For comprehensive parity analysis, see [`tools/parity-harness/docs/parity-analysis.md`](../../tools/parity-harness/docs/parity-analysis.md).
 
@@ -19,7 +19,7 @@ This document tracks the Engine subsystem roadmap and implementation status. For
 | E7 | ✅ | Compatibility & Parity Validation | All phases complete: Node.js harness, comparison engine, 90/90 parity tests, CI/CD automated | Prior steps, legacy engine repo |
 | E8 | ✅ | Observability & Tooling | Engine metrics flow to telemetry, diagnostics commands, operator playbooks | D8 (✅), D4 hooks (✅), E6 (✅) |
 | E9 | ✅ | NPC AI Logic | Both phases complete: Keeper AI (32 tests) + Invader AI (22 tests) with pathfinding, targeting, and combat logic | E5 Phase 3 (spawning), E6-E8 complete |
-| E10 | ✅ | Full Parity Test Coverage | **COMPLETE:** 114/114 parity tests passing (100%), all implementation gaps resolved, optimizations documented. See [parity analysis](../../tools/parity-harness/docs/parity-analysis.md). | E7 infrastructure (✅), E1-E9 features (✅) |
+| E10 | ✅ | Full Parity Test Coverage | **COMPLETE:** 115/115 parity tests passing (100%), all implementation gaps resolved, optimizations documented. See [parity analysis](../../tools/parity-harness/docs/parity-analysis.md). | E7 infrastructure (✅), E1-E9 features (✅) |
 
 ---
 
@@ -37,7 +37,7 @@ This document tracks the Engine subsystem roadmap and implementation status. For
 - ✅ **E7:** Parity infrastructure + CI/CD (all 6 phases, 90/90 parity tests)
 - ✅ **E8:** Observability & tooling (all 4 phases: telemetry, CLI, HTTP, playbooks)
 - ✅ **E9:** NPC AI logic (both phases: Keeper AI + Invader AI, 54 tests)
-- ✅ **E10:** Full parity test coverage (114/114 tests passing, 100% core gameplay)
+- ✅ **E10:** Full parity test coverage (115/115 tests passing, 100% core gameplay)
 
 ---
 
@@ -56,7 +56,7 @@ This document tracks the Engine subsystem roadmap and implementation status. For
   - Transfer: Empty container validation (Node.js bug documented)
 
 **Results:**
-- ✅ 114/114 parity tests passing (100%) - All implementation gaps resolved
+- ✅ 115/115 parity tests passing (100%) - All implementation gaps resolved
 - ✅ 7 divergences documented as intentional optimizations (ActionLog patching, validation efficiency)
 - ✅ 2 Node.js bugs documented (withdraw/upgrade type coercion)
 - ✅ CI/CD pipeline validates all fixtures automatically
@@ -176,7 +176,7 @@ Core engine complete! These optional features can be implemented as needed:
                               ↓
 ┌─────────────────────────────────────────────────────────────┐
 │                  ✅ ENGINE COMPLETE 🎉                      │
-│  114/114 parity tests passing (100% core gameplay)          │
+│  115/115 parity tests passing (100% core gameplay)          │
 │  Production-ready with comprehensive testing & CI/CD        │
 │                                                              │
 │  See: tools/parity-harness/docs/parity-analysis.md          │
@@ -198,7 +198,7 @@ Core engine complete! These optional features can be implemented as needed:
 **Critical Work Remaining:** NONE - All milestones complete! ✅
 **Optional Work:** E2 deferred features + E8.1 enhancements (no estimate)
 **Completion Status:** 100% (10/10 core milestones complete)
-**Production Ready:** YES - 114/114 parity tests passing
+**Production Ready:** YES - 115/115 parity tests passing
 
 **Engine Status:**
 - ✅ 100% of core engine milestones complete
@@ -459,10 +459,10 @@ Core engine complete! These optional features can be implemented as needed:
 
 ## E10: Full Parity Test Coverage ✅ COMPLETE
 
-**Status:** All Phases Complete ✅ (114/114 tests passing, 100%)
+**Status:** All Phases Complete ✅ (115/115 tests passing, 100%)
 
 **Summary:**
-- ✅ 114/114 parity tests passing (100% - all implementation gaps resolved)
+- ✅ 115/115 parity tests passing (100% - all implementation gaps resolved)
 - ✅ 128 JSON fixtures created (426% of 25-30 target)
 - ✅ 6 test methods (1 Theory auto-discovery + 5 dedicated divergence tests)
 - ✅ 7 intentional optimizations documented (ActionLog, validation, combat efficiency)
@@ -497,7 +497,7 @@ Core engine complete! These optional features can be implemented as needed:
    - ✅ Validation efficiency optimizations (skip patch on failure)
    - ✅ ActionLog optimization (document divergence)
    - ✅ Node.js bugs documented (withdraw/upgrade type coercion)
-   - ✅ **Result:** 114/114 tests passing (100%)
+   - ✅ **Result:** 115/115 tests passing (100%)
 8. ✅ **Phase 7: Documentation & Analysis** - Comprehensive parity analysis and roadmap updates (January 24, 2026)
    - ✅ Created parity analysis document ([tools/parity-harness/docs/parity-analysis.md](../../tools/parity-harness/docs/parity-analysis.md))
    - ✅ Updated roadmap and E10 documentation
@@ -505,7 +505,7 @@ Core engine complete! These optional features can be implemented as needed:
 
 **Current State:**
 - ✅ 128 JSON fixtures (Combat, Movement, Resources, Structures, Controller, Edge Cases, Validation, AI)
-- ✅ 114/114 parity tests passing (100% - all implementation gaps resolved)
+- ✅ 115/115 parity tests passing (100% - all implementation gaps resolved)
 - ✅ 6 test methods (1 Theory auto-discovery + 5 dedicated divergence tests)
 - ✅ 107 fixtures with perfect parity + 7 fixtures with documented intentional optimizations
 - ✅ Single Theory test with auto-discovery eliminates ~1000+ lines of duplicate code
@@ -517,7 +517,7 @@ Core engine complete! These optional features can be implemented as needed:
 
 **Success Criteria: ALL MET ✅**
 - ✅ 128 JSON fixtures covering all major intent types (achieved 426% of goal)
-- ✅ All parity tests passing (114/114, 100%)
+- ✅ All parity tests passing (115/115, 100%)
 - ✅ CI/CD workflow automated and running
 - ✅ All implementation gaps resolved
 - ✅ Coverage: 95% core gameplay (see parity analysis)
@@ -543,13 +543,15 @@ Core engine complete! These optional features can be implemented as needed:
 - ✅ Auto-discovery pattern eliminates maintenance overhead
 - ✅ Comprehensive divergence analysis and categorization
 
+**Completed:**
+- ✅ Terminal.send global (multi-room parity test passing via `DotNetMultiRoomParityTestRunner` + Node.js harness)
+
 **Deferred:**
 - ⚠️ Stats comparison in parity tests - Node.js harness doesn't capture stats yet
   - Disabled in `ParityComparator.cs` line 28
   - Re-enablement instructions documented in `ParityComparator.cs` comments (lines 19-28)
   - Affected test assertions commented out in `ParityComparatorTests.cs` (lines 92, 103-108, 184, 223, 226)
-- ❌ Observer mechanics (`observeRoom` - E9 dependency, included in Phase 5)
-- ❌ Terminal.send global (requires GlobalParityTestRunner, included in Phase 5)
+- ❌ Observer mechanics (`observeRoom` - E9 dependency, requires observation tracking infrastructure)
 
 **Details:** See `e10.md` for complete implementation plan and divergence analysis
 
@@ -576,11 +578,11 @@ Core engine complete! These optional features can be implemented as needed:
 - ✅ E8 Phase 4: Operator playbooks (7 comprehensive debugging workflows)
 - ✅ E9 Phase 1: Keeper AI complete (32 tests: 12 unit + 10 integration + 10 parity)
 - ✅ E9 Phase 2: Invader AI complete (22 tests: 12 unit + 10 parity)
-- ✅ E10 All Phases: Full parity test coverage (114/114 tests, 128 fixtures, CI/CD automation, optimizations documented)
+- ✅ E10 All Phases: Full parity test coverage (115/115 tests, 128 fixtures, CI/CD automation, optimizations documented)
 
 **Test Status:** 867/867 passing (523 Engine + 70 Driver + 64 CLI + 210 HTTP)
 - ✅ Engine: 523 tests (includes 114 parity + 409 other tests)
-- ✅ All parity tests passing (114/114, 100%)
+- ✅ All parity tests passing (115/115, 100%)
 - ✅ All implementation gaps resolved
 - ✅ Comprehensive parity analysis: [tools/parity-harness/docs/parity-analysis.md](../../tools/parity-harness/docs/parity-analysis.md)
 

@@ -21,7 +21,7 @@ public sealed class RampartIntentStepTests
     {
         // Arrange
         var rampart = CreateRampart("rampart1", "user1", x: 25, y: 25, isPublic: false);
-        var context = CreateContext(new[] { rampart }, CreateSetPublicIntent("user1", rampart.Id, isPublic: true));
+        var context = CreateContext([rampart], CreateSetPublicIntent("user1", rampart.Id, isPublic: true));
         var writer = (FakeMutationWriter)context.MutationWriter;
 
         // Act
@@ -38,7 +38,7 @@ public sealed class RampartIntentStepTests
     {
         // Arrange
         var rampart = CreateRampart("rampart1", "user1", x: 25, y: 25, isPublic: true);
-        var context = CreateContext(new[] { rampart }, CreateSetPublicIntent("user1", rampart.Id, isPublic: false));
+        var context = CreateContext([rampart], CreateSetPublicIntent("user1", rampart.Id, isPublic: false));
         var writer = (FakeMutationWriter)context.MutationWriter;
 
         // Act
@@ -55,7 +55,7 @@ public sealed class RampartIntentStepTests
     {
         // Arrange
         var rampart = CreateRampart("rampart1", "user1", x: 25, y: 25, isPublic: false);
-        var context = CreateContext(new[] { rampart }, CreateSetPublicIntent("user2", rampart.Id, isPublic: true));
+        var context = CreateContext([rampart], CreateSetPublicIntent("user2", rampart.Id, isPublic: true));
         var writer = (FakeMutationWriter)context.MutationWriter;
 
         // Act
@@ -70,7 +70,7 @@ public sealed class RampartIntentStepTests
     {
         // Arrange
         var tower = CreateTower("tower1", "user1", x: 25, y: 25);
-        var context = CreateContext(new[] { tower }, CreateSetPublicIntent("user1", tower.Id, isPublic: true));
+        var context = CreateContext([tower], CreateSetPublicIntent("user1", tower.Id, isPublic: true));
         var writer = (FakeMutationWriter)context.MutationWriter;
 
         // Act
@@ -85,7 +85,7 @@ public sealed class RampartIntentStepTests
     {
         // Arrange
         var rampart = CreateRampart("rampart1", "user1", x: 25, y: 25, isPublic: false);
-        var context = CreateContext(new[] { rampart }, CreateSetPublicIntent("user1", "nonexistent", isPublic: true));
+        var context = CreateContext([rampart], CreateSetPublicIntent("user1", "nonexistent", isPublic: true));
         var writer = (FakeMutationWriter)context.MutationWriter;
 
         // Act
@@ -100,7 +100,7 @@ public sealed class RampartIntentStepTests
     {
         // Arrange
         var rampart = CreateRampart("rampart1", "user1", x: 25, y: 25, isPublic: false);
-        var context = CreateContext(new[] { rampart }, intents: null);
+        var context = CreateContext([rampart], intents: null);
         var writer = (FakeMutationWriter)context.MutationWriter;
 
         // Act
@@ -139,7 +139,7 @@ public sealed class RampartIntentStepTests
         };
 
         var intents = new RoomIntentSnapshot("W1N1", null, users);
-        var context = CreateContext(new[] { rampart }, intents);
+        var context = CreateContext([rampart], intents);
         var writer = (FakeMutationWriter)context.MutationWriter;
 
         // Act
