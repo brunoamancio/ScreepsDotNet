@@ -12,4 +12,6 @@ public sealed record GlobalRoomObjectPatch(
     int? CooldownTime = null,
     Dictionary<string, int>? Store = null,
     string? Shard = null,
-    bool ClearSend = false);
+    bool ClearSend = false,
+    string? ObserveRoom = null,
+    bool ClearObserveRoom = false);

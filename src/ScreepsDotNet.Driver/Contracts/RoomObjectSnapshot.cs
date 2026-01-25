@@ -64,7 +64,8 @@ public sealed record RoomObjectSnapshot(
     TerminalSendSnapshot? Send = null,
     IReadOnlyDictionary<PowerTypes, PowerCreepPowerSnapshot>? Powers = null,
     string? MemorySourceId = null,
-    KeeperMoveMemory? MemoryMove = null)
+    KeeperMoveMemory? MemoryMove = null,
+    string? ObserveRoom = null)
 {
     public int? MoveBodyParts => GetStoreValue(IntentKeys.Move);
     public int? ControllerDowngradeTimer => GetStoreValue(StoreKeys.DowngradeTimer);

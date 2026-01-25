@@ -1,6 +1,6 @@
 # Engine Roadmap (E1-E10)
 
-**Last Updated:** January 25, 2026 (ALL milestones complete ✅, 115/115 parity tests passing, 100% core gameplay + multi-room)
+**Last Updated:** January 25, 2026 (ALL milestones complete ✅, 116/116 parity tests passing, 100% core gameplay + multi-room + observer)
 
 This document tracks the Engine subsystem roadmap and implementation status. For detailed handler tracking, see `e2.md`. For comprehensive parity analysis, see [`tools/parity-harness/docs/parity-analysis.md`](../../tools/parity-harness/docs/parity-analysis.md).
 
@@ -19,7 +19,7 @@ This document tracks the Engine subsystem roadmap and implementation status. For
 | E7 | ✅ | Compatibility & Parity Validation | All phases complete: Node.js harness, comparison engine, 90/90 parity tests, CI/CD automated | Prior steps, legacy engine repo |
 | E8 | ✅ | Observability & Tooling | Engine metrics flow to telemetry, diagnostics commands, operator playbooks | D8 (✅), D4 hooks (✅), E6 (✅) |
 | E9 | ✅ | NPC AI Logic | Both phases complete: Keeper AI (32 tests) + Invader AI (22 tests) with pathfinding, targeting, and combat logic | E5 Phase 3 (spawning), E6-E8 complete |
-| E10 | ✅ | Full Parity Test Coverage | **COMPLETE:** 115/115 parity tests passing (100%), all implementation gaps resolved, optimizations documented. See [parity analysis](../../tools/parity-harness/docs/parity-analysis.md). | E7 infrastructure (✅), E1-E9 features (✅) |
+| E10 | ✅ | Full Parity Test Coverage | **COMPLETE:** 116/116 parity tests passing (100%), all implementation gaps resolved, optimizations documented. See [parity analysis](../../tools/parity-harness/docs/parity-analysis.md). | E7 infrastructure (✅), E1-E9 features (✅) |
 
 ---
 
@@ -37,7 +37,7 @@ This document tracks the Engine subsystem roadmap and implementation status. For
 - ✅ **E7:** Parity infrastructure + CI/CD (all 6 phases, 90/90 parity tests)
 - ✅ **E8:** Observability & tooling (all 4 phases: telemetry, CLI, HTTP, playbooks)
 - ✅ **E9:** NPC AI logic (both phases: Keeper AI + Invader AI, 54 tests)
-- ✅ **E10:** Full parity test coverage (115/115 tests passing, 100% core gameplay)
+- ✅ **E10:** Full parity test coverage (116/116 tests passing, 100% core gameplay)
 
 ---
 
@@ -56,7 +56,7 @@ This document tracks the Engine subsystem roadmap and implementation status. For
   - Transfer: Empty container validation (Node.js bug documented)
 
 **Results:**
-- ✅ 115/115 parity tests passing (100%) - All implementation gaps resolved
+- ✅ 116/116 parity tests passing (100%) - All implementation gaps resolved + observer parity test
 - ✅ 7 divergences documented as intentional optimizations (ActionLog patching, validation efficiency)
 - ✅ 2 Node.js bugs documented (withdraw/upgrade type coercion)
 - ✅ CI/CD pipeline validates all fixtures automatically
@@ -105,10 +105,19 @@ Core engine complete! These optional features can be implemented as needed:
   - Notifications batched per user/room and throttled to 5-minute intervals
   - Comprehensive test coverage (7 unit tests: 6 CombatResolutionStep + 1 SpawnIntentStep)
   - Uses `NotificationTypes.Attack` constant (not magic string)
+- ✅ **Observer.observeRoom** (2026-01-25)
+  - Implementation: `ObserverIntentStep` for processing observeRoom intents
+  - Implementation: `ClearObserverRoomStep` for clearing observeRoom at tick start (temporary field, one-tick duration)
+  - Added `ObserveRoom` field to `RoomObjectSnapshot` and `GlobalRoomObjectPatch`
+  - Added `RoomObjectActionLogObserveRoom` action log type
+  - Validation: ownership check, room name format validation, RCL 8 requirement, range check (10 rooms)
+  - PWR_OPERATE_OBSERVER support: Extends range to unlimited when effect is active
+  - Tests: 8 comprehensive unit tests passing
+  - Parity: `observer_observe_room.json` parity test passing (validates .NET vs Node.js behavior)
+  - Impact: Provides vision into distant rooms (core gameplay mechanic)
 
 **Deferred:**
 - 📋 Rampart setPublic
-- 📋 Observer observeRoom
 - 📋 Tombstone/ruin/energy/constructionSite decay systems
 - 📋 InvaderCore intents/AI
 - 📋 Room management intents (createConstructionSite, createFlag, destroyStructure, etc.)
@@ -551,7 +560,6 @@ Core engine complete! These optional features can be implemented as needed:
   - Disabled in `ParityComparator.cs` line 28
   - Re-enablement instructions documented in `ParityComparator.cs` comments (lines 19-28)
   - Affected test assertions commented out in `ParityComparatorTests.cs` (lines 92, 103-108, 184, 223, 226)
-- ❌ Observer mechanics (`observeRoom` - E9 dependency, requires observation tracking infrastructure)
 
 **Details:** See `e10.md` for complete implementation plan and divergence analysis
 

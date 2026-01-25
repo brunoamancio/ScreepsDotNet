@@ -94,7 +94,7 @@ None - all creep intents implemented!
 |-----------|--------|---------|-------------|-------------|
 | **Rampart** | setPublic | ✅ | ✅ Implemented in RampartIntentStep | ✅ Complete |
 | **Terminal** | send | ✅ | ✅ Implemented in MarketIntentStep.ProcessTerminalSends | ✅ Complete (multi-room parity test passing) |
-| **Observer** | observeRoom | ✅ | ❌ Not implemented | E8 - Observer |
+| **Observer** | observeRoom | ✅ | ✅ Implemented in ObserverIntentStep + ClearObserverRoomStep | ✅ Complete (8 unit tests passing) |
 | **InvaderCore** | transferEnergy | ✅ | ❌ Not implemented | E8 - NPC Structures |
 | | reserveController | ✅ | ❌ Not implemented | E8 - NPC Structures |
 | | attackController | ✅ | ❌ Not implemented | E8 - NPC Structures |

@@ -158,6 +158,7 @@ public static class ScreepsGameConstants
     public const int TowerHits = 3000;
     public const int TowerCapacity = 1000;
     public const int ObserverHits = 500;
+    public const int ObserverRange = 10;
     public const int PowerSpawnHits = 5000;
     public const int PowerSpawnEnergyCapacity = 5000;
     public const int PowerSpawnPowerCapacity = 100;

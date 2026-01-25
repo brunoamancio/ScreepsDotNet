@@ -362,6 +362,10 @@ internal sealed class GlobalMutationDispatcher(IBulkWriterFactory bulkWriterFact
             document[RoomObject.Shard] = patch.Shard;
         if (patch.ClearSend)
             document[RoomObject.Send] = BsonNull.Value;
+        if (!string.IsNullOrWhiteSpace(patch.ObserveRoom))
+            document[RoomObject.ObserveRoom] = patch.ObserveRoom;
+        if (patch.ClearObserveRoom)
+            document[RoomObject.ObserveRoom] = BsonNull.Value;
         return document;
     }
 

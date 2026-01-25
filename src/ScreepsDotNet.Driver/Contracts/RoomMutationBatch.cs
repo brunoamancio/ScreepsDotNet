@@ -107,9 +107,10 @@ public sealed record RoomObjectActionLogPatch(
     RoomObjectActionLogRunReaction? RunReaction = null,
     RoomObjectActionLogTransferEnergy? TransferEnergy = null,
     RoomObjectActionLogProduce? Produce = null,
-    RoomObjectActionLogUsePower? UsePower = null)
+    RoomObjectActionLogUsePower? UsePower = null,
+    RoomObjectActionLogObserveRoom? ObserveRoom = null)
 {
-    public bool HasEntries => Die is not null || Healed is not null || Repair is not null || Build is not null || Harvest is not null || Say is not null || RunReaction is not null || TransferEnergy is not null || Produce is not null || UsePower is not null;
+    public bool HasEntries => Die is not null || Healed is not null || Repair is not null || Build is not null || Harvest is not null || Say is not null || RunReaction is not null || TransferEnergy is not null || Produce is not null || UsePower is not null || ObserveRoom is not null;
 }
 
 public sealed record RoomObjectActionLogDie(int Time);
@@ -131,6 +132,8 @@ public sealed record RoomObjectActionLogTransferEnergy(int X, int Y);
 public sealed record RoomObjectActionLogProduce(string ResourceType);
 
 public sealed record RoomObjectActionLogUsePower(int Power, int X, int Y);
+
+public sealed record RoomObjectActionLogObserveRoom(string RoomName);
 
 public sealed record RoomObjectActionLogSnapshot(
     RoomObjectActionLogDie? Die = null,

@@ -33,6 +33,9 @@ public static class ServiceCollectionExtensions
         // CRITICAL: IntentValidationStep MUST run FIRST before all other steps
         services.AddSingleton<IRoomProcessorStep, IntentValidationStep>();
 
+        // Clear temporary fields at tick start
+        services.AddSingleton<IRoomProcessorStep, ClearObserverRoomStep>();
+
         services.AddSingleton<IRoomProcessorStep, CreepLifecycleStep>();
         services.AddSingleton<IRoomProcessorStep, MovementIntentStep>();
         services.AddSingleton<IRoomProcessorStep, CreepSayIntentStep>();
@@ -54,6 +57,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IRoomProcessorStep, PowerSpawnIntentStep>();
         services.AddSingleton<IRoomProcessorStep, NukerIntentStep>();
         services.AddSingleton<IRoomProcessorStep, FactoryIntentStep>();
+        services.AddSingleton<IRoomProcessorStep, ObserverIntentStep>();
         services.AddSingleton<IRoomProcessorStep, CombatResolutionStep>();
         services.AddSingleton<IRoomProcessorStep, StructureDecayStep>();
         services.AddSingleton<IRoomProcessorStep, ControllerDowngradeStep>();

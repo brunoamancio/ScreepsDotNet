@@ -47,6 +47,7 @@ public static class RoomDocumentFields
         public const string InterRoom = "interRoom";
         public const string InvaderHarvested = "invaderHarvested";
         public const string Send = "send";
+        public const string ObserveRoom = "observeRoom";
         public const string ActionLog = "_actionLog";
         public const string Body = "body";
         public const string UserSummoned = "userSummoned";
