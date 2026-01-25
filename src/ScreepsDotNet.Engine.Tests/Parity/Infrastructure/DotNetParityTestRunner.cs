@@ -21,7 +21,7 @@ public static class DotNetParityTestRunner
         var statsSink = new CapturingStatsSink();
         var globalWriter = new NullGlobalMutationWriter();
 
-        var context = new RoomProcessorContext(state, mutationWriter, statsSink, globalWriter);
+        var context = new RoomProcessorContext(state, mutationWriter, statsSink, globalWriter, new NullNotificationSink());
 
         // Run full processor pipeline with test doubles for complex dependencies
         var steps = BuildProcessorSteps();

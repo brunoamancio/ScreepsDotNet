@@ -57,6 +57,11 @@ internal sealed class CombatResolutionStep(ICreepDeathProcessor deathProcessor) 
 
             var remaining = Math.Max((obj.Hits ?? 0) - hits, 0);
 
+            // Send notification if object has notifyWhenAttacked enabled and took damage
+            if (hits > 0 && obj.NotifyWhenAttacked == true && !string.IsNullOrWhiteSpace(obj.UserId)) {
+                context.Notifications.SendAttackedNotification(obj.UserId, obj.Id, obj.RoomName);
+            }
+
             if (remaining == 0) {
                 removals.Add(objectId);
                 continue;  // Node.js destroys without patching when hits <= 0

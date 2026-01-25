@@ -190,7 +190,7 @@ public sealed class HarvestIntentStepTests
             new Dictionary<string, RoomTerrainSnapshot>(StringComparer.Ordinal),
             []);
 
-        return new RoomProcessorContext(state, new FakeMutationWriter(), statsSink ?? new NullCreepStatsSink(), new NullGlobalMutationWriter());
+        return new RoomProcessorContext(state, new FakeMutationWriter(), statsSink ?? new NullCreepStatsSink(), new NullGlobalMutationWriter(), new NullNotificationSink());
     }
 
     private static RoomIntentSnapshot CreateHarvestIntents(string userId, string creepId, string targetId)

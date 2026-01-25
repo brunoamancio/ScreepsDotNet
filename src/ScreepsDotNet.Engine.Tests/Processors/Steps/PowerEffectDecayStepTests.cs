@@ -104,7 +104,8 @@ public sealed class PowerEffectDecayStepTests
             state,
             new RecordingMutationWriter(),
             new NullCreepStatsSink(),
-            new NullGlobalMutationWriter());
+            new NullGlobalMutationWriter(),
+            new NullNotificationSink());
     }
 
     private static RoomObjectSnapshot CreateSpawn(IReadOnlyDictionary<PowerTypes, PowerEffectSnapshot> effects)

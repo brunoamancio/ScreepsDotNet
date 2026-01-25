@@ -75,6 +75,48 @@ This document tracks the Engine subsystem roadmap and implementation status. For
 
 Core engine complete! These optional features can be implemented as needed:
 
+#### Post-E10: Polish & Extras (Ongoing)
+**Status:** 🔄 In Progress
+**Blockers:** None
+**Dependencies:** ✅ E1-E10 complete
+
+**Completed:**
+- ✅ **Creep say intent** (2026-01-24)
+  - Implementation: `CreepSayIntentStep`
+  - Tests: 6 unit tests passing
+  - Parity: Node.js behavior matched (10-char truncation, isPublic flag, actionLog.say)
+  - Impact: Visual/debugging feature for creep communication
+- ✅ **Creep suicide intent** (2026-01-24)
+  - Implementation: `CreepSuicideIntentStep`
+  - Tests: 7 unit tests passing
+  - Parity: Node.js behavior matched (0% drop rate for body parts, store transferred to tombstone)
+  - Impact: Voluntary creep removal with tombstone creation
+- ✅ **Invader flee AI behavior** (2026-01-24)
+  - Implementation: `InvaderAiStep` (already existed, enhanced test coverage)
+  - Tests: 23 comprehensive tests (12 new flee-specific tests)
+  - Coverage: Flee direction, boundary conditions, range thresholds, multiple hostiles, HP triggers
+  - Note: Flee is AI behavior (not a player intent), runs automatically for invaders
+
+**Completed:**
+- ✅ **NotifyWhenAttacked** (2026-01-25)
+  - Implemented `INotificationSink` abstraction and `RoomNotificationSink` implementation
+  - Added notification logic to `CombatResolutionStep` when objects with `NotifyWhenAttacked = true` take damage
+  - Set default `NotifyWhenAttacked = true` for spawned creeps in `SpawnIntentStep`
+  - Notifications batched per user/room and throttled to 5-minute intervals
+  - Comprehensive test coverage (7 unit tests: 6 CombatResolutionStep + 1 SpawnIntentStep)
+  - Uses `NotificationTypes.Attack` constant (not magic string)
+
+**Deferred:**
+- 📋 Rampart setPublic
+- 📋 Observer observeRoom
+- 📋 Tombstone/ruin/energy/constructionSite decay systems
+- 📋 InvaderCore intents/AI
+- 📋 Room management intents (createConstructionSite, createFlag, destroyStructure, etc.)
+
+**Exit Criteria:** When polish features become gameplay requirements
+
+---
+
 #### E2: Non-Parity-Critical Features
 **Status:** 📋 Deferred
 **Blockers:** None

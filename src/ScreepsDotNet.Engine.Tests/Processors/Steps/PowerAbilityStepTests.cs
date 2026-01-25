@@ -265,7 +265,8 @@ public sealed class PowerAbilityStepTests
             state,
             new RecordingMutationWriter(),
             new NullCreepStatsSink(),
-            new NullGlobalMutationWriter());
+            new NullGlobalMutationWriter(),
+            new NullNotificationSink());
     }
 
     private static RoomObjectSnapshot CreatePowerCreep(IReadOnlyDictionary<PowerTypes, PowerCreepPowerSnapshot> powers, int ops, string userId = "user1")
@@ -1470,7 +1471,8 @@ public sealed class PowerAbilityStepTests
             state,
             new RecordingMutationWriter(),
             new NullCreepStatsSink(),
-            new NullGlobalMutationWriter());
+            new NullGlobalMutationWriter(),
+            new NullNotificationSink());
     }
 
     private static RoomObjectSnapshot CreateExtension(string id, int x, int y)

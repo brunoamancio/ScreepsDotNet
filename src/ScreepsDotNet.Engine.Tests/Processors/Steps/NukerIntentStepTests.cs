@@ -314,7 +314,7 @@ public sealed class NukerIntentStepTests
             new Dictionary<string, RoomTerrainSnapshot>(StringComparer.Ordinal),
             []);
 
-        return new RoomProcessorContext(state, new FakeMutationWriter(), new NullCreepStatsSink(), new FakeGlobalMutationWriter());
+        return new RoomProcessorContext(state, new FakeMutationWriter(), new NullCreepStatsSink(), new FakeGlobalMutationWriter(), new NullNotificationSink());
     }
 
     private sealed class FakeMutationWriter : IRoomMutationWriter

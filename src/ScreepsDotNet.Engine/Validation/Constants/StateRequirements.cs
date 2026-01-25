@@ -30,7 +30,9 @@ public static class StateRequirements
         IntentKeys.Pickup,
         IntentKeys.Drop,
         IntentKeys.Move,
-        IntentKeys.Pull
+        IntentKeys.Pull,
+        IntentKeys.Say,
+        IntentKeys.Suicide
     };
 
     /// <summary>

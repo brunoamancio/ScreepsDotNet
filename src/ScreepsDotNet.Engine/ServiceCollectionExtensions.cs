@@ -35,6 +35,8 @@ public static class ServiceCollectionExtensions
 
         services.AddSingleton<IRoomProcessorStep, CreepLifecycleStep>();
         services.AddSingleton<IRoomProcessorStep, MovementIntentStep>();
+        services.AddSingleton<IRoomProcessorStep, CreepSayIntentStep>();
+        services.AddSingleton<IRoomProcessorStep, CreepSuicideIntentStep>();
         services.AddSingleton<IRoomProcessorStep, SpawnIntentStep>();
         services.AddSingleton<IRoomProcessorStep, SpawnSpawningStep>();
         services.AddSingleton<IRoomProcessorStep, TowerIntentStep>();

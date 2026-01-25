@@ -27,7 +27,7 @@ public sealed class SpawnSpawningStepTests
         var death = new RecordingDeathProcessor();
         var step = new SpawnSpawningStep(new SpawnStateReader(), death);
 
-        await step.ExecuteAsync(new RoomProcessorContext(state, writer, new NullCreepStatsSink(), new NullGlobalMutationWriter()), TestContext.Current.CancellationToken);
+        await step.ExecuteAsync(new RoomProcessorContext(state, writer, new NullCreepStatsSink(), new NullGlobalMutationWriter(), new NullNotificationSink()), TestContext.Current.CancellationToken);
 
         var upsert = Assert.Single(writer.Upserts);
         Assert.Equal("creep1", upsert.Document.Id);
@@ -53,7 +53,7 @@ public sealed class SpawnSpawningStepTests
         var writer = new RecordingMutationWriter();
         var step = new SpawnSpawningStep(new SpawnStateReader(), new RecordingDeathProcessor());
 
-        await step.ExecuteAsync(new RoomProcessorContext(state, writer, new NullCreepStatsSink(), new NullGlobalMutationWriter()), TestContext.Current.CancellationToken);
+        await step.ExecuteAsync(new RoomProcessorContext(state, writer, new NullCreepStatsSink(), new NullGlobalMutationWriter(), new NullNotificationSink()), TestContext.Current.CancellationToken);
 
         Assert.Empty(writer.Upserts);
         var patch = Assert.Single(writer.Patches);
@@ -77,7 +77,7 @@ public sealed class SpawnSpawningStepTests
         var death = new RecordingDeathProcessor();
         var step = new SpawnSpawningStep(new SpawnStateReader(), death);
 
-        await step.ExecuteAsync(new RoomProcessorContext(state, writer, new NullCreepStatsSink(), new NullGlobalMutationWriter()), TestContext.Current.CancellationToken);
+        await step.ExecuteAsync(new RoomProcessorContext(state, writer, new NullCreepStatsSink(), new NullGlobalMutationWriter(), new NullNotificationSink()), TestContext.Current.CancellationToken);
 
         Assert.Single(death.Creeps);
         Assert.Equal("hostile", death.Creeps[0].Id);

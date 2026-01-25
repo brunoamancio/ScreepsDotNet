@@ -3,6 +3,7 @@ namespace ScreepsDotNet.Engine.Processors;
 using System.Diagnostics;
 using Microsoft.Extensions.Logging;
 using ScreepsDotNet.Driver.Abstractions.History;
+using ScreepsDotNet.Driver.Abstractions.Notifications;
 using ScreepsDotNet.Engine.Data.Bulk;
 using ScreepsDotNet.Engine.Data.GlobalMutations;
 using ScreepsDotNet.Engine.Data.GlobalState;
@@ -19,6 +20,7 @@ internal sealed class RoomProcessor(
     IGlobalMutationWriterFactory globalMutationWriterFactory,
     IUserMemorySink memorySink,
     IHistoryService historyService,
+    INotificationService notificationService,
     IEnumerable<IRoomProcessorStep> steps,
     IEngineTelemetrySink telemetrySink,
     IValidationStatisticsSink? validationStatsSink = null,
@@ -35,8 +37,9 @@ internal sealed class RoomProcessor(
         var writer = mutationWriterFactory.Create(roomName);
         var globalWriter = globalMutationWriterFactory.Create();
         var statsSink = new RoomStatsSink(historyService.CreateRoomStatsUpdater(roomName));
+        var notificationSink = new RoomNotificationSink(notificationService, roomName);
         globalState.ExitTopology.TryGetValue(roomName, out var exitTopology);
-        var context = new RoomProcessorContext(state, writer, statsSink, globalWriter, exitTopology);
+        var context = new RoomProcessorContext(state, writer, statsSink, globalWriter, notificationSink, exitTopology);
 
         try {
             foreach (var step in steps)
@@ -50,6 +53,7 @@ internal sealed class RoomProcessor(
             await globalWriter.FlushAsync(token).ConfigureAwait(false);
 
             await context.Stats.FlushAsync(state.GameTime, token).ConfigureAwait(false);
+            await context.Notifications.FlushAsync(token).ConfigureAwait(false);
 
             await context.FlushMemoryAsync(memorySink, token).ConfigureAwait(false);
 

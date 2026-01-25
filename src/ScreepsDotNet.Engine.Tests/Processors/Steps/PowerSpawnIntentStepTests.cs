@@ -529,7 +529,7 @@ public sealed class PowerSpawnIntentStepTests
             new Dictionary<string, RoomTerrainSnapshot>(StringComparer.Ordinal),
             []);
 
-        return new RoomProcessorContext(state, new FakeMutationWriter(), new FakeCreepStatsSink(), new NullGlobalMutationWriter());
+        return new RoomProcessorContext(state, new FakeMutationWriter(), new FakeCreepStatsSink(), new NullGlobalMutationWriter(), new NullNotificationSink());
     }
 
     private sealed class FakeMutationWriter : IRoomMutationWriter

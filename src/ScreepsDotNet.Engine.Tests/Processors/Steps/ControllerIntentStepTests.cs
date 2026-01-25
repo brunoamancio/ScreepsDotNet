@@ -466,7 +466,7 @@ public sealed class ControllerIntentStepTests
             new Dictionary<string, RoomTerrainSnapshot>(StringComparer.Ordinal),
             []);
 
-        return new RoomProcessorContext(state, new FakeMutationWriter(), new FakeCreepStatsSink(), new NullGlobalMutationWriter());
+        return new RoomProcessorContext(state, new FakeMutationWriter(), new FakeCreepStatsSink(), new NullGlobalMutationWriter(), new NullNotificationSink());
     }
 
     private static RoomIntentSnapshot CreateUpgradeIntent(string userId, string creepId, string controllerId)

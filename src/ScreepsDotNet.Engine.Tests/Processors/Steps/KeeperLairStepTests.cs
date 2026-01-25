@@ -25,7 +25,7 @@ public sealed class KeeperLairStepTests
         var step = new KeeperLairStep();
 
         // Act
-        await step.ExecuteAsync(new RoomProcessorContext(state, writer, new NullCreepStatsSink(), new NullGlobalMutationWriter()), TestContext.Current.CancellationToken);
+        await step.ExecuteAsync(new RoomProcessorContext(state, writer, new NullCreepStatsSink(), new NullGlobalMutationWriter(), new NullNotificationSink()), TestContext.Current.CancellationToken);
 
         // Assert
         var patch = Assert.Single(writer.Patches);
@@ -45,7 +45,7 @@ public sealed class KeeperLairStepTests
         var step = new KeeperLairStep();
 
         // Act
-        await step.ExecuteAsync(new RoomProcessorContext(state, writer, new NullCreepStatsSink(), new NullGlobalMutationWriter()), TestContext.Current.CancellationToken);
+        await step.ExecuteAsync(new RoomProcessorContext(state, writer, new NullCreepStatsSink(), new NullGlobalMutationWriter(), new NullNotificationSink()), TestContext.Current.CancellationToken);
 
         // Assert - no mutations (keeper healthy)
         Assert.Empty(writer.Patches);
@@ -62,7 +62,7 @@ public sealed class KeeperLairStepTests
         var step = new KeeperLairStep();
 
         // Act
-        await step.ExecuteAsync(new RoomProcessorContext(state, writer, new NullCreepStatsSink(), new NullGlobalMutationWriter()), TestContext.Current.CancellationToken);
+        await step.ExecuteAsync(new RoomProcessorContext(state, writer, new NullCreepStatsSink(), new NullGlobalMutationWriter(), new NullNotificationSink()), TestContext.Current.CancellationToken);
 
         // Assert
         var patch = Assert.Single(writer.Patches);
@@ -81,7 +81,7 @@ public sealed class KeeperLairStepTests
         var step = new KeeperLairStep();
 
         // Act
-        await step.ExecuteAsync(new RoomProcessorContext(state, writer, new NullCreepStatsSink(), new NullGlobalMutationWriter()), TestContext.Current.CancellationToken);
+        await step.ExecuteAsync(new RoomProcessorContext(state, writer, new NullCreepStatsSink(), new NullGlobalMutationWriter(), new NullNotificationSink()), TestContext.Current.CancellationToken);
 
         // Assert - spawns keeper + clears timer
         Assert.Equal(2, writer.Upserts.Count + writer.Patches.Count);
@@ -111,7 +111,7 @@ public sealed class KeeperLairStepTests
         var step = new KeeperLairStep();
 
         // Act
-        await step.ExecuteAsync(new RoomProcessorContext(state, writer, new NullCreepStatsSink(), new NullGlobalMutationWriter()), TestContext.Current.CancellationToken);
+        await step.ExecuteAsync(new RoomProcessorContext(state, writer, new NullCreepStatsSink(), new NullGlobalMutationWriter(), new NullNotificationSink()), TestContext.Current.CancellationToken);
 
         // Assert - removes old + spawns new + clears timer
         var removal = Assert.Single(writer.Removals);
@@ -131,7 +131,7 @@ public sealed class KeeperLairStepTests
         var step = new KeeperLairStep();
 
         // Act
-        await step.ExecuteAsync(new RoomProcessorContext(state, writer, new NullCreepStatsSink(), new NullGlobalMutationWriter()), TestContext.Current.CancellationToken);
+        await step.ExecuteAsync(new RoomProcessorContext(state, writer, new NullCreepStatsSink(), new NullGlobalMutationWriter(), new NullNotificationSink()), TestContext.Current.CancellationToken);
 
         // Assert - verify body composition
         var upsert = Assert.Single(writer.Upserts);
@@ -164,7 +164,7 @@ public sealed class KeeperLairStepTests
         var step = new KeeperLairStep();
 
         // Act
-        await step.ExecuteAsync(new RoomProcessorContext(state, writer, new NullCreepStatsSink(), new NullGlobalMutationWriter()), TestContext.Current.CancellationToken);
+        await step.ExecuteAsync(new RoomProcessorContext(state, writer, new NullCreepStatsSink(), new NullGlobalMutationWriter(), new NullNotificationSink()), TestContext.Current.CancellationToken);
 
         // Assert - no mutations
         Assert.Empty(writer.Patches);
@@ -182,7 +182,7 @@ public sealed class KeeperLairStepTests
         var step = new KeeperLairStep();
 
         // Act
-        await step.ExecuteAsync(new RoomProcessorContext(state, writer, new NullCreepStatsSink(), new NullGlobalMutationWriter()), TestContext.Current.CancellationToken);
+        await step.ExecuteAsync(new RoomProcessorContext(state, writer, new NullCreepStatsSink(), new NullGlobalMutationWriter(), new NullNotificationSink()), TestContext.Current.CancellationToken);
 
         // Assert - both lairs get spawn timers
         Assert.Equal(2, writer.Patches.Count);

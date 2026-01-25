@@ -228,6 +228,40 @@ public class SpawnProcessor(IRoomStateProvider stateProvider, IRoomMutationWrite
 }
 ```
 
+### Notification Sink
+
+**✅ CORRECT:**
+```csharp
+// Engine step using notification sink
+public class CombatResolutionStep
+{
+    public Task ExecuteAsync(RoomProcessorContext context, CancellationToken token = default)
+    {
+        // ... damage calculation
+
+        if (hits > 0 && obj.NotifyWhenAttacked == true && !string.IsNullOrWhiteSpace(obj.UserId))
+        {
+            context.Notifications.SendAttackedNotification(obj.UserId, obj.Id, obj.RoomName);
+        }
+
+        // Notifications flush at end of tick
+    }
+}
+```
+
+**❌ WRONG:**
+```csharp
+// NEVER access INotificationService directly from Engine
+public class CombatResolutionStep(INotificationService notificationService)  // ❌ NO!
+{
+    public async Task ExecuteAsync(...)
+    {
+        // ❌ Bypasses sink abstraction
+        await notificationService.SendNotificationAsync(...);
+    }
+}
+```
+
 ### Dependency Injection (Primary Constructors)
 
 **✅ CORRECT:**

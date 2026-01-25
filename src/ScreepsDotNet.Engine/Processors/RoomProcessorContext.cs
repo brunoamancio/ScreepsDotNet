@@ -12,6 +12,7 @@ public sealed class RoomProcessorContext(
     IRoomMutationWriter mutationWriter,
     ICreepStatsSink statsSink,
     IGlobalMutationWriter globalMutationWriter,
+    INotificationSink notificationSink,
     RoomExitTopology? exitTopology = null)
 {
     private readonly Dictionary<string, string> _rawMemory = new(StringComparer.Ordinal);
@@ -22,6 +23,7 @@ public sealed class RoomProcessorContext(
     public IRoomMutationWriter MutationWriter { get; } = mutationWriter;
     public ICreepStatsSink Stats { get; } = statsSink;
     public IGlobalMutationWriter GlobalMutationWriter { get; } = globalMutationWriter;
+    public INotificationSink Notifications { get; } = notificationSink;
     public RoomExitTopology? ExitTopology { get; } = exitTopology;
 
     /// <summary>

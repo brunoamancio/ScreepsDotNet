@@ -446,7 +446,7 @@ public sealed class KeeperAiIntegrationTests
         var globalWriter = new NoOpGlobalMutationWriter();
         var statsSink = new NoOpCreepStatsSink();
 
-        var context = new RoomProcessorContext(roomState, writer, statsSink, globalWriter, null);
+        var context = new RoomProcessorContext(roomState, writer, statsSink, globalWriter, new NullNotificationSink(), null);
         return (context, writer);
     }
 

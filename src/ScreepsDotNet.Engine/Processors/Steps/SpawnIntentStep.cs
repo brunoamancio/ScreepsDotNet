@@ -176,7 +176,8 @@ internal sealed class SpawnIntentStep(
             CreepTicksToLive: null,
             CreepSaying: null,
             ResourceType: null,
-            ResourceAmount: null);
+            ResourceAmount: null,
+            NotifyWhenAttacked: true);
 
         context.MutationWriter.Upsert(placeholder);
     }

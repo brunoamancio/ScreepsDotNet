@@ -355,7 +355,8 @@ public sealed class SourceRegenerationStepTests
             state,
             new RecordingMutationWriter(),
             new NullCreepStatsSink(),
-            new NullGlobalMutationWriter());
+            new NullGlobalMutationWriter(),
+            new NullNotificationSink());
         return context;
     }
 

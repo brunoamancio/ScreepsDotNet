@@ -236,6 +236,27 @@ public sealed class SpawnIntentStepTests
         Assert.Equal(1, _statsSink.TombstonesCreated);
     }
 
+    [Fact]
+    public async Task ExecuteAsync_SpawnCreatesCreep_SetsNotifyWhenAttackedTrue()
+    {
+        var spawn = CreateSpawn("spawn1", energy: 300);
+        var envelope = new SpawnIntentEnvelope(
+            new CreateCreepIntent("Worker1", [BodyPartType.Move, BodyPartType.Work, BodyPartType.Carry], [], []),
+            null,
+            null,
+            null,
+            false);
+
+        var context = CreateContext([spawn], CreateIntents(spawn.Id, envelope), statsSink: _statsSink);
+        var writer = (FakeMutationWriter)context.MutationWriter;
+
+        await _step.ExecuteAsync(context, TestContext.Current.CancellationToken);
+
+        var placeholder = Assert.Single(writer.Upserts, u => u.Type == RoomObjectTypes.Creep);
+        Assert.Equal("Worker1", placeholder.Name);
+        Assert.True(placeholder.NotifyWhenAttacked);
+    }
+
     private static RoomProcessorContext CreateContext(
         IEnumerable<RoomObjectSnapshot> objects,
         RoomIntentSnapshot intents,
@@ -300,7 +321,7 @@ public sealed class SpawnIntentStepTests
             new Dictionary<string, RoomTerrainSnapshot>(StringComparer.Ordinal),
             []);
 
-        return new RoomProcessorContext(state, new FakeMutationWriter(), statsSink ?? new NullCreepStatsSink(), new NullGlobalMutationWriter());
+        return new RoomProcessorContext(state, new FakeMutationWriter(), statsSink ?? new NullCreepStatsSink(), new NullGlobalMutationWriter(), new NullNotificationSink());
     }
 
     private static RoomIntentSnapshot CreateIntents(string spawnId, SpawnIntentEnvelope envelope, string userId = "user1")

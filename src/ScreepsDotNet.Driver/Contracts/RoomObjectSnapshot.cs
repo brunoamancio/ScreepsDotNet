@@ -38,6 +38,7 @@ public sealed record RoomObjectSnapshot(
     bool? IsSpawning = null,
     bool? UserSummoned = null,
     bool? IsPublic = null,
+    bool? NotifyWhenAttacked = null,
     string? StrongholdId = null,
     int? DeathTime = null,
     int? DecayTime = null,

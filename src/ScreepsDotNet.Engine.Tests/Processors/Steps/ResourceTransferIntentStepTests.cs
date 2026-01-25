@@ -735,7 +735,7 @@ public sealed class ResourceTransferIntentStepTests
             new Dictionary<string, RoomTerrainSnapshot>(StringComparer.Ordinal),
             []);
 
-        return new RoomProcessorContext(state, new FakeMutationWriter(), new NullCreepStatsSink(), new NullGlobalMutationWriter());
+        return new RoomProcessorContext(state, new FakeMutationWriter(), new NullCreepStatsSink(), new NullGlobalMutationWriter(), new NullNotificationSink());
     }
 
     private static RoomIntentSnapshot CreateTransferIntent(string userId, string creepId, string targetId, string resourceType, int amount)

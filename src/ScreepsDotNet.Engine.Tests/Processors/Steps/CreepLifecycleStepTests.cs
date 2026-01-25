@@ -66,7 +66,8 @@ public sealed class CreepLifecycleStepTests
             state,
             new RecordingMutationWriter(),
             new NullCreepStatsSink(),
-            new NullGlobalMutationWriter());
+            new NullGlobalMutationWriter(),
+            new NullNotificationSink());
     }
 
     private static RoomObjectSnapshot CreateCreep(int ticksToLive, int hits = 100, string userId = "user1", bool userSummoned = false, string id = "creep1")

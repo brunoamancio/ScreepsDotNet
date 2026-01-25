@@ -26,7 +26,7 @@ public sealed class MovementIntentStepTests
         var writer = new RecordingMutationWriter();
         var step = new MovementIntentStep(new NullDeathProcessor());
 
-        await step.ExecuteAsync(new RoomProcessorContext(state, writer, new NullCreepStatsSink(), new NullGlobalMutationWriter()), TestContext.Current.CancellationToken);
+        await step.ExecuteAsync(new RoomProcessorContext(state, writer, new NullCreepStatsSink(), new NullGlobalMutationWriter(), new NullNotificationSink()), TestContext.Current.CancellationToken);
 
         var (ObjectId, Payload) = Assert.Single(writer.Patches);
         Assert.Equal("creepA", ObjectId);
@@ -49,7 +49,7 @@ public sealed class MovementIntentStepTests
         var writer = new RecordingMutationWriter();
         var step = new MovementIntentStep(new NullDeathProcessor());
 
-        await step.ExecuteAsync(new RoomProcessorContext(state, writer, new NullCreepStatsSink(), new NullGlobalMutationWriter()), TestContext.Current.CancellationToken);
+        await step.ExecuteAsync(new RoomProcessorContext(state, writer, new NullCreepStatsSink(), new NullGlobalMutationWriter(), new NullNotificationSink()), TestContext.Current.CancellationToken);
 
         Assert.Equal(2, writer.Patches.Count);
         var aPatch = writer.Patches.First(p => p.ObjectId == "creepA").Payload.Position;
@@ -69,7 +69,7 @@ public sealed class MovementIntentStepTests
         var death = new RecordingDeathProcessor();
         var step = new MovementIntentStep(death);
 
-        await step.ExecuteAsync(new RoomProcessorContext(state, writer, new NullCreepStatsSink(), new NullGlobalMutationWriter()), TestContext.Current.CancellationToken);
+        await step.ExecuteAsync(new RoomProcessorContext(state, writer, new NullCreepStatsSink(), new NullGlobalMutationWriter(), new NullNotificationSink()), TestContext.Current.CancellationToken);
 
         Assert.Empty(writer.Patches);
         var crashed = Assert.Single(death.Creeps);
@@ -90,7 +90,7 @@ public sealed class MovementIntentStepTests
             null,
             null,
             new RoomExitDescriptor("W0S0", 10, true));
-        var context = new RoomProcessorContext(state, writer, new NullCreepStatsSink(), new NullGlobalMutationWriter(), exitTopology);
+        var context = new RoomProcessorContext(state, writer, new NullCreepStatsSink(), new NullGlobalMutationWriter(), new NullNotificationSink(), exitTopology);
 
         await step.ExecuteAsync(context, TestContext.Current.CancellationToken);
 
@@ -117,7 +117,7 @@ public sealed class MovementIntentStepTests
             new RoomExitDescriptor("E1S0", 20, false),
             null,
             null);
-        var context = new RoomProcessorContext(state, writer, new NullCreepStatsSink(), new NullGlobalMutationWriter(), exitTopology);
+        var context = new RoomProcessorContext(state, writer, new NullCreepStatsSink(), new NullGlobalMutationWriter(), new NullNotificationSink(), exitTopology);
 
         await step.ExecuteAsync(context, TestContext.Current.CancellationToken);
 
@@ -137,7 +137,7 @@ public sealed class MovementIntentStepTests
         var writer = new RecordingMutationWriter();
         var step = new MovementIntentStep(new NullDeathProcessor());
 
-        await step.ExecuteAsync(new RoomProcessorContext(state, writer, new NullCreepStatsSink(), new NullGlobalMutationWriter()), TestContext.Current.CancellationToken);
+        await step.ExecuteAsync(new RoomProcessorContext(state, writer, new NullCreepStatsSink(), new NullGlobalMutationWriter(), new NullNotificationSink()), TestContext.Current.CancellationToken);
 
         var (ObjectId, Payload) = writer.Patches.FirstOrDefault(p => p.Payload.InterRoom is not null);
         Assert.NotNull(Payload.InterRoom);
@@ -159,7 +159,7 @@ public sealed class MovementIntentStepTests
         var writer = new RecordingMutationWriter();
         var step = new MovementIntentStep(new NullDeathProcessor());
 
-        await step.ExecuteAsync(new RoomProcessorContext(state, writer, new NullCreepStatsSink(), new NullGlobalMutationWriter()), TestContext.Current.CancellationToken);
+        await step.ExecuteAsync(new RoomProcessorContext(state, writer, new NullCreepStatsSink(), new NullGlobalMutationWriter(), new NullNotificationSink()), TestContext.Current.CancellationToken);
 
         var (ObjectId, Payload) = writer.Patches.FirstOrDefault(p => p.Payload.InterRoom is not null);
         Assert.NotNull(Payload.InterRoom);
@@ -180,7 +180,7 @@ public sealed class MovementIntentStepTests
         var death = new RecordingDeathProcessor();
         var step = new MovementIntentStep(death);
 
-        await step.ExecuteAsync(new RoomProcessorContext(state, writer, new NullCreepStatsSink(), new NullGlobalMutationWriter()), TestContext.Current.CancellationToken);
+        await step.ExecuteAsync(new RoomProcessorContext(state, writer, new NullCreepStatsSink(), new NullGlobalMutationWriter(), new NullNotificationSink()), TestContext.Current.CancellationToken);
 
         Assert.Empty(writer.Patches);
         var crashed = Assert.Single(death.Creeps);
@@ -205,7 +205,7 @@ public sealed class MovementIntentStepTests
         var death = new RecordingDeathProcessor();
         var step = new MovementIntentStep(death);
 
-        await step.ExecuteAsync(new RoomProcessorContext(state, writer, new NullCreepStatsSink(), new NullGlobalMutationWriter()), TestContext.Current.CancellationToken);
+        await step.ExecuteAsync(new RoomProcessorContext(state, writer, new NullCreepStatsSink(), new NullGlobalMutationWriter(), new NullNotificationSink()), TestContext.Current.CancellationToken);
 
         Assert.Empty(writer.Patches);
         Assert.Equal(2, death.Creeps.Count);
@@ -227,7 +227,7 @@ public sealed class MovementIntentStepTests
         var writer = new RecordingMutationWriter();
         var step = new MovementIntentStep(new NullDeathProcessor());
 
-        await step.ExecuteAsync(new RoomProcessorContext(state, writer, new NullCreepStatsSink(), new NullGlobalMutationWriter()), TestContext.Current.CancellationToken);
+        await step.ExecuteAsync(new RoomProcessorContext(state, writer, new NullCreepStatsSink(), new NullGlobalMutationWriter(), new NullNotificationSink()), TestContext.Current.CancellationToken);
 
         Assert.Equal(2, writer.Patches.Count);
         Assert.Contains(writer.Patches, p => p.ObjectId == "creepA" && p.Payload.Position?.X == 11 && p.Payload.Position?.Y == 10);
@@ -258,7 +258,7 @@ public sealed class MovementIntentStepTests
         var writer = new RecordingMutationWriter();
         var step = new MovementIntentStep(new NullDeathProcessor());
 
-        await step.ExecuteAsync(new RoomProcessorContext(state, writer, new NullCreepStatsSink(), new NullGlobalMutationWriter()), TestContext.Current.CancellationToken);
+        await step.ExecuteAsync(new RoomProcessorContext(state, writer, new NullCreepStatsSink(), new NullGlobalMutationWriter(), new NullNotificationSink()), TestContext.Current.CancellationToken);
 
         Assert.Contains(writer.Patches, p => p.ObjectId == "puller" && p.Payload.Position?.X == 11 && p.Payload.Position?.Y == 10);
         Assert.Contains(writer.Patches, p => p.ObjectId == "pulled" && p.Payload.Position?.X == 10 && p.Payload.Position?.Y == 10);
@@ -277,7 +277,7 @@ public sealed class MovementIntentStepTests
         var death = new RecordingDeathProcessor();
         var step = new MovementIntentStep(death);
 
-        await step.ExecuteAsync(new RoomProcessorContext(state, writer, new NullCreepStatsSink(), new NullGlobalMutationWriter()), TestContext.Current.CancellationToken);
+        await step.ExecuteAsync(new RoomProcessorContext(state, writer, new NullCreepStatsSink(), new NullGlobalMutationWriter(), new NullNotificationSink()), TestContext.Current.CancellationToken);
         Assert.Empty(writer.Patches);
         Assert.Contains(death.Creeps, c => c.Id == "enemy");
 
@@ -286,7 +286,7 @@ public sealed class MovementIntentStepTests
         writer.Reset();
         death.Reset();
 
-        await step.ExecuteAsync(new RoomProcessorContext(state, writer, new NullCreepStatsSink(), new NullGlobalMutationWriter()), TestContext.Current.CancellationToken);
+        await step.ExecuteAsync(new RoomProcessorContext(state, writer, new NullCreepStatsSink(), new NullGlobalMutationWriter(), new NullNotificationSink()), TestContext.Current.CancellationToken);
         Assert.Contains(writer.Patches, p => p.ObjectId == "enemy");
         Assert.Empty(death.Creeps);
     }
@@ -315,7 +315,7 @@ public sealed class MovementIntentStepTests
         var death = new RecordingDeathProcessor();
         var step = new MovementIntentStep(death);
 
-        await step.ExecuteAsync(new RoomProcessorContext(state, writer, new NullCreepStatsSink(), new NullGlobalMutationWriter()), TestContext.Current.CancellationToken);
+        await step.ExecuteAsync(new RoomProcessorContext(state, writer, new NullCreepStatsSink(), new NullGlobalMutationWriter(), new NullNotificationSink()), TestContext.Current.CancellationToken);
 
         Assert.Empty(writer.Patches);
         Assert.Equal(2, death.Creeps.Count);
@@ -349,7 +349,7 @@ public sealed class MovementIntentStepTests
         var step = new MovementIntentStep(new NullDeathProcessor());
 
         // Act
-        await step.ExecuteAsync(new RoomProcessorContext(state, writer, new NullCreepStatsSink(), new NullGlobalMutationWriter()), TestContext.Current.CancellationToken);
+        await step.ExecuteAsync(new RoomProcessorContext(state, writer, new NullCreepStatsSink(), new NullGlobalMutationWriter(), new NullNotificationSink()), TestContext.Current.CancellationToken);
 
         // Assert: Circular pulls should be prevented
         // Both creeps should execute their move intents normally (no pull effect)
@@ -370,7 +370,7 @@ public sealed class MovementIntentStepTests
         var death = new RecordingDeathProcessor();
         var step = new MovementIntentStep(death);
 
-        await step.ExecuteAsync(new RoomProcessorContext(state, writer, new NullCreepStatsSink(), new NullGlobalMutationWriter()), TestContext.Current.CancellationToken);
+        await step.ExecuteAsync(new RoomProcessorContext(state, writer, new NullCreepStatsSink(), new NullGlobalMutationWriter(), new NullNotificationSink()), TestContext.Current.CancellationToken);
 
         Assert.Empty(writer.Patches);
         Assert.Contains(death.Creeps, c => c.Id == "pc1");

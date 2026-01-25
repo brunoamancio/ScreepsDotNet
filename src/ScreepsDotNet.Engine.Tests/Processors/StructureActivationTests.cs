@@ -189,7 +189,7 @@ public sealed class StructureActivationTests
             new Dictionary<string, RoomTerrainSnapshot>(StringComparer.Ordinal),
             []);
 
-        return new RoomProcessorContext(state, new FakeMutationWriter(), new NullCreepStatsSink(), new NullGlobalMutationWriter());
+        return new RoomProcessorContext(state, new FakeMutationWriter(), new NullCreepStatsSink(), new NullGlobalMutationWriter(), new NullNotificationSink());
     }
 
     private static RoomObjectSnapshot CreateStructure(string id, string type, int x, int y, Dictionary<string, int>? store = null, int? level = null)

@@ -70,6 +70,7 @@ internal static class RoomContractMapper
             isSpawning,
             document.UserSummoned,
             document.IsPublic,
+            document.NotifyWhenAttacked,
             document.StrongholdId,
             document.DeathTime,
             document.DecayTime,
