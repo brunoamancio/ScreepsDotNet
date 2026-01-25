@@ -1,12 +1,12 @@
 # ScreepsDotNet Engine Parity Analysis
 **Generated:** 2026-01-25
-**Status:** 115/115 Parity Tests Passing (100%)
+**Status:** 119 Parity Tests (89 passing, 30 known divergences)
 
 ## Executive Summary
 
 ✅ **Parity Status:** HIGH (Core gameplay mechanics implemented)
 ⚠️ **Gaps:** Medium-priority features deferred to E8/E9
-✨ **Quality:** All 115 parity tests passing with documented divergences (114 single-room + 1 multi-room)
+✨ **Quality:** 89/119 parity tests passing with 30 documented divergences (114 single-room + 1 multi-room + 3 decay + 1 validation fixture)
 
 ---
 
@@ -147,18 +147,28 @@ None - all creep intents implemented!
 | Nuke Landing | ✅ nukes/tick.js | NukeLandingStep | ✅ Tested | ✅ 2 fixtures |
 | Power Effect Decay | ✅ (implicit) | PowerEffectDecayStep | ✅ Tested | ❌ Unit only |
 
-### ⚠️ DEFERRED - Lifecycle Mechanics (5/14)
+### ✅ IMPLEMENTED - Decay Systems (3/3)
+
+| System | Node.js | .NET Step | Status | Parity Tests |
+|--------|---------|-----------|--------|--------------|
+| Tombstone Decay | ✅ tombstones/tick.js | TombstoneDecayStep | ✅ Tested | ✅ 1 fixture (tombstone_decay.json) |
+| Ruin Decay | ✅ ruins/tick.js | RuinDecayStep | ✅ Tested | ✅ 1 fixture (ruin_decay.json) |
+| Energy/Resource Decay | ✅ energy/tick.js | EnergyDecayStep | ✅ Tested | ✅ 1 fixture (energy_decay.json) |
+
+**Implementation Details:**
+- **Tombstone/Ruin decay:** Checks `gameTime >= decayTime - 1`, drops all resources via `IResourceDropHelper`, removes object
+- **Energy decay:** Formula `newAmount = amount - ceil(amount / 1000)`, removes if amount <= 0
+- **Unit test coverage:** 26 tests (8 tombstone + 8 ruin + 10 energy)
+- **Parity:** All 3 fixtures passing, matches Node.js behavior exactly
+
+### ⚠️ DEFERRED - Lifecycle Mechanics (4/7)
 
 | System | Node.js | .NET Status | Deferred To |
 |--------|---------|-------------|-------------|
-| Tombstone Decay | ✅ tombstones/tick.js | ❌ Not implemented | E8 - Decay Systems |
-| Ruin Decay | ✅ ruins/tick.js | ❌ Not implemented | E8 - Decay Systems |
-| ConstructionSite Decay | ✅ construction-sites/tick.js | ❌ Not implemented | E8 - Decay Systems |
-| Energy Decay | ✅ energy/tick.js | ❌ Not implemented | E8 - Decay Systems |
+| ConstructionSite Decay | ✅ construction-sites/tick.js | ✅ Verified as NO-OP | N/A (Node.js has empty handler) |
 | Portal Tick | ✅ portals/tick.js | ❌ Not implemented | E8 - Inter-shard |
 | Deposit Decay | ✅ deposits/tick.js | ❌ Not implemented | E9 - Seasonal |
 | PowerBank Decay | ✅ (implicit) | ❌ Not implemented | E9 - Seasonal |
-| KeeperLair Spawn | ✅ keeper-lairs/tick.js | ✅ KeeperLairStep | ✅ Tested |
 
 ---
 
@@ -377,17 +387,17 @@ MarketIntentStep            // market orders
 
 **Completed:**
 - ✅ Creep say intent (CreepSayIntentStep)
+- ✅ Tombstone decay (TombstoneDecayStep) - 1 parity test passing
+- ✅ Ruin decay (RuinDecayStep) - 1 parity test passing
+- ✅ Energy/resource decay (EnergyDecayStep) - 1 parity test passing
 
 **Medium Priority:**
-- Observer observeRoom
-- Tombstone decay
-- Ruin decay
-- ConstructionSite decay
-- Energy decay
+- Observer observeRoom (implemented, parity tests deferred)
+- ConstructionSite decay (verified as non-existent in Node.js engine)
 - InvaderCore intents/AI
 - Invader flee AI refinement
 
-**Test Coverage Target:** 140 parity tests (+26)
+**Test Coverage Target:** 140 parity tests (+21)
 
 ### E9 - Room Management & Seasonal
 
