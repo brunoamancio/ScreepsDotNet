@@ -53,6 +53,7 @@ public sealed record RoomObjectPatchPayload : IRoomObjectPatchPayload
     public IReadOnlyDictionary<PowerTypes, PowerCreepPowerSnapshot>? Powers { get; init; }
     public string? MemorySourceId { get; init; }
     public KeeperMoveMemory? MemoryMove { get; init; }
+    public bool? IsPublic { get; init; }
 
     public bool HasChanges =>
         Hits.HasValue ||
@@ -87,7 +88,8 @@ public sealed record RoomObjectPatchPayload : IRoomObjectPatchPayload
         (Effects is { Count: > 0 }) ||
         (Powers is { Count: > 0 }) ||
         MemorySourceId is not null ||
-        MemoryMove is not null;
+        MemoryMove is not null ||
+        IsPublic.HasValue;
 }
 
 public sealed record RoomObjectPositionPatch(int? X = null, int? Y = null)

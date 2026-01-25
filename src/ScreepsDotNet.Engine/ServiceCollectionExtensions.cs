@@ -50,6 +50,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IRoomProcessorStep, ResourceTransferIntentStep>();
         services.AddSingleton<IRoomProcessorStep, LabIntentStep>();
         services.AddSingleton<IRoomProcessorStep, LinkIntentStep>();
+        services.AddSingleton<IRoomProcessorStep, RampartIntentStep>();
         services.AddSingleton<IRoomProcessorStep, PowerSpawnIntentStep>();
         services.AddSingleton<IRoomProcessorStep, NukerIntentStep>();
         services.AddSingleton<IRoomProcessorStep, FactoryIntentStep>();
