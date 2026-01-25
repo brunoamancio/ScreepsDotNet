@@ -18,6 +18,7 @@ public static class IntentKeys
     public const string ProcessPower = "processPower";
     public const string Produce = "produce";
     public const string RunReaction = "runReaction";
+    public const string ReverseReaction = "reverseReaction";
     public const string BoostCreep = "boostCreep";
     public const string UnboostCreep = "unboostCreep";
 

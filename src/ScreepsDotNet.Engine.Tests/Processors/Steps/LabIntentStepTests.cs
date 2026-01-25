@@ -281,6 +281,206 @@ public sealed class LabIntentStepTests
 
     #endregion
 
+    #region reverseReaction Tests
+
+    [Fact]
+    public async Task ReverseReaction_BasicDecomposition_ProducesReagents()
+    {
+        var lab = CreateLab("lab1", 10, 10, "user1", new Dictionary<string, int>(StringComparer.Ordinal)
+        {
+            [ResourceTypes.Hydroxide] = 100
+        });
+        var lab1 = CreateLab("lab2", 11, 11, "user1", new Dictionary<string, int>(StringComparer.Ordinal));
+        var lab2 = CreateLab("lab3", 12, 12, "user1", new Dictionary<string, int>(StringComparer.Ordinal));
+        var context = CreateContext([lab, lab1, lab2],
+            CreateReverseReactionIntent("user1", lab.Id, lab1.Id, lab2.Id), gameTime: 100);
+        var writer = (FakeMutationWriter)context.MutationWriter;
+
+        await _step.ExecuteAsync(context, TestContext.Current.CancellationToken);
+
+        var (_, Payload) = writer.Patches.Single(p => p.ObjectId == lab.Id);
+        Assert.Equal(95, Payload.Store![ResourceTypes.Hydroxide]);
+        Assert.Equal(100 + LabReactions.CooldownTimes[ResourceTypes.Hydroxide], Payload.CooldownTime);
+
+        var lab1Patch = writer.Patches.Single(p => p.ObjectId == lab1.Id);
+        Assert.Equal(5, lab1Patch.Payload.Store![ResourceTypes.Hydrogen]);
+
+        var lab2Patch = writer.Patches.Single(p => p.ObjectId == lab2.Id);
+        Assert.Equal(5, lab2Patch.Payload.Store![ResourceTypes.Oxygen]);
+    }
+
+    [Fact]
+    public async Task ReverseReaction_ComplexDecomposition_ProducesT2Compounds()
+    {
+        var lab = CreateLab("lab1", 10, 10, "user1", new Dictionary<string, int>(StringComparer.Ordinal)
+        {
+            [ResourceTypes.CatalyzedGhodiumAcid] = 100
+        });
+        var lab1 = CreateLab("lab2", 11, 11, "user1", new Dictionary<string, int>(StringComparer.Ordinal));
+        var lab2 = CreateLab("lab3", 12, 12, "user1", new Dictionary<string, int>(StringComparer.Ordinal));
+        var context = CreateContext([lab, lab1, lab2],
+            CreateReverseReactionIntent("user1", lab.Id, lab1.Id, lab2.Id), gameTime: 100);
+        var writer = (FakeMutationWriter)context.MutationWriter;
+
+        await _step.ExecuteAsync(context, TestContext.Current.CancellationToken);
+
+        var (_, Payload) = writer.Patches.Single(p => p.ObjectId == lab.Id);
+        Assert.Equal(95, Payload.Store![ResourceTypes.CatalyzedGhodiumAcid]);
+
+        // Check that lab1 and lab2 got the reagents (order may vary)
+        var lab1Patch = writer.Patches.Single(p => p.ObjectId == lab1.Id);
+        var lab2Patch = writer.Patches.Single(p => p.ObjectId == lab2.Id);
+
+        var allStoreKeys = lab1Patch.Payload.Store!.Keys.Concat(lab2Patch.Payload.Store!.Keys).ToList();
+        Assert.Contains(ResourceTypes.GhodiumAcid, allStoreKeys);
+        Assert.Contains(ResourceTypes.Catalyst, allStoreKeys);
+
+        var totalGhodiumAcid = lab1Patch.Payload.Store!.GetValueOrDefault(ResourceTypes.GhodiumAcid, 0) +
+                               lab2Patch.Payload.Store!.GetValueOrDefault(ResourceTypes.GhodiumAcid, 0);
+        var totalCatalyst = lab1Patch.Payload.Store!.GetValueOrDefault(ResourceTypes.Catalyst, 0) +
+                            lab2Patch.Payload.Store!.GetValueOrDefault(ResourceTypes.Catalyst, 0);
+
+        Assert.Equal(5, totalGhodiumAcid);
+        Assert.Equal(5, totalCatalyst);
+    }
+
+    [Fact]
+    public async Task ReverseReaction_InsufficientProduct_DoesNothing()
+    {
+        var lab = CreateLab("lab1", 10, 10, "user1", new Dictionary<string, int>(StringComparer.Ordinal)
+        {
+            [ResourceTypes.Hydroxide] = 3
+        });
+        var lab1 = CreateLab("lab2", 11, 11, "user1", new Dictionary<string, int>(StringComparer.Ordinal));
+        var lab2 = CreateLab("lab3", 12, 12, "user1", new Dictionary<string, int>(StringComparer.Ordinal));
+        var context = CreateContext([lab, lab1, lab2],
+            CreateReverseReactionIntent("user1", lab.Id, lab1.Id, lab2.Id));
+        var writer = (FakeMutationWriter)context.MutationWriter;
+
+        await _step.ExecuteAsync(context, TestContext.Current.CancellationToken);
+
+        Assert.Empty(writer.Patches);
+    }
+
+    [Fact]
+    public async Task ReverseReaction_LabOnCooldown_DoesNothing()
+    {
+        var lab = CreateLab("lab1", 10, 10, "user1", new Dictionary<string, int>(StringComparer.Ordinal)
+        {
+            [ResourceTypes.Hydroxide] = 100
+        }, cooldownTime: 200);
+        var lab1 = CreateLab("lab2", 11, 11, "user1", new Dictionary<string, int>(StringComparer.Ordinal));
+        var lab2 = CreateLab("lab3", 12, 12, "user1", new Dictionary<string, int>(StringComparer.Ordinal));
+        var context = CreateContext([lab, lab1, lab2],
+            CreateReverseReactionIntent("user1", lab.Id, lab1.Id, lab2.Id), gameTime: 100);
+        var writer = (FakeMutationWriter)context.MutationWriter;
+
+        await _step.ExecuteAsync(context, TestContext.Current.CancellationToken);
+
+        Assert.Empty(writer.Patches);
+    }
+
+    [Fact]
+    public async Task ReverseReaction_OutOfRange_DoesNothing()
+    {
+        var lab = CreateLab("lab1", 10, 10, "user1", new Dictionary<string, int>(StringComparer.Ordinal)
+        {
+            [ResourceTypes.Hydroxide] = 100
+        });
+        var lab1 = CreateLab("lab2", 20, 20, "user1", new Dictionary<string, int>(StringComparer.Ordinal));
+        var lab2 = CreateLab("lab3", 12, 12, "user1", new Dictionary<string, int>(StringComparer.Ordinal));
+        var context = CreateContext([lab, lab1, lab2],
+            CreateReverseReactionIntent("user1", lab.Id, lab1.Id, lab2.Id));
+        var writer = (FakeMutationWriter)context.MutationWriter;
+
+        await _step.ExecuteAsync(context, TestContext.Current.CancellationToken);
+
+        Assert.Empty(writer.Patches);
+    }
+
+    [Fact]
+    public async Task ReverseReaction_Lab1AtCapacity_DoesNothing()
+    {
+        var lab = CreateLab("lab1", 10, 10, "user1", new Dictionary<string, int>(StringComparer.Ordinal)
+        {
+            [ResourceTypes.Hydroxide] = 100
+        });
+        var lab1 = CreateLab("lab2", 11, 11, "user1", new Dictionary<string, int>(StringComparer.Ordinal)
+        {
+            [ResourceTypes.Hydrogen] = 3000
+        });
+        var lab2 = CreateLab("lab3", 12, 12, "user1", new Dictionary<string, int>(StringComparer.Ordinal));
+        var context = CreateContext([lab, lab1, lab2],
+            CreateReverseReactionIntent("user1", lab.Id, lab1.Id, lab2.Id));
+        var writer = (FakeMutationWriter)context.MutationWriter;
+
+        await _step.ExecuteAsync(context, TestContext.Current.CancellationToken);
+
+        Assert.Empty(writer.Patches);
+    }
+
+    [Fact]
+    public async Task ReverseReaction_Lab2AtCapacity_DoesNothing()
+    {
+        var lab = CreateLab("lab1", 10, 10, "user1", new Dictionary<string, int>(StringComparer.Ordinal)
+        {
+            [ResourceTypes.Hydroxide] = 100
+        });
+        var lab1 = CreateLab("lab2", 11, 11, "user1", new Dictionary<string, int>(StringComparer.Ordinal));
+        var lab2 = CreateLab("lab3", 12, 12, "user1", new Dictionary<string, int>(StringComparer.Ordinal)
+        {
+            [ResourceTypes.Oxygen] = 3000
+        });
+        var context = CreateContext([lab, lab1, lab2],
+            CreateReverseReactionIntent("user1", lab.Id, lab1.Id, lab2.Id));
+        var writer = (FakeMutationWriter)context.MutationWriter;
+
+        await _step.ExecuteAsync(context, TestContext.Current.CancellationToken);
+
+        Assert.Empty(writer.Patches);
+    }
+
+    [Fact]
+    public async Task ReverseReaction_Lab1HasWrongMineral_DoesNothing()
+    {
+        var lab = CreateLab("lab1", 10, 10, "user1", new Dictionary<string, int>(StringComparer.Ordinal)
+        {
+            [ResourceTypes.Hydroxide] = 100
+        });
+        var lab1 = CreateLab("lab2", 11, 11, "user1", new Dictionary<string, int>(StringComparer.Ordinal)
+        {
+            [ResourceTypes.Oxygen] = 100
+        });
+        var lab2 = CreateLab("lab3", 12, 12, "user1", new Dictionary<string, int>(StringComparer.Ordinal));
+        var context = CreateContext([lab, lab1, lab2],
+            CreateReverseReactionIntent("user1", lab.Id, lab1.Id, lab2.Id));
+        var writer = (FakeMutationWriter)context.MutationWriter;
+
+        await _step.ExecuteAsync(context, TestContext.Current.CancellationToken);
+
+        Assert.Empty(writer.Patches);
+    }
+
+    [Fact]
+    public async Task ReverseReaction_InvalidProduct_DoesNothing()
+    {
+        var lab = CreateLab("lab1", 10, 10, "user1", new Dictionary<string, int>(StringComparer.Ordinal)
+        {
+            [ResourceTypes.Hydrogen] = 100
+        });
+        var lab1 = CreateLab("lab2", 11, 11, "user1", new Dictionary<string, int>(StringComparer.Ordinal));
+        var lab2 = CreateLab("lab3", 12, 12, "user1", new Dictionary<string, int>(StringComparer.Ordinal));
+        var context = CreateContext([lab, lab1, lab2],
+            CreateReverseReactionIntent("user1", lab.Id, lab1.Id, lab2.Id));
+        var writer = (FakeMutationWriter)context.MutationWriter;
+
+        await _step.ExecuteAsync(context, TestContext.Current.CancellationToken);
+
+        Assert.Empty(writer.Patches);
+    }
+
+    #endregion
+
     #region boostCreep Tests
 
     [Fact]
@@ -808,6 +1008,35 @@ public sealed class LabIntentStepTests
         });
 
         var record = new IntentRecord(IntentKeys.RunReaction, [argument]);
+        var objectIntents = new Dictionary<string, IReadOnlyList<IntentRecord>>(StringComparer.Ordinal)
+        {
+            [labId] = [record]
+        };
+
+        var envelope = new IntentEnvelope(
+            userId,
+            objectIntents,
+            new Dictionary<string, SpawnIntentEnvelope>(StringComparer.Ordinal),
+            new Dictionary<string, CreepIntentEnvelope>(StringComparer.Ordinal));
+
+        var users = new Dictionary<string, IntentEnvelope>(StringComparer.Ordinal)
+        {
+            [userId] = envelope
+        };
+
+        var result = new RoomIntentSnapshot("W1N1", "shard0", users);
+        return result;
+    }
+
+    private static RoomIntentSnapshot CreateReverseReactionIntent(string userId, string labId, string lab1Id, string lab2Id)
+    {
+        var argument = new IntentArgument(new Dictionary<string, IntentFieldValue>(StringComparer.Ordinal)
+        {
+            [IntentKeys.Lab1] = new(IntentFieldValueKind.Text, TextValue: lab1Id),
+            [IntentKeys.Lab2] = new(IntentFieldValueKind.Text, TextValue: lab2Id)
+        });
+
+        var record = new IntentRecord(IntentKeys.ReverseReaction, [argument]);
         var objectIntents = new Dictionary<string, IReadOnlyList<IntentRecord>>(StringComparer.Ordinal)
         {
             [labId] = [record]

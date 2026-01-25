@@ -242,4 +242,29 @@ public static class LabReactions
         product = result;
         return true;
     }
+
+    /// <summary>
+    /// Attempts to look up the reagents for a given product (reverse reaction).
+    /// </summary>
+    /// <param name="product">The product mineral type to decompose.</param>
+    /// <param name="reagent1">First reagent mineral type if decomposition exists.</param>
+    /// <param name="reagent2">Second reagent mineral type if decomposition exists.</param>
+    /// <returns>True if the product can be decomposed, false otherwise.</returns>
+    public static bool TryGetReagents(string product, out string reagent1, out string reagent2)
+    {
+        reagent1 = string.Empty;
+        reagent2 = string.Empty;
+
+        foreach (var (r1, reagent2Map) in Recipes) {
+            foreach (var (r2, p) in reagent2Map) {
+                if (!string.Equals(p, product, StringComparison.Ordinal)) continue;
+
+                reagent1 = r1;
+                reagent2 = r2;
+                return true;
+            }
+        }
+
+        return false;
+    }
 }

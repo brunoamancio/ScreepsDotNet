@@ -57,6 +57,9 @@ internal sealed class LabIntentStep : IRoomProcessorStep
                         case IntentKeys.RunReaction:
                             ProcessRunReaction(context, obj, record, storeLedger, cooldownLedger, storeCapacityResourceLedger, actionLogLedger, modifiedObjects);
                             break;
+                        case IntentKeys.ReverseReaction:
+                            ProcessReverseReaction(context, obj, record, storeLedger, cooldownLedger, storeCapacityResourceLedger, actionLogLedger, modifiedObjects);
+                            break;
                         case IntentKeys.BoostCreep:
                             ProcessBoostCreep(context, obj, record, storeLedger, bodyLedger, storeCapacityLedger, storeCapacityResourceLedger, modifiedObjects);
                             break;
@@ -185,6 +188,130 @@ internal sealed class LabIntentStep : IRoomProcessorStep
         if (lab2Available - reactionAmount == 0) {
             var lab2CapacityResource = GetMutableStoreCapacityResource(lab2, storeCapacityResourceLedger);
             lab2CapacityResource[lab2MineralType] = 0;
+        }
+
+        actionLogLedger[lab.Id] = new RoomObjectActionLogPatch(
+            RunReaction: new RoomObjectActionLogRunReaction(lab1.X, lab1.Y, lab2.X, lab2.Y)
+        );
+
+        modifiedObjects.Add(lab.Id);
+        modifiedObjects.Add(lab1.Id);
+        modifiedObjects.Add(lab2.Id);
+    }
+
+    /// <summary>
+    /// Processes a reverseReaction intent.
+    /// Decomposes a compound in the target lab back into its two reagents.
+    /// Lab1 and Lab2 receive the decomposed reagents.
+    /// Records reagent lab positions in action log for debugging visualization.
+    /// </summary>
+    private static void ProcessReverseReaction(
+        RoomProcessorContext context,
+        RoomObjectSnapshot lab,
+        IntentRecord record,
+        Dictionary<string, Dictionary<string, int>> storeLedger,
+        Dictionary<string, int> cooldownLedger,
+        Dictionary<string, Dictionary<string, int>> storeCapacityResourceLedger,
+        Dictionary<string, RoomObjectActionLogPatch> actionLogLedger,
+        HashSet<string> modifiedObjects)
+    {
+        if (!string.Equals(lab.Type, RoomObjectTypes.Lab, StringComparison.Ordinal))
+            return;
+
+        var gameTime = context.State.GameTime;
+        var currentCooldown = cooldownLedger.GetValueOrDefault(lab.Id, lab.CooldownTime ?? 0);
+        if (currentCooldown > gameTime)
+            return;
+
+        if (!TryGetLab1Id(record, out var lab1Id))
+            return;
+
+        if (!TryGetLab2Id(record, out var lab2Id))
+            return;
+
+        if (!context.State.Objects.TryGetValue(lab1Id, out var lab1))
+            return;
+
+        if (!string.Equals(lab1.Type, RoomObjectTypes.Lab, StringComparison.Ordinal))
+            return;
+
+        if (!IsInRange(lab, lab1, 2))
+            return;
+
+        if (!context.State.Objects.TryGetValue(lab2Id, out var lab2))
+            return;
+
+        if (!string.Equals(lab2.Type, RoomObjectTypes.Lab, StringComparison.Ordinal))
+            return;
+
+        if (!IsInRange(lab, lab2, 2))
+            return;
+
+        var targetStore = GetMutableStore(lab, storeLedger);
+        var product = GetLabMineralType(lab, targetStore);
+        if (string.IsNullOrWhiteSpace(product))
+            return;
+
+        var productAvailable = targetStore.GetValueOrDefault(product, 0);
+        if (productAvailable < ScreepsGameConstants.LabReactionAmount)
+            return;
+
+        if (!LabReactions.TryGetReagents(product, out var reagent1, out var reagent2))
+            return;
+
+        var lab1Store = GetMutableStore(lab1, storeLedger);
+        var lab1MineralType = GetLabMineralType(lab1, lab1Store);
+        var lab1Current = lab1Store.GetValueOrDefault(reagent1, 0);
+
+        if (lab1Current + ScreepsGameConstants.LabReactionAmount > ScreepsGameConstants.LabMineralCapacity)
+            return;
+
+        if (!string.IsNullOrWhiteSpace(lab1MineralType) && !string.Equals(lab1MineralType, reagent1, StringComparison.Ordinal))
+            return;
+
+        var lab2Store = GetMutableStore(lab2, storeLedger);
+        var lab2MineralType = GetLabMineralType(lab2, lab2Store);
+        var lab2Current = lab2Store.GetValueOrDefault(reagent2, 0);
+
+        if (lab2Current + ScreepsGameConstants.LabReactionAmount > ScreepsGameConstants.LabMineralCapacity)
+            return;
+
+        if (!string.IsNullOrWhiteSpace(lab2MineralType) && !string.Equals(lab2MineralType, reagent2, StringComparison.Ordinal))
+            return;
+
+        var reactionAmount = ScreepsGameConstants.LabReactionAmount;
+
+        // Check for PWR_OPERATE_LAB effect to boost reverse reaction amount
+        if (lab.Effects.TryGetValue(PowerTypes.OperateLab, out var operateLabEffect)) {
+            if (operateLabEffect.EndTime > gameTime && PowerInfo.Abilities.TryGetValue(PowerTypes.OperateLab, out var powerInfo)) {
+                if (powerInfo.Effect is not null) {
+                    var effectBonus = powerInfo.Effect[operateLabEffect.Level - 1];
+                    reactionAmount = ScreepsGameConstants.LabReactionAmount + effectBonus;
+                }
+            }
+        }
+
+        targetStore[product] = productAvailable - reactionAmount;
+        lab1Store[reagent1] = lab1Current + reactionAmount;
+        lab2Store[reagent2] = lab2Current + reactionAmount;
+
+        var cooldownTime = LabReactions.CooldownTimes.GetValueOrDefault(product, 0);
+
+        cooldownLedger[lab.Id] = gameTime + cooldownTime;
+
+        if (productAvailable - reactionAmount == 0) {
+            var targetCapacityResource = GetMutableStoreCapacityResource(lab, storeCapacityResourceLedger);
+            targetCapacityResource[product] = 0;
+        }
+
+        if (lab1Current == 0) {
+            var lab1CapacityResource = GetMutableStoreCapacityResource(lab1, storeCapacityResourceLedger);
+            lab1CapacityResource[reagent1] = ScreepsGameConstants.LabMineralCapacity;
+        }
+
+        if (lab2Current == 0) {
+            var lab2CapacityResource = GetMutableStoreCapacityResource(lab2, storeCapacityResourceLedger);
+            lab2CapacityResource[reagent2] = ScreepsGameConstants.LabMineralCapacity;
         }
 
         actionLogLedger[lab.Id] = new RoomObjectActionLogPatch(
