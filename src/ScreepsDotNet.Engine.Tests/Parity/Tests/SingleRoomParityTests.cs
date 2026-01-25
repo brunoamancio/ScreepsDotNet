@@ -6,10 +6,11 @@ using ScreepsDotNet.Engine.Tests.Parity.Infrastructure;
 /// TRUE parity tests comparing .NET Engine with Node.js engine field-by-field.
 /// All tests follow the same pattern: load fixture, run both engines, compare outputs.
 /// New tests are automatically discovered from JSON fixtures in the Fixtures directory.
+/// Inherits MongoDB cleanup from ParityTestBase (prevents duplicate key errors).
 /// </summary>
 [Trait("Category", "Parity")]
 [Collection(nameof(Integration.MongoDbParityCollection))]
-public sealed class SingleRoomParityTests(Integration.MongoDbParityFixture mongoFixture, Integration.ParityTestPrerequisites prerequisites)
+public sealed class SingleRoomParityTests(Integration.MongoDbParityFixture mongoFixture, Integration.ParityTestPrerequisites prerequisites) : ParityTestBase(mongoFixture)
 {
     // Architectural difference fixtures (have dedicated test methods)
     private const string HarvestBasicFixture = "harvest_basic.json";
@@ -117,7 +118,7 @@ public sealed class SingleRoomParityTests(Integration.MongoDbParityFixture mongo
         var state = await JsonFixtureLoader.LoadFromFileAsync(fixturePath, TestContext.Current.CancellationToken);
 
         var dotnetOutput = await DotNetParityTestRunner.RunAsync(state, TestContext.Current.CancellationToken);
-        var nodejsOutput = await NodeJsParityTestRunner.RunFixtureAsync(fixturePath, prerequisites.HarnessDirectory, mongoFixture.ConnectionString, TestContext.Current.CancellationToken);
+        var nodejsOutput = await NodeJsParityTestRunner.RunFixtureAsync(fixturePath, prerequisites.HarnessDirectory, MongoFixture.ConnectionString, TestContext.Current.CancellationToken);
 
         var comparison = Comparison.ParityComparator.Compare(dotnetOutput, nodejsOutput);
         if (comparison.HasDivergences) {
@@ -139,7 +140,7 @@ public sealed class SingleRoomParityTests(Integration.MongoDbParityFixture mongo
         var state = await JsonFixtureLoader.LoadFromFileAsync(fixturePath, TestContext.Current.CancellationToken);
 
         var dotnetOutput = await DotNetParityTestRunner.RunAsync(state, TestContext.Current.CancellationToken);
-        var nodejsOutput = await NodeJsParityTestRunner.RunFixtureAsync(fixturePath, prerequisites.HarnessDirectory, mongoFixture.ConnectionString, TestContext.Current.CancellationToken);
+        var nodejsOutput = await NodeJsParityTestRunner.RunFixtureAsync(fixturePath, prerequisites.HarnessDirectory, MongoFixture.ConnectionString, TestContext.Current.CancellationToken);
 
         var comparison = Comparison.ParityComparator.Compare(dotnetOutput, nodejsOutput);
 
@@ -185,7 +186,7 @@ public sealed class SingleRoomParityTests(Integration.MongoDbParityFixture mongo
         var state = await JsonFixtureLoader.LoadFromFileAsync(fixturePath, TestContext.Current.CancellationToken);
 
         var dotnetOutput = await DotNetParityTestRunner.RunAsync(state, TestContext.Current.CancellationToken);
-        var nodejsOutput = await NodeJsParityTestRunner.RunFixtureAsync(fixturePath, prerequisites.HarnessDirectory, mongoFixture.ConnectionString, TestContext.Current.CancellationToken);
+        var nodejsOutput = await NodeJsParityTestRunner.RunFixtureAsync(fixturePath, prerequisites.HarnessDirectory, MongoFixture.ConnectionString, TestContext.Current.CancellationToken);
 
         var comparison = Comparison.ParityComparator.Compare(dotnetOutput, nodejsOutput);
 
@@ -232,7 +233,7 @@ public sealed class SingleRoomParityTests(Integration.MongoDbParityFixture mongo
         var state = await JsonFixtureLoader.LoadFromFileAsync(fixturePath, TestContext.Current.CancellationToken);
 
         var dotnetOutput = await DotNetParityTestRunner.RunAsync(state, TestContext.Current.CancellationToken);
-        var nodejsOutput = await NodeJsParityTestRunner.RunFixtureAsync(fixturePath, prerequisites.HarnessDirectory, mongoFixture.ConnectionString, TestContext.Current.CancellationToken);
+        var nodejsOutput = await NodeJsParityTestRunner.RunFixtureAsync(fixturePath, prerequisites.HarnessDirectory, MongoFixture.ConnectionString, TestContext.Current.CancellationToken);
 
         var comparison = Comparison.ParityComparator.Compare(dotnetOutput, nodejsOutput);
 
@@ -289,7 +290,7 @@ public sealed class SingleRoomParityTests(Integration.MongoDbParityFixture mongo
             var state = await JsonFixtureLoader.LoadFromFileAsync(fixturePath, TestContext.Current.CancellationToken);
 
             var dotnetOutput = await DotNetParityTestRunner.RunAsync(state, TestContext.Current.CancellationToken);
-            var nodejsOutput = await NodeJsParityTestRunner.RunFixtureAsync(fixturePath, prerequisites.HarnessDirectory, mongoFixture.ConnectionString, TestContext.Current.CancellationToken);
+            var nodejsOutput = await NodeJsParityTestRunner.RunFixtureAsync(fixturePath, prerequisites.HarnessDirectory, MongoFixture.ConnectionString, TestContext.Current.CancellationToken);
 
             var comparison = Comparison.ParityComparator.Compare(dotnetOutput, nodejsOutput);
 
@@ -331,7 +332,7 @@ public sealed class SingleRoomParityTests(Integration.MongoDbParityFixture mongo
             var state = await JsonFixtureLoader.LoadFromFileAsync(fixturePath, TestContext.Current.CancellationToken);
 
             var dotnetOutput = await DotNetParityTestRunner.RunAsync(state, TestContext.Current.CancellationToken);
-            var nodejsOutput = await NodeJsParityTestRunner.RunFixtureAsync(fixturePath, prerequisites.HarnessDirectory, mongoFixture.ConnectionString, TestContext.Current.CancellationToken);
+            var nodejsOutput = await NodeJsParityTestRunner.RunFixtureAsync(fixturePath, prerequisites.HarnessDirectory, MongoFixture.ConnectionString, TestContext.Current.CancellationToken);
 
             var comparison = Comparison.ParityComparator.Compare(dotnetOutput, nodejsOutput);
 
@@ -377,7 +378,7 @@ public sealed class SingleRoomParityTests(Integration.MongoDbParityFixture mongo
             var state = await JsonFixtureLoader.LoadFromFileAsync(fixturePath, TestContext.Current.CancellationToken);
 
             var dotnetOutput = await DotNetParityTestRunner.RunAsync(state, TestContext.Current.CancellationToken);
-            var nodejsOutput = await NodeJsParityTestRunner.RunFixtureAsync(fixturePath, prerequisites.HarnessDirectory, mongoFixture.ConnectionString, TestContext.Current.CancellationToken);
+            var nodejsOutput = await NodeJsParityTestRunner.RunFixtureAsync(fixturePath, prerequisites.HarnessDirectory, MongoFixture.ConnectionString, TestContext.Current.CancellationToken);
 
             var comparison = Comparison.ParityComparator.Compare(dotnetOutput, nodejsOutput);
 

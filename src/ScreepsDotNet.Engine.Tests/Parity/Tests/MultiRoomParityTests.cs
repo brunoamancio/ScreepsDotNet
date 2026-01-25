@@ -5,10 +5,11 @@ using ScreepsDotNet.Engine.Tests.Parity.Infrastructure;
 /// <summary>
 /// Multi-room parity tests comparing .NET Engine global processors with Node.js engine.
 /// Tests cross-room operations like Terminal.send, Observer.observeRoom, and inter-room transfers.
+/// Inherits MongoDB cleanup from ParityTestBase (prevents duplicate key errors).
 /// </summary>
 [Trait("Category", "Parity")]
 [Collection(nameof(Integration.MongoDbParityCollection))]
-public sealed class MultiRoomParityTests(Integration.MongoDbParityFixture mongoFixture, Integration.ParityTestPrerequisites prerequisites)
+public sealed class MultiRoomParityTests(Integration.MongoDbParityFixture mongoFixture, Integration.ParityTestPrerequisites prerequisites) : ParityTestBase(mongoFixture)
 {
     /// <summary>
     /// Tests Terminal.send parity for cross-room resource transfers.
@@ -26,7 +27,7 @@ public sealed class MultiRoomParityTests(Integration.MongoDbParityFixture mongoF
         var globalState = await MultiRoomFixtureLoader.LoadFromFileAsync(fixturePath, TestContext.Current.CancellationToken);
 
         var dotnetOutput = await DotNetMultiRoomParityTestRunner.RunAsync(globalState, TestContext.Current.CancellationToken);
-        var nodejsOutput = await NodeJsParityTestRunner.RunFixtureAsync(fixturePath, prerequisites.HarnessDirectory, mongoFixture.ConnectionString, TestContext.Current.CancellationToken);
+        var nodejsOutput = await NodeJsParityTestRunner.RunFixtureAsync(fixturePath, prerequisites.HarnessDirectory, MongoFixture.ConnectionString, TestContext.Current.CancellationToken);
 
         var comparison = Comparison.ParityComparator.CompareMultiRoom(dotnetOutput, nodejsOutput);
         if (comparison.HasDivergences) {
