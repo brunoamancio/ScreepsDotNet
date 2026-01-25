@@ -92,8 +92,8 @@ None - all creep intents implemented!
 
 | Structure | Intent | Node.js | .NET Status | Deferred To |
 |-----------|--------|---------|-------------|-------------|
-| **Rampart** | setPublic | ✅ | ❌ Not implemented | E8 - Structure Extras |
-| **Terminal** | send | ✅ | ✅ Implemented in InterRoomTransferStep | ⚠️ Needs parity test |
+| **Rampart** | setPublic | ✅ | ✅ Implemented in RampartIntentStep | ✅ Complete |
+| **Terminal** | send | ✅ | ✅ Implemented in MarketIntentStep.ProcessTerminalSends | ⚠️ Needs multi-room parity infrastructure |
 | **Observer** | observeRoom | ✅ | ❌ Not implemented | E8 - Observer |
 | **InvaderCore** | transferEnergy | ✅ | ❌ Not implemented | E8 - NPC Structures |
 | | reserveController | ✅ | ❌ Not implemented | E8 - NPC Structures |
@@ -377,12 +377,7 @@ MarketIntentStep            // market orders
 **Completed:**
 - ✅ Creep say intent (CreepSayIntentStep)
 
-**In Progress:**
-- ⚠️ Creep notifyWhenAttacked (data model added, integration pending)
-
 **Medium Priority:**
-- Creep suicide intent
-- Rampart setPublic
 - Observer observeRoom
 - Tombstone decay
 - Ruin decay
@@ -418,7 +413,7 @@ MarketIntentStep            // market orders
 | Build/Repair | 100% | 8/8 | Including energy depletion |
 | Controller | 100% | 6/6 | Upgrade, attack, claim, reserve, downgrade |
 | Spawn | 100% | 10/10 | Including queue, energy distribution |
-| Structures | 95% | 31/33 | Missing rampart.setPublic, observer.observeRoom |
+| Structures | 97% | 32/33 | Missing observer.observeRoom |
 | AI (Keeper/Invader) | 90% | 7/7 | Basic AI implemented, flee/stronghold deferred |
 
 ### Medium Confidence (Lifecycle) ⚠️
