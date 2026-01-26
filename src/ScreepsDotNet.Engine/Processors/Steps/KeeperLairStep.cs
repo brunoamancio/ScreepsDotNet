@@ -66,7 +66,7 @@ internal sealed class KeeperLairStep : IRoomProcessorStep
         var keeperName = $"Keeper{lairId}";
         foreach (var obj in objects.Values) {
             var isKeeper = obj.Type == RoomObjectTypes.Creep &&
-                           obj.UserId == NpcUserIds.SourceKeeper &&
+                           SystemUserIds.IsSourceKeeper(obj.UserId) &&
                            obj.Name == keeperName;
             if (isKeeper)
                 return obj;

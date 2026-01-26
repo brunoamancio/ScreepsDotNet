@@ -49,6 +49,9 @@ internal sealed class CreepBuildRepairStep(IStructureBlueprintProvider blueprint
                         case IntentKeys.Build:
                             HandleBuild(context, creep, record, energyLedger, objectOverrides, terrainCache);
                             break;
+                        case IntentKeys.Dismantle:
+                            HandleDismantle(context, creep, record, energyLedger, objectOverrides);
+                            break;
                         default:
                             break;
                     }
@@ -257,6 +260,57 @@ internal sealed class CreepBuildRepairStep(IStructureBlueprintProvider blueprint
             ActionLog = new RoomObjectActionLogPatch(
                 Build: new RoomObjectActionLogBuild(target.X, target.Y))
         });
+    }
+
+    private void HandleDismantle(RoomProcessorContext context, RoomObjectSnapshot creep, IntentRecord record, Dictionary<string, int> energyLedger, Dictionary<string, ObjectStateOverride> objectOverrides)
+    {
+        if (!TryResolveTarget(context.State.Objects, record, objectOverrides, out var target))
+            return;
+
+        var blueprint = ResolveBlueprint(target.StructureType);
+        if (blueprint is null)
+            return;
+
+        if (!IsInRange(creep, target))
+            return;
+
+        if (target.SafeMode.HasValue && target.SafeMode.Value > context.State.GameTime)
+            return;
+
+        var rampart = context.State.Objects.Values.FirstOrDefault(o =>
+            string.Equals(o.Type, RoomObjectTypes.Rampart, StringComparison.Ordinal) &&
+            o.X == target.X &&
+            o.Y == target.Y);
+        if (rampart is not null)
+            target = rampart;
+
+        if (!WorkPartHelper.TryGetActiveWorkParts(creep, out var workParts))
+            return;
+
+        var dismantlePower = workParts.Count * ScreepsGameConstants.DismantlePower;
+        var currentHits = target.Hits ?? 0;
+        var amount = Math.Min(dismantlePower, currentHits);
+        var energyGain = (int)Math.Floor(amount * ScreepsGameConstants.DismantleCost);
+
+        if (amount <= 0) return;
+
+        var currentEnergy = GetAvailableEnergy(creep, energyLedger);
+        var newEnergy = currentEnergy + energyGain;
+
+        if (newEnergy > (creep.StoreCapacity ?? 0))
+            newEnergy = creep.StoreCapacity ?? 0;
+
+        CommitEnergy(context, creep, energyLedger, newEnergy);
+
+        var newHits = currentHits - amount;
+        context.MutationWriter.Patch(target.Id, new RoomObjectPatchPayload
+        {
+            Hits = newHits
+        });
+        UpdateObjectOverrides(objectOverrides, target.Id, hits: newHits, progress: null);
+
+        if (newHits <= 0)
+            context.MutationWriter.Remove(target.Id);
     }
 
     private static bool TryResolveTarget(

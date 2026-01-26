@@ -48,8 +48,11 @@ internal sealed class CreepSuicideIntentStep(ICreepDeathProcessor deathProcessor
         if (obj.IsSpawning == true || obj.Spawning is not null)
             return;
 
-        // Process death with 0% drop rate (suicide doesn't drop resources)
-        var options = new CreepDeathOptions(DropRate: 0, ViolentDeath: false, Spawn: null);
+        // Process death - invader creeps don't drop resources, others use default corpse rate
+        var dropRate = SystemUserIds.IsInvader(obj.UserId)
+            ? 0
+            : ScreepsGameConstants.CreepCorpseRate;
+        var options = new CreepDeathOptions(DropRate: dropRate, ViolentDeath: false, Spawn: null);
         processor.Process(context, obj, options, energyLedger);
     }
 }

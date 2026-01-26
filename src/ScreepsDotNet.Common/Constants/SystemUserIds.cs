@@ -19,4 +19,22 @@ public static class SystemUserIds
                string.Equals(userId, NamedInvader, StringComparison.OrdinalIgnoreCase) ||
                string.Equals(userId, NamedSourceKeeper, StringComparison.OrdinalIgnoreCase);
     }
+
+    public static bool IsInvader(string? userId)
+    {
+        if (string.IsNullOrWhiteSpace(userId))
+            return false;
+
+        return string.Equals(userId, LegacyInvader, StringComparison.Ordinal) ||
+               string.Equals(userId, NamedInvader, StringComparison.OrdinalIgnoreCase);
+    }
+
+    public static bool IsSourceKeeper(string? userId)
+    {
+        if (string.IsNullOrWhiteSpace(userId))
+            return false;
+
+        return string.Equals(userId, LegacySourceKeeper, StringComparison.Ordinal) ||
+               string.Equals(userId, NamedSourceKeeper, StringComparison.OrdinalIgnoreCase);
+    }
 }

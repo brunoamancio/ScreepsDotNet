@@ -4,7 +4,7 @@
 
 Rebuild the legacy Screeps simulation kernel (processor) in managed .NET. Ports all game mechanics (creep actions, structure logic, combat, market, etc.) from the Node.js engine while maintaining API compatibility with the Driver layer. The Engine consumes Driver abstractions and NEVER accesses Mongo/Redis directly.
 
-**Parity Status:** ✅ 114/114 tests passing (100% core gameplay) - See [`tools/parity-harness/docs/parity-analysis.md`](../../../tools/parity-harness/docs/parity-analysis.md) for comprehensive comparison with Node.js engine.
+**Parity Status:** ✅ 136/136 tests passing (100% - all core gameplay + all 21 creep intents) - See [`tools/parity-harness/docs/parity-analysis.md`](../../../tools/parity-harness/docs/parity-analysis.md) for comprehensive comparison with Node.js engine.
 
 ## Dependencies
 

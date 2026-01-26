@@ -29,6 +29,10 @@ internal sealed class CreepLifecycleStep(ICreepDeathProcessor deathProcessor) : 
                 continue;
             }
 
+            // Skip TTL decrement if creep is suiciding this tick (will be removed by CreepSuicideIntentStep)
+            if (HasSuicideIntent(context, obj))
+                continue;
+
             int? ticksToLivePatch = null;
             RoomObjectActionLogPatch? actionLogPatch = null;
 
@@ -72,6 +76,26 @@ internal sealed class CreepLifecycleStep(ICreepDeathProcessor deathProcessor) : 
     }
 
     private static bool ShouldExpire(RoomObjectSnapshot obj) => obj.Spawning is null && obj.IsSpawning != true && obj.TicksToLive is <= 1;
+
+    private static bool HasSuicideIntent(RoomProcessorContext context, RoomObjectSnapshot creep)
+    {
+        var intents = context.State.Intents;
+        if (intents?.Users is null || intents.Users.Count == 0)
+            return false;
+
+        if (!intents.Users.TryGetValue(creep.UserId!, out var envelope) || envelope?.ObjectIntents is null)
+            return false;
+
+        if (!envelope.ObjectIntents.TryGetValue(creep.Id, out var intentRecords))
+            return false;
+
+        foreach (var record in intentRecords) {
+            if (string.Equals(record.Name, IntentKeys.Suicide, StringComparison.Ordinal))
+                return true;
+        }
+
+        return false;
+    }
 
     private static bool ShouldDespawnUserSummoned(RoomProcessorContext context, RoomObjectSnapshot creep)
     {

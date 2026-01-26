@@ -34,14 +34,14 @@ internal sealed class InvaderAiStep : IRoomProcessorStep
             if (!obj.IsCreep())
                 continue;
 
-            if (obj.UserId == NpcUserIds.Invader) {
+            if (SystemUserIds.IsInvader(obj.UserId)) {
                 invaders.Add(obj);
                 if (HasActiveBodyPart(obj, BodyPartType.Heal)) {
                     healers.Add(obj);
                 }
             }
-            else if (obj.UserId != NpcUserIds.SourceKeeper) {
-                // Invaders attack all non-NPC creeps (ignore source keepers)
+            else if (!SystemUserIds.IsNpcUser(obj.UserId)) {
+                // Invaders attack all non-NPC creeps (ignore source keepers and other NPCs)
                 hostiles.Add(obj);
             }
         }

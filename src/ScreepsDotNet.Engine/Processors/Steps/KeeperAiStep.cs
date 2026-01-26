@@ -37,7 +37,7 @@ internal sealed class KeeperAiStep : IRoomProcessorStep
     private static bool IsKeeper(RoomObjectSnapshot obj)
     {
         var isKeeper = obj.Type == RoomObjectTypes.Creep &&
-                       obj.UserId == NpcUserIds.SourceKeeper;
+                       SystemUserIds.IsSourceKeeper(obj.UserId);
         return isKeeper;
     }
 
@@ -95,7 +95,7 @@ internal sealed class KeeperAiStep : IRoomProcessorStep
         var hostiles = context.State.Objects.Values
             .Where(obj => obj.IsCreep() &&
                           obj.UserId != keeper.UserId &&
-                          obj.UserId != NpcUserIds.Invader &&
+                          !SystemUserIds.IsInvader(obj.UserId) &&
                           PathCaching.GetDistance(keeper, obj) <= RangedRange)
             .ToList();
 

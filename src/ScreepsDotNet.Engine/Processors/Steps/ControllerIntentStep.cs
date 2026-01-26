@@ -216,11 +216,75 @@ internal sealed class ControllerIntentStep : IRoomProcessorStep
         });
     }
 
-    private static void ProcessAttack(RoomProcessorContext context, RoomObjectSnapshot invaderCore, IntentRecord record)
+    private static void ProcessAttack(RoomProcessorContext context, RoomObjectSnapshot actor, IntentRecord record)
     {
-        if (!string.Equals(invaderCore.Type, RoomObjectTypes.InvaderCore, StringComparison.Ordinal))
+        if (string.Equals(actor.Type, RoomObjectTypes.Creep, StringComparison.Ordinal))
+            ProcessCreepAttackController(context, actor, record);
+        else if (string.Equals(actor.Type, RoomObjectTypes.InvaderCore, StringComparison.Ordinal))
+            ProcessInvaderCoreAttackController(context, actor, record);
+    }
+
+    private static void ProcessCreepAttackController(RoomProcessorContext context, RoomObjectSnapshot creep, IntentRecord record)
+    {
+        if (creep.IsSpawning == true)
             return;
 
+        if (!TryGetTargetId(record, out var controllerId))
+            return;
+
+        if (!context.State.Objects.TryGetValue(controllerId, out var controller))
+            return;
+
+        if (!string.Equals(controller.Type, RoomObjectTypes.Controller, StringComparison.Ordinal))
+            return;
+
+        if (!IsInRange(creep, controller, 1))
+            return;
+
+        if (string.IsNullOrWhiteSpace(controller.UserId) && controller.Reservation is null)
+            return;
+
+        if (controller.SafeMode.HasValue && controller.SafeMode.Value > context.State.GameTime)
+            return;
+
+        var upgradeBlocked = controller.Store.GetValueOrDefault(RoomDocumentFields.RoomObject.UpgradeBlocked, 0);
+        if (upgradeBlocked > 0)
+            return;
+
+        var claimParts = creep.Body.Count(p => p.Type == BodyPartType.Claim && p.Hits > 0);
+        if (claimParts == 0)
+            return;
+
+        var patch = new RoomObjectPatchPayload
+        {
+            ActionLog = new RoomObjectActionLogPatch()
+        };
+
+        if (controller.Reservation is not null) {
+            var effect = claimParts * ScreepsGameConstants.ControllerReserve;
+            var newEndTime = Math.Max(0, controller.Reservation.EndTime!.Value - effect);
+            patch = patch with
+            {
+                Reservation = controller.Reservation with { EndTime = newEndTime }
+            };
+        }
+
+        if (!string.IsNullOrWhiteSpace(controller.UserId)) {
+            var downgradeTimer = controller.ControllerDowngradeTimer ?? 0;
+            var effect = claimParts * ScreepsGameConstants.ControllerClaimDowngrade;
+            var newDowngradeTimer = Math.Max(0, downgradeTimer - effect);
+            patch = patch with
+            {
+                DowngradeTimer = newDowngradeTimer,
+                UpgradeBlocked = true
+            };
+        }
+
+        context.MutationWriter.Patch(controller.Id, patch);
+    }
+
+    private static void ProcessInvaderCoreAttackController(RoomProcessorContext context, RoomObjectSnapshot invaderCore, IntentRecord record)
+    {
         if (invaderCore.IsSpawning == true)
             return;
 
@@ -244,7 +308,6 @@ internal sealed class ControllerIntentStep : IRoomProcessorStep
         if (upgradeBlocked > 0)
             return;
 
-        var gameTime = context.State.GameTime;
         const int invaderCorePower = 300;
 
         var patch = new RoomObjectPatchPayload

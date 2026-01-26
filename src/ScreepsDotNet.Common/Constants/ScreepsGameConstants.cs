@@ -27,6 +27,8 @@ public static class ScreepsGameConstants
     public const int RepairPower = 100;
     public const int BuildPower = 5;
     public const double RepairEnergyCost = 0.01;
+    public const int DismantlePower = 50;
+    public const double DismantleCost = 0.005;
     public const int HarvestPower = 2;
     public const int HarvestMineralPower = 1;
     public const int HarvestDepositPower = 1;
