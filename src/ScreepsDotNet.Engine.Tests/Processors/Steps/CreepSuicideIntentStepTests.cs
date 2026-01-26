@@ -96,9 +96,9 @@ public sealed class CreepSuicideIntentStepTests
         await _step.ExecuteAsync(context, TestContext.Current.CancellationToken);
 
         var tombstone = Assert.Single(writer.Upserts);
-        // Suicide doesn't drop body part resources (0% drop rate), but store is transferred
+        // Suicide uses corpse rate (20%) for non-invader creeps: store (100) + body parts (Move:10 + Work:20) = 130
         Assert.Single(tombstone.Store);
-        Assert.Equal(100, tombstone.Store[ResourceTypes.Energy]);
+        Assert.Equal(130, tombstone.Store[ResourceTypes.Energy]);
     }
 
     [Fact]

@@ -353,10 +353,7 @@ public sealed class PowerAbilityStepTests
             MineralType: null,
             DepositType: null,
             StructureType: null,
-            Store: new Dictionary<string, int>(StringComparer.Ordinal)
-            {
-                [RoomDocumentFields.Controller.IsPowerEnabled] = isPowerEnabled ? 1 : 0
-            },
+            Store: new Dictionary<string, int>(StringComparer.Ordinal),
             StoreCapacity: null,
             StoreCapacityResource: new Dictionary<string, int>(StringComparer.Ordinal),
             Reservation: null,
@@ -365,7 +362,8 @@ public sealed class PowerAbilityStepTests
             Effects: new Dictionary<PowerTypes, PowerEffectSnapshot>(),
             Spawning: null,
             Body: [],
-            SafeMode: safeMode);
+            SafeMode: safeMode,
+            IsPowerEnabled: isPowerEnabled);
 
     [Fact]
     public async Task ExecuteAsync_OperateSpawn_AppliesEffectToSpawn()
@@ -432,11 +430,11 @@ public sealed class PowerAbilityStepTests
         await step.ExecuteAsync(context, TestContext.Current.CancellationToken);
 
         var writer = (RecordingMutationWriter)context.MutationWriter;
-        var (ObjectId, Payload) = writer.Patches.FirstOrDefault(p => p.ObjectId == "tower1");
-        Assert.NotNull(Payload.Effects);
-        Assert.True(Payload.Effects.ContainsKey(PowerTypes.OperateTower));
-        Assert.Equal(2, Payload.Effects[PowerTypes.OperateTower].Level);
-        Assert.Equal(200, Payload.Effects[PowerTypes.OperateTower].EndTime);
+        var (_, payload) = Assert.Single(writer.Patches, p => p.ObjectId == "tower1");
+        Assert.NotNull(payload.Effects);
+        Assert.True(payload.Effects.ContainsKey(PowerTypes.OperateTower));
+        Assert.Equal(2, payload.Effects[PowerTypes.OperateTower].Level);
+        Assert.Equal(200, payload.Effects[PowerTypes.OperateTower].EndTime);
     }
 
     [Fact]

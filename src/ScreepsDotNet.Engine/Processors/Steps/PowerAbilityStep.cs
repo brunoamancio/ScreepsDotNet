@@ -85,6 +85,7 @@ internal sealed class PowerAbilityStep : IRoomProcessorStep
         if (!PowerInfo.Abilities.TryGetValue(powerType, out var powerInfo))
             return;
 
+
         // Validate power creep has ability and level > 0
         var powers = powerCreep.Powers ?? new Dictionary<PowerTypes, PowerCreepPowerSnapshot>();
         if (!powers.TryGetValue(powerType, out var creepPower) || creepPower.Level == 0)
