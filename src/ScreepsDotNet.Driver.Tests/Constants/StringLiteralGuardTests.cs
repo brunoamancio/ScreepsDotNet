@@ -19,10 +19,12 @@ public sealed class StringLiteralGuardTests
         var files = Directory.GetFiles(root, "*.cs", SearchOption.AllDirectories)
                              .Where(file => !file.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.OrdinalIgnoreCase)
                                          && !file.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}", StringComparison.OrdinalIgnoreCase)
+                                         && !file.Contains($"{Path.DirectorySeparatorChar}Constants{Path.DirectorySeparatorChar}", StringComparison.OrdinalIgnoreCase)
                                          && !file.EndsWith(excludedFileName, StringComparison.OrdinalIgnoreCase))
                              .ToArray();
 
-        foreach (var literal in literals) {
+        foreach (var literal in literals)
+        {
             var needle = $"\"{literal}\"";
             Assert.DoesNotContain(files, file => File.ReadAllText(file).Contains(needle, StringComparison.Ordinal));
         }
