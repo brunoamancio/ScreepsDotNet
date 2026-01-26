@@ -65,7 +65,8 @@ public sealed record JsonUserState(
     [property: JsonPropertyName("gcl")] JsonGclState Gcl,
     [property: JsonPropertyName("power")] int Power,
     [property: JsonPropertyName("cpu")] int Cpu,
-    [property: JsonPropertyName("cpuAvailable")] int CpuAvailable);
+    [property: JsonPropertyName("cpuAvailable")] int CpuAvailable,
+    [property: JsonPropertyName("powerExperimentationTime")] long? PowerExperimentationTime = null);
 
 public sealed record JsonGclState(
     [property: JsonPropertyName("level")] int Level,
@@ -81,7 +82,9 @@ public sealed record JsonMultiRoomFixture(
     [property: JsonPropertyName("shard")] string Shard,
     [property: JsonPropertyName("rooms")] Dictionary<string, JsonRoomData> Rooms,
     [property: JsonPropertyName("intents")] Dictionary<string, Dictionary<string, Dictionary<string, List<JsonIntent>>>> Intents,
-    [property: JsonPropertyName("users")] Dictionary<string, JsonUserState> Users);
+    [property: JsonPropertyName("users")] Dictionary<string, JsonUserState> Users,
+    [property: JsonPropertyName("globalIntents")] Dictionary<string, JsonGlobalUserIntent>? GlobalIntents = null,
+    [property: JsonPropertyName("powerCreeps")] Dictionary<string, JsonPowerCreep>? PowerCreeps = null);
 
 /// <summary>
 /// Room data for a single room in a multi-room fixture.
@@ -90,3 +93,52 @@ public sealed record JsonMultiRoomFixture(
 public sealed record JsonRoomData(
     [property: JsonPropertyName("terrain")] string Terrain,
     [property: JsonPropertyName("objects")] List<JsonRoomObject> Objects);
+
+/// <summary>
+/// Global user intent for power creep operations (create, delete, rename, spawn, etc.)
+/// </summary>
+public sealed record JsonGlobalUserIntent(
+    [property: JsonPropertyName("_id")] string Id,
+    [property: JsonPropertyName("user")] string User,
+    [property: JsonPropertyName("intents")] List<JsonGlobalIntent> Intents);
+
+/// <summary>
+/// Global intent record (for power creeps)
+/// </summary>
+public sealed record JsonGlobalIntent(
+    [property: JsonPropertyName("name")] string Name,
+    [property: JsonPropertyName("args")] List<JsonGlobalIntentArgs> Args);
+
+/// <summary>
+/// Arguments for a global intent
+/// </summary>
+public sealed record JsonGlobalIntentArgs(
+    [property: JsonPropertyName("id")] string? Id = null,
+    [property: JsonPropertyName("name")] string? Name = null,
+    [property: JsonPropertyName("className")] string? ClassName = null,
+    [property: JsonPropertyName("cancel")] bool? Cancel = null,
+    [property: JsonPropertyName("spawnId")] string? SpawnId = null,
+    [property: JsonPropertyName("power")] string? Power = null);
+
+/// <summary>
+/// Power creep state for fixtures
+/// </summary>
+public sealed record JsonPowerCreep(
+    [property: JsonPropertyName("_id")] string Id,
+    [property: JsonPropertyName("user")] string User,
+    [property: JsonPropertyName("name")] string Name,
+    [property: JsonPropertyName("className")] string ClassName,
+    [property: JsonPropertyName("level")] int Level,
+    [property: JsonPropertyName("hitsMax")] int HitsMax,
+    [property: JsonPropertyName("store")] Dictionary<string, int> Store,
+    [property: JsonPropertyName("storeCapacity")] int StoreCapacity,
+    [property: JsonPropertyName("spawnCooldownTime")] int? SpawnCooldownTime = null,
+    [property: JsonPropertyName("deleteTime")] long? DeleteTime = null,
+    [property: JsonPropertyName("shard")] string? Shard = null,
+    [property: JsonPropertyName("powers")] Dictionary<string, JsonPowerCreepPower>? Powers = null);
+
+/// <summary>
+/// Power creep power/ability
+/// </summary>
+public sealed record JsonPowerCreepPower(
+    [property: JsonPropertyName("level")] int Level);

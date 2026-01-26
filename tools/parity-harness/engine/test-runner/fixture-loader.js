@@ -53,6 +53,22 @@ async function loadFixture(fixturePath, mongoUrl = 'mongodb://localhost:27017') 
         await db.collection('users').deleteMany({ _id: { $in: userIds } });
     }
 
+    // Clear power creeps
+    if (fixture.powerCreeps) {
+        const powerCreepIds = Object.keys(fixture.powerCreeps);
+        if (powerCreepIds.length > 0) {
+            await db.collection('users.power_creeps').deleteMany({ _id: { $in: powerCreepIds } });
+        }
+    }
+
+    // Clear global intents
+    if (fixture.globalIntents) {
+        const globalIntentUserIds = Object.keys(fixture.globalIntents);
+        if (globalIntentUserIds.length > 0) {
+            await db.collection('users.intents').deleteMany({ user: { $in: globalIntentUserIds } });
+        }
+    }
+
     console.log('  Inserting fixture data...');
 
     if (isMultiRoom) {
@@ -161,6 +177,34 @@ async function loadFixture(fixturePath, mongoUrl = 'mongodb://localhost:27017') 
     }
     if (userIds.length > 0) {
         console.log(`    ✓ Inserted ${userIds.length} users`);
+    }
+
+    // Insert power creeps (multi-room only)
+    if (fixture.powerCreeps) {
+        const powerCreepEntries = Object.entries(fixture.powerCreeps);
+        if (powerCreepEntries.length > 0) {
+            for (const [creepId, creepData] of powerCreepEntries) {
+                await db.collection('users.power_creeps').insertOne({
+                    ...creepData,
+                    _id: creepId
+                });
+            }
+            console.log(`    ✓ Inserted ${powerCreepEntries.length} power creeps`);
+        }
+    }
+
+    // Insert global intents (multi-room only)
+    if (fixture.globalIntents) {
+        const globalIntentEntries = Object.entries(fixture.globalIntents);
+        if (globalIntentEntries.length > 0) {
+            for (const [userId, intentData] of globalIntentEntries) {
+                await db.collection('users.intents').insertOne({
+                    ...intentData,
+                    user: userId
+                });
+            }
+            console.log(`    ✓ Inserted ${globalIntentEntries.length} global intent records`);
+        }
     }
 
     console.log('  ✓ Fixture loaded successfully');

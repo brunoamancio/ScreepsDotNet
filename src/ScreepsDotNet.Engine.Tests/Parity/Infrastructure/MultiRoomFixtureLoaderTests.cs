@@ -93,4 +93,59 @@ public sealed class MultiRoomFixtureLoaderTests
         // This test verifies the infrastructure works, not the specific Terminal.send logic
         Assert.NotEmpty(output.GlobalMutationWriter.RoomObjectPatches);
     }
+
+    [Fact]
+    public async Task LoadFromFileAsync_PowerCreepCreateFixture_LoadsPowerCreepsAndGlobalIntents()
+    {
+        // Arrange
+        var fixturePath = ParityFixturePaths.GetFixturePath("powercreep_create.json");
+
+        // Act
+        var globalState = await MultiRoomFixtureLoader.LoadFromFileAsync(fixturePath, TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.Equal(100, globalState.GameTime);
+        Assert.Equal("shard0", globalState.Market.ShardName);
+
+        // Verify AccessibleRooms
+        Assert.Single(globalState.AccessibleRooms);
+        Assert.Contains("W1N1", globalState.AccessibleRooms.Keys);
+
+        // Verify controller object
+        var controller = globalState.SpecialRoomObjects.SingleOrDefault(o => o.Type == RoomObjectTypes.Controller);
+        Assert.Null(controller);  // Controller is not a "special" object for GlobalState
+
+        // Verify global intents
+        Assert.Single(globalState.Market.UserIntents);
+        var userIntent = globalState.Market.UserIntents.Single();
+        Assert.Equal("user1", userIntent.UserId);
+        Assert.Equal("intent1", userIntent.Id);
+        Assert.Single(userIntent.Intents);
+
+        var intent = userIntent.Intents.Single();
+        Assert.Equal("createPowerCreep", intent.Name);
+        Assert.Single(intent.Arguments);
+
+        var intentArg = intent.Arguments.Single();
+        Assert.Equal(2, intentArg.Fields.Count);
+        Assert.Contains("name", intentArg.Fields.Keys);
+        Assert.Contains("className", intentArg.Fields.Keys);
+
+        var nameField = intentArg.Fields["name"];
+        Assert.Equal(Driver.Contracts.IntentFieldValueKind.Text, nameField.Kind);
+        Assert.Equal("MyOperator", nameField.TextValue);
+
+        var classNameField = intentArg.Fields["className"];
+        Assert.Equal(Driver.Contracts.IntentFieldValueKind.Text, classNameField.Kind);
+        Assert.Equal("operator", classNameField.TextValue);
+
+        // Verify power creeps (should be empty in create fixture)
+        Assert.Empty(globalState.Market.PowerCreeps);
+
+        // Verify users
+        Assert.Single(globalState.Market.Users);
+        var user = globalState.Market.Users["user1"];
+        Assert.Equal(10000, user.Power);
+        Assert.Equal(0, user.PowerExperimentationTime);
+    }
 }

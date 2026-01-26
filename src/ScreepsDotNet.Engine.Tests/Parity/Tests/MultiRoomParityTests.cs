@@ -1,10 +1,13 @@
 namespace ScreepsDotNet.Engine.Tests.Parity.Tests;
 
+using System.Text.Json;
 using ScreepsDotNet.Engine.Tests.Parity.Infrastructure;
 
 /// <summary>
 /// Multi-room parity tests comparing .NET Engine global processors with Node.js engine.
-/// Tests cross-room operations like Terminal.send, Observer.observeRoom, and inter-room transfers.
+/// Tests cross-room operations like Terminal.send, PowerCreep management, and inter-room transfers.
+/// All tests follow the same pattern: load fixture, run both engines, compare outputs.
+/// New tests are automatically discovered from multi-room JSON fixtures in the Fixtures directory.
 /// Inherits MongoDB cleanup from ParityTestBase (prevents duplicate key errors).
 /// </summary>
 [Trait("Category", "Parity")]
@@ -12,18 +15,49 @@ using ScreepsDotNet.Engine.Tests.Parity.Infrastructure;
 public sealed class MultiRoomParityTests(Integration.MongoDbParityFixture mongoFixture, Integration.ParityTestPrerequisites prerequisites) : ParityTestBase(mongoFixture)
 {
     /// <summary>
-    /// Tests Terminal.send parity for cross-room resource transfers.
-    /// Validates that .NET Engine produces identical mutations to Node.js engine when processing Terminal.send intents.
-    /// Expected behavior:
-    /// - Source terminal loses resources (energy cost + transferred amount)
-    /// - Target terminal gains transferred resources
-    /// - Transaction log created
-    /// - Source terminal cooldown applied
+    /// Auto-discovers all multi-room JSON fixture files in the Parity/Fixtures directory.
+    /// New fixtures are automatically included without code changes.
+    /// A fixture is considered multi-room if it contains a "rooms" property.
     /// </summary>
-    [Fact]
-    public async Task TerminalSend_MatchesNodeJsEngine()
+    public static TheoryData<string> AllMultiRoomFixtures()
     {
-        var fixturePath = ParityFixturePaths.GetFixturePath("terminal_send.json");
+        var fixturesDir = Path.Combine("Parity", "Fixtures");
+        var fixtureFiles = Directory.GetFiles(fixturesDir, "*.json", SearchOption.TopDirectoryOnly);
+
+        var theoryData = new TheoryData<string>();
+        foreach (var fileName in fixtureFiles.Select(Path.GetFileName).Where(name => name is not null).OrderBy(name => name)) {
+            var filePath = Path.Combine(fixturesDir, fileName!);
+            if (IsMultiRoomFixture(filePath)) {
+                theoryData.Add(fileName!);
+            }
+        }
+
+        return theoryData;
+    }
+
+    /// <summary>
+    /// Detects if a fixture is multi-room format by checking for "rooms" property.
+    /// </summary>
+    private static bool IsMultiRoomFixture(string filePath)
+    {
+        using var doc = JsonDocument.Parse(File.ReadAllText(filePath));
+        var isMultiRoom = doc.RootElement.TryGetProperty("rooms", out _);
+        return isMultiRoom;
+    }
+
+    /// <summary>
+    /// Runs a parity test for the given multi-room fixture, comparing .NET Engine output with Node.js engine output.
+    /// Tests cross-room operations including:
+    /// - Terminal.send (cross-room resource transfers)
+    /// - PowerCreep.create, rename, delete, suicide, spawn, upgrade (global power creep management)
+    /// Test passes if both engines produce identical mutations. Test fails if divergences are detected.
+    /// </summary>
+    /// <param name="fixtureName">JSON fixture filename (e.g., "terminal_send.json", "powercreep_create.json")</param>
+    [Theory]
+    [MemberData(nameof(AllMultiRoomFixtures))]
+    public async Task MultiRoomFixture_MatchesNodeJsEngine(string fixtureName)
+    {
+        var fixturePath = ParityFixturePaths.GetFixturePath(fixtureName);
         var globalState = await MultiRoomFixtureLoader.LoadFromFileAsync(fixturePath, TestContext.Current.CancellationToken);
 
         var dotnetOutput = await DotNetMultiRoomParityTestRunner.RunAsync(globalState, TestContext.Current.CancellationToken);
@@ -31,7 +65,7 @@ public sealed class MultiRoomParityTests(Integration.MongoDbParityFixture mongoF
 
         var comparison = Comparison.ParityComparator.CompareMultiRoom(dotnetOutput, nodejsOutput);
         if (comparison.HasDivergences) {
-            Assert.Fail(Comparison.DivergenceReporter.FormatReport(comparison, "terminal_send.json"));
+            Assert.Fail(Comparison.DivergenceReporter.FormatReport(comparison, fixtureName));
         }
     }
 }

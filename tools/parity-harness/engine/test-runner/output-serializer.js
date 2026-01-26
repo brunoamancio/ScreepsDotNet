@@ -82,6 +82,9 @@ async function serializeMultiRoomOutput(db, fixture, processorOutput) {
         finalState: finalStateByRoom,
         transactions: processorOutput.mutations.transactions || [],
         userMoney: processorOutput.mutations.userMoney || {},
+        powerCreepPatches: processorOutput.mutations.powerCreepPatches || [],
+        powerCreepUpserts: processorOutput.mutations.powerCreepUpserts || [],
+        powerCreepRemovals: processorOutput.mutations.powerCreepRemovals || [],
         metadata: {
             rooms: roomNames,
             gameTime: fixture.gameTime,
@@ -90,7 +93,10 @@ async function serializeMultiRoomOutput(db, fixture, processorOutput) {
     };
 
     const totalObjects = Object.values(finalStateByRoom).reduce((sum, roomState) => sum + Object.keys(roomState).length, 0);
-    console.log(`  ✓ Serialized ${totalObjects} objects across ${roomNames.length} rooms`);
+    const powerCreepCount = (processorOutput.mutations.powerCreepPatches || []).length +
+                            (processorOutput.mutations.powerCreepUpserts || []).length +
+                            (processorOutput.mutations.powerCreepRemovals || []).length;
+    console.log(`  ✓ Serialized ${totalObjects} room objects across ${roomNames.length} rooms, ${powerCreepCount} power creep mutations`);
 
     return output;
 }

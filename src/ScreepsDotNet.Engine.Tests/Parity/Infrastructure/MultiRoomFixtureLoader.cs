@@ -56,13 +56,17 @@ public static class MultiRoomFixtureLoader
         // Convert intents per room
         var roomIntents = ConvertRoomIntents(fixture.Intents, allObjects, fixture.Shard);
 
+        // Convert power creeps and global intents
+        var powerCreeps = ConvertPowerCreeps(fixture.PowerCreeps, fixture.Shard);
+        var globalIntents = ConvertGlobalIntents(fixture.GlobalIntents);
+
         // Build GlobalMarketSnapshot (empty orders, but include users)
         var users = ConvertUsers(fixture.Users);
         var market = new GlobalMarketSnapshot(
             Orders: [],
             Users: users,
-            PowerCreeps: [],
-            UserIntents: [],
+            PowerCreeps: powerCreeps,
+            UserIntents: globalIntents,
             ShardName: fixture.Shard);
 
         // Build GlobalState
@@ -191,7 +195,7 @@ public static class MultiRoomFixtureLoader
                 Power: userState.Power,
                 Money: 0,
                 Active: true,
-                PowerExperimentationTime: 0,
+                PowerExperimentationTime: userState.PowerExperimentationTime ?? 0,
                 Resources: new Dictionary<string, int>(StringComparer.Ordinal));
 
             result[userId] = state;
@@ -364,6 +368,94 @@ public static class MultiRoomFixtureLoader
         var argument = new IntentArgument(fields);
         var record = new IntentRecord(intent.Intent, [argument]);
         return record;
+    }
+
+    private static IReadOnlyList<PowerCreepSnapshot> ConvertPowerCreeps(Dictionary<string, JsonPowerCreep>? powerCreepsDict, string shard)
+    {
+        if (powerCreepsDict is null || powerCreepsDict.Count == 0)
+            return [];
+
+        var result = new List<PowerCreepSnapshot>();
+
+        foreach (var (_, jsonPowerCreep) in powerCreepsDict) {
+            // Convert powers dictionary
+            var powers = new Dictionary<PowerTypes, PowerCreepPowerSnapshot>();
+            if (jsonPowerCreep.Powers is not null) {
+                foreach (var (powerKey, powerValue) in jsonPowerCreep.Powers) {
+                    if (int.TryParse(powerKey, out var powerTypeId)) {
+                        var powerType = (PowerTypes)powerTypeId;
+                        powers[powerType] = new PowerCreepPowerSnapshot(Level: powerValue.Level);
+                    }
+                }
+            }
+
+            var powerCreep = new PowerCreepSnapshot(
+                Id: jsonPowerCreep.Id,
+                UserId: jsonPowerCreep.User,
+                Name: jsonPowerCreep.Name,
+                ClassName: jsonPowerCreep.ClassName,
+                Level: jsonPowerCreep.Level,
+                HitsMax: jsonPowerCreep.HitsMax,
+                Store: new Dictionary<string, int>(jsonPowerCreep.Store, StringComparer.Ordinal),
+                StoreCapacity: jsonPowerCreep.StoreCapacity,
+                SpawnCooldownTime: jsonPowerCreep.SpawnCooldownTime,
+                DeleteTime: jsonPowerCreep.DeleteTime,
+                Shard: jsonPowerCreep.Shard ?? shard,
+                Powers: powers);
+
+            result.Add(powerCreep);
+        }
+
+        return result;
+    }
+
+    private static IReadOnlyList<GlobalUserIntentSnapshot> ConvertGlobalIntents(Dictionary<string, JsonGlobalUserIntent>? globalIntentsDict)
+    {
+        if (globalIntentsDict is null || globalIntentsDict.Count == 0)
+            return [];
+
+        var result = new List<GlobalUserIntentSnapshot>();
+
+        foreach (var (_, jsonUserIntent) in globalIntentsDict) {
+            var intentRecords = new List<IntentRecord>();
+
+            foreach (var jsonIntent in jsonUserIntent.Intents) {
+                var arguments = new List<IntentArgument>();
+
+                foreach (var jsonArgs in jsonIntent.Args) {
+                    var fields = new Dictionary<string, IntentFieldValue>(StringComparer.Ordinal);
+
+                    if (jsonArgs.Id is not null)
+                        fields["id"] = new IntentFieldValue(IntentFieldValueKind.Text, TextValue: jsonArgs.Id);
+
+                    if (jsonArgs.Name is not null)
+                        fields["name"] = new IntentFieldValue(IntentFieldValueKind.Text, TextValue: jsonArgs.Name);
+
+                    if (jsonArgs.ClassName is not null)
+                        fields["className"] = new IntentFieldValue(IntentFieldValueKind.Text, TextValue: jsonArgs.ClassName);
+
+                    if (jsonArgs.Cancel.HasValue)
+                        fields["cancel"] = new IntentFieldValue(IntentFieldValueKind.Boolean, BooleanValue: jsonArgs.Cancel.Value);
+
+                    if (jsonArgs.SpawnId is not null)
+                        fields["spawnId"] = new IntentFieldValue(IntentFieldValueKind.Text, TextValue: jsonArgs.SpawnId);
+
+                    if (jsonArgs.Power is not null)
+                        fields["power"] = new IntentFieldValue(IntentFieldValueKind.Text, TextValue: jsonArgs.Power);
+
+                    arguments.Add(new IntentArgument(fields));
+                }
+
+                intentRecords.Add(new IntentRecord(jsonIntent.Name, arguments));
+            }
+
+            result.Add(new GlobalUserIntentSnapshot(
+                Id: jsonUserIntent.Id,
+                UserId: jsonUserIntent.User,
+                Intents: intentRecords));
+        }
+
+        return result;
     }
 
     private static bool IsStructure(string type)

@@ -479,6 +479,153 @@ function runGlobalProcessors(fixture, roomObjects, bulkMutations, stats) {
     });
 
     console.log(`    ✓ Market processor complete - captured ${bulkMutations.updates.length} updates, ${(bulkMutations.transactions || []).length} transactions`);
+
+    // Run PowerCreep global processor if global intents are present
+    if (fixture.globalIntents || fixture.powerCreeps) {
+        runPowerCreepGlobalProcessor(fixture, roomObjects, bulkMutations, stats);
+    }
+}
+
+/**
+ * Runs PowerCreep global processor for power creep management intents
+ * @param {any} fixture - Test fixture
+ * @param {any} roomObjects - All room objects (flat map)
+ * @param {any} bulkMutations - Bulk mutations to update
+ * @param {any} stats - Stats object
+ */
+function runPowerCreepGlobalProcessor(fixture, roomObjects, bulkMutations, stats) {
+    const path = require('path');
+    const enginePath = path.resolve(__dirname, '../../screeps-modules/engine/src/processor');
+
+    try {
+        // Load PowerCreep global processor (located at global-intents/power)
+        const powerCreepProcessor = require(path.join(enginePath, 'global-intents/power'));
+
+        // Build power creeps map
+        const powerCreepsById = {};
+        if (fixture.powerCreeps) {
+            for (const [creepId, creepData] of Object.entries(fixture.powerCreeps)) {
+                powerCreepsById[creepId] = { _id: creepId, ...creepData };
+            }
+        }
+
+        // Build user intents array in the format expected by official Screeps engine
+        // Official format: { user, intents: { createPowerCreep: [...], renamePowerCreep: [...], ... } }
+        const userIntents = [];
+        if (fixture.globalIntents) {
+            for (const [userId, intentData] of Object.entries(fixture.globalIntents)) {
+                // Transform intent records to official format
+                const transformedIntents = {};
+
+                for (const intent of (intentData.intents || [])) {
+                    const intentType = intent.name; // e.g., "createPowerCreep"
+
+                    if (!transformedIntents[intentType]) {
+                        transformedIntents[intentType] = [];
+                    }
+
+                    // Transform args array to single intent object
+                    // Fixture format: { name: "createPowerCreep", args: [{ name: "MyOp", className: "operator" }] }
+                    // Official format: { name: "MyOp", className: "operator" }
+                    for (const arg of (intent.args || [])) {
+                        transformedIntents[intentType].push(arg);
+                    }
+                }
+
+                userIntents.push({
+                    _id: intentData._id || intentData.id,
+                    user: userId,
+                    intents: transformedIntents
+                });
+            }
+        }
+
+        // Mock bulk writers for PowerCreep mutations
+        const bulkPowerCreeps = {
+            update: function(creep, changes) {
+                // Track PowerCreep patches
+                if (!bulkMutations.powerCreepPatches) {
+                    bulkMutations.powerCreepPatches = [];
+                }
+                bulkMutations.powerCreepPatches.push({
+                    id: creep._id,
+                    changes: changes
+                });
+
+                // Update in-place
+                Object.assign(creep, changes);
+            },
+            insert: function(creep) {
+                // Track PowerCreep upserts
+                if (!bulkMutations.powerCreepUpserts) {
+                    bulkMutations.powerCreepUpserts = [];
+                }
+                bulkMutations.powerCreepUpserts.push(creep);
+
+                // Add to powerCreepsById so it's available for subsequent operations
+                powerCreepsById[creep._id] = creep;
+            },
+            remove: function(creepId) {
+                // Track PowerCreep deletions
+                if (!bulkMutations.powerCreepRemovals) {
+                    bulkMutations.powerCreepRemovals = [];
+                }
+                bulkMutations.powerCreepRemovals.push(creepId);
+
+                // Remove from map
+                delete powerCreepsById[creepId];
+            }
+        };
+
+        const bulkObjects = {
+            insert: function(obj) {
+                // Track room object inserts (for spawning power creeps)
+                if (!bulkMutations.inserts) {
+                    bulkMutations.inserts = [];
+                }
+                bulkMutations.inserts.push(obj);
+
+                // Add to roomObjects so it's available
+                roomObjects[obj._id] = obj;
+            },
+            remove: function(objId) {
+                // Track room object removes (for suicide)
+                if (!bulkMutations.deletes) {
+                    bulkMutations.deletes = [];
+                }
+                bulkMutations.deletes.push(objId);
+
+                // Remove from map
+                delete roomObjects[objId];
+            }
+        };
+
+        const bulkUsers = {
+            update: function(user, changes) {
+                // No-op for parity testing
+            }
+        };
+
+        // Call PowerCreep processor (uses official Screeps engine parameter names)
+        powerCreepProcessor({
+            userIntents: userIntents,
+            userPowerCreeps: Object.values(powerCreepsById), // Convert to array
+            usersById: fixture.users || {},
+            roomObjectsByType: { powerCreep: Object.values(roomObjects).filter(obj => obj.type === 'powerCreep') },
+            gameTime: fixture.gameTime,
+            bulkUsersPowerCreeps: bulkPowerCreeps, // Renamed for official engine
+            bulkObjects: bulkObjects,
+            bulkUsers: bulkUsers
+        });
+
+        const patchCount = (bulkMutations.powerCreepPatches || []).length;
+        const upsertCount = (bulkMutations.powerCreepUpserts || []).length;
+        const removeCount = (bulkMutations.powerCreepRemovals || []).length;
+        console.log(`    ✓ PowerCreep global processor complete - ${patchCount} patches, ${upsertCount} upserts, ${removeCount} removals`);
+    } catch (error) {
+        console.warn(`    WARNING: PowerCreep global processor not found or failed: ${error.message}`);
+        console.warn(`    This is expected if testing against older Screeps engine versions`);
+    }
 }
 
 /**
