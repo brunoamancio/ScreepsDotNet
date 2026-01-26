@@ -27,9 +27,8 @@ public static class DotNetParityTestRunner
         var steps = BuildProcessorSteps();
 
         // Execute all steps
-        foreach (var step in steps) {
+        foreach (var step in steps)
             await step.ExecuteAsync(context, cancellationToken).ConfigureAwait(false);
-        }
 
         // Return mutations and stats for parity comparison
         return new ParityTestOutput(
@@ -63,6 +62,10 @@ public static class DotNetParityTestRunner
             // Combat ✅ (test double)
             new CombatResolutionStep(deathProcessor),
 
+            // Creep Utilities ✅
+            new CreepSayIntentStep(),
+            new CreepSuicideIntentStep(deathProcessor),
+
             // Harvest ✅
             new HarvestIntentStep(resourceDropHelper),
 
@@ -94,6 +97,9 @@ public static class DotNetParityTestRunner
             new FactoryIntentStep(),
 
             // Observer - Not implemented yet (E2 deferred)
+
+            // PowerCreep Room Intents (enableRoom, renew) ✅
+            new PowerCreepRoomIntentStep(),
 
             // Power Ability ✅
             new PowerAbilityStep(),

@@ -39,12 +39,14 @@ internal sealed class CreepSayIntentStep : IRoomProcessorStep
 
     private static void ProcessSayIntent(RoomProcessorContext context, RoomObjectSnapshot obj, IntentRecord record)
     {
-        // Validate object type
-        if (!string.Equals(obj.Type, RoomObjectTypes.Creep, StringComparison.Ordinal))
+        // Validate object type (both Creep and PowerCreep can say)
+        var isCreep = string.Equals(obj.Type, RoomObjectTypes.Creep, StringComparison.Ordinal);
+        var isPowerCreep = string.Equals(obj.Type, RoomObjectTypes.PowerCreep, StringComparison.Ordinal);
+        if (!isCreep && !isPowerCreep)
             return;
 
-        // Check if spawning
-        if (obj.IsSpawning == true || obj.Spawning is not null)
+        // Check if spawning (creeps only, PowerCreeps don't have spawning state)
+        if (isCreep && (obj.IsSpawning == true || obj.Spawning is not null))
             return;
 
         // Extract message and isPublic from intent arguments

@@ -39,7 +39,7 @@ internal sealed class PowerAbilityStep : IRoomProcessorStep
                     continue;
 
                 foreach (var record in records) {
-                    if (!string.Equals(record.Name, IntentKeys.Power, StringComparison.Ordinal))
+                    if (!string.Equals(record.Name, IntentKeys.UsePower, StringComparison.Ordinal))
                         continue;
 
                     ProcessUsePower(context, powerCreep, record, storeLedger, effectsLedger, powersLedger, actionLogLedger, modifiedObjects);
@@ -65,7 +65,7 @@ internal sealed class PowerAbilityStep : IRoomProcessorStep
         // Validate room has power enabled
         var controller = context.State.Objects.Values.FirstOrDefault(o => string.Equals(o.Type, RoomObjectTypes.Controller, StringComparison.Ordinal));
         if (controller is not null) {
-            var isPowerEnabled = controller.Store.GetValueOrDefault(RoomDocumentFields.Controller.IsPowerEnabled, 0) == 1;
+            var isPowerEnabled = controller.IsPowerEnabled ?? false;
             if (!isPowerEnabled)
                 return;
 

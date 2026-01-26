@@ -45,10 +45,12 @@ public static class IntentKeys
     public const string Say = "say";
     public const string Suicide = "suicide";
     public const string Send = "send";
-    public const string Power = "power";
+    public const string UsePower = "usePower";
     public const string LaunchNuke = "launchNuke";
     public const string SetPublic = "setPublic";
     public const string ObserveRoom = "observeRoom";
+    public const string EnableRoom = "enableRoom";
+    public const string Renew = "renew";
 
     public const string IsPublic = "isPublic";
     public const string RoomName = "roomName";

@@ -525,6 +525,7 @@ public sealed class StructureActivationTests
         public Task FlushAsync(CancellationToken token = default) => Task.CompletedTask;
 
         public bool TryGetPendingPatch(string objectId, out RoomObjectPatchPayload patch) { patch = new RoomObjectPatchPayload(); return false; }
+        public bool IsMarkedForRemoval(string objectId) => false;
 
         public void Reset() { }
     }

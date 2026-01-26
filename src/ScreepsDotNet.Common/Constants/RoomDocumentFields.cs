@@ -58,6 +58,7 @@ public static class RoomDocumentFields
         public const string Effects = "effects";
         public const string MemorySourceId = "memory_sourceId";
         public const string MemoryMove = "memory_move";
+        public const string AgeTime = "ageTime";
 
         public static class ActionLogFields
         {

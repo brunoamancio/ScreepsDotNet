@@ -69,6 +69,8 @@ public static class JsonFixtureLoader
             ? (int?)(gameTime + obj.TicksToRegeneration.Value)
             : null;
 
+        var powers = ConvertPowers(obj.Powers);
+
         var roomObject = new RoomObjectSnapshot(
             Id: obj.Id,
             Type: obj.Type,
@@ -85,6 +87,8 @@ public static class JsonFixtureLoader
             Level: obj.Level,
             Density: obj.Density,
             MineralType: obj.MineralType,
+            ResourceType: obj.ResourceType,
+            ResourceAmount: obj.ResourceAmount,
             DepositType: null,
             StructureType: obj.StructureType ?? (IsStructure(obj.Type) ? obj.Type : null),
             Store: store,
@@ -102,7 +106,9 @@ public static class JsonFixtureLoader
             DecayTime: obj.NextDecayTime,
             NextRegenerationTime: nextRegenerationTime,
             Progress: obj.Progress,
-            ProgressTotal: obj.ProgressTotal);
+            ProgressTotal: obj.ProgressTotal,
+            Powers: powers,
+            IsPowerEnabled: obj.IsPowerEnabled);
 
         return roomObject;
     }
@@ -125,6 +131,22 @@ public static class JsonFixtureLoader
         // Default to full HP (100) if hits not specified in fixture JSON
         var hits = bodyPart.Hits ?? ScreepsGameConstants.BodyPartHitPoints;
         var result = new CreepBodyPartSnapshot(bodyPartType, hits, bodyPart.Boost);
+        return result;
+    }
+
+    private static IReadOnlyDictionary<PowerTypes, PowerCreepPowerSnapshot>? ConvertPowers(Dictionary<string, JsonPowerCreepPower>? powers)
+    {
+        if (powers is null || powers.Count == 0)
+            return null;
+
+        var result = new Dictionary<PowerTypes, PowerCreepPowerSnapshot>(powers.Count);
+        foreach (var (powerIdStr, powerData) in powers) {
+            if (int.TryParse(powerIdStr, out var powerId)) {
+                var powerType = (PowerTypes)powerId;
+                result[powerType] = new PowerCreepPowerSnapshot(Level: powerData.Level, CooldownTime: powerData.CooldownTime);
+            }
+        }
+
         return result;
     }
 
@@ -268,6 +290,15 @@ public static class JsonFixtureLoader
 
         if (intent.BodyPartsCount.HasValue)
             fields["bodyPartsCount"] = new(IntentFieldValueKind.Number, NumberValue: intent.BodyPartsCount.Value);
+
+        if (intent.Power.HasValue)
+            fields["power"] = new(IntentFieldValueKind.Number, NumberValue: intent.Power.Value);
+
+        if (intent.Message is not null)
+            fields["message"] = new(IntentFieldValueKind.Text, TextValue: intent.Message);
+
+        if (intent.Public.HasValue)
+            fields["public"] = new(IntentFieldValueKind.Boolean, BooleanValue: intent.Public.Value);
 
         var argument = new IntentArgument(fields);
         var record = new IntentRecord(intent.Intent, [argument]);

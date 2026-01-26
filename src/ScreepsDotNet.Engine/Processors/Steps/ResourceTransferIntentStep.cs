@@ -43,7 +43,7 @@ internal sealed class ResourceTransferIntentStep(IResourceDropHelper resourceDro
                 if (!context.State.Objects.TryGetValue(objectId, out var creep))
                     continue;
 
-                if (!creep.IsCreep(includePowerCreep: false))
+                if (!creep.IsCreep(includePowerCreep: true))
                     continue;
 
                 if (creep.IsSpawning == true)

@@ -55,6 +55,8 @@ public sealed record RoomObjectPatchPayload : IRoomObjectPatchPayload
     public string? MemorySourceId { get; init; }
     public KeeperMoveMemory? MemoryMove { get; init; }
     public bool? IsPublic { get; init; }
+    public bool? IsPowerEnabled { get; init; }
+    public int? AgeTime { get; init; }
 
     public bool HasChanges =>
         Hits.HasValue ||
@@ -91,7 +93,9 @@ public sealed record RoomObjectPatchPayload : IRoomObjectPatchPayload
         (Powers is { Count: > 0 }) ||
         MemorySourceId is not null ||
         MemoryMove is not null ||
-        IsPublic.HasValue;
+        IsPublic.HasValue ||
+        IsPowerEnabled.HasValue ||
+        AgeTime.HasValue;
 }
 
 public sealed record RoomObjectPositionPatch(int? X = null, int? Y = null)
@@ -102,6 +106,7 @@ public sealed record RoomObjectPositionPatch(int? X = null, int? Y = null)
 public sealed record RoomObjectActionLogPatch(
     RoomObjectActionLogDie? Die = null,
     RoomObjectActionLogHealed? Healed = null,
+    RoomObjectActionLogAttack? Attack = null,
     RoomObjectActionLogRepair? Repair = null,
     RoomObjectActionLogBuild? Build = null,
     RoomObjectActionLogHarvest? Harvest = null,
@@ -112,12 +117,14 @@ public sealed record RoomObjectActionLogPatch(
     RoomObjectActionLogUsePower? UsePower = null,
     RoomObjectActionLogObserveRoom? ObserveRoom = null)
 {
-    public bool HasEntries => Die is not null || Healed is not null || Repair is not null || Build is not null || Harvest is not null || Say is not null || RunReaction is not null || TransferEnergy is not null || Produce is not null || UsePower is not null || ObserveRoom is not null;
+    public bool HasEntries => Die is not null || Healed is not null || Attack is not null || Repair is not null || Build is not null || Harvest is not null || Say is not null || RunReaction is not null || TransferEnergy is not null || Produce is not null || UsePower is not null || ObserveRoom is not null;
 }
 
 public sealed record RoomObjectActionLogDie(int Time);
 
 public sealed record RoomObjectActionLogHealed(int X, int Y);
+
+public sealed record RoomObjectActionLogAttack(int X, int Y);
 
 public sealed record RoomObjectActionLogRepair(int X, int Y);
 
@@ -140,12 +147,13 @@ public sealed record RoomObjectActionLogObserveRoom(string RoomName);
 public sealed record RoomObjectActionLogSnapshot(
     RoomObjectActionLogDie? Die = null,
     RoomObjectActionLogHealed? Healed = null,
+    RoomObjectActionLogAttack? Attack = null,
     RoomObjectActionLogRepair? Repair = null,
     RoomObjectActionLogBuild? Build = null,
     RoomObjectActionLogHarvest? Harvest = null,
     RoomObjectActionLogSay? Say = null)
 {
-    public bool HasEntries => Die is not null || Healed is not null || Repair is not null || Build is not null || Harvest is not null || Say is not null;
+    public bool HasEntries => Die is not null || Healed is not null || Attack is not null || Repair is not null || Build is not null || Harvest is not null || Say is not null;
 }
 
 public sealed record RoomObjectInterRoomPatch(string RoomName, int X, int Y, string? Shard = null);

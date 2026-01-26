@@ -18,6 +18,10 @@ internal sealed class StructureDecayStep : IRoomProcessorStep
         var gameTime = context.State.GameTime;
 
         foreach (var structure in context.State.Objects.Values) {
+            // Skip if already removed by another step
+            if (context.MutationWriter.IsMarkedForRemoval(structure.Id))
+                continue;
+
             if (structure.Type is not (RoomObjectTypes.Wall or RoomObjectTypes.Rampart or RoomObjectTypes.Road))
                 continue;
 

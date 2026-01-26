@@ -399,6 +399,8 @@ public sealed class ObserverIntentStepTests
             return false;
         }
 
+        public bool IsMarkedForRemoval(string objectId) => false;
+
         public Task FlushAsync(CancellationToken token = default) => Task.CompletedTask;
 
         public void Reset()

@@ -559,6 +559,7 @@ public sealed class PowerSpawnIntentStepTests
 
 #pragma warning disable CA1822 // Method cannot be static as it implements interface member
         public bool TryGetPendingPatch(string objectId, out RoomObjectPatchPayload patch) { patch = new RoomObjectPatchPayload(); return false; }
+        public bool IsMarkedForRemoval(string objectId) => false;
 
         public void Reset()
         {

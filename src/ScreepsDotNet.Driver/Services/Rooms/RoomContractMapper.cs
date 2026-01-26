@@ -340,6 +340,16 @@ internal static class RoomContractMapper
             healed = new RoomObjectActionLogHealed(x, y);
         }
 
+        RoomObjectActionLogAttack? attack = null;
+        if (actionLog.TryGetValue(RoomDocumentFields.RoomObject.ActionLogFields.Attack, out var attackValue) &&
+            attackValue is BsonDocument attackDoc &&
+            attackDoc.TryGetValue(RoomDocumentFields.RoomObject.ActionLogFields.X, out var attackX) &&
+            attackDoc.TryGetValue(RoomDocumentFields.RoomObject.ActionLogFields.Y, out var attackY) &&
+            TryGetInt32(attackX, out var attackXInt) &&
+            TryGetInt32(attackY, out var attackYInt)) {
+            attack = new RoomObjectActionLogAttack(attackXInt, attackYInt);
+        }
+
         RoomObjectActionLogRepair? repair = null;
         if (actionLog.TryGetValue(RoomDocumentFields.RoomObject.ActionLogFields.Repair, out var repairValue) &&
             repairValue is BsonDocument repairDoc &&
@@ -389,10 +399,10 @@ internal static class RoomContractMapper
             }
         }
 
-        if (die is null && healed is null && repair is null && build is null && harvest is null)
+        if (die is null && healed is null && attack is null && repair is null && build is null && harvest is null)
             return null;
 
-        return new RoomObjectActionLogSnapshot(die, healed, repair, build, harvest);
+        return new RoomObjectActionLogSnapshot(die, healed, attack, repair, build, harvest);
     }
 
     private static bool TryGetInt32(BsonValue value, out int result)
@@ -769,6 +779,14 @@ internal static class RoomContractMapper
                 };
             }
 
+            if (actionLog.Attack is { } attack) {
+                logDocument[RoomDocumentFields.RoomObject.ActionLogFields.Attack] = new BsonDocument
+                {
+                    [RoomDocumentFields.RoomObject.ActionLogFields.X] = attack.X,
+                    [RoomDocumentFields.RoomObject.ActionLogFields.Y] = attack.Y
+                };
+            }
+
             if (actionLog.Harvest is { } harvest) {
                 logDocument[RoomDocumentFields.RoomObject.ActionLogFields.Harvest] = new BsonDocument
                 {
@@ -852,6 +870,12 @@ internal static class RoomContractMapper
             if (memoryMoveDoc.ElementCount > 0)
                 document[RoomDocumentFields.RoomObject.MemoryMove] = memoryMoveDoc;
         }
+
+        if (patch.IsPowerEnabled.HasValue)
+            document[RoomDocumentFields.Controller.IsPowerEnabled] = patch.IsPowerEnabled.Value;
+
+        if (patch.AgeTime.HasValue)
+            document[RoomDocumentFields.RoomObject.AgeTime] = patch.AgeTime.Value;
 
         return document;
     }

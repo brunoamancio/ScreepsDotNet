@@ -13,6 +13,10 @@ internal sealed class PowerEffectDecayStep : IRoomProcessorStep
         var gameTime = context.State.GameTime;
 
         foreach (var obj in context.State.Objects.Values) {
+            // Skip if already removed by another step
+            if (context.MutationWriter.IsMarkedForRemoval(obj.Id))
+                continue;
+
             if (obj.Effects.Count == 0)
                 continue;
 

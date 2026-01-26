@@ -125,7 +125,7 @@ async function executeProcessor(db, fixture) {
     // Initialize movement module (required for tick processor)
     const movement = requireIntentProcessor('move'); // Load movement module
     if (movement && movement.init) {
-        movement.init(scope);
+        movement.init(roomObjects, roomTerrain);
         console.log(`  ✓ Initialized movement module`);
     }
 
@@ -236,7 +236,7 @@ async function executeProcessor(db, fixture) {
 
                     for (const intent of intents) {
                         try {
-                            const intentProcessor = requireIntentProcessor(intent.intent);
+                            const intentProcessor = requireIntentProcessor(intent.intent, object);
                             if (intentProcessor) {
                                 intentProcessor(object, intent, scope);
                                 intentCount++;
@@ -265,7 +265,7 @@ async function executeProcessor(db, fixture) {
 
                 for (const intent of intents) {
                     try {
-                        const intentProcessor = requireIntentProcessor(intent.intent);
+                        const intentProcessor = requireIntentProcessor(intent.intent, object);
                         if (intentProcessor) {
                             intentProcessor(object, intent, scope);
                             intentCount++;
@@ -282,6 +282,24 @@ async function executeProcessor(db, fixture) {
     }
 
     console.log(`  ✓ Processed ${intentCount} intents`);
+
+    // Execute queued movements (applies position changes from move intents)
+    console.log(`  Executing queued movements...`);
+    let movementCount = 0;
+    if (movement && movement.execute) {
+        for (const object of Object.values(roomObjects)) {
+            if (object.type === 'creep' || object.type === 'powerCreep') {
+                try {
+                    movement.execute(object, scope);
+                    movementCount++;
+                } catch (error) {
+                    console.error(`    ERROR executing movement for ${object._id}:`, error.message);
+                    console.error(`    Stack:`, error.stack);
+                }
+            }
+        }
+    }
+    console.log(`  ✓ Executed ${movementCount} movements`);
 
     // Run tick processor for all creeps (applies accumulated damage/healing)
     console.log(`  Running tick processors for creeps...`);
@@ -301,6 +319,25 @@ async function executeProcessor(db, fixture) {
         }
     }
     console.log(`  ✓ Processed ${tickCount} creep ticks`);
+
+    // Run tick processor for all PowerCreeps (applies accumulated damage/healing, actionLog persistence)
+    console.log(`  Running tick processors for PowerCreeps...`);
+    let powerCreepTickCount = 0;
+    const powerCreepTickProcessor = requireTickProcessor('power-creeps');
+    if (powerCreepTickProcessor) {
+        for (const object of Object.values(roomObjects)) {
+            if (object.type === 'powerCreep') {
+                try {
+                    powerCreepTickProcessor(object, scope);
+                    powerCreepTickCount++;
+                } catch (error) {
+                    console.error(`    ERROR in PowerCreep tick for ${object._id}:`, error.message);
+                    console.error(`    Stack:`, error.stack);
+                }
+            }
+        }
+    }
+    console.log(`  ✓ Processed ${powerCreepTickCount} PowerCreep ticks`);
 
     // Run tick processors for structures (decay, regeneration, etc.)
     console.log(`  Running tick processors for structures...`);
@@ -631,10 +668,26 @@ function runPowerCreepGlobalProcessor(fixture, roomObjects, bulkMutations, stats
 /**
  * Requires the appropriate intent processor from the Screeps engine
  * @param {string} intentName - Intent name (e.g., "harvest", "attack")
+ * @param {object} object - The game object executing the intent
  * @returns {Function|null}
  */
-function requireIntentProcessor(intentName) {
+function requireIntentProcessor(intentName, object) {
     const enginePath = path.resolve(__dirname, '../../screeps-modules/engine/src/processor');
+
+    // Check if this is a PowerCreep - route to power-creeps directory
+    if (object && object.type === 'powerCreep') {
+        const powerCreepIntents = ['drop', 'enableRoom', 'move', 'pickup', 'renew', 'say', 'transfer', 'usePower', 'withdraw'];
+        if (powerCreepIntents.includes(intentName)) {
+            const processorPath = `intents/power-creeps/${intentName}`;
+            try {
+                const fullPath = path.join(enginePath, processorPath);
+                return require(fullPath);
+            } catch (error) {
+                console.error(`Failed to load PowerCreep processor at ${processorPath}:`, error.message);
+                return null;
+            }
+        }
+    }
 
     // Intent name mapping (Node.js processor file paths)
     const intentMap = {

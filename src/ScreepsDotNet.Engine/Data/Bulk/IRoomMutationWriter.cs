@@ -12,6 +12,7 @@ public interface IRoomMutationWriter
     void SetMapView(IRoomMapViewPayload? mapView);
     int GetMutationCount();
     bool TryGetPendingPatch(string objectId, out RoomObjectPatchPayload patch);
+    bool IsMarkedForRemoval(string objectId);
     Task FlushAsync(CancellationToken token = default);
     void Reset();
 }

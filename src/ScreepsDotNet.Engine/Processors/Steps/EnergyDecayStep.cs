@@ -23,6 +23,10 @@ internal sealed class EnergyDecayStep : IRoomProcessorStep
 
     private static void ProcessResource(RoomProcessorContext context, RoomObjectSnapshot resource)
     {
+        // Skip if already removed by another step (e.g., pickup)
+        if (context.MutationWriter.IsMarkedForRemoval(resource.Id))
+            return;
+
         var amount = resource.Energy ?? 0;
 
         if (amount <= 0) {

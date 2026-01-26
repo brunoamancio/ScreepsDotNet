@@ -66,6 +66,9 @@ internal sealed class RoomMutationWriter(
     public bool TryGetPendingPatch(string objectId, out RoomObjectPatchPayload patch)
         => PendingPatchHelper.TryFindLastPatch(_patches, objectId, out patch);
 
+    public bool IsMarkedForRemoval(string objectId)
+        => _removals.Contains(objectId);
+
     public async Task FlushAsync(CancellationToken token = default)
     {
         if (_upserts.Count == 0 &&

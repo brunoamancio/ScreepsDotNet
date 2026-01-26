@@ -40,7 +40,11 @@ public sealed record JsonRoomObject(
     [property: JsonPropertyName("mineralAmount")] int? MineralAmount = null,
     [property: JsonPropertyName("mineralType")] string? MineralType = null,
     [property: JsonPropertyName("density")] int? Density = null,
-    [property: JsonPropertyName("structureType")] string? StructureType = null);
+    [property: JsonPropertyName("resourceType")] string? ResourceType = null,
+    [property: JsonPropertyName("resourceAmount")] int? ResourceAmount = null,
+    [property: JsonPropertyName("structureType")] string? StructureType = null,
+    [property: JsonPropertyName("powers")] Dictionary<string, JsonPowerCreepPower>? Powers = null,
+    [property: JsonPropertyName("isPowerEnabled")] bool? IsPowerEnabled = null);
 
 public sealed record JsonBodyPart(
     [property: JsonPropertyName("type")] string Type,
@@ -59,7 +63,10 @@ public sealed record JsonIntent(
     [property: JsonPropertyName("lab2Id")] string? Lab2Id = null,
     [property: JsonPropertyName("bodyPartsCount")] int? BodyPartsCount = null,
     [property: JsonPropertyName("targetRoomName")] string? TargetRoomName = null,
-    [property: JsonPropertyName("description")] string? Description = null);
+    [property: JsonPropertyName("description")] string? Description = null,
+    [property: JsonPropertyName("power")] int? Power = null,
+    [property: JsonPropertyName("message")] string? Message = null,
+    [property: JsonPropertyName("public")] bool? Public = null);
 
 public sealed record JsonUserState(
     [property: JsonPropertyName("gcl")] JsonGclState Gcl,
@@ -141,4 +148,5 @@ public sealed record JsonPowerCreep(
 /// Power creep power/ability
 /// </summary>
 public sealed record JsonPowerCreepPower(
-    [property: JsonPropertyName("level")] int Level);
+    [property: JsonPropertyName("level")] int Level,
+    [property: JsonPropertyName("cooldownTime")] int? CooldownTime = null);

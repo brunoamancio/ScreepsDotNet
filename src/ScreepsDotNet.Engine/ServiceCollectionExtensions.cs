@@ -63,6 +63,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IRoomProcessorStep, ControllerDowngradeStep>();
         services.AddSingleton<IRoomProcessorStep, ControllerIntentStep>();
         services.AddSingleton<IRoomProcessorStep, PowerEffectDecayStep>();
+        services.AddSingleton<IRoomProcessorStep, PowerCreepRoomIntentStep>();
         services.AddSingleton<IRoomProcessorStep, PowerAbilityStep>();
         services.AddSingleton<IRoomProcessorStep, PowerAbilityCooldownStep>();
 
